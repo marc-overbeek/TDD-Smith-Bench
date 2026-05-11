@@ -9,6 +9,7 @@ from swesmith.bug_gen.procedural.python.control_flow import (
     ControlIfElseInvertModifier,
     ControlShuffleLinesModifier,
 )
+from swesmith.bug_gen.procedural.python.empty_body import EmptyBodyModifier
 from swesmith.bug_gen.procedural.python.operations import (
     OperationBreakChainsModifier,
     OperationChangeConstantsModifier,
@@ -28,6 +29,7 @@ MODIFIERS_PYTHON: list[ProceduralModifier] = [
     ClassShuffleMethodsModifier(likelihood=0.25),
     ControlIfElseInvertModifier(likelihood=0.25),
     ControlShuffleLinesModifier(likelihood=0.25),
+    EmptyBodyModifier(likelihood=1),
     RemoveAssignModifier(likelihood=0.25),
     RemoveConditionalModifier(likelihood=0.25),
     RemoveLoopModifier(likelihood=0.25),
