@@ -21,6 +21,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import subprocess
 from pathlib import Path
 import yaml
@@ -36,14 +37,6 @@ from swesmith.bug_gen.utils import generate_patch_fast
 from swesmith.constants import LOG_DIR_BUG_GEN, PREFIX_BUG, PREFIX_METADATA, BugRewrite, CodeEntity, KEY_PATCH
 from swesmith.profiles import registry
 from swebench.harness.constants import FAIL_TO_PASS, KEY_INSTANCE_ID
-
-logging.getLogger("LiteLLM").setLevel(logging.WARNING)
-try:
-    litellm._turn_on_debug()
-    print("LiteLLM debug mode enabled.")
-except Exception:
-    print("LiteLLM debug mode failed.")
-    pass
 
 
 def _empty_body_rewrite(src_code: str) -> str | None:
@@ -133,6 +126,7 @@ def _load_previous_rewrite(
 def _load_test_case_map(repo: str) -> dict[str, dict]:
     test_case_map_path = Path("logs/change_logs") / repo / "_test_case_map.json"
     if not test_case_map_path.exists():
+        print(f"Test case map not found at {test_case_map_path}. Cannot load combined instance mappings.")
         return {}
     return json.loads(test_case_map_path.read_text())
 
@@ -162,6 +156,23 @@ def _build_combined_file_sources(repo_dir: Path, candidates: list, rewrites: dic
         output.append(f"--- file: {rel_path} ---")
         output.append(file_sources[file_path])
     return "\n".join(output)
+
+
+def _save_llm_issue(log_dir: Path, repo: str, regen_instance_id: str, attempt: int, mode: str, message_content: str, prompt_messages: list[dict], error: str) -> Path:
+    issue_dir = log_dir / "issues"
+    issue_dir.mkdir(parents=True, exist_ok=True)
+    issue_path = issue_dir / f"{regen_instance_id}__attempt_{attempt}__{mode}.json"
+    issue_data = {
+        "repo": repo,
+        "instance_id": regen_instance_id,
+        "attempt": attempt,
+        "mode": mode,
+        "error": error,
+        "prompt_messages": prompt_messages,
+        "response_content": message_content,
+    }
+    issue_path.write_text(json.dumps(issue_data, indent=2))
+    return issue_path
 
 
 def _patch_lines(rewrite: str, candidate) -> list[str]:
@@ -232,24 +243,122 @@ def _generate_combined_patch(repo_dir: Path, candidate_rewrites: list[tuple], re
 
 
 def _extract_function_rewrites_from_code_block(code_block: str, candidates: list):
-    try:
-        tree = ast.parse(code_block)
-    except SyntaxError:
+    def parse_with_ast(text: str):
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            return None
+        entries = []
+        for node in tree.body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                src = ast.get_source_segment(text, node)
+                if src:
+                    entries.append((node.name, src))
+        return entries if entries else None
+
+    def normalize_code_block(text: str) -> str:
+        if '```' not in text:
+            return text
+        blocks = re.findall(r"```(?:\w+)?\n(.*?)```", text, re.DOTALL)
+        return "\n\n".join(blocks)
+
+    def parse_with_regex(text: str):
+        cleaned = normalize_code_block(text)
+
+        pattern = re.compile(
+            r"(?ms)^(?:@.*\n)*\s*(?:async\s+)?def\s+(\w+)\s*\(.*?(?=^(?:@.*\n)*\s*(?:async\s+)?def\s+\w+\s*\(|\Z)",
+            re.MULTILINE | re.DOTALL,
+        )
+        entries = []
+        for match in pattern.finditer(cleaned):
+            func_name = match.group(1)
+            entries.append((func_name, match.group(0).rstrip()))
+        return entries
+
+    def extract_signature(src: str) -> str | None:
+        match = re.search(
+            r"^\s*(?:@.*\n\s*)*(?:async\s+)?(def\s+[^(\s]+\s*\(.*?\))\s*:",
+            src,
+            re.MULTILINE | re.DOTALL,
+        )
+        if not match:
+            return None
+        return re.sub(r"\s+", " ", match.group(1).strip())
+
+    def normalize_signature(sig: str | None) -> str | None:
+        if sig is None:
+            return None
+        return re.sub(r"\s+", " ", sig.strip())
+
+    def find_entries():
+        cleaned = normalize_code_block(code_block)
+        entries = parse_with_ast(cleaned)
+        if entries is not None:
+            return entries
+
+        match = re.search(r"(^\s*(?:@.*\n)*\s*(?:async\s+)?def\s+\w+\s*\()", cleaned, re.M)
+        if match:
+            start = match.start()
+            entries = parse_with_ast(cleaned[start:])
+            if entries is not None:
+                return entries
+
+        return parse_with_regex(cleaned)
+
+    entries = find_entries()
+    if entries is None:
         return None
 
-    rewrites = {}
-    for node in tree.body:
-        if isinstance(node, ast.FunctionDef):
-            src = ast.get_source_segment(code_block, node)
-            if src:
-                rewrites[node.name] = src
+    candidates_by_name: dict[str, list] = {}
+    for candidate in sorted(
+        candidates,
+        key=lambda c: (getattr(c, "file_path", ""), getattr(c, "line_start", 0)),
+    ):
+        candidates_by_name.setdefault(candidate.name, []).append(candidate)
 
     result = []
-    for candidate in candidates:
-        if candidate.name not in rewrites:
+    for name, src in entries:
+        if name not in candidates_by_name or not candidates_by_name[name]:
             return None
-        result.append((candidate, rewrites[candidate.name]))
+
+        signature = extract_signature(src)
+        chosen_candidate = None
+
+        if signature is not None:
+            normalized_signature = normalize_signature(signature)
+            for candidate in candidates_by_name[name]:
+                candidate_signature = normalize_signature(getattr(candidate, "signature", None))
+                if candidate_signature and candidate_signature.endswith(normalized_signature):
+                    chosen_candidate = candidate
+                    break
+
+        if chosen_candidate is None:
+            chosen_candidate = candidates_by_name[name][0]
+
+        result.append((chosen_candidate, src))
+        candidates_by_name[name].remove(chosen_candidate)
+
     return result
+
+
+def _annotate_exact_match(rewrite: str) -> str:
+    lines = rewrite.rstrip().splitlines()
+    if not lines:
+        return rewrite
+
+    indent = None
+    for line in lines[1:]:
+        stripped = line.lstrip(" ")
+        if stripped and not stripped.startswith("#"):
+            indent = len(line) - len(stripped)
+            break
+    if indent is None:
+        indent = 4
+
+    comment_line = " " * indent + "# this is an exact match"
+    if lines[-1].strip() == "":
+        return rewrite.rstrip() + "\n" + comment_line
+    return rewrite.rstrip() + "\n" + comment_line
 
 
 def _load_previous_combined_rewrite(log_dir: Path, configs_name: str, base_hash: str, attempt: int) -> str | None:
@@ -423,7 +532,6 @@ def main(
                 continue
 
             file_candidates = []
-            broken_test_details = []
             instance_fns = []
             for original_id in instance_ids:
                 fn_info = fn_map.get(original_id)
@@ -620,6 +728,27 @@ def main(
             tqdm.write(
                 f"Generating fix for {regen_instance_id} with {len(broken_test_details)} broken tests..."
             )
+
+            # Check if patch already exists for this instance
+            if mode == "individual":
+                candidate = broken_info["candidate"]
+                file_dir = log_dir / candidate.file_path.replace("/", "__")
+                attempt_dir = file_dir / f"attempt{attempt}"
+                signature_hash = hashlib.sha256(candidate.signature.encode()).hexdigest()[:8]
+                func_dir = attempt_dir / f"{candidate.name}_{signature_hash}"
+                strategy_name = configs["name"]
+            else:
+                candidates = broken_info["candidates"]
+                file_dir = log_dir / "combined" / f"attempt{attempt}" / base_hash
+                func_dir = file_dir
+                strategy_name = combined_configs.get("name", configs["name"])
+
+            uuid_str = f"{strategy_name}__{base_hash}"
+            expected_patch_path = func_dir / f"{PREFIX_BUG}__{uuid_str}.diff"
+            if expected_patch_path.exists():
+                tqdm.write(f"Skipping {regen_instance_id}, patch already exists at {expected_patch_path}")
+                continue
+
             try:
                 response: Any = completion(
                     model=model, messages=messages, n=1, temperature=0.0
@@ -654,25 +783,58 @@ def main(
 
                 patch = generate_patch_fast(candidate, rewrite_obj, repo_dir)
                 if not patch or len(patch.strip()) == 0:
-                    tqdm.write(
-                        f"Skipping {regen_instance_id}, generated exact matching diff or unable to format."
+                    code_block = _annotate_exact_match(code_block)
+                    rewrite_obj = BugRewrite(
+                        rewrite=code_block,
+                        explanation=explanation,
+                        strategy=configs["name"],
+                        cost=cost,
+                        output=message.content,
                     )
-                    continue
+                    patch = generate_patch_fast(candidate, rewrite_obj, repo_dir)
+                    if not patch or len(patch.strip()) == 0:
+                        tqdm.write(
+                            f"Skipping {regen_instance_id}, generated exact matching diff or unable to format."
+                        )
+                        continue
+                    tqdm.write(
+                        f"Created an exact-match annotated patch for {regen_instance_id}."
+                    )
             else:
                 candidates = broken_info["candidates"]
                 extracted = _extract_function_rewrites_from_code_block(code_block, candidates)
                 if extracted is None:
-                    tqdm.write(
-                        f"Skipping {regen_instance_id}, unable to parse combined function rewrites."
+                    issue_path = _save_llm_issue(
+                        log_dir,
+                        repo,
+                        regen_instance_id,
+                        attempt,
+                        "combined",
+                        message.content,
+                        messages,
+                        "unable to parse combined function rewrites",
                     )
+                    tqdm.write(
+                        f"Skipping {regen_instance_id}, unable to parse combined function rewrites. Saved issue to {issue_path}"
+                    )
+                    tqdm.write(f"Generated content:\n{code_block}")
                     continue
 
                 patch = _generate_combined_patch(repo_dir, extracted, repo)
                 if not patch or len(patch.strip()) == 0:
+                    extracted = [
+                        (candidate, _annotate_exact_match(rewrite))
+                        for candidate, rewrite in extracted
+                    ]
+                    patch = _generate_combined_patch(repo_dir, extracted, repo)
+                    if not patch or len(patch.strip()) == 0:
+                        tqdm.write(
+                            f"Skipping {regen_instance_id}, generated exact matching combined diff or unable to format."
+                        )
+                        continue
                     tqdm.write(
-                        f"Skipping {regen_instance_id}, generated exact matching combined diff or unable to format."
+                        f"Created an exact-match annotated combined patch for {regen_instance_id}."
                     )
-                    continue
 
                 rewrite_obj = BugRewrite(
                     rewrite=code_block,
@@ -684,10 +846,6 @@ def main(
 
             func_dir.mkdir(parents=True, exist_ok=True)
 
-            strategy_name = (
-                combined_configs.get("name") if mode == "combined" else configs["name"]
-            )
-            uuid_str = f"{strategy_name}__{base_hash}"
             meta_path = func_dir / f"{PREFIX_METADATA}__{uuid_str}.json"
             patch_path = func_dir / f"{PREFIX_BUG}__{uuid_str}.diff"
 

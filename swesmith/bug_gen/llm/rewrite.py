@@ -108,7 +108,7 @@ def main(
             "func_signature": candidate.signature,
             "func_to_write": blank_function.rewrite,
             "file_src_code": open(candidate.file_path).read(),
-        }
+        } 
 
         # Generate a rewrite
         messages = [

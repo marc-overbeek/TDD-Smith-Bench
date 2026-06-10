@@ -59,6 +59,15 @@ def main():
     
     results = []
 
+    # Load combined test-case map if present so we can include combined-instance validation
+    combined_map = {}
+    combined_map_path = change_dir / "_test_case_map.json"
+    if combined_map_path.exists():
+        try:
+            combined_map = json.loads(combined_map_path.read_text())
+        except Exception:
+            combined_map = {}
+
     for empty_inst_id, fn_info in fn_map.items():
         empty_report_path = val_dir / empty_inst_id / "report.json"
         if not empty_report_path.exists():
@@ -97,6 +106,58 @@ def main():
             "function": f"{fn_info['file_path']}::{fn_info['function_name']}",
             "empty_fails_count": len(empty_broken),
             "empty_broken": empty_broken,
+            "attempts": attempt_results,
+        })
+
+    # Process combined instances (groups of functions that were regenerated together)
+    for combined_id, combined_info in sorted(combined_map.items()):
+        report_path = val_dir / combined_id / "report.json"
+        if not report_path.exists():
+            continue
+
+        combined_report = json.loads(report_path.read_text())
+        combined_broken = combined_report.get("FAIL_TO_PASS", [])
+        if len(combined_broken) == 0:
+            continue
+
+        instance_ids = combined_info.get("instance_ids", [])
+        # Map instance ids to human-readable function names when available
+        functions = []
+        for iid in instance_ids:
+            fi = fn_map.get(iid)
+            if fi:
+                functions.append(f"{fi['file_path']}::{fi['function_name']}")
+
+        base_hash = _get_base_hash(repo, combined_id)
+        regen_reports = _load_all_regen_reports(val_dir, repo, base_hash)
+
+        attempt_results = []
+        if not regen_reports:
+            attempt_results.append({
+                "attempt": None,
+                "regen_broken": ["<NO_VALIDATION_REPORT_FOUND>"],
+            })
+        else:
+            for attempt in sorted(regen_reports.keys()):
+                regen_broken = regen_reports[attempt]
+                fixed_tests = set(combined_broken) - set(regen_broken)
+                still_broken = set(combined_broken).intersection(set(regen_broken))
+                new_broken = set(regen_broken) - set(combined_broken)
+
+                attempt_results.append({
+                    "attempt": attempt,
+                    "regen_broken": regen_broken,
+                    "fixed_count": len(fixed_tests),
+                    "still_broken_count": len(still_broken),
+                    "new_broken_count": len(new_broken),
+                })
+
+        results.append({
+            "function": f"combined::{combined_id}",
+            "instance_ids": instance_ids,
+            "functions": functions,
+            "empty_fails_count": len(combined_broken),
+            "empty_broken": combined_broken,
             "attempts": attempt_results,
         })
 
