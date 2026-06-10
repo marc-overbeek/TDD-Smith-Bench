@@ -119,25 +119,95 @@ def _generate_combined_patch(repo_dir: Path, candidate_rewrites: list[tuple], re
     return "".join(diffs)
 
 
+def _group_candidate_rewrites_by_file(candidate_rewrites: list[tuple[str, object, str]]) -> dict[Path, list[tuple[str, object, str]]]:
+    groups: dict[Path, list[tuple[str, object, str]]] = defaultdict(list)
+    for instance_id, candidate, rewrite in candidate_rewrites:
+        groups[Path(candidate.file_path)].append((instance_id, candidate, rewrite))
+    return groups
+
+
+def _generate_same_file_combined_patches(
+    repo_dir: Path,
+    repo: str,
+    test_id: str,
+    candidate_rewrites: list[tuple[str, object, str]],
+    seen_instance_ids: set[frozenset],
+    next_group_index: int,
+):
+    combined_patches = []
+    combined_map = {}
+
+    for file_path, grouped_rewrites in sorted(
+        _group_candidate_rewrites_by_file(candidate_rewrites).items(),
+        key=lambda item: str(item[0]),
+    ):
+        if len(grouped_rewrites) <= 1:
+            continue
+
+        group_instance_ids = [instance_id for instance_id, _, _ in grouped_rewrites]
+        group_key = frozenset(group_instance_ids)
+        if group_key in seen_instance_ids:
+            continue
+        seen_instance_ids.add(group_key)
+
+        next_group_index += 1
+        instance_id = _instance_id_for_test(repo, test_id, next_group_index)
+        patch = _generate_combined_patch(
+            repo_dir,
+            [(candidate, rewrite) for _, candidate, rewrite in grouped_rewrites],
+            repo,
+        )
+        if not patch:
+            continue
+
+        try:
+            rel_file_path = str(Path(file_path).resolve().relative_to(repo_dir.resolve()))
+        except Exception:
+            rel_file_path = str(file_path)
+
+        combined_patches.append({KEY_INSTANCE_ID: instance_id, "repo": repo, "patch": patch})
+        combined_map[instance_id] = {
+            "test_case": test_id,
+            "broken_functions": [candidate.name for _, candidate, _ in grouped_rewrites],
+            "instance_count": len(grouped_rewrites),
+            "instance_ids": group_instance_ids,
+            "file_path": rel_file_path,
+        }
+
+    return combined_patches, combined_map, next_group_index
+
+
 def _instance_id_for_test(repo: str, test_id: str, index: int) -> str:
     test_hash = _test_hash(test_id)
     return f"{repo}.empty_body_test_case_{index:05d}_{test_hash}"
 
 
-def _load_initial_validation(repo: str, fn_map: dict) -> dict[str, list[str]]:
+def _load_initial_validation(repo: str, fn_map: dict, max_tests_per_line: float | None = None) -> tuple[dict[str, list[str]], list[str]]:
     validation_dir = Path("logs/run_validation") / repo
     test_to_instances = defaultdict(list)
-    for instance_id in fn_map:
+    pruned_instances: list[str] = []
+
+    for instance_id, fn_info in fn_map.items():
         report_path = validation_dir / instance_id / "report.json"
         if not report_path.exists():
             continue
+
         report = json.loads(report_path.read_text())
-        for test in report.get(FAIL_TO_PASS, []):
+        failed_tests = report.get(FAIL_TO_PASS, [])
+        if max_tests_per_line is not None and failed_tests:
+            line_count = max(1, fn_info.get("line_end", 0) - fn_info.get("line_start", 0) + 1)
+            density = len(failed_tests) / line_count
+            if density > max_tests_per_line:
+                pruned_instances.append(instance_id)
+                continue
+
+        for test in failed_tests:
             test_to_instances[test].append(instance_id)
-    return test_to_instances
+
+    return test_to_instances, pruned_instances
 
 
-def main(repo: str, workers: int, max_functions: int):
+def main(repo: str, workers: int, max_functions: int, max_tests_per_line: float | None):
     rp = registry.get(repo)
     repo_dir, _ = rp.clone()
 
@@ -182,7 +252,6 @@ def main(repo: str, workers: int, max_functions: int):
 
     patches_path.parent.mkdir(parents=True, exist_ok=True)
     patches_path.write_text(json.dumps(patches, indent=2))
-    metadata_path.write_text(json.dumps(fn_map, indent=2))
 
     print(f"Generated {len(patches)} empty-body patches: {patches_path}")
 
@@ -199,12 +268,22 @@ def main(repo: str, workers: int, max_functions: int):
     ]
     subprocess.run(cmd, check=True)
 
-    test_to_instances = _load_initial_validation(repo, fn_map)
+    test_to_instances, pruned_instances = _load_initial_validation(repo, fn_map, max_tests_per_line)
+    if pruned_instances:
+        for instance_id in pruned_instances:
+            fn_map.pop(instance_id, None)
+        print(
+            f"Pruned {len(pruned_instances)} instances with > {max_tests_per_line} tests/line: {pruned_instances}"
+        )
+
+    metadata_path.write_text(json.dumps(fn_map, indent=2))
+
     combined_patches = []
     combined_map = {}
     seen_instance_ids = set()  # Track unique instance_ids combinations
+    next_group_index = 0
 
-    for idx, (test_id, instances) in enumerate(sorted(test_to_instances.items()), start=1):
+    for test_id, instances in sorted(test_to_instances.items()):
         candidate_rewrites = []
         for instance_id in instances:
             fn = instance_to_candidate.get(instance_id)
@@ -212,29 +291,21 @@ def main(repo: str, workers: int, max_functions: int):
                 continue
             rewrite = _empty_body_rewrite(fn.src_code)
             if rewrite:
-                candidate_rewrites.append((fn, rewrite))
+                candidate_rewrites.append((instance_id, fn, rewrite))
 
         if len(candidate_rewrites) <= 1:
             continue
 
-        # Check if we've already seen this exact set of instance_ids
-        instances_key = frozenset(instances)
-        if instances_key in seen_instance_ids:
-            continue
-        seen_instance_ids.add(instances_key)
-
-        instance_id = _instance_id_for_test(repo, test_id, idx)
-        patch = _generate_combined_patch(repo_dir, candidate_rewrites, repo)
-        if not patch:
-            continue
-
-        combined_patches.append({KEY_INSTANCE_ID: instance_id, "repo": repo, "patch": patch})
-        combined_map[instance_id] = {
-            "test_case": test_id,
-            "broken_functions": [fn.name for fn, _ in candidate_rewrites],
-            "instance_count": len(candidate_rewrites),
-            "instance_ids": instances,
-        }
+        patches, map_entries, next_group_index = _generate_same_file_combined_patches(
+            repo_dir,
+            repo,
+            test_id,
+            candidate_rewrites,
+            seen_instance_ids,
+            next_group_index,
+        )
+        combined_patches.extend(patches)
+        combined_map.update(map_entries)
 
     combined_patches_path = Path(LOG_DIR_BUG_GEN) / f"{repo}_empty_body_from_test_case_patches.json"
     combined_metadata_path = out_dir / "_test_case_map.json"
@@ -262,6 +333,8 @@ def main(repo: str, workers: int, max_functions: int):
         "functions_considered": len(functions),
         "patches_generated": len(patches),
         "combined_patches_generated": len(combined_patches),
+        "pruned_instances": len(pruned_instances),
+        "max_tests_per_line": max_tests_per_line,
         "patches_json": str(patches_path),
         "combined_patches_json": str(combined_patches_path),
         "change_dir": str(out_dir),
@@ -281,6 +354,12 @@ if __name__ == "__main__":
         type=int,
         default=-1,
         help="Limit number of functions for faster runs (-1 = all).",
+    )
+    parser.add_argument(
+        "--max_tests_per_line",
+        type=float,
+        default=3,
+        help="Prune instances where failing tests / function line count exceeds this threshold.",
     )
     args = parser.parse_args()
     main(**vars(args))
