@@ -39,6 +39,19 @@ from swesmith.profiles import registry
 from swebench.harness.constants import FAIL_TO_PASS, KEY_INSTANCE_ID
 
 
+def _get_model_id(model: str) -> str:
+    """Extract a filesystem-safe model identifier from a model string.
+    
+    Examples:
+      'gpt-4' -> 'gpt-4'
+      'ollama/gpt-oss:120b' -> 'ollama_gpt-oss_120b'
+      'claude-3-opus' -> 'claude-3-opus'
+    """
+    # Replace special characters with underscores to make it filesystem-safe
+    model_id = model.replace("/", "_").replace(":", "_").replace("-", "_")
+    return model_id
+
+
 def _empty_body_rewrite(src_code: str) -> str | None:
     """Rewrite top-level function body to `pass` while keeping signature untouched."""
     try:
@@ -417,6 +430,9 @@ def main(
     combined_config_file: str = "configs/bug_gen/lm_regen_from_tests_combined.yml",
     **kwargs,
 ):
+    # Extract model ID for directory organization
+    model_id = _get_model_id(model)
+    
     # 1. Load config
     with open(config_file) as f:
         configs = yaml.safe_load(f)
@@ -454,7 +470,7 @@ def main(
     fn_map = json.loads(map_path.read_text())
     run_val_dir = Path("logs/run_validation") / repo
 
-    log_dir = LOG_DIR_BUG_GEN / repo
+    log_dir = LOG_DIR_BUG_GEN / repo / model_id
     log_dir.mkdir(parents=True, exist_ok=True)
 
     combined_map = {}
@@ -779,6 +795,7 @@ def main(
                     strategy=configs["name"],
                     cost=cost,
                     output=message.content,
+                    model=model,
                 )
 
                 patch = generate_patch_fast(candidate, rewrite_obj, repo_dir)
@@ -790,6 +807,7 @@ def main(
                         strategy=configs["name"],
                         cost=cost,
                         output=message.content,
+                        model=model,
                     )
                     patch = generate_patch_fast(candidate, rewrite_obj, repo_dir)
                     if not patch or len(patch.strip()) == 0:
@@ -842,6 +860,7 @@ def main(
                     strategy=combined_configs.get("name", configs["name"]),
                     cost=cost,
                     output=message.content,
+                    model=model,
                 )
 
             func_dir.mkdir(parents=True, exist_ok=True)
@@ -925,7 +944,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--max_attempts",
         type=int,
-        default=1,
+        default=2,
         help="Maximum number of regeneration attempts for still-failing functions."
     )
     parser.add_argument(

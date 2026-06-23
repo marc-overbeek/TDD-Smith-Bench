@@ -138,6 +138,7 @@ class CodeEntity(metaclass=CodeEntityMeta):
 class BugRewrite:
     cost: float = 0
     explanation: str = ""
+    model: str = ""
     output: str
     rewrite: str
     strategy: str
@@ -149,12 +150,14 @@ class BugRewrite:
         strategy: str,
         cost: float = 0,
         output: str = "",
+        model: str = "",
     ):
         self.rewrite = rewrite
         self.explanation = explanation
         self.cost = cost
         self.strategy = strategy
         self.output = output
+        self.model = model
 
     def get_hash(self) -> str:
         """Generates a hash for the bug rewrite."""
@@ -165,6 +168,7 @@ class BugRewrite:
         return {
             "cost": self.cost,
             "explanation": self.explanation,
+            "model": self.model,
             "output": self.output,
             "rewrite": self.rewrite,
             "strategy": self.strategy,

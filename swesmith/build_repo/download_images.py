@@ -84,7 +84,7 @@ def main(repo: str, proceed: bool = True):
 
     # Get list of swesmith repositories
     repos = get_docker_repositories(ORG_NAME_DH, token)
-    repos = [r for r in repos if r["name"].startswith("swesmith.x86_64.instagram_1776_monkeytype")]
+    repos = [r for r in repos if r["name"].startswith("swesmith.x86_64.oauthlib")]
     if repo:
         repos = [
             r
