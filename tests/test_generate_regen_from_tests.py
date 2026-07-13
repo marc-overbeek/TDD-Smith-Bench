@@ -1,4 +1,10 @@
-from scripts.generate_regen_from_tests import _extract_function_rewrites_from_code_block
+from pathlib import Path
+from types import SimpleNamespace
+
+from scripts.generate_regen_from_tests import (
+    _extract_function_rewrites_from_code_block,
+    _generate_combined_patch,
+)
 
 
 class DummyCandidate:
@@ -56,3 +62,25 @@ def foo(y):
     assert extracted[1][0].qualified_name == "foo(str)"
     assert "return x * 2" in extracted[0][1]
     assert "return y + 1" in extracted[1][1]
+
+
+def test_generate_combined_patch_clamps_out_of_range_line_end(tmp_path: Path) -> None:
+    repo_dir = tmp_path
+    file_path = repo_dir / "sample.py"
+    file_path.write_text("print('hello')\n")
+
+    candidate = SimpleNamespace(
+        file_path=str(file_path),
+        line_start=2,
+        line_end=3,
+        indent_level=0,
+        indent_size=4,
+        src_code="print('hello')",
+        name="sample",
+    )
+
+    patch = _generate_combined_patch(repo_dir, [(candidate, "print('bye')\n")], "repo")
+
+    assert patch is not None
+    assert "a/sample.py" in patch
+    assert "b/sample.py" in patch

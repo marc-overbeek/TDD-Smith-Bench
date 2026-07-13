@@ -217,14 +217,18 @@ def _generate_combined_patch(repo_dir: Path, candidate_rewrites: list[tuple], re
         if not change:
             return None
 
-        curr_last_line = modified_lines[candidate.line_end - 1]
+        start_idx = max(0, candidate.line_start - 1)
+        last_idx = min(candidate.line_end - 1, len(modified_lines) - 1)
+        end_idx = min(candidate.line_end, len(modified_lines))
+
+        curr_last_line = modified_lines[last_idx]
         num_newlines = len(curr_last_line) - len(curr_last_line.rstrip("\n"))
         change[-1] = change[-1].rstrip("\n") + "\n" * num_newlines
 
         modified_lines = (
-            modified_lines[: candidate.line_start - 1]
+            modified_lines[:start_idx]
             + change
-            + modified_lines[candidate.line_end :]
+            + modified_lines[end_idx:]
         )
         by_file[file_path] = modified_lines
 
