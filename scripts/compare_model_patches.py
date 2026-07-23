@@ -78,13 +78,16 @@ def _load_validation_reports(repo: str, model_ids: List[str]) -> Dict[str, Dict[
     
     for model_id in model_ids:
         model_results = {}
-        
-        # Scan for report.json files in run_validation directory
-        # (These are keyed by instance_id, not by model_id directly)
-        for report_file in run_val_dir.rglob("report.json"):
+
+        # Prefer model-scoped validation logs, fallback to legacy repo-scoped logs.
+        model_scoped_dir = run_val_dir / model_id
+        search_dir = model_scoped_dir if model_scoped_dir.exists() else run_val_dir
+        for report_file in search_dir.rglob("report.json"):
             try:
                 report = json.loads(report_file.read_text())
                 instance_id = report_file.parent.name
+                if search_dir == run_val_dir and f"__model_{model_id}__" not in instance_id:
+                    continue
                 model_results[instance_id] = report
             except Exception as e:
                 logger.warning(f"Failed to load validation report from {report_file}: {e}")
@@ -132,6 +135,8 @@ def compare_models(repo: str, model_dirs: List[str] | None = None) -> None:
             "total_patches": len(patches),
             "total_metadata": len(metadata),
         }
+
+    validation_data = _load_validation_reports(repo, list(model_data.keys()))
     
     # Calculate statistics
     logger.info("\n" + "="*80)
@@ -145,6 +150,8 @@ def compare_models(repo: str, model_dirs: List[str] | None = None) -> None:
         logger.info(f"\n{model_id}:")
         logger.info(f"  Total patches: {data['total_patches']}")
         logger.info(f"  Total metadata: {data['total_metadata']}")
+        model_validation = validation_data.get(model_id, {})
+        logger.info(f"  Validation reports: {len(model_validation)}")
         
         total_cost = 0.0
         strategies = defaultdict(int)
@@ -160,6 +167,17 @@ def compare_models(repo: str, model_dirs: List[str] | None = None) -> None:
         total_costs[model_id] = total_cost
         logger.info(f"  Total cost: ${total_cost:.4f}")
         logger.info(f"  Strategies: {dict(strategies)}")
+
+        if model_validation:
+            timeout_count = sum(1 for r in model_validation.values() if r.get("timed_out"))
+            f2p_nonempty = sum(
+                1
+                for r in model_validation.values()
+                if isinstance(r.get("FAIL_TO_PASS"), list) and len(r.get("FAIL_TO_PASS")) > 0
+            )
+            logger.info(
+                f"  Validation outcomes: timed_out={timeout_count}, fail_to_pass_nonempty={f2p_nonempty}"
+            )
     
     # Compare costs
     logger.info("\n" + "="*80)

@@ -35,7 +35,12 @@ from swesmith.profiles import registry
 
 def print_report(log_dir: Path) -> None:
     time_outs, f2p_none, f2p_some, other = 0, 0, 0, 0
-    for folder in os.listdir(log_dir):
+    instance_dirs = [
+        folder
+        for folder in os.listdir(log_dir)
+        if (log_dir / folder).is_dir()
+    ]
+    for folder in instance_dirs:
         if LOG_REPORT in os.listdir(log_dir / folder):
             with open(log_dir / folder / LOG_REPORT, "r") as f:
                 report = json.load(f)
@@ -47,7 +52,7 @@ def print_report(log_dir: Path) -> None:
                 f2p_none += 1
             else:
                 other += 1
-    print(f"Total instances: {len(os.listdir(log_dir))}")
+    print(f"Total instances: {len(instance_dirs)}")
     print(f"- Timed out: {time_outs}")
     print(f"- Fail to pass: 0 ({f2p_none}); 1+ ({f2p_some})")
     print(f"- Other: {other}")
@@ -64,8 +69,12 @@ def run_validation(instance: dict) -> dict:
         status can be: 'timeout', 'fail', '0_f2p', '1+_f2p'
     """
     instance_id = instance[KEY_INSTANCE_ID]
+    run_id = instance.get("_validation_run_id", instance["repo"])
+    log_base = Path(instance.get("_validation_log_base", LOG_DIR_RUN_VALIDATION))
+    valid_folder = Path(
+        instance.get("_validation_folder", LOG_DIR_RUN_VALIDATION / instance["repo"])
+    )
     rp = registry.get_from_inst(instance)
-    valid_folder = LOG_DIR_RUN_VALIDATION / instance["repo"]
     val_postgold_path = (
         valid_folder / f"{instance['repo']}{REF_SUFFIX}" / LOG_TEST_OUTPUT
     )
@@ -75,8 +84,8 @@ def run_validation(instance: dict) -> dict:
         ref_inst_id = f"{instance[KEY_INSTANCE_ID]}{REF_SUFFIX}"
         logger, timed_out = run_patch_in_container(
             {**instance, KEY_INSTANCE_ID: ref_inst_id},
-            instance["repo"],
-            LOG_DIR_RUN_VALIDATION,
+            run_id,
+            log_base,
             rp.timeout,
         )
         close_logger(logger)
@@ -101,14 +110,15 @@ def run_validation(instance: dict) -> dict:
 
     logger, timed_out = run_patch_in_container(
         instance,
-        instance["repo"],
-        LOG_DIR_RUN_VALIDATION,
+        run_id,
+        log_base,
         rp.timeout,
         patch=instance[KEY_PATCH],
     )
 
     if timed_out:
         logger.info(f"Timed out for {instance_id}.")
+        report_path.parent.mkdir(parents=True, exist_ok=True)
         with open(report_path, "w") as f:
             f.write(json.dumps({KEY_TIMED_OUT: True, "timeout": rp.timeout}, indent=4))
         close_logger(logger)
@@ -117,6 +127,7 @@ def run_validation(instance: dict) -> dict:
     val_pregold_path = valid_folder / instance_id / LOG_TEST_OUTPUT
     if not val_pregold_path.exists():
         logger.info(f"Pre-gold for {instance_id} failed to run. Exiting early.")
+        report_path.parent.mkdir(parents=True, exist_ok=True)
         with open(report_path, "w") as f:
             f.write(
                 json.dumps(
@@ -125,6 +136,14 @@ def run_validation(instance: dict) -> dict:
             )
         close_logger(logger)
         return {"status": "fail"}
+
+    # Fall back to repo-root reference if model-scoped reference doesn't exist
+    # (for backward compatibility when validation uses model-specific output_subdir)
+    if not val_postgold_path.exists():
+        repo_root_postgold_path = LOG_DIR_RUN_VALIDATION / instance["repo"] / f"{instance['repo']}{REF_SUFFIX}" / LOG_TEST_OUTPUT
+        if repo_root_postgold_path.exists():
+            val_postgold_path = repo_root_postgold_path
+            logger.info(f"Using repo-root reference output for {instance_id}")
 
     # Get report from test output
     logger.info(f"Grading answer for {instance_id}...")
@@ -136,6 +155,7 @@ def run_validation(instance: dict) -> dict:
     logger.info(f"Report: {json.dumps(report)}")
 
     # Write report to report.json
+    report_path.parent.mkdir(parents=True, exist_ok=True)
     with open(report_path, "w") as f:
         f.write(json.dumps(report, indent=4))
 
@@ -151,6 +171,7 @@ def main(
     bug_patches: str,
     workers: int,
     redo_existing: bool = False,
+    output_subdir: str | None = None,
 ) -> None:
     # Bug patch should be a dict that looks like this:
     # {
@@ -173,9 +194,13 @@ def main(
     completed = []
     for repo in set([bp["repo"] for bp in bug_patches]):
         log_dir_parent = LOG_DIR_RUN_VALIDATION / repo
+        if output_subdir:
+            log_dir_parent = log_dir_parent / output_subdir
         log_dir_parent.mkdir(parents=True, exist_ok=True)
         if not redo_existing and log_dir_parent.exists():
             for folder in os.listdir(log_dir_parent):
+                if not (log_dir_parent / folder).is_dir():
+                    continue
                 # Identify completed instances (does report.json exist)
                 log_report_path = log_dir_parent / folder / LOG_REPORT
                 if log_report_path.exists():
@@ -199,14 +224,17 @@ def main(
     for repo, repo_bug_patches in repo_to_bug_patches.items():
         rp = registry.get(repo)
         ref_inst = f"{rp.repo_name}{REF_SUFFIX}"
-        ref_dir = LOG_DIR_RUN_VALIDATION / repo / ref_inst
+        repo_log_root = LOG_DIR_RUN_VALIDATION / repo
+        run_id = output_subdir if output_subdir else repo
+        valid_folder = repo_log_root / output_subdir if output_subdir else repo_log_root
+        ref_dir = valid_folder / ref_inst
         if not rp.min_pregold and not os.path.exists(ref_dir):
             # Run pytest for each repo/commit to get pre-gold behavior.
             print(f"Running pre-gold for {repo}...")
             logger, timed_out = run_patch_in_container(
                 {KEY_INSTANCE_ID: ref_inst},
-                repo,
-                LOG_DIR_RUN_VALIDATION,
+                run_id,
+                repo_log_root,
                 rp.timeout_ref,
             )
             close_logger(logger)
@@ -220,7 +248,16 @@ def main(
 
         # Add payloads
         for bug_patch in repo_bug_patches:
-            payloads.append((bug_patch,))
+            payloads.append(
+                (
+                    {
+                        **bug_patch,
+                        "_validation_run_id": run_id,
+                        "_validation_log_base": str(repo_log_root),
+                        "_validation_folder": str(valid_folder),
+                    },
+                )
+            )
 
     # Check if we have any payloads to process
     if len(payloads) == 0:
@@ -268,6 +305,12 @@ if __name__ == "__main__":
         "--redo_existing",
         action="store_true",
         help="Redo completed validation instances.",
+    )
+    parser.add_argument(
+        "--output_subdir",
+        type=str,
+        default=None,
+        help="Optional subdirectory under logs/run_validation/<repo>/ for writing validation logs.",
     )
     args = parser.parse_args()
     main(**vars(args))

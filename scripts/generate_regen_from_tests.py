@@ -99,7 +99,11 @@ def _get_base_hash(repo: str, instance_id: str) -> str:
     return instance_id
 
 
-def _regen_instance_id(repo: str, base_hash: str, attempt: int) -> str:
+def _regen_instance_id(
+    repo: str, base_hash: str, attempt: int, model_id: str | None = None
+) -> str:
+    if model_id:
+        return f"{repo}.lm_regen_from_tests__{base_hash}__model_{model_id}__attempt_{attempt}"
     return f"{repo}.lm_regen_from_tests__{base_hash}__attempt_{attempt}"
 
 
@@ -405,21 +409,23 @@ def _write_patches_json(patches: list[dict], path: Path) -> None:
         json.dump(patches, f, indent=4)
 
 
-def _validate_patches(patches_file: Path, workers: int) -> None:
-    subprocess.run(
-        [
-            "uv",
-            "run",
-            "python",
-            "-m",
-            "swesmith.harness.valid",
-            str(patches_file),
-            "--workers",
-            str(workers),
-            "--redo_existing",
-        ],
-        check=True,
-    )
+def _validate_patches(
+    patches_file: Path, workers: int, output_subdir: str | None = None
+) -> None:
+    cmd = [
+        "uv",
+        "run",
+        "python",
+        "-m",
+        "swesmith.harness.valid",
+        str(patches_file),
+        "--workers",
+        str(workers),
+        "--redo_existing",
+    ]
+    if output_subdir:
+        cmd.extend(["--output_subdir", output_subdir])
+    subprocess.run(cmd, check=True)
 
 
 def main(
@@ -473,6 +479,7 @@ def main(
 
     fn_map = json.loads(map_path.read_text())
     run_val_dir = Path("logs/run_validation") / repo
+    regen_run_val_dir = run_val_dir / model_id
 
     log_dir = LOG_DIR_BUG_GEN / repo / model_id
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -744,7 +751,9 @@ def main(
                 if k in prompt_configs
             ]
 
-            regen_instance_id = _regen_instance_id(repo, base_hash, attempt)
+            regen_instance_id = _regen_instance_id(
+                repo, base_hash, attempt, model_id=model_id
+            )
             tqdm.write(
                 f"Generating fix for {regen_instance_id} with {len(broken_test_details)} broken tests..."
             )
@@ -766,7 +775,17 @@ def main(
             uuid_str = f"{strategy_name}__{base_hash}"
             expected_patch_path = func_dir / f"{PREFIX_BUG}__{uuid_str}.diff"
             if expected_patch_path.exists():
-                tqdm.write(f"Skipping {regen_instance_id}, patch already exists at {expected_patch_path}")
+                patch = expected_patch_path.read_text()
+                current_patches.append(
+                    {
+                        KEY_INSTANCE_ID: regen_instance_id,
+                        KEY_PATCH: patch,
+                        "repo": repo,
+                    }
+                )
+                tqdm.write(
+                    f"Skipping generation for {regen_instance_id}, reusing existing patch at {expected_patch_path}"
+                )
                 continue
 
             try:
@@ -895,16 +914,27 @@ def main(
             break
 
         _write_patches_json(current_patches, patches_file)
-        _validate_patches(patches_file, workers)
+        _validate_patches(patches_file, workers, output_subdir=model_id)
 
         remaining = []
         for broken_info in broken_candidates:
             base_hash = broken_info["base_hash"]
-            regen_instance_id = _regen_instance_id(repo, base_hash, attempt)
-            report_path = run_val_dir / regen_instance_id / "report.json"
+            regen_instance_id = _regen_instance_id(
+                repo, base_hash, attempt, model_id=model_id
+            )
+            report_path = regen_run_val_dir / regen_instance_id / "report.json"
             if not report_path.exists():
-                remaining.append(broken_info)
-                continue
+                # Backward compatibility for runs written directly under repo root.
+                report_path = run_val_dir / regen_instance_id / "report.json"
+            if not report_path.exists():
+                # Backward compatibility for older runs that used model-agnostic instance IDs.
+                legacy_instance_id = _regen_instance_id(repo, base_hash, attempt)
+                report_path = regen_run_val_dir / legacy_instance_id / "report.json"
+                if not report_path.exists():
+                    report_path = run_val_dir / legacy_instance_id / "report.json"
+                if not report_path.exists():
+                    remaining.append(broken_info)
+                    continue
             report = json.loads(report_path.read_text())
             if len(report.get(FAIL_TO_PASS, [])) > 0:
                 remaining.append(broken_info)
