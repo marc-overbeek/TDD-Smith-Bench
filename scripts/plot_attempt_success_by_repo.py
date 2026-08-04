@@ -4,7 +4,11 @@ Usage:
   uv run python scripts/plot_attempt_success_by_repo.py
 
 By default this script reads all *_test_comparison.json files from results/ and
-creates one grouped bar chart per repo in results/attempt_success_graphs/.
+creates three grouped bar charts per repo in repo-specific subfolders under
+results/attempt_success_graphs/:
+- all tasks
+- single tasks only
+- combined tasks only
 """
 
 import argparse
@@ -21,6 +25,7 @@ import matplotlib.pyplot as plt
 
 ATTEMPTS = (1, 2)
 RESULT_SUFFIX = "_test_comparison.json"
+TASK_FILTERS = ("all", "single", "combined")
 
 
 def parse_results_filename(path: Path) -> tuple[str, str] | None:
@@ -66,8 +71,16 @@ def is_success(attempt_data: dict, empty_fails_count: int, success_metric: str) 
     return fixed_count == empty_fails_count
 
 
-def gather_attempt_stats(results_dir: Path, success_metric: str) -> dict:
+def task_group(function_name: str) -> str:
+    """Classify a task as single or combined based on function prefix."""
+    return "combined" if function_name.startswith("combined:") else "single"
+
+
+def gather_attempt_stats(results_dir: Path, success_metric: str, task_filter: str = "all") -> dict:
     """Collect cumulative success/total counts for attempts 1 and 2 by (repo, model)."""
+    if task_filter not in TASK_FILTERS:
+        raise ValueError(f"Unsupported task filter: {task_filter}")
+
     stats = defaultdict(
         lambda: defaultdict(
             lambda: {
@@ -94,6 +107,13 @@ def gather_attempt_stats(results_dir: Path, success_metric: str) -> dict:
 
         for entry in entries:
             if not isinstance(entry, dict):
+                continue
+
+            function_name = entry.get("function")
+            if not isinstance(function_name, str):
+                continue
+
+            if task_filter != "all" and task_group(function_name) != task_filter:
                 continue
 
             empty_fails_count = entry.get("empty_fails_count", 0)
@@ -148,7 +168,47 @@ def sanitize_filename(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]", "_", name)
 
 
-def plot_repo(repo: str, model_stats: dict, output_dir: Path, success_metric: str) -> Path:
+def combine_repo_stats(stats_by_repo: dict, exclude_prefixes: tuple[str, ...] = ()) -> dict:
+    """Combine per-repo stats into one model-level aggregate, with optional repo exclusions."""
+    combined = defaultdict(
+        lambda: {
+            1: {"success": 0, "total": 0},
+            2: {"success": 0, "total": 0},
+        }
+    )
+
+    for repo, repo_stats in stats_by_repo.items():
+        if any(repo.startswith(prefix) for prefix in exclude_prefixes):
+            continue
+
+        for model, model_attempts in repo_stats.items():
+            for attempt in ATTEMPTS:
+                combined[model][attempt]["success"] += model_attempts[attempt]["success"]
+                combined[model][attempt]["total"] += model_attempts[attempt]["total"]
+
+    if not combined:
+        return {}
+
+    # Keep denominator consistent across models for side-by-side comparison.
+    max_total = 0
+    for model_attempts in combined.values():
+        max_total = max(max_total, model_attempts[1]["total"], model_attempts[2]["total"])
+
+    if max_total > 0:
+        for model_attempts in combined.values():
+            model_attempts[1]["total"] = max_total
+            model_attempts[2]["total"] = max_total
+
+    return dict(combined)
+
+
+def plot_repo(
+    repo: str,
+    model_stats: dict,
+    output_path: Path,
+    success_metric: str,
+    scope_label: str,
+) -> Path:
     """Create one grouped bar chart for a single repo."""
     models = sorted(model_stats.keys())
     display_repo = format_repo_label(repo)
@@ -189,7 +249,9 @@ def plot_repo(repo: str, model_stats: dict, output_dir: Path, success_metric: st
             )
 
     metric_label = "Any Fix" if success_metric == "any" else "Full Fix"
-    ax.set_title(f"{display_repo}: Cumulative Attempt Success Rate by Model ({metric_label})")
+    ax.set_title(
+        f"{display_repo}: Cumulative Attempt Success Rate by Model ({metric_label}, {scope_label})"
+    )
     ax.set_ylabel("Success Rate (%)")
     ax.set_xlabel("Model")
     ax.set_ylim(0, 100)
@@ -200,7 +262,6 @@ def plot_repo(repo: str, model_stats: dict, output_dir: Path, success_metric: st
 
     plt.tight_layout()
 
-    output_path = output_dir / f"{sanitize_filename(repo)}_attempt_success.png"
     fig.savefig(output_path, dpi=180, bbox_inches="tight")
     plt.close(fig)
     return output_path
@@ -235,15 +296,91 @@ def main() -> None:
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    stats = gather_attempt_stats(args.results_dir, args.success_metric)
-    if not stats:
+    all_stats = gather_attempt_stats(args.results_dir, args.success_metric, task_filter="all")
+    single_stats = gather_attempt_stats(args.results_dir, args.success_metric, task_filter="single")
+    combined_stats = gather_attempt_stats(args.results_dir, args.success_metric, task_filter="combined")
+
+    if not all_stats:
         print("No result files found or no attempt data available.")
         return
 
     generated = []
-    for repo in sorted(stats.keys()):
-        output_path = plot_repo(repo, stats[repo], args.output_dir, args.success_metric)
-        generated.append(output_path)
+    for repo in sorted(all_stats.keys()):
+        repo_dir = args.output_dir / sanitize_filename(repo)
+        repo_dir.mkdir(parents=True, exist_ok=True)
+
+        generated.append(
+            plot_repo(
+                repo,
+                all_stats[repo],
+                repo_dir / f"{sanitize_filename(repo)}_attempt_success.png",
+                args.success_metric,
+                "All Tasks",
+            )
+        )
+
+        if repo in single_stats:
+            generated.append(
+                plot_repo(
+                    repo,
+                    single_stats[repo],
+                    repo_dir / f"{sanitize_filename(repo)}_attempt_success_single.png",
+                    args.success_metric,
+                    "Single Tasks",
+                )
+            )
+
+        if repo in combined_stats:
+            generated.append(
+                plot_repo(
+                    repo,
+                    combined_stats[repo],
+                    repo_dir / f"{sanitize_filename(repo)}_attempt_success_combined.png",
+                    args.success_metric,
+                    "Combined Tasks",
+                )
+            )
+
+    combined_category_name = "combined_excluding_pyupio"
+    combined_all = combine_repo_stats(all_stats, exclude_prefixes=("pyupio__",))
+    combined_single = combine_repo_stats(single_stats, exclude_prefixes=("pyupio__",))
+    combined_combined = combine_repo_stats(combined_stats, exclude_prefixes=("pyupio__",))
+
+    if combined_all:
+        combined_dir = args.output_dir / combined_category_name
+        combined_dir.mkdir(parents=True, exist_ok=True)
+
+        generated.append(
+            plot_repo(
+                combined_category_name,
+                combined_all,
+                combined_dir / f"{combined_category_name}_attempt_success.png",
+                args.success_metric,
+                "All Tasks",
+            )
+        )
+
+        if combined_single:
+            generated.append(
+                plot_repo(
+                    combined_category_name,
+                    combined_single,
+                    combined_dir / f"{combined_category_name}_attempt_success_single.png",
+                    args.success_metric,
+                    "Single Tasks",
+                )
+            )
+
+        if combined_combined:
+            generated.append(
+                plot_repo(
+                    combined_category_name,
+                    combined_combined,
+                    combined_dir / f"{combined_category_name}_attempt_success_combined.png",
+                    args.success_metric,
+                    "Combined Tasks",
+                )
+            )
 
     print(f"Generated {len(generated)} graph(s):")
     for path in generated:
