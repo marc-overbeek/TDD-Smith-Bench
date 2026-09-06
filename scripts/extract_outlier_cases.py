@@ -2,8 +2,8 @@
 """Select patch-metric outliers and map each case across models.
 
 This script identifies the top N global outliers by absolute net LOC change and
-absolute complexity change from results/metrics/*_patch_metrics.json, then maps
-each selected outlier case to all available models.
+absolute negative complexity change from results/metrics/*_patch_metrics.json,
+then maps each selected outlier case to all available models.
 
 For each model-case pair, the script attaches:
 - metric deltas
@@ -277,7 +277,12 @@ def select_outliers(rows: list[dict[str, Any]], top_n: int) -> tuple[list[dict[s
     loc_candidates = [r for r in rows if isinstance(r.get("net_loc_change"), (int, float))]
     loc_outliers = select_top_distinct_repo(loc_candidates, "net_loc_change", top_n)
 
-    complexity_candidates = [r for r in rows if isinstance(r.get("complexity_change"), (int, float))]
+    complexity_candidates = [
+        r
+        for r in rows
+        if isinstance(r.get("complexity_change"), (int, float))
+        and r["complexity_change"] < 0
+    ]
     complexity_outliers = select_top_distinct_repo(
         complexity_candidates, "complexity_change", top_n
     )
@@ -595,6 +600,7 @@ def main() -> None:
         "config": {
             "top_n": args.top_n,
             "sort_policy": "absolute_magnitude",
+            "complexity_filter": "strictly_negative",
             "scope": "global",
             "attempt_policy": "outlier_row_attempt",
             "excluded_repos": sorted(excluded_repos),
