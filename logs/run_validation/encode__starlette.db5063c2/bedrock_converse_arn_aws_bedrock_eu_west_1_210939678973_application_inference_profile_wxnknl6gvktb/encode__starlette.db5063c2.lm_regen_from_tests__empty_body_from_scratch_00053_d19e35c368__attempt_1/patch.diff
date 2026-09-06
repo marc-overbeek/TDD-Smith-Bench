@@ -1,0 +1,14 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -364,7 +364,10 @@
+         *args: MultiDict | typing.Mapping[typing.Any, typing.Any] | list[tuple[typing.Any, typing.Any]],
+         **kwargs: typing.Any,
+     ) -> None:
+-        value = MultiDict(*args, **kwargs)
++        if args:
++            value = MultiDict(args[0], **kwargs)
++        else:
++            value = MultiDict(kwargs)
+         existing_items = [(k, v) for (k, v) in self._list if k not in value.keys()]
+         self._list = existing_items + value.multi_items()
+         self._dict.update(value)

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, I need to implement the `verify_rsa_sha512` function. Based on the pattern of other verify functions in the code, this function should call the generic `_verify_rsa` function with the appropriate hash algorithm name.\n\nLet me examine the existing implementations:\n- `verify_rsa_sha1` calls `_verify_rsa('SHA-1', request, rsa_public_key)`\n- `verify_rsa_sha256` calls `_verify_rsa('SHA-256', request, rsa_public_key)`\n\nSo `verify_rsa_sha512` should call `_verify_rsa('SHA-512', request, rsa_public_key)`.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "Looking at the failing tests, I need to implement the `verify_rsa_sha512` function. Based on the pattern of other verify functions in the code, this function should call the generic `_verify_rsa` function with the appropriate hash algorithm name.\n\nLet me examine the existing implementations:\n- `verify_rsa_sha1` calls `_verify_rsa('SHA-1', request, rsa_public_key)`\n- `verify_rsa_sha256` calls `_verify_rsa('SHA-256', request, rsa_public_key)`\n\nSo `verify_rsa_sha512` should call `_verify_rsa('SHA-512', request, rsa_public_key)`.\n\n```\ndef verify_rsa_sha512(request, rsa_public_key: str):\n    return _verify_rsa('SHA-512', request, rsa_public_key)\n```",
+  "rewrite": "def verify_rsa_sha512(request, rsa_public_key: str):\n    return _verify_rsa('SHA-512', request, rsa_public_key)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

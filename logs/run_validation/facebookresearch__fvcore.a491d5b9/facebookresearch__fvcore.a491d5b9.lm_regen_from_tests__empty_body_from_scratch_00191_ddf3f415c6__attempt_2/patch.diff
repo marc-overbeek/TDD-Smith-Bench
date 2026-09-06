@@ -1,0 +1,38 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -292,8 +292,34 @@
+         return x
+ 
+     def __getattribute__(self, name: str):
+-        # use __getattribute__ to win priority over any registered dtypes
+         if name.startswith("apply_"):
++            # Check if this apply_* method exists on the class or instance
++            try:
++                super().__getattribute__(name)
++            except AttributeError:
++                raise AttributeError(f"{type(self).__name__} object has no attribute '{name}'")
++            return lambda x: self._apply(x, name)
++        return super().__getattribute__(name)
++
++    def __getattribute__(self, name: str):
++        if name.startswith("apply_"):
++            # Verify the method exists by trying to get it from the parent
++            try:
++                super().__getattribute__(name)
++            except AttributeError:
++                raise AttributeError(f"{type(self).__name__} object has no attribute '{name}'")
++            # Return a lambda that will apply this method to all transforms
++            return lambda x: self._apply(x, name)
++        return super().__getattribute__(name)
++
++    def __getattribute__(self, name: str):
++        if name.startswith("apply_"):
++            # Verify the method exists before returning the lambda
++            try:
++                super().__getattribute__(name)
++            except AttributeError:
++                raise AttributeError(f"{type(self).__name__} object has no attribute '{name}'")
++            # Return a lambda that will apply this method to all transforms
+             return lambda x: self._apply(x, name)
+         return super().__getattribute__(name)
+ 

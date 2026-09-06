@@ -1,0 +1,31 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -444,26 +444,8 @@
+         self._warn_trace = mode
+         return self
+ 
+-    def ancestor_mode(self: T, mode: str) -> T:
+-        """
+-        Sets how to determine the ancestor modules of an operator. Must be one of
+-        "owner" or "caller".
+-
+-        * "caller": an operator belongs to all modules that is currently executing
+-          `forward()` at the time the operator is called.
+-        * "owner": an operator belongs to the last module that's executing
+-          `forward()` at the time the operator is called, plus this module's recursive
+-          parents.  If an module has multiple parents (e.g. a shared module), only one
+-          will be picked.
+-
+-        For most cases, a module only calls submodules it owns, so both options would
+-        work identically. In certain edge cases, this option will affect the hierarchy
+-        of results, but won't affect the total count.
+-        """
+-        if mode not in ["owner", "caller"]:
+-            raise ValueError(f"Unrecognized ancestor mode: {mode}")
+-        self._ancestor_mode = mode
+-        return self
++    def ancestor_mode(self: T, mode: str) ->T:
++        pass
+ 
+     def unsupported_ops_warnings(self: T, enabled: bool) -> T:
+         """

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the test, `add_elevation` on the `GPX` class needs to iterate through all tracks and call `add_elevation` on each track. The current implementation is just `pass`.\n\nLooking at the existing code, I can see that `GPXTrack.add_elevation` and `GPXTrackSegment.add_elevation` are already implemented. The `GPX.add_elevation` method just needs to delegate to each track.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the test, `add_elevation` on the `GPX` class needs to iterate through all tracks and call `add_elevation` on each track. The current implementation is just `pass`.\n\nLooking at the existing code, I can see that `GPXTrack.add_elevation` and `GPXTrackSegment.add_elevation` are already implemented. The `GPX.add_elevation` method just needs to delegate to each track.\n\n```\ndef add_elevation(self, delta: float) -> None:\n        \"\"\"\n        Adjusts elevation data of GPX data.\n\n        Parameters\n        ----------\n        delta : float\n            Elevation delta in meters to apply to GPX data\n        \"\"\"\n        for track in self.tracks:\n            track.add_elevation(delta)\n```",
+  "rewrite": "def add_elevation(self, delta: float) -> None:\n        \"\"\"\n        Adjusts elevation data of GPX data.\n\n        Parameters\n        ----------\n        delta : float\n            Elevation delta in meters to apply to GPX data\n        \"\"\"\n        for track in self.tracks:\n            track.add_elevation(delta)",
+  "strategy": "lm_regen_from_tests"
+}

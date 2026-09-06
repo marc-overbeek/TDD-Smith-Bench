@@ -1,0 +1,14 @@
+--- a/fvcore/nn/weight_init.py
++++ b/fvcore/nn/weight_init.py
+@@ -31,9 +31,8 @@
+     Args:
+         module (torch.nn.Module): module to initialize.
+     """
+-    # pyre-fixme[6]: For 1st argument expected `Tensor` but got `Union[Module, Tensor]`.
++    # Caffe2 implementation of MSRAFill in fact
++    # corresponds to kaiming_normal_ in PyTorch
+     nn.init.kaiming_normal_(module.weight, mode="fan_out", nonlinearity="relu")
+     if module.bias is not None:
+-        # pyre-fixme[6]: For 1st argument expected `Tensor` but got `Union[Module,
+-        #  Tensor]`.
+         nn.init.constant_(module.bias, 0)

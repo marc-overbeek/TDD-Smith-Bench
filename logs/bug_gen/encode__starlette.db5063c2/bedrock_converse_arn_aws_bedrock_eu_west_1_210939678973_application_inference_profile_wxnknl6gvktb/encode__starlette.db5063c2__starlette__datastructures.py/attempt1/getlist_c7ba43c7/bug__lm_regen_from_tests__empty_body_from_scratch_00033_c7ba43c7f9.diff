@@ -1,0 +1,24 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -275,6 +275,21 @@
+ 
+         self._dict = {k: v for k, v in _items}
+         self._list = _items
++
++    q = QueryParams('a=123&a=456&b=789')
++    assert q.getlist('a') == ['123', '456']
++
++    form = FormData([('a', '123'), ('a', '456'), ('b', upload)])
++    assert form.getlist('a') == ['123', '456']
++
++    q = MultiDict([('a', '123'), ('a', '456'), ('b', '789')])
++    assert q.getlist('a') == ['123', '456']
++
++    def getlist(self, key: typing.Any) -> list[_CovariantValueType]:
++        return [item_value for item_key, item_value in self._list if item_key == key]
++
++    def getlist(self, key: typing.Any) ->list[_CovariantValueType]:
++        pass
+ 
+     def getlist(self, key: typing.Any) -> list[_CovariantValueType]:
+         return [item_value for item_key, item_value in self._list if item_key == key]

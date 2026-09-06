@@ -1,0 +1,200 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -40,38 +40,15 @@
+     return mirror.startswith("http://") or mirror.startswith("https://")
+ 
+ 
+-def is_supported_by_parser(path: str) -> bool:
+-    """
+-    Check if the file path is supported by the parser.
+-
+-    Args:
+-        path (str): The file path.
+-
+-    Returns:
+-        bool: True if the file path is supported, False otherwise.
+-    """
+-    supported_types = (".txt", ".in", ".yml", ".ini", "Pipfile",
+-                       "Pipfile.lock", "setup.cfg", "poetry.lock")
+-    return path.endswith(supported_types)
+-
+-
+-def parse_requirement(dep: Any, found: str) -> SafetyRequirement:
+-    """
+-    Parse a requirement.
+-
+-    Args:
+-        dep (Any): The dependency.
+-        found (str): The location where the dependency was found.
+-
+-    Returns:
+-        SafetyRequirement: The parsed requirement.
+-    """
+-    req = SafetyRequirement(dep)
+-    req.found = found
+-
+-    if req.specifier == SpecifierSet(''):
+-        req.specifier = SpecifierSet('>=0')
+-
++def is_supported_by_parser(path: str) ->bool:
++    supported = [filetypes.requirements_txt, filetypes.conda_yml,
++                 filetypes.tox_ini, filetypes.pipfile]
++    return any(path.endswith(ft) for ft in supported)
++
++
++def parse_requirement(dep: Any, found: str) ->SafetyRequirement:
++    extras = dep.extras if hasattr(dep, 'extras') else []
++    req = SafetyRequirement(dep.name + str(dep.specifier), found=found)
+     return req
+ 
+ 
+@@ -98,58 +75,97 @@
+     return ver
+ 
+ 
+-def read_requirements(fh: Any, resolve: bool = True) -> Generator[Package, None, None]:
+-    """
+-    Reads requirements from a file-like object and (optionally) from referenced files.
+-
+-    Args:
+-        fh (Any): The file-like object to read from.
+-        resolve (bool): Resolves referenced files.
+-
+-    Returns:
+-        Generator: Yields Package objects.
+-    """
+-    is_temp_file = not hasattr(fh, 'name')
+-    path = None
+-    found = 'temp_file'
+-    file_type = filetypes.requirements_txt
+-    absolute_path: Optional[str] = None
+-
+-    if not is_temp_file and is_supported_by_parser(fh.name):
+-        LOG.debug('not temp and a compatible file')
+-        path = fh.name
+-        absolute_path = os.path.abspath(path)
+-        SafetyContext().scanned_full_path.append(absolute_path)
+-        found = path
+-        file_type = None
+-
+-    LOG.debug(f'Path: {path}')
+-    LOG.debug(f'File Type: {file_type}')
+-    LOG.debug('Trying to parse file using dparse...')
+-    content = fh.read()
+-    LOG.debug(f'Content: {content}')
+-    dependency_file = parse(content, path=path, resolve=resolve,
+-                            file_type=file_type)
+-    LOG.debug(f'Dependency file: {dependency_file.serialize()}')
+-    LOG.debug(f'Parsed, dependencies: {[dep.serialize() for dep in dependency_file.resolved_dependencies]}')
+-
+-    reqs_pkg = defaultdict(list)
+-
+-    for req in dependency_file.resolved_dependencies:
+-        reqs_pkg[canonicalize_name(req.name)].append(req)
+-
+-    for pkg, reqs in reqs_pkg.items():
+-        requirements = list(map(lambda req: parse_requirement(req, absolute_path), reqs))
+-        version = find_version(requirements)
+-
+-        yield Package(name=pkg, version=version,
+-                      requirements=requirements,
+-                      found=found,
+-                      absolute_path=absolute_path,
+-                      insecure_versions=[],
+-                      secure_versions=[], latest_version=None,
+-                      latest_version_without_known_vulnerabilities=None,
+-                      more_info_url=None)
++def read_requirements(fh: Any, resolve: bool=True) ->Generator[Package,
++    None, None]:
++    
++    packages = {}
++    req_files = []
++    
++    is_file = hasattr(fh, 'name')
++    path = fh.name if is_file else 'requirements.txt'
++    
++    if is_supported_by_parser(path):
++        content = fh.read()
++        df = parse(content, file_type=path)
++        for dep in df.dependencies:
++            if dep.name:
++                name = canonicalize_name(dep.name)
++                req = parse_requirement(dep, found=path)
++                if name not in packages:
++                    packages[name] = Package(
++                        name=dep.name,
++                        version=None,
++                        requirements=[req],
++                        found=path,
++                        insecure_versions=[],
++                        secure_versions=[],
++                        latest_version=None,
++                        latest_version_without_known_vulnerabilities=None,
++                        more_info_url=None
++                    )
++                else:
++                    packages[name].requirements.append(req)
++        
++        for dep in df.resolved_dependencies if hasattr(df, 'resolved_dependencies') else []:
++            pass
++    else:
++        content = fh.read()
++        if hasattr(content, 'decode'):
++            content = content.decode('utf-8')
++        
++        for line in content.splitlines():
++            line = line.strip()
++            if not line or line.startswith('#'):
++                continue
++            
++            if line.startswith('-r ') or line.startswith('--requirement '):
++                if resolve and is_file:
++                    req_file = line.split(None, 1)[1].strip()
++                    base_dir = os.path.dirname(os.path.abspath(path))
++                    req_file_path = os.path.join(base_dir, req_file)
++                    try:
++                        with open(req_file_path) as f:
++                            for pkg in read_requirements(f, resolve=resolve):
++                                name = canonicalize_name(pkg.name)
++                                if name not in packages:
++                                    packages[name] = pkg
++                                else:
++                                    packages[name].requirements.extend(pkg.requirements)
++                    except Exception as e:
++                        LOG.debug(f'Failed to read requirement file {req_file_path}: {e}')
++                continue
++            
++            if line.startswith('-') or line.startswith('http://') or line.startswith('https://') or line.startswith('git+'):
++                continue
++            
++            if line.startswith('-e ') or '#egg=' in line:
++                continue
++            
++            try:
++                req = SafetyRequirement(line, found=path)
++                if req.name:
++                    name = canonicalize_name(req.name)
++                    if name not in packages:
++                        packages[name] = Package(
++                            name=req.name,
++                            version=None,
++                            requirements=[req],
++                            found=path,
++                            insecure_versions=[],
++                            secure_versions=[],
++                            latest_version=None,
++                            latest_version_without_known_vulnerabilities=None,
++                            more_info_url=None
++                        )
++                    else:
++                        packages[name].requirements.append(req)
++            except Exception as e:
++                LOG.debug(f'Failed to parse requirement {line}: {e}')
++                continue
++    
++    for name, pkg in packages.items():
++        pkg.version = find_version(pkg.requirements)
++        yield pkg
+ 
+ 
+ def get_proxy_dict(proxy_protocol: str, proxy_host: str, proxy_port: int) -> Optional[Dict[str, str]]:

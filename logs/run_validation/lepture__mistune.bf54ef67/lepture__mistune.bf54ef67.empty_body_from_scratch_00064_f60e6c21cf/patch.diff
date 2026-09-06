@@ -1,0 +1,22 @@
+--- a/src/mistune/inline_parser.py
++++ b/src/mistune/inline_parser.py
+@@ -226,17 +226,8 @@
+         self._add_auto_link(text, text, state)
+         return pos
+ 
+-    def parse_auto_email(self, m: Match[str], state: InlineState) -> int:
+-        text = m.group(0)
+-        pos = m.end()
+-        if state.in_link:
+-            self.process_text(text, state)
+-            return pos
+-
+-        text = text[1:-1]
+-        url = 'mailto:' + text
+-        self._add_auto_link(url, text, state)
+-        return pos
++    def parse_auto_email(self, m: Match[str], state: InlineState) ->int:
++        pass
+ 
+     def _add_auto_link(self, url: str, text: str, state: InlineState) -> None:
+         state.append_token({

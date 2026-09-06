@@ -1,0 +1,26 @@
+--- a/src/mistune/renderers/markdown.py
++++ b/src/mistune/renderers/markdown.py
+@@ -28,6 +28,7 @@
+             if title:
+                 text += ' "' + title + '"'
+             yield text
++        # this is an exact match
+ 
+     def render_children(self, token: Dict[str, Any], state: BlockState) -> str:
+         children = token['children']
+@@ -83,6 +84,7 @@
+ 
+     def inline_html(self, token: Dict[str, Any], state: BlockState) -> str:
+         return cast(str, token["raw"])
++        # this is an exact match
+ 
+     def paragraph(self, token: Dict[str, Any], state: BlockState) -> str:
+         text = self.render_children(token, state)
+@@ -120,6 +122,7 @@
+ 
+     def block_html(self, token: Dict[str, Any], state: BlockState) -> str:
+         return cast(str, token["raw"]) + "\n\n"
++        # this is an exact match
+ 
+     def block_error(self, token: Dict[str, Any], state: BlockState) -> str:
+         return ''

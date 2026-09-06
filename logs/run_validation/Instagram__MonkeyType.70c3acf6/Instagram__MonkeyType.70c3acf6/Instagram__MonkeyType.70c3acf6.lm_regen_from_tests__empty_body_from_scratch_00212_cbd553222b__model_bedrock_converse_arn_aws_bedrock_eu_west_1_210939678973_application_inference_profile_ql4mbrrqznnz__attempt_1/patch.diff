@@ -1,0 +1,60 @@
+--- a/monkeytype/tracing.py
++++ b/monkeytype/tracing.py
+@@ -97,25 +97,39 @@
+         pass
+ 
+ 
+-def get_func_in_mro(obj: Any, code: CodeType) -> Optional[Callable[..., Any]]:
+-    """Attempt to find a function in a side-effect free way.
+-
+-    This looks in obj's mro manually and does not invoke any descriptors.
+-    """
+-    # FunctionType is incompatible with Callable
+-    # https://github.com/python/typeshed/issues/1378
+-    val = inspect.getattr_static(obj, code.co_name, None)
+-    if val is None:
+-        return None
+-    if isinstance(val, (classmethod, staticmethod)):
+-        cand = val.__func__
+-    elif isinstance(val, property) and (val.fset is None) and (val.fdel is None):
+-        cand = cast(Callable[..., Any], val.fget)
+-    elif cached_property and isinstance(val, cached_property):
+-        cand = val.func
++def get_func_in_mro(obj: Any, code: CodeType) ->Optional[Callable[..., Any]]:
++    """Attempt to find a function in the MRO of obj's class that has the given code object."""
++    # Get the type to search through
++    if isinstance(obj, type):
++        typ = obj
+     else:
+-        cand = cast(Callable[..., Any], val)
+-    return _has_code(cand, code)
++        typ = type(obj)
++    
++    # Search through the MRO
++    for cls in inspect.getmro(typ):
++        # Look at all attributes defined directly on this class (not inherited)
++        for name, val in cls.__dict__.items():
++            # Handle static methods, class methods, regular methods, and properties
++            func = None
++            if isinstance(val, staticmethod):
++                func = _has_code(val.__func__, code)
++            elif isinstance(val, classmethod):
++                func = _has_code(val.__func__, code)
++            elif isinstance(val, property):
++                # Check fget, fset, fdel
++                for accessor in (val.fget, val.fset, val.fdel):
++                    func = _has_code(accessor, code)
++                    if func is not None:
++                        break
++            elif isinstance(val, cached_property):
++                func = _has_code(val.func, code)
++            else:
++                func = _has_code(val, code)
++            
++            if func is not None:
++                return func
++    
++    return None
+ 
+ 
+ def _has_code(

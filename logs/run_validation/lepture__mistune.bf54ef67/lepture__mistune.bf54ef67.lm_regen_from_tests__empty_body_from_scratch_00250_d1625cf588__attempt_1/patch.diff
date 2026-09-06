@@ -1,0 +1,19 @@
+--- a/src/mistune/renderers/rst.py
++++ b/src/mistune/renderers/rst.py
+@@ -126,6 +126,16 @@
+         else:
+             return '::\n\n' + code + '\n\n'
+ 
++    def block_code(self, token: Dict[str, Any], state: BlockState) -> str:
++        attrs = token.get("attrs", {})
++        info = cast(str, attrs.get("info"))
++        code = indent(cast(str, token["raw"]), "   ")
++        if info:
++            lang = info.split()[0]
++            return '.. code:: ' + lang + '\n\n' + code + '\n'
++        else:
++            return '::\n\n' + code + '\n\n'
++
+     def block_quote(self, token: Dict[str, Any], state: BlockState) -> str:
+         text = indent(self.render_children(token, state), '   ')
+         prev = token['prev']

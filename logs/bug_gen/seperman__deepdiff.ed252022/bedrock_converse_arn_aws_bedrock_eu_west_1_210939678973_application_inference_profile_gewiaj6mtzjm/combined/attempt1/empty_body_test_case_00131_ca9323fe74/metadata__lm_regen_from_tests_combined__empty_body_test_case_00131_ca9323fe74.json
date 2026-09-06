@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef _numpy_div(a, b, replace_inf_with=1):\n    with np.errstate(divide='ignore', invalid='ignore'):\n        result = np.divide(a, b)\n    return np.where(np.isinf(result), replace_inf_with, result)\n\n\ndef _get_numpy_array_distance(num1, num2, max_=1, use_log_scale=False,\n    log_scale_similarity_threshold=0.1):\n    if use_log_scale:\n        num1 = numpy_apply_log_keep_sign(num1)\n        num2 = numpy_apply_log_keep_sign(num2)\n    diff = np.abs(num1 - num2)\n    if use_log_scale:\n        return np.minimum(max_, diff)\n    else:\n        divisor = (np.abs(num1) + np.abs(num2)) / max_\n        divisor[divisor == 0] = 1\n        return np.minimum(max_, diff / divisor)\n```",
+  "rewrite": "def _numpy_div(a, b, replace_inf_with=1):\n    with np.errstate(divide='ignore', invalid='ignore'):\n        result = np.divide(a, b)\n    return np.where(np.isinf(result), replace_inf_with, result)\n\n\ndef _get_numpy_array_distance(num1, num2, max_=1, use_log_scale=False,\n    log_scale_similarity_threshold=0.1):\n    if use_log_scale:\n        num1 = numpy_apply_log_keep_sign(num1)\n        num2 = numpy_apply_log_keep_sign(num2)\n    diff = np.abs(num1 - num2)\n    if use_log_scale:\n        return np.minimum(max_, diff)\n    else:\n        divisor = (np.abs(num1) + np.abs(num2)) / max_\n        divisor[divisor == 0] = 1\n        return np.minimum(max_, diff / divisor)",
+  "strategy": "lm_regen_from_tests_combined"
+}

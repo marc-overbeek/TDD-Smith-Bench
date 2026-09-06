@@ -1,0 +1,20 @@
+--- a/deepdiff/search.py
++++ b/deepdiff/search.py
+@@ -107,8 +107,7 @@
+         self.exclude_paths = SetOrdered(exclude_paths)
+         self.exclude_regex_paths = [re.compile(exclude_regex_path) for exclude_regex_path in exclude_regex_paths]
+         self.exclude_types = SetOrdered(exclude_types)
+-        self.exclude_types_tuple = tuple(
+-            exclude_types)  # we need tuple for checking isinstance
++        self.exclude_types_tuple = tuple(exclude_types)
+         self.verbose_level = verbose_level
+         self.update(
+             matched_paths=self.__set_or_dict(),
+@@ -124,7 +123,6 @@
+                 raise TypeError(f"The passed item of {item} is not usable for regex: {e}") from None
+         self.strict_checking = strict_checking
+ 
+-        # Cases where user wants to match exact string item
+         self.match_string = match_string
+ 
+         self.__search(obj, item, parents_ids=frozenset({id(obj)}))

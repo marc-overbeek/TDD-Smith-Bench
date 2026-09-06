@@ -1,0 +1,120 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -375,27 +375,13 @@
+         }
+ 
+ 
+-def output_exception(exception: Exception, exit_code_output: bool = True) -> None:
+-    """
+-    Output an exception message to the console and exit.
+-
+-    Args:
+-        exception (Exception): The exception to output.
+-        exit_code_output (bool): Whether to output the exit code.
+-
+-    Exits:
+-        Exits the program with the appropriate exit code.
+-    """
+-    click.secho(str(exception), fg="red", file=sys.stderr)
+-
++def output_exception(exception: Exception, exit_code_output: bool=True) ->None:
++    import sys
++    import traceback
+     if exit_code_output:
+-        exit_code = EXIT_CODE_FAILURE
+-        if hasattr(exception, 'get_exit_code'):
+-            exit_code = exception.get_exit_code()
++        sys.exit(EXIT_CODE_FAILURE)
+     else:
+-        exit_code = EXIT_CODE_OK
+-
+-    sys.exit(exit_code)
++        traceback.print_exc()
+ 
+ def build_remediation_info_url(base_url: str, version: Optional[str], spec: str,
+                                target_version: Optional[str] = '') -> str:
+@@ -499,29 +485,10 @@
+     """
+ 
+     def __init__(self, *args, **kwargs):
+-        self.mutually_exclusive = set(kwargs.pop('mutually_exclusive', []))
+-        self.with_values = kwargs.pop('with_values', {})
+-        help = kwargs.get('help', '')
+-        if self.mutually_exclusive:
+-            ex_str = ', '.join(["{0} with values {1}".format(item, self.with_values.get(item)) if item in self.with_values else item for item in self.mutually_exclusive])
+-            kwargs['help'] = help + (
+-                ' NOTE: This argument is mutually exclusive with '
+-                ' arguments: [' + ex_str + '].'
+-            )
+         super(MutuallyExclusiveOption, self).__init__(*args, **kwargs)
+ 
+-    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+-        """
+-        Handle the parse result for mutually exclusive options.
+-
+-        Args:
+-            ctx (click.Context): The click context.
+-            opts (Dict[str, Any]): The options dictionary.
+-            args (List[str]): The arguments list.
+-
+-        Returns:
+-            Tuple[Any, List[str]]: The result and remaining arguments.
+-        """
++    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any],
++        args: List[str]) ->Tuple[Any, List[str]]:
+         m_exclusive_used = self.mutually_exclusive.intersection(opts)
+         option_used = m_exclusive_used and self.name in opts
+ 
+@@ -553,27 +520,10 @@
+     A click option that depends on other options.
+     """
+     def __init__(self, *args, **kwargs):
+-        self.required_options = set(kwargs.pop('required_options', []))
+-        help = kwargs.get('help', '')
+-        if self.required_options:
+-            ex_str = ', '.join(self.required_options)
+-            kwargs['help'] = help + (
+-                f" Requires: [ {ex_str} ]"
+-            )
+         super(DependentOption, self).__init__(*args, **kwargs)
+ 
+-    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+-        """
+-        Handle the parse result for dependent options.
+-
+-        Args:
+-            ctx (click.Context): The click context.
+-            opts (Dict[str, Any]): The options dictionary.
+-            args (List[str]): The arguments list.
+-
+-        Returns:
+-            Tuple[Any, List[str]]: The result and remaining arguments.
+-        """
++    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any],
++        args: List[str]) ->Tuple[Any, List[str]]:
+         missing_required_arguments = None
+ 
+         if self.name in opts:
+@@ -765,18 +715,14 @@
+     name = "filename"
+     envvar_list_splitter = os.path.pathsep
+ 
+-    def __init__(
+-        self,
+-        mode: str = "r",
+-        encoding: Optional[str] = None,
+-        errors: str = "strict",
+-        pure: bool = os.environ.get('SAFETY_PURE_YAML', 'false').lower() == 'true'
+-    ) -> None:
++    def __init__(self, mode: str='r', encoding: Optional[str]=None, errors: str
++        ='strict', pure: bool=os.environ.get('SAFETY_PURE_YAML', 'false').lower
++        () == 'true') ->None:
+         self.mode = mode
+         self.encoding = encoding
+         self.errors = errors
++        self.pure = pure
+         self.basic_msg = '\n' + click.style('Unable to load the Safety Policy file "{name}".', fg='red')
+-        self.pure = pure
+ 
+     def to_info_dict(self) -> Dict[str, Any]:
+         """

@@ -1,0 +1,29 @@
+--- a/src/mistune/renderers/markdown.py
++++ b/src/mistune/renderers/markdown.py
+@@ -19,7 +19,7 @@
+         out += '\n\n'.join(self.render_referrences(state)) + '\n'
+         return strip_end(out)
+ 
+-    def render_referrences(self, state: BlockState) -> Iterable[str]:
++    def render_referrences(self, state: BlockState) ->Iterable[str]:
+         ref_links = state.env['ref_links']
+         for key in ref_links:
+             attrs = ref_links[key]
+@@ -42,7 +42,7 @@
+     def strong(self, token: Dict[str, Any], state: BlockState) -> str:
+         return '**' + self.render_children(token, state) + '**'
+ 
+-    def link(self, token: Dict[str, Any], state: BlockState) -> str:
++    def link(self, token: Dict[str, Any], state: BlockState) ->str:
+         label = cast(str, token.get("label"))
+         text = self.render_children(token, state)
+         out = '[' + text + ']'
+@@ -66,7 +66,7 @@
+             out += ' "' + title + '"'
+         return out + ')'
+ 
+-    def image(self, token: Dict[str, Any], state: BlockState) -> str:
++    def image(self, token: Dict[str, Any], state: BlockState) ->str:
+         return '!' + self.link(token, state)
+ 
+     def codespan(self, token: Dict[str, Any], state: BlockState) -> str:

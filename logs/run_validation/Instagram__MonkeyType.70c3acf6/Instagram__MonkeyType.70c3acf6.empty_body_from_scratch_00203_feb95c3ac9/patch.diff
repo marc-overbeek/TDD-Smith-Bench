@@ -1,0 +1,26 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -438,22 +438,7 @@
+         return Tuple[value_type, ...]
+ 
+     def rewrite_Union(self, union):
+-        if len(union.__args__) <= self.max_union_len:
+-            return union
+-
+-        rw_union = self._rewrite_to_tuple(union)
+-        if rw_union is not None:
+-            return rw_union
+-
+-        try:
+-            for ancestor in inspect.getmro(union.__args__[0]):
+-                if ancestor is not object and all(
+-                    issubclass(t, ancestor) for t in union.__args__
+-                ):
+-                    return ancestor
+-        except (TypeError, AttributeError):
+-            pass
+-        return Any
++        pass
+ 
+ 
+ class RewriteAnonymousTypedDictToDict(TypeRewriter):

@@ -1,0 +1,55 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -511,17 +511,6 @@
+         super(MutuallyExclusiveOption, self).__init__(*args, **kwargs)
+ 
+     def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+-        """
+-        Handle the parse result for mutually exclusive options.
+-
+-        Args:
+-            ctx (click.Context): The click context.
+-            opts (Dict[str, Any]): The options dictionary.
+-            args (List[str]): The arguments list.
+-
+-        Returns:
+-            Tuple[Any, List[str]]: The result and remaining arguments.
+-        """
+         m_exclusive_used = self.mutually_exclusive.intersection(opts)
+         option_used = m_exclusive_used and self.name in opts
+ 
+@@ -563,17 +552,6 @@
+         super(DependentOption, self).__init__(*args, **kwargs)
+ 
+     def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+-        """
+-        Handle the parse result for dependent options.
+-
+-        Args:
+-            ctx (click.Context): The click context.
+-            opts (Dict[str, Any]): The options dictionary.
+-            args (List[str]): The arguments list.
+-
+-        Returns:
+-            Tuple[Any, List[str]]: The result and remaining arguments.
+-        """
+         missing_required_arguments = None
+ 
+         if self.name in opts:
+@@ -765,13 +743,9 @@
+     name = "filename"
+     envvar_list_splitter = os.path.pathsep
+ 
+-    def __init__(
+-        self,
+-        mode: str = "r",
+-        encoding: Optional[str] = None,
+-        errors: str = "strict",
+-        pure: bool = os.environ.get('SAFETY_PURE_YAML', 'false').lower() == 'true'
+-    ) -> None:
++    def __init__(self, mode: str='r', encoding: Optional[str]=None, errors: str
++        ='strict', pure: bool=os.environ.get('SAFETY_PURE_YAML', 'false').lower
++        () == 'true') ->None:
+         self.mode = mode
+         self.encoding = encoding
+         self.errors = errors

@@ -1,0 +1,36 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -510,7 +510,7 @@
+         self.strip_modules = strip_modules or []
+         self.is_async = is_async
+ 
+-    def render(self, prefix: str = "") -> str:
++    def render(self, prefix: str = '') -> str:
+         s = prefix
+         if self.is_async:
+             s += "async "
+@@ -518,6 +518,24 @@
+         s += render_signature(self.signature, 120 - len(s), prefix) + ": ..."
+         # Yes, this is a horrible hack, but inspect.py gives us no way to
+         # specify the function that should be used to format annotations.
++        for module in self.strip_modules:
++            s = s.replace(module + ".", "")
++        if self.kind == FunctionKind.CLASS:
++            s = prefix + "@classmethod\n" + s
++        elif self.kind == FunctionKind.STATIC:
++            s = prefix + "@staticmethod\n" + s
++        elif self.kind == FunctionKind.PROPERTY:
++            s = prefix + "@property\n" + s
++        elif self.kind == FunctionKind.DJANGO_CACHED_PROPERTY:
++            s = prefix + "@cached_property\n" + s
++        return s
++
++    def render(self, prefix: str = '') -> str:
++        s = prefix
++        if self.is_async:
++            s += "async "
++        s += "def " + self.name
++        s += render_signature(self.signature, 120 - len(s), prefix) + ": ..."
+         for module in self.strip_modules:
+             s = s.replace(module + ".", "")
+         if self.kind == FunctionKind.CLASS:

@@ -1,0 +1,122 @@
+--- a/src/mistune/block_parser.py
++++ b/src/mistune/block_parser.py
+@@ -291,9 +291,6 @@
+     def extract_block_quote(
+         self, m: Match[str], state: BlockState
+     ) -> Tuple[str, Optional[int]]:
+-        """Extract text and cursor end position of a block quote."""
+-
+-        # cleanup at first to detect if it is code block
+         text = m.group('quote_1') + '\n'
+         text = expand_leading_tab(text, 3)
+         text = _BLOCK_QUOTE_TRIM.sub('', text)
+@@ -335,9 +332,6 @@
+                     continue
+ 
+                 if prev_blank_line:
+-                    # CommonMark Example 249
+-                    # because of laziness, a blank line is needed between
+-                    # a block quote and a following paragraph
+                     break
+ 
+                 m4 = break_sc.match(state.src, state.cursor)
+@@ -346,27 +340,16 @@
+                     if end_pos:
+                         break
+ 
+-                # lazy continuation line
+                 pos = state.find_line_end()
+                 line = state.get_text(pos)
+                 line = expand_leading_tab(line, 3)
+                 text += line
+                 state.cursor = pos
+ 
+-        # according to CommonMark Example 6, the second tab should be
+-        # treated as 4 spaces
+         return expand_tab(text), end_pos
+ 
+     def parse_block_quote(self, m: Match[str], state: BlockState) -> int:
+-        """Parse token for block quote. Here is an example of the syntax:
+-
+-        .. code-block:: markdown
+-
+-            > a block quote starts
+-            > with right arrows
+-        """
+         text, end_pos = self.extract_block_quote(m, state)
+-        # scan children state
+         child = state.child_state(text)
+         if state.depth() >= self.max_nested_level - 1:
+             rules = list(self.block_quote_rules)
+@@ -392,19 +375,15 @@
+     def parse_raw_html(self, m: Match[str], state: BlockState) -> Optional[int]:
+         marker = m.group(0).strip()
+ 
+-        # rule 2
+         if marker == '<!--':
+             return _parse_html_to_end(state, '-->', m.end())
+ 
+-        # rule 3
+         if marker == '<?':
+             return _parse_html_to_end(state, '?>', m.end())
+ 
+-        # rule 5
+         if marker == '<![CDATA[':
+             return _parse_html_to_end(state, ']]>', m.end())
+ 
+-        # rule 4
+         if marker.startswith('<!'):
+             return _parse_html_to_end(state, '>', m.end())
+ 
+@@ -412,25 +391,20 @@
+         open_tag = None
+         if marker.startswith('</'):
+             close_tag = marker[2:].lower()
+-            # rule 6
+             if close_tag in BLOCK_TAGS:
+                 return _parse_html_to_newline(state, self.BLANK_LINE)
+         else:
+             open_tag = marker[1:].lower()
+-            # rule 1
+             if open_tag in PRE_TAGS:
+                 end_tag = '</' + open_tag + '>'
+                 return _parse_html_to_end(state, end_tag, m.end())
+-            # rule 6
+             if open_tag in BLOCK_TAGS:
+                 return _parse_html_to_newline(state, self.BLANK_LINE)
+ 
+-        # Blocks of type 7 may not interrupt a paragraph.
+         end_pos = state.append_paragraph()
+         if end_pos:
+             return end_pos
+ 
+-        # rule 7
+         start_pos = m.end()
+         end_pos = state.find_line_end()
+         if (open_tag and _OPEN_TAG_END.match(state.src, start_pos, end_pos)) or \
+@@ -483,14 +457,18 @@
+     return end_pos
+ 
+ 
+-def _parse_html_to_newline(state: BlockState, newline: Pattern[str]) -> int:
++def _parse_html_to_newline(state: BlockState, newline: Pattern[str]) ->int:
++    end_pos = state.find_line_end()
++    text = state.get_text(end_pos)
++    state.cursor = end_pos
++    
+     m = newline.search(state.src, state.cursor)
+     if m:
+-        end_pos = m.start()
+-        text = state.get_text(end_pos)
++        text += state.get_text(m.start())
++        state.cursor = m.start()
+     else:
+-        text = state.src[state.cursor:]
+-        end_pos = state.cursor_max
+-
++        text += state.src[state.cursor:]
++        state.cursor = state.cursor_max
++    
+     state.append_token({'type': 'block_html', 'raw': text})
+-    return end_pos
++    return state.cursor

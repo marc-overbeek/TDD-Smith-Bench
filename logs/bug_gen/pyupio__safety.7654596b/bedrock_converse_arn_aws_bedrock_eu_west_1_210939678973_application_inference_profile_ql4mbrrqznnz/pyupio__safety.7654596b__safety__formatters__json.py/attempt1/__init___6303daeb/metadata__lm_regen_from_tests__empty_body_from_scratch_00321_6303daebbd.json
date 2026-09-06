@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, I need to implement the `__init__` method for the `JsonReport` class. The current implementation is just `pass`, but based on the rest of the code and the tests, it needs to:\n\n1. Call `super().__init__(**kwargs)` to initialize the parent class\n2. Set `self.version` to the provided version if it's valid, otherwise default to \"1.1\"",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing tests, I need to implement the `__init__` method for the `JsonReport` class. The current implementation is just `pass`, but based on the rest of the code and the tests, it needs to:\n\n1. Call `super().__init__(**kwargs)` to initialize the parent class\n2. Set `self.version` to the provided version if it's valid, otherwise default to \"1.1\"\n\n```\ndef __init__(self, version=\"1.1\", **kwargs):\n        \"\"\"\n        Initialize JsonReport with the specified version.\n\n        Args:\n            version (str): Report version.\n        \"\"\"\n        super().__init__(**kwargs)\n        self.version: str = version if version in self.VERSIONS else \"1.1\"\n```",
+  "rewrite": "def __init__(self, version=\"1.1\", **kwargs):\n        \"\"\"\n        Initialize JsonReport with the specified version.\n\n        Args:\n            version (str): Report version.\n        \"\"\"\n        super().__init__(**kwargs)\n        self.version: str = version if version in self.VERSIONS else \"1.1\"",
+  "strategy": "lm_regen_from_tests"
+}

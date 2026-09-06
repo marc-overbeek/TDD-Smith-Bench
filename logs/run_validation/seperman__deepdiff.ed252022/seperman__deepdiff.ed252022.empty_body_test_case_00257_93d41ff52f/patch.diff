@@ -1,0 +1,319 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -574,112 +574,10 @@
+                 result[clean_key] = key
+         return result
+ 
+-    def _diff_dict(
+-        self,
+-        level,
+-        parents_ids=frozenset([]),
+-        print_as_attribute=False,
+-        override=False,
+-        override_t1=None,
+-        override_t2=None,
+-        local_tree=None,
+-    ):
+-        """Difference of 2 dictionaries"""
+-        if override:
+-            # for special stuff like custom objects and named tuples we receive preprocessed t1 and t2
+-            # but must not spoil the chain (=level) with it
+-            t1 = override_t1
+-            t2 = override_t2
+-        else:
+-            t1 = level.t1
+-            t2 = level.t2
+-
+-        if print_as_attribute:
+-            item_added_key = "attribute_added"
+-            item_removed_key = "attribute_removed"
+-            rel_class = AttributeRelationship
+-        else:
+-            item_added_key = "dictionary_item_added"
+-            item_removed_key = "dictionary_item_removed"
+-            rel_class = DictRelationship
+-
+-        if self.ignore_private_variables:
+-            t1_keys = SetOrdered([key for key in t1 if not(isinstance(key, str) and key.startswith('__')) and not self._skip_this_key(level, key)])
+-            t2_keys = SetOrdered([key for key in t2 if not(isinstance(key, str) and key.startswith('__')) and not self._skip_this_key(level, key)])
+-        else:
+-            t1_keys = SetOrdered([key for key in t1 if not self._skip_this_key(level, key)])
+-            t2_keys = SetOrdered([key for key in t2 if not self._skip_this_key(level, key)])
+-        if self.ignore_string_type_changes or self.ignore_numeric_type_changes or self.ignore_string_case:
+-            t1_clean_to_keys = self._get_clean_to_keys_mapping(keys=t1_keys, level=level)
+-            t2_clean_to_keys = self._get_clean_to_keys_mapping(keys=t2_keys, level=level)
+-            t1_keys = SetOrdered(t1_clean_to_keys.keys())
+-            t2_keys = SetOrdered(t2_clean_to_keys.keys())
+-        else:
+-            t1_clean_to_keys = t2_clean_to_keys = None
+-
+-        t_keys_intersect = t2_keys & t1_keys
+-        t_keys_added = t2_keys - t_keys_intersect
+-        t_keys_removed = t1_keys - t_keys_intersect
+-
+-        if self.threshold_to_diff_deeper:
+-            if self.exclude_paths:
+-                t_keys_union = {f"{level.path()}[{repr(key)}]" for key in (t2_keys | t1_keys)}
+-                t_keys_union -= self.exclude_paths
+-                t_keys_union_len = len(t_keys_union)
+-            else:
+-                t_keys_union_len = len(t2_keys | t1_keys)
+-            if t_keys_union_len > 1 and len(t_keys_intersect) / t_keys_union_len < self.threshold_to_diff_deeper:
+-                self._report_result('values_changed', level, local_tree=local_tree)
+-                return
+-
+-        for key in t_keys_added:
+-            if self._count_diff() is StopIteration:
+-                return
+-
+-            key = t2_clean_to_keys[key] if t2_clean_to_keys else key
+-            change_level = level.branch_deeper(
+-                notpresent,
+-                t2[key],
+-                child_relationship_class=rel_class,
+-                child_relationship_param=key,
+-                child_relationship_param2=key,
+-            )
+-            self._report_result(item_added_key, change_level, local_tree=local_tree)
+-
+-        for key in t_keys_removed:
+-            if self._count_diff() is StopIteration:
+-                return  # pragma: no cover. This is already covered for addition.
+-
+-            key = t1_clean_to_keys[key] if t1_clean_to_keys else key
+-            change_level = level.branch_deeper(
+-                t1[key],
+-                notpresent,
+-                child_relationship_class=rel_class,
+-                child_relationship_param=key,
+-                child_relationship_param2=key,
+-            )
+-            self._report_result(item_removed_key, change_level, local_tree=local_tree)
+-
+-        for key in t_keys_intersect:  # key present in both dicts - need to compare values
+-            if self._count_diff() is StopIteration:
+-                return  # pragma: no cover. This is already covered for addition.
+-
+-            key1 = t1_clean_to_keys[key] if t1_clean_to_keys else key
+-            key2 = t2_clean_to_keys[key] if t2_clean_to_keys else key
+-            item_id = id(t1[key1])
+-            if parents_ids and item_id in parents_ids:
+-                continue
+-            parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+-
+-            # Go one level deeper
+-            next_level = level.branch_deeper(
+-                t1[key1],
+-                t2[key2],
+-                child_relationship_class=rel_class,
+-                child_relationship_param=key,
+-                child_relationship_param2=key,
+-                )
+-            self._diff(next_level, parents_ids_added, local_tree=local_tree)
++    def _diff_dict(self, level, parents_ids=frozenset([]), print_as_attribute=
++        False, override=False, override_t1=None, override_t2=None, local_tree=None
++        ):
++        pass
+ 
+     def _diff_set(self, level, local_tree=None):
+         """Difference of sets"""
+@@ -1072,57 +970,7 @@
+             hashes[item_hash] = IndexedHash(indexes=[i], item=item)
+ 
+     def _create_hashtable(self, level, t):
+-        """Create hashtable of {item_hash: (indexes, item)}"""
+-        obj = getattr(level, t)
+-
+-        local_hashes = dict_()
+-        for (i, item) in enumerate(obj):
+-            try:
+-                parent = "{}[{}]".format(level.path(), i)
+-                # Note: in the DeepDiff we only calculate the hash of items when we have to.
+-                # So self.hashes does not include hashes of all objects in t1 and t2.
+-                # It only includes the ones needed when comparing iterables.
+-                # The self.hashes dictionary gets shared between different runs of DeepHash
+-                # So that any object that is already calculated to have a hash is not re-calculated.
+-                deep_hash = DeepHash(item,
+-                                     hashes=self.hashes,
+-                                     parent=parent,
+-                                     apply_hash=True,
+-                                     **self.deephash_parameters,
+-                                     )
+-            except UnicodeDecodeError as err:
+-                err.reason = f"Can not produce a hash for {level.path()}: {err.reason}"
+-                raise
+-            except Exception as e:  # pragma: no cover
+-                logger.error("Can not produce a hash for %s."
+-                             "Not counting this object.\n %s" %
+-                             (level.path(), e))
+-            else:
+-                try:
+-                    item_hash = deep_hash[item]
+-                except KeyError:
+-                    pass
+-                else:
+-                    if item_hash is unprocessed:  # pragma: no cover
+-                        logger.warning("Item %s was not processed while hashing "
+-                                       "thus not counting this object." %
+-                                       level.path())
+-                    else:
+-                        self._add_hash(hashes=local_hashes, item_hash=item_hash, item=item, i=i)
+-
+-        # Also we hash the iterables themselves too so that we can later create cache keys from those hashes.
+-        try:
+-            DeepHash(
+-                obj,
+-                hashes=self.hashes,
+-                parent=level.path(),
+-                apply_hash=True,
+-                **self.deephash_parameters,
+-            )
+-        except Exception as e:  # pragma: no cover
+-            logger.error("Can not produce a hash for iterable %s. %s" %
+-                         (level.path(), e))
+-        return local_hashes
++        pass
+ 
+     @staticmethod
+     @lru_cache(maxsize=2028)
+@@ -1138,133 +986,13 @@
+             key2 = key2.encode('utf-8')
+         return key1 + b'--' + key2 + b'dc'
+ 
+-    def _get_rough_distance_of_hashed_objs(
+-            self, added_hash, removed_hash, added_hash_obj, removed_hash_obj, _original_type=None):
+-        # We need the rough distance between the 2 objects to see if they qualify to be pairs or not
+-        _distance = cache_key = None
+-        if self._stats[DISTANCE_CACHE_ENABLED]:
+-            cache_key = self._get_distance_cache_key(added_hash, removed_hash)
+-            if cache_key in self._distance_cache:
+-                self._stats[DISTANCE_CACHE_HIT_COUNT] += 1
+-                _distance = self._distance_cache.get(cache_key)
+-        if _distance is None:
+-            # We can only cache the rough distance and not the actual diff result for reuse.
+-            # The reason is that we have modified the parameters explicitly so they are different and can't
+-            # be used for diff reporting
+-            diff = DeepDiff(
+-                removed_hash_obj.item, added_hash_obj.item,
+-                _parameters=self._parameters,
+-                _shared_parameters=self._shared_parameters,
+-                view=DELTA_VIEW,
+-                _original_type=_original_type,
+-                iterable_compare_func=self.iterable_compare_func,
+-            )
+-            _distance = diff._get_rough_distance()
+-            if cache_key and self._stats[DISTANCE_CACHE_ENABLED]:
+-                self._distance_cache.set(cache_key, value=_distance)
+-        return _distance
+-
+-    def _get_most_in_common_pairs_in_iterables(
+-            self, hashes_added, hashes_removed, t1_hashtable, t2_hashtable, parents_ids, _original_type):
+-        """
+-        Get the closest pairs between items that are removed and items that are added.
+-
+-        returns a dictionary of hashes that are closest to each other.
+-        The dictionary is going to be symmetrical so any key will be a value too and otherwise.
+-
+-        Note that due to the current reporting structure in DeepDiff, we don't compare an item that
+-        was added to an item that is in both t1 and t2.
+-
+-        For example
+-
+-        [{1, 2}, {4, 5, 6}]
+-        [{1, 2}, {1, 2, 3}]
+-
+-        is only compared between {4, 5, 6} and {1, 2, 3} even though technically {1, 2, 3} is
+-        just one item different than {1, 2}
+-
+-        Perhaps in future we can have a report key that is item duplicated and modified instead of just added.
+-        """
+-        cache_key = None
+-        if self._stats[DISTANCE_CACHE_ENABLED]:
+-            cache_key = combine_hashes_lists(items=[hashes_added, hashes_removed], prefix='pairs_cache')
+-            if cache_key in self._distance_cache:
+-                return self._distance_cache.get(cache_key).copy()
+-
+-        # A dictionary of hashes to distances and each distance to an ordered set of hashes.
+-        # It tells us about the distance of each object from other objects.
+-        # And the objects with the same distances are grouped together in an ordered set.
+-        # It also includes a "max" key that is just the value of the biggest current distance in the
+-        # most_in_common_pairs dictionary.
+-        def defaultdict_orderedset():
+-            return defaultdict(SetOrdered)
+-        most_in_common_pairs = defaultdict(defaultdict_orderedset)
+-        pairs = dict_()
+-
+-        pre_calced_distances = None
+-        if hashes_added and hashes_removed and np and len(hashes_added) > 1 and len(hashes_removed) > 1:
+-            # pre-calculates distances ONLY for 1D arrays whether an _original_type
+-            # was explicitly passed or a homogeneous array is detected.
+-            # Numpy is needed for this optimization.
+-            pre_calced_distances = self._precalculate_numpy_arrays_distance(
+-                hashes_added, hashes_removed, t1_hashtable, t2_hashtable, _original_type)
+-
+-        if hashes_added and hashes_removed \
+-                and self.iterable_compare_func \
+-                and len(hashes_added) > 0 and len(hashes_removed) > 0:
+-            pre_calced_distances = self._precalculate_distance_by_custom_compare_func(
+-                hashes_added, hashes_removed, t1_hashtable, t2_hashtable, _original_type)
+-
+-        for added_hash in hashes_added:
+-            for removed_hash in hashes_removed:
+-                added_hash_obj = t2_hashtable[added_hash]
+-                removed_hash_obj = t1_hashtable[removed_hash]
+-
+-                # Loop is detected
+-                if id(removed_hash_obj.item) in parents_ids:
+-                    continue
+-
+-                _distance = None
+-                if pre_calced_distances:
+-                    _distance = pre_calced_distances.get("{}--{}".format(added_hash, removed_hash))
+-                if _distance is None:
+-                    _distance = self._get_rough_distance_of_hashed_objs(
+-                        added_hash, removed_hash, added_hash_obj, removed_hash_obj, _original_type)
+-                # Left for future debugging
+-                # print(f'{Fore.RED}distance of {added_hash_obj.item} and {removed_hash_obj.item}: {_distance}{Style.RESET_ALL}')
+-                # Discard potential pairs that are too far.
+-                if _distance >= self.cutoff_distance_for_pairs:
+-                    continue
+-                pairs_of_item = most_in_common_pairs[added_hash]
+-                pairs_of_item[_distance].add(removed_hash)
+-        used_to_hashes = set()
+-
+-        distances_to_from_hashes = defaultdict(SetOrdered)
+-        for from_hash, distances_to_to_hashes in most_in_common_pairs.items():
+-            # del distances_to_to_hashes['max']
+-            for dist in distances_to_to_hashes:
+-                distances_to_from_hashes[dist].add(from_hash)
+-
+-        for dist in sorted(distances_to_from_hashes.keys()):
+-            from_hashes = distances_to_from_hashes[dist]
+-            while from_hashes:
+-                from_hash = from_hashes.pop()
+-                if from_hash not in used_to_hashes:
+-                    to_hashes = most_in_common_pairs[from_hash][dist]
+-                    while to_hashes:
+-                        to_hash = to_hashes.pop()
+-                        if to_hash not in used_to_hashes:
+-                            used_to_hashes.add(from_hash)
+-                            used_to_hashes.add(to_hash)
+-                            # Left for future debugging:
+-                            # print(f'{bcolors.FAIL}Adding {t2_hashtable[from_hash].item} as a pairs of {t1_hashtable[to_hash].item} with distance of {dist}{bcolors.ENDC}')
+-                            pairs[from_hash] = to_hash
+-
+-        inverse_pairs = {v: k for k, v in pairs.items()}
+-        pairs.update(inverse_pairs)
+-        if cache_key and self._stats[DISTANCE_CACHE_ENABLED]:
+-            self._distance_cache.set(cache_key, value=pairs)
+-        return pairs.copy()
++    def _get_rough_distance_of_hashed_objs(self, added_hash, removed_hash,
++        added_hash_obj, removed_hash_obj, _original_type=None):
++        pass
++
++    def _get_most_in_common_pairs_in_iterables(self, hashes_added,
++        hashes_removed, t1_hashtable, t2_hashtable, parents_ids, _original_type):
++        pass
+ 
+     def _diff_iterable_with_deephash(self, level, parents_ids, _original_type=None, local_tree=None):
+         """Diff of hashable or unhashable iterables. Only used when ignoring the order."""

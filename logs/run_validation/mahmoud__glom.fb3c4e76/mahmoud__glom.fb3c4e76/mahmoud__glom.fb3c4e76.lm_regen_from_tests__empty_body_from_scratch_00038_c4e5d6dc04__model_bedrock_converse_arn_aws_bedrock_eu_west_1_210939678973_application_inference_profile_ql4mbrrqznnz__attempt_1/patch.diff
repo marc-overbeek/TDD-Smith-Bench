@@ -1,0 +1,25 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -378,6 +378,22 @@
+     def get_message(self):
+         return ('could not assign %r on object at %r, got error: %r'
+                 % (self.dest_name, self.path, self.exc))
++
++    exc_repr = repr(exc_info.value)
++    assert exc_repr.startswith('PathAssignError(')
++    assert exc_repr.endswith("'3')")
++
++    exc_repr = repr(exc_info.value)
++    assert exc_repr.startswith('PathDeleteError(')
++    assert exc_repr.endswith("'2')")
++
++    assert bbrepr(exc).startswith(exc_type_name)
++    assert bbrepr(target)[:80] in exc_str
++    assert bbrepr(spec)[:80] in exc_str
++
++    def __repr__(self):
++        cn = self.__class__.__name__
++        return f'{cn}({self.exc!r}, {self.path!r}, {self.dest_name!r})'
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

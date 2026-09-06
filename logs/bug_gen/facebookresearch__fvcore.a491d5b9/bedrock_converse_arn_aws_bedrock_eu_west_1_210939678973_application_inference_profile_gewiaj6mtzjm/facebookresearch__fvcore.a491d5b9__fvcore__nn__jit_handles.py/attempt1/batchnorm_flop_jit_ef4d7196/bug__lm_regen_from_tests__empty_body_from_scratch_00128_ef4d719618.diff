@@ -1,0 +1,30 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -250,14 +250,19 @@
+     return norm_flop_jit
+ 
+ 
+-def batchnorm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-    training = inputs[5].toIValue()
+-    assert isinstance(training, bool), "Signature of aten::batch_norm has changed!"
+-    if training:
+-        return norm_flop_counter(1)(inputs, outputs)  # pyre-ignore
+-    has_affine = get_shape(inputs[1]) is not None
+-    input_shape = prod(get_shape(inputs[0]))
+-    return input_shape * (2 if has_affine else 1)
++def batchnorm_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:
++    # Inputs for batch_norm are: input, weight, bias, running_mean, running_var, training, momentum, eps
++    # We need to count based on the input tensor size
++    input_shape = get_shape(inputs[0])
++    if input_shape is None:
++        return 0
++    
++    # For batch normalization, each element requires approximately 4 FLOPs
++    # (mean, variance, normalize, scale/shift)
++    # But this depends on whether affine parameters are used
++    # When weight and bias are None, it's fewer operations
++    flop = prod(input_shape) * 4
++    return flop
+ 
+ 
+ def elementwise_flop_counter(input_scale: float = 1, output_scale: float = 0) -> Handle:

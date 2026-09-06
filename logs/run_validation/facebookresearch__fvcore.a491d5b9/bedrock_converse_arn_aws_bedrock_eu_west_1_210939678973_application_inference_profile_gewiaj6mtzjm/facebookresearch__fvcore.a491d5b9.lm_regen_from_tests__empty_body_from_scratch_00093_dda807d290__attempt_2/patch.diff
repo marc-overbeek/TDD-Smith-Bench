@@ -1,0 +1,138 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -133,52 +133,89 @@
+     return stats_out
+ 
+ 
+-def _remove_zero_statistics(
+-    statistics: Dict[str, Dict[str, int]],
+-    force_keep: Optional[Set[str]] = None,
+-    require_trivial_children: bool = False,
+-) -> Dict[str, Dict[str, int]]:
+-    """
+-    Any module that has zero for all available statistics is removed from the
+-    set of statistics. This can help declutter the reporting of statistics
+-    if many submodules have zero statistics. Assumes the statistics have
+-    a model hierarchy starting with a root that has name ''.
+-
+-    Args:
+-        statistics (dict(str, dict(str, int))) : the statistics to
+-            remove zeros from. Organized as a dictionary over modules,
+-            which are each a dictionary over statistic types.
+-        force_keep (set(str) or None) : a set of modules to always keep, even
+-            if they are all zero.
+-        require_trivial_children (bool) : If True, a statistic will only
+-            be deleted if all its children are also deleted. Defaults to
+-            False.
+-
+-    Returns:
+-        dict(str, dict(str, int)) : the input statistics dictionary,
+-            with submodules removed if they have zero for all statistics.
+-    """
+-    out_stats: Dict[str, Dict[str, int]] = {}
+-    _force_keep: Set[str] = force_keep if force_keep else set() | {""}
+-
+-    def keep_stat(name: str) -> None:
+-        prefix = name + ("." if name else "")
+-        trivial_children = True
+-        for mod in statistics:
+-            # 'if mod' excludes root = '', which is never a child
+-            if mod and mod.count(".") == prefix.count(".") and mod.startswith(prefix):
+-                keep_stat(mod)
+-                trivial_children &= mod not in out_stats
+-
+-        if (
+-            (not all(val == 0 for val in statistics[name].values()))
+-            or (name in _force_keep)
+-            or (require_trivial_children and not trivial_children)
+-        ):
+-            out_stats[name] = statistics[name].copy()
+-
+-    keep_stat("")
+-    return out_stats
++def _remove_zero_statistics(statistics: Dict[str, Dict[str, int]],
++    force_keep: Optional[Set[str]]=None, require_trivial_children: bool=False
++    ) ->Dict[str, Dict[str, int]]:
++    if force_keep is None:
++        force_keep = set()
++    
++    # First, identify which modules to keep based on force_keep
++    to_keep = set(force_keep)
++    
++    # If require_trivial_children is True, we need to check if modules have non-zero children
++    if require_trivial_children:
++        # Build a set of all module names
++        all_modules = set(statistics.keys())
++        
++        # For each module, check if it has any non-zero children
++        for mod_name in list(statistics.keys()):
++            if mod_name in to_keep:
++                continue
++                
++            # Check if this module has any children with non-zero stats
++            has_nonzero_child = False
++            for child_name in all_modules:
++                # Check if child_name is a direct child of mod_name
++                if child_name.startswith(mod_name + "."):
++                    # Check if any statistic for this child is non-zero
++                    if any(stat_val != 0 for stat_val in statistics[child_name].values()):
++                        has_nonzero_child = True
++                        break
++            
++            # If module has non-zero children, keep it even if it's all zeros
++            if has_nonzero_child:
++                to_keep.add(mod_name)
++    
++    # Filter out modules that are all zero and not in force_keep
++    result = {}
++    for mod_name, stats in statistics.items():
++        # Keep if explicitly forced or if it has non-zero stats
++        if mod_name in to_keep or any(stat_val != 0 for stat_val in stats.values()):
++            result[mod_name] = stats
++    
++    return result
++
++def _remove_zero_statistics(statistics: Dict[str, Dict[str, int]],
++    force_keep: Optional[Set[str]]=None, require_trivial_children: bool=False
++    ) ->Dict[str, Dict[str, int]]:
++    if force_keep is None:
++        force_keep = set()
++    
++    # First, identify which modules to keep based on force_keep
++    to_keep = set(force_keep)
++    
++    # If require_trivial_children is True, we need to check if modules have non-zero children
++    if require_trivial_children:
++        # Build a set of all module names
++        all_modules = set(statistics.keys())
++        
++        # For each module, check if it has any non-zero children
++        for mod_name in list(statistics.keys()):
++            if mod_name in to_keep:
++                continue
++                
++            # Check if this module has any children with non-zero stats
++            has_nonzero_child = False
++            for child_name in all_modules:
++                # Check if child_name is a direct child of mod_name
++                if child_name.startswith(mod_name + "."):
++                    # Check if any statistic for this child is non-zero
++                    if any(stat_val != 0 for stat_val in statistics[child_name].values()):
++                        has_nonzero_child = True
++                        break
++            
++            # If module has non-zero children, keep it even if it's all zeros
++            if has_nonzero_child:
++                to_keep.add(mod_name)
++    
++    # Filter out modules that are all zero and not in force_keep
++    result = {}
++    for mod_name, stats in statistics.items():
++        # Keep if explicitly forced or if it has non-zero stats
++        if mod_name in to_keep or any(stat_val != 0 for stat_val in stats.values()):
++            result[mod_name] = stats
++    
++    return result
+ 
+ 
+ def _fill_missing_statistics(

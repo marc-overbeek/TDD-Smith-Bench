@@ -1,0 +1,35 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -229,14 +229,24 @@
+ 
+ 
+ def _format_trace_value(value, maxlen):
+-    s = bbrepr(value).replace("\\'", "'")
+-    if len(s) > maxlen:
+-        try:
+-            suffix = '... (len=%s)' % len(value)
+-        except Exception:
+-            suffix = '...'
+-        s = s[:maxlen - len(suffix)] + suffix
+-    return s
++    if maxlen <= 0:
++        return ''
++    
++    # Get the string representation
++    repr_str = bbrepr(value)
++    
++    # If it's already short enough, return it
++    if len(repr_str) <= maxlen:
++        return repr_str
++    
++    # If it's too long, truncate and add ellipsis
++    # Try to leave room for ellipsis
++    if maxlen > 3:
++        # Leave space for '...'
++        return repr_str[:maxlen-3] + '...'
++    else:
++        # Even if we can't show much, show what we can
++        return repr_str[:maxlen]
+ 
+ 
+ def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0, prev_target=_MISSING, last_branch=True):

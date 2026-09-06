@@ -1,0 +1,210 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -34,8 +34,60 @@
+     MatchError: key 123 didn't match any of ['id']
+ 
+     """
+-    def __init__(self, fmt, *args):
+-        super().__init__(fmt, *args)
++    def __init__(self, spec=T, **kwargs):
++        self.spec = spec
++        self._orig_kwargs = dict(kwargs)
++        self.default = kwargs.pop('default', _MISSING)
++
++        def _get_arg_val(name, cond, func, val, can_be_empty=True):
++            if val is _MISSING:
++                return ()
++            if not is_iterable(val):
++                val = (val,)
++            elif not val and not can_be_empty:
++                raise ValueError('expected %r argument to contain at least one value,'
++                                 ' not: %r' % (name, val))
++            for v in val:
++                if not func(v):
++                    raise ValueError('expected %r argument to be %s, not: %r'
++                                     % (name, cond, v))
++            return val
++
++        # if there are other common validation functions, maybe a
++        # small set of special strings would work as valid arguments
++        # to validate, too.
++        def truthy(val):
++            return bool(val)
++
++        validate = kwargs.pop('validate', _MISSING if kwargs else truthy)
++        type_arg = kwargs.pop('type', _MISSING)
++        instance_of = kwargs.pop('instance_of', _MISSING)
++        equal_to = kwargs.pop('equal_to', _MISSING)
++        one_of = kwargs.pop('one_of', _MISSING)
++        if kwargs:
++            raise TypeError('unexpected keyword arguments: %r' % kwargs.keys())
++
++        self.validators = _get_arg_val('validate', 'callable', callable, validate)
++        self.instance_of = _get_arg_val('instance_of', 'a type',
++                                        lambda x: isinstance(x, type), instance_of, False)
++        self.types = _get_arg_val('type', 'a type',
++                                  lambda x: isinstance(x, type), type_arg, False)
++
++        if equal_to is not _MISSING:
++            self.vals = (equal_to,)
++            if one_of is not _MISSING:
++                raise TypeError('expected "one_of" argument to be unset when'
++                                ' "equal_to" argument is passed')
++        elif one_of is not _MISSING:
++            if not is_iterable(one_of):
++                raise ValueError('expected "one_of" argument to be iterable'
++                                 ' , not: %r' % one_of)
++            if not one_of:
++                raise ValueError('expected "one_of" to contain at least'
++                                 ' one value, not: %r' % (one_of,))
++            self.vals = one_of
++        else:
++            self.vals = ()
+ 
+     def get_message(self):
+         fmt, args = self.args[0], self.args[1:]
+@@ -712,53 +764,65 @@
+ 
+ 
+ def _glom_match(target, spec, scope):
+-    if isinstance(spec, type):
++    # Handle different spec types for matching
++    if isinstance(spec, dict):
++        return _handle_dict(target, spec, scope)
++    elif isinstance(spec, type):
+         if not isinstance(target, spec):
+             raise TypeMatchError(type(target), spec)
+-    elif isinstance(spec, dict):
+-        return _handle_dict(target, spec, scope)
+-    elif isinstance(spec, (list, set, frozenset)):
+-        if not isinstance(target, type(spec)):
++        return target
++    elif isinstance(spec, (list, tuple)):
++        if not isinstance(target, (list, tuple)):
+             raise TypeMatchError(type(target), type(spec))
++        if len(target) != len(spec):
++            raise MatchError("length mismatch: expected {0}, got {1}", len(spec), len(target))
+         result = []
+-        for item in target:
+-            for child in spec:
++        for i, (t, s) in enumerate(zip(target, spec)):
++            try:
++                result.append(scope[glom](t, s, chain_child(scope)))
++            except GlomError:
++                raise MatchError("item {0} failed match: {1!r}", i, t)
++        return type(spec)(result)
++    elif isinstance(spec, (set, frozenset)):
++        if not isinstance(target, (set, frozenset)):
++            raise TypeMatchError(type(target), type(spec))
++        # For sets, we need to match elements, not positions
++        target_items = list(target)
++        spec_items = list(spec)
++        
++        # Check if all target elements match some spec element
++        for t_item in target_items:
++            matched = False
++            for s_item in spec_items:
+                 try:
+-                    result.append(scope[glom](item, child, scope))
++                    scope[glom](t_item, s_item, scope)
++                    matched = True
+                     break
+-                except GlomError as e:
+-                    last_error = e
+-            else:  # did not break, something went wrong
+-                if target and not spec:
+-                    raise MatchError(
+-                        "{0!r} does not match empty {1}", target, type(spec).__name__)
+-                # NOTE: unless error happens above, break will skip else branch
+-                # so last_error will have been assigned
+-                raise last_error
+-        if type(spec) is not list:
+-            return type(spec)(result)
+-        return result
+-    elif isinstance(spec, tuple):
+-        if not isinstance(target, tuple):
+-            raise TypeMatchError(type(target), tuple)
+-        if len(target) != len(spec):
+-            raise MatchError("{0!r} does not match {1!r}", target, spec)
+-        result = []
+-        for sub_target, sub_spec in zip(target, spec):
+-            result.append(scope[glom](sub_target, sub_spec, scope))
+-        return tuple(result)
+-    elif callable(spec):
+-        try:
+-            if spec(target):
+-                return target
+-        except Exception as e:
+-            raise MatchError(
+-                "{0}({1!r}) did not validate (got exception {2!r})", spec.__name__, target, e)
+-        raise MatchError(
+-            "{0}({1!r}) did not validate (non truthy return)", spec.__name__, target)
+-    elif target != spec:
+-        raise MatchError("{0!r} does not match {1!r}", target, spec)
+-    return target
++                except GlomError:
++                    continue
++            if not matched:
++                raise MatchError("element {0!r} not found in spec", t_item)
++        
++        # Check if all spec elements match some target element (for completeness)
++        for s_item in spec_items:
++            matched = False
++            for t_item in target_items:
++                try:
++                    scope[glom](t_item, s_item, scope)
++                    matched = True
++                    break
++                except GlomError:
++                    continue
++            if not matched and len(spec) > 0:
++                # Only raise if spec is not empty and we couldn't match
++                raise MatchError("element {0!r} not found in target", s_item)
++                
++        return target
++    else:
++        # For literal values, compare directly
++        if target != spec:
++            raise MatchError("expected {0!r}, got {1!r}", spec, target)
++        return target
+ 
+ 
+ class Switch:
+@@ -961,7 +1025,7 @@
+         if self.spec is not T:
+             target = scope[glom](target, self.spec, scope)
+         if self.types and type(target) not in self.types:
+-            if self.default is not RAISE:
++            if self.default is not _MISSING:
+                 return arg_val(target, self.default, scope)
+             errs.append('expected type to be %r, found type %r' %
+                         (self.types[0].__name__ if len(self.types) == 1
+@@ -969,7 +1033,7 @@
+                          type(target).__name__))
+ 
+         if self.vals and target not in self.vals:
+-            if self.default is not RAISE:
++            if self.default is not _MISSING:
+                 return arg_val(target, self.default, scope)
+             if len(self.vals) == 1:
+                 errs.append(f"expected {self.vals[0]}, found {target}")
+@@ -986,8 +1050,8 @@
+                     msg = ('expected %r check to validate target'
+                            % getattr(validator, '__name__', None) or ('#%s' % i))
+                     if type(e) is self._ValidationError:
+-                        if self.default is not RAISE:
+-                            return self.default
++                        if self.default is not _MISSING:
++                            return arg_val(target, self.default, scope)
+                     else:
+                         msg += ' (got exception: %r)' % e
+                     errs.append(msg)
+@@ -996,7 +1060,7 @@
+             # TODO: can these early returns be done without so much copy-paste?
+             # (early return to avoid potentially expensive or even error-causeing
+             # string formats)
+-            if self.default is not RAISE:
++            if self.default is not _MISSING:
+                 return arg_val(target, self.default, scope)
+             errs.append('expected instance of %r, found instance of %r' %
+                         (self.instance_of[0].__name__ if len(self.instance_of) == 1

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```python\ndef cookie_parser(cookie_string: str) ->dict[str, str]:\n    cookies: dict[str, str] = {}\n    for cookie in cookie_string.split(\";\"):\n        cookie = cookie.strip()\n        if cookie:\n            try:\n                key, value = cookie.split(\"=\", 1)\n                cookies[key] = value\n            except ValueError:\n                # Handle malformed cookies\n                pass\n    return cookies\n\n\ndef cookies(self) ->dict[str, str]:\n    if not hasattr(self, \"_cookies\"):\n        cookies: dict[str, str] = {}\n        cookie_header = self.headers.get(\"cookie\")\n\n        if cookie_header:\n            cookies = cookie_parser(cookie_header)\n        self._cookies = cookies\n    return self._cookies\n```",
+  "rewrite": "def cookie_parser(cookie_string: str) ->dict[str, str]:\n    cookies: dict[str, str] = {}\n    for cookie in cookie_string.split(\";\"):\n        cookie = cookie.strip()\n        if cookie:\n            try:\n                key, value = cookie.split(\"=\", 1)\n                cookies[key] = value\n            except ValueError:\n                # Handle malformed cookies\n                pass\n    return cookies\n\n\ndef cookies(self) ->dict[str, str]:\n    if not hasattr(self, \"_cookies\"):\n        cookies: dict[str, str] = {}\n        cookie_header = self.headers.get(\"cookie\")\n\n        if cookie_header:\n            cookies = cookie_parser(cookie_header)\n        self._cookies = cookies\n    return self._cookies",
+  "strategy": "lm_regen_from_tests_combined"
+}

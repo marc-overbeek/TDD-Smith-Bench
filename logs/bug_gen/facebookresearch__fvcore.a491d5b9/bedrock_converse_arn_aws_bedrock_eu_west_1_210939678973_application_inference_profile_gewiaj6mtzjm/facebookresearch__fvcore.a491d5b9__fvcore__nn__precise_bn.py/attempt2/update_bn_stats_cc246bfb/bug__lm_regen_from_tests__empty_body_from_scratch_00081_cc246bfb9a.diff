@@ -1,0 +1,179 @@
+--- a/fvcore/nn/precise_bn.py
++++ b/fvcore/nn/precise_bn.py
+@@ -90,108 +90,75 @@
+ 
+ 
+ @torch.no_grad()
+-def update_bn_stats(
+-    model: nn.Module,
+-    data_loader: Iterable[Any],
+-    num_iters: int = 200,
+-    progress: Optional[str] = None,
+-) -> None:
+-    """
+-    Recompute and update the batch norm stats to make them more precise. During
+-    training both BN stats and the weight are changing after every iteration, so
+-    the running average can not precisely reflect the actual stats of the
+-    current model.
+-    In this function, the BN stats are recomputed with fixed weights, to make
+-    the running average more precise. Specifically, it computes the true average
+-    of per-batch mean/variance instead of the running average.
+-    See Sec. 3 of the paper "Rethinking Batch in BatchNorm" for details.
+-
+-    Args:
+-        model (nn.Module): the model whose bn stats will be recomputed.
+-
+-            Note that:
+-
+-            1. This function will not alter the training mode of the given model.
+-               Users are responsible for setting the layers that needs
+-               precise-BN to training mode, prior to calling this function.
+-
+-            2. Be careful if your models contain other stateful layers in
+-               addition to BN, i.e. layers whose state can change in forward
+-               iterations.  This function will alter their state. If you wish
+-               them unchanged, you need to either pass in a submodule without
+-               those layers, or backup the states.
+-        data_loader (iterator): an iterator. Produce data as inputs to the model.
+-        num_iters (int): number of iterations to compute the stats.
+-        progress: None or "tqdm". If set, use tqdm to report the progress.
+-    """
+-    bn_layers = get_bn_modules(model)
+-
+-    if len(bn_layers) == 0:
++@torch.no_grad()
++def update_bn_stats(model: nn.Module, data_loader: Iterable[Any], num_iters:
++    int=200, progress: Optional[str]=None) ->None:
++    bn_modules = get_bn_modules(model)
++    if not bn_modules:
+         return
+-    logger.info(f"Computing precise BN statistics for {len(bn_layers)} BN layers ...")
+-
+-    # In order to make the running stats only reflect the current batch, the
+-    # momentum is disabled.
+-    # bn.running_mean = (1 - momentum) * bn.running_mean + momentum * batch_mean
+-    # Setting the momentum to 1.0 to compute the stats without momentum.
+-    momentum_actual = [bn.momentum for bn in bn_layers]
+-    for bn in bn_layers:
+-        bn.momentum = 1.0
+-
+-    batch_size_per_bn_layer: Dict[nn.Module, int] = {}
+-
+-    def get_bn_batch_size_hook(
+-        module: nn.Module, input: Tuple[torch.Tensor]
+-    ) -> Tuple[torch.Tensor]:
+-        assert (
+-            module not in batch_size_per_bn_layer
+-        ), "Some BN layers are reused. This is not supported and probably not desired."
+-        x = input[0]
+-        assert isinstance(
+-            x, torch.Tensor
+-        ), f"BN layer should take tensor as input. Got {input}"
+-        # consider spatial dimensions as batch as well
+-        batch_size = x.numel() // x.shape[1]
+-        batch_size_per_bn_layer[module] = batch_size
+-        return (x,)
+-
+-    hooks_to_remove = [
+-        bn.register_forward_pre_hook(get_bn_batch_size_hook) for bn in bn_layers
+-    ]
+-
+-    estimators = [
+-        _PopulationVarianceEstimator(bn.running_mean, bn.running_var)
+-        for bn in bn_layers
+-    ]
+-
+-    ind = -1
+-    for inputs in tqdm.tqdm(
+-        itertools.islice(data_loader, num_iters),
+-        total=num_iters,
+-        disable=progress != "tqdm",
+-    ):
+-        ind += 1
+-        batch_size_per_bn_layer.clear()
+-        model(inputs)
+-
+-        for i, bn in enumerate(bn_layers):
+-            # Accumulates the bn stats.
+-            batch_size = batch_size_per_bn_layer.get(bn, None)
+-            if batch_size is None:
+-                continue  # the layer was unused in this forward
+-            estimators[i].update(bn.running_mean, bn.running_var, batch_size)
+-    assert ind == num_iters - 1, (
+-        "update_bn_stats is meant to run for {} iterations, "
+-        "but the dataloader stops at {} iterations.".format(num_iters, ind)
+-    )
+-
+-    for i, bn in enumerate(bn_layers):
+-        # Sets the precise bn stats.
+-        bn.running_mean = estimators[i].pop_mean
+-        bn.running_var = estimators[i].pop_var
+-        bn.momentum = momentum_actual[i]
+-    for hook in hooks_to_remove:
+-        hook.remove()
++    
++    # Check if we have sufficient data
++    data_iter = iter(data_loader)
++    try:
++        # Try to get a few samples to check if data is available
++        for _ in range(min(num_iters, 10)):
++            next(data_iter)
++    except StopIteration:
++        raise AssertionError("Insufficient data for precise BN computation")
++    
++    # Reset the data loader and process data
++    data_iter = iter(data_loader)
++    
++    # Use the first batch to determine the shape
++    try:
++        first_batch = next(data_iter)
++    except StopIteration:
++        raise AssertionError("Insufficient data for precise BN computation")
++    
++    # Create estimators for each BN module
++    estimators = []
++    for bn in bn_modules:
++        if hasattr(bn, 'running_mean') and hasattr(bn, 'running_var'):
++            estimators.append((_MeanOfBatchVarianceEstimator(
++                bn.running_mean, bn.running_var), bn))
++    
++    # Process batches
++    processed_count = 0
++    for batch in data_iter:
++        if processed_count >= num_iters:
++            break
++            
++        # Compute batch statistics for each BN module
++        for estimator, bn in estimators:
++            # Get the appropriate dimension for statistics
++            if isinstance(bn, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)):
++                # Determine the stats dimensions based on the BN type
++                if isinstance(bn, nn.BatchNorm1d):
++                    stats_dim = [0]
++                elif isinstance(bn, nn.BatchNorm2d):
++                    stats_dim = [0, 2, 3]
++                else:  # nn.BatchNorm3d
++                    stats_dim = [0, 2, 3, 4]
++                
++                # Compute batch mean and var
++                batch_mean = batch.mean(dim=stats_dim, keepdim=True)
++                batch_var = batch.var(dim=stats_dim, keepdim=True, unbiased=False)
++                # Correct batch size calculation
++                batch_size = batch.shape[0]  # First dimension is batch size
++                
++                # Update estimator
++                estimator.update(batch_mean.flatten(), batch_var.flatten(), batch_size)
++        
++        processed_count += 1
++    
++    # Update the actual BN layer statistics
++    for estimator, bn in estimators:
++        if hasattr(bn, 'running_mean') and hasattr(bn, 'running_var'):
++            # Update running statistics
++            if hasattr(estimator, 'pop_mean'):
++                bn.running_mean.copy_(estimator.pop_mean)
++            if hasattr(estimator, 'pop_var'):
++                bn.running_var.copy_(estimator.pop_var)
+ 
+ 
+ def get_bn_modules(model: nn.Module) -> List[nn.Module]:

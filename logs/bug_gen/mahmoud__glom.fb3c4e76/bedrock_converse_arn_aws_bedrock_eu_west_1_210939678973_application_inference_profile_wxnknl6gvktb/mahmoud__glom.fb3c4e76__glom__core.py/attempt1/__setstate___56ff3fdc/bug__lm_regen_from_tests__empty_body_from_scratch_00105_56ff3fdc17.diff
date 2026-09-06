@@ -1,0 +1,16 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1504,6 +1504,13 @@
+     def __getstate__(self):
+         t_path = self.__ops__
+         return tuple(({T: 'T', S: 'S', A: 'A'}[t_path[0]],) + t_path[1:])
++
++    def __getstate__(self):
++        t_path = self.__ops__
++        return tuple(({T: 'T', S: 'S', A: 'A'}[t_path[0]],) + t_path[1:])
++
++    def __setstate__(self, state):
++        self.__ops__ = ({'T': T, 'S': S, 'A': A}[state[0]],) + state[1:]
+ 
+     def __setstate__(self, state):
+         self.__ops__ = ({'T': T, 'S': S, 'A': A}[state[0]],) + state[1:]

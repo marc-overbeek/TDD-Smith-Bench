@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef get(self, key: str, cast: typing.Callable[[typing.Any], typing.Any] | None = None, default: typing.Any = undefined) -> typing.Any:\n    key_with_prefix = self.env_prefix + key\n    if key_with_prefix in self.environ:\n        value = self.environ[key_with_prefix]\n        return self._perform_cast(key_with_prefix, value, cast)\n    if key_with_prefix in self.file_values:\n        value = self.file_values[key_with_prefix]\n        return self._perform_cast(key_with_prefix, value, cast)\n    if default is not undefined:\n        return self._perform_cast(key_with_prefix, default, cast)\n    raise KeyError(f\"Config '{key_with_prefix}' is missing, and has no default.\")\n```",
+  "rewrite": "def get(self, key: str, cast: typing.Callable[[typing.Any], typing.Any] | None = None, default: typing.Any = undefined) -> typing.Any:\n    key_with_prefix = self.env_prefix + key\n    if key_with_prefix in self.environ:\n        value = self.environ[key_with_prefix]\n        return self._perform_cast(key_with_prefix, value, cast)\n    if key_with_prefix in self.file_values:\n        value = self.file_values[key_with_prefix]\n        return self._perform_cast(key_with_prefix, value, cast)\n    if default is not undefined:\n        return self._perform_cast(key_with_prefix, default, cast)\n    raise KeyError(f\"Config '{key_with_prefix}' is missing, and has no default.\")",
+  "strategy": "lm_regen_from_tests"
+}

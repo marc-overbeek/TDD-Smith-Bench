@@ -1,0 +1,55 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -263,27 +263,33 @@
+     return click.unstyle(content) if only_text else content
+ 
+ 
+-def format_license(license: Dict[str, Any], only_text: bool = False, columns: int = get_terminal_size().columns) -> str:
+-    """
+-    Format the license details.
+-
+-    Args:
+-        license (Dict[str, Any]): The license details.
+-        only_text (bool, optional): Whether to return only text without styling. Defaults to False.
+-        columns (int, optional): Number of columns for formatting. Defaults to terminal size.
+-
+-    Returns:
+-        str: Formatted license details.
+-    """
+-    to_print = [
+-        {'words': [{'style': {'bold': True}, 'value': license['package']},
+-                   {'value': ' version {0} found using license '.format(license['version'])},
+-                   {'style': {'bold': True}, 'value': license['license']}
+-                   ]
+-         },
++def format_license(license: Dict[str, Any], only_text: bool=False, columns:
++    int=get_terminal_size().columns) ->str:
++    pkg_name = license.get('package', '')
++    license_name = license.get('license', 'Unknown')
++    version = license.get('version', '')
++
++    common_format = {'indent': 3, 'format': {'sub_indent': ' ' * 3, 'max_lines': None}}
++
++    styled_lines = [
++        {'words': [{'style': {'bold': True}, 'value': 'License: '},
++                   {'value': license_name}]},
+     ]
+ 
+-    content = style_lines(to_print, columns, '-> ', start_line='', end_line='')
++    if version:
++        styled_lines.append(
++            {'words': [{'style': {'bold': True}, 'value': 'Version: '},
++                       {'value': version}]}
++        )
++
++    title = f'-> {pkg_name} ({version}): {license_name}' if version else f'-> {pkg_name}: {license_name}'
++
++    styled_text = format_long_text(title, '', columns, start_line_decorator='', end_line_decorator='',
++                                   sub_indent=' ' * 3) + '\n'
++
++    to_print = [{**common_format, **line} for line in styled_lines]
++
++    content = style_lines(to_print, columns - 3, styled_text, start_line='', end_line='')
+ 
+     return click.unstyle(content) if only_text else content
+ 

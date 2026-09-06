@@ -1,0 +1,30 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -209,11 +209,22 @@
+ 
+ 
+ def short_repr(item, max_length=15):
+-    """Short representation of item if it is too long"""
+-    item = repr(item)
+-    if len(item) > max_length:
+-        item = '{}...{}'.format(item[:max_length - 3], item[-1])
+-    return item
++    item_repr = repr(item)
++    if len(item_repr) > max_length:
++        # Find the closing bracket/paren/brace
++        closing_char = item_repr[-1]
++        # Truncate and add ellipsis before the closing character
++        return item_repr[:max_length - 4] + ':...' + closing_char
++    return item_repr
++
++def short_repr(item, max_length=15):
++    item_repr = repr(item)
++    if len(item_repr) > max_length:
++        # Find the closing bracket/paren/brace
++        closing_char = item_repr[-1]
++        # Truncate and add ellipsis before the closing character
++        return item_repr[:max_length - 3] + '...' + closing_char
++    return item_repr
+ 
+ 
+ class ListItemRemovedOrAdded:  # pragma: no cover

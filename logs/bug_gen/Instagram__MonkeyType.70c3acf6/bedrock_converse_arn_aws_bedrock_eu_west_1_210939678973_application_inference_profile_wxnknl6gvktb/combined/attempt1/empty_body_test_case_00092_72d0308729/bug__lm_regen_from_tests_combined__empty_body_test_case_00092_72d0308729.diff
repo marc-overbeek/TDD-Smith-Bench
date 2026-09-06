@@ -1,0 +1,22 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -462,11 +462,14 @@
+     def rewrite_anonymous_TypedDict(self, typed_dict):
+         assert is_anonymous_typed_dict(typed_dict)
+         required_fields, optional_fields = field_annotations(typed_dict)
+-        all_value_types = [*required_fields.values(), *optional_fields.values()]
+-        if not all_value_types:
+-            # Special-case this because we can't justify any type.
+-            return Dict[Any, Any]
+-        return Dict[str, Union[tuple(self.rewrite(typ) for typ in all_value_types)]]
++        return self.make_anonymous_typed_dict(
++            required_fields={
++                name: self.rewrite(typ) for name, typ in required_fields.items()
++            },
++            optional_fields={
++                name: self.rewrite(typ) for name, typ in optional_fields.items()
++            },
++        )
+ 
+ 
+ class ChainedRewriter(TypeRewriter):

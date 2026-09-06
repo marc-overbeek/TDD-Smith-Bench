@@ -1,0 +1,27 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1811,8 +1811,23 @@
+     def __iter__(self):
+         return iter(self.__dict__.items())
+ 
++    assert repr(Vars(a=1, b=2)) in ('Vars(a=1, b=2)', 'Vars(b=2, a=1)')
++
++    assert repr(let) == "S(v=Vars({'b': 2}, c=3))"
++
+     def __repr__(self):
+-        return f"{self.__class__.__name__}({bbrepr(self.__dict__)})"
++        ret = format_invocation(self.__class__.__name__,
++                                args=(self.base,) if self.base else (),
++                                kwargs=self.defaults,
++                                repr=bbrepr)
++        return ret
++
++    def __repr__(self):
++        ret = format_invocation(self.__class__.__name__,
++                                args=(self.base,) if self.base else (),
++                                kwargs=self.defaults,
++                                repr=bbrepr)
++        return ret
+ 
+ 
+ class Vars:

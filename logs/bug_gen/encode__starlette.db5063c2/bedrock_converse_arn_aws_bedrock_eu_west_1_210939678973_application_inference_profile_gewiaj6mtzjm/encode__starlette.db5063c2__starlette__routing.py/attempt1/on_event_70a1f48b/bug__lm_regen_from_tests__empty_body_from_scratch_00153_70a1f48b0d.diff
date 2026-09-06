@@ -1,0 +1,28 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -862,14 +862,14 @@
+             self.on_shutdown.append(func)
+ 
+     def on_event(self, event_type: str) -> typing.Callable:  # type: ignore[type-arg]
+-        warnings.warn(
+-            "The `on_event` decorator is deprecated, and will be removed in version 1.0.0. "
+-            "Refer to https://www.starlette.io/lifespan/ for recommended approach.",
+-            DeprecationWarning,
+-        )
+-
+-        def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
+-            self.add_event_handler(event_type, func)
+-            return func
+-
+-        return decorator
++            warnings.warn(
++                "The `on_event` decorator is deprecated, and will be removed in version 1.0.0. "
++                "Refer to https://www.starlette.io/lifespan/ for recommended approach.",
++                DeprecationWarning,
++            )
++
++            def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
++                self.add_event_handler(event_type, func)
++                return func
++
++            return decorator

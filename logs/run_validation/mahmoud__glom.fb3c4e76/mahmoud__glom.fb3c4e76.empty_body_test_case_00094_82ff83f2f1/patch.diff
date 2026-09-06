@@ -1,0 +1,109 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -262,30 +262,19 @@
+ 
+ class _Bool:
+     def __init__(self, *children, **kw):
+-        self.children = children
+-        if not children:
+-            raise ValueError("need at least one operand for {}".format(
+-                self.__class__.__name__))
+-        self.default = kw.pop('default', _MISSING)
+-        if kw:
+-            raise TypeError('got unexpected kwargs: %r' % list(kw.keys()))
++        pass
+ 
+     def __and__(self, other):
+         return And(self, other)
+ 
+     def __or__(self, other):
+-        return Or(self, other)
++        pass
+ 
+     def __invert__(self):
+         return Not(self)
+ 
+     def glomit(self, target, scope):
+-        try:
+-            return self._glomit(target, scope)
+-        except GlomError:
+-            if self.default is not _MISSING:
+-                return arg_val(target, self.default, scope)
+-            raise
++        pass
+ 
+     def _m_repr(self):
+         """should this Or() repr as M |?"""
+@@ -314,11 +303,7 @@
+     __slots__ = ('children',)
+ 
+     def _glomit(self, target, scope):
+-        # all children must match without exception
+-        result = target  # so that And() == True, similar to all([]) == True
+-        for child in self.children:
+-            result = scope[glom](target, child, scope)
+-        return result
++        pass
+ 
+     def __and__(self, other):
+         # reduce number of layers of spec
+@@ -335,12 +320,7 @@
+     __slots__ = ('children',)
+ 
+     def _glomit(self, target, scope):
+-        for child in self.children[:-1]:
+-            try:  # one child must match without exception
+-                return scope[glom](target, child, scope)
+-            except GlomError:
+-                pass
+-        return scope[glom](target, self.children[-1], scope)
++        pass
+ 
+     def __or__(self, other):
+         # reduce number of layers of spec
+@@ -358,15 +338,10 @@
+     __slots__ = ('child',)
+ 
+     def __init__(self, child):
+-        self.child = child
++        pass
+ 
+     def glomit(self, target, scope):
+-        try:  # one child must match without exception
+-            scope[glom](target, self.child, scope)
+-        except GlomError:
+-            return target
+-        else:
+-            raise GlomError("child shouldn't have passed", self.child)
++        pass
+ 
+     def _m_repr(self):
+         if isinstance(self.child, (_MType, _MExpr)):
+@@ -545,23 +520,21 @@
+         return _MExpr(self, 'l', other)
+ 
+     def __and__(self, other):
+-        return And(self, other)
++        pass
+ 
+     __rand__ = __and__
+ 
+     def __or__(self, other):
+-        return Or(self, other)
++        pass
+ 
+     def __invert__(self):
+-        return Not(self)
++        pass
+ 
+     def __repr__(self):
+         return "M"
+ 
+     def glomit(self, target, spec):
+-        if target:
+-            return target
+-        raise MatchError("{0!r} not truthy", target)
++        pass
+ 
+ 
+ M = _MType()

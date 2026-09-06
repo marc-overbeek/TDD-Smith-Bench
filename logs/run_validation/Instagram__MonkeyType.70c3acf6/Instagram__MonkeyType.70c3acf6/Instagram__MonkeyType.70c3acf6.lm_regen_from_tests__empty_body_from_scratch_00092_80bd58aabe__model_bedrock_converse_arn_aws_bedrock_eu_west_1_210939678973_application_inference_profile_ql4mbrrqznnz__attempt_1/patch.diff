@@ -1,0 +1,77 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -156,35 +156,46 @@
+     return imports
+ 
+ 
+-def update_signature_args(
+-    sig: inspect.Signature,
+-    arg_types: Dict[str, type],
+-    has_self: bool,
+-    existing_annotation_strategy: ExistingAnnotationStrategy = ExistingAnnotationStrategy.REPLICATE,
+-) -> inspect.Signature:
+-    """Update argument annotations with the supplied types"""
++def update_signature_args(sig: inspect.Signature, arg_types: Dict[str, type
++    ], has_self: bool, existing_annotation_strategy:
++    ExistingAnnotationStrategy=ExistingAnnotationStrategy.REPLICATE
++    ) ->inspect.Signature:
+     params = []
+-    for arg_idx, name in enumerate(sig.parameters):
+-        param = sig.parameters[name]
+-        typ = arg_types.get(name)
+-        typ = inspect.Parameter.empty if typ is None else typ
+-        is_self = has_self and arg_idx == 0
+-        annotated = param.annotation is not inspect.Parameter.empty
+-        if (
+-            annotated
+-            and existing_annotation_strategy == ExistingAnnotationStrategy.OMIT
+-        ):
+-            # generate no annotation for already-annotated args when generating
+-            # a stub to apply, avoiding the possibility of "incompatible
+-            # annotation" errors
+-            param = param.replace(annotation=inspect.Parameter.empty)
+-        # Don't touch existing annotations unless asked to ignore them
+-        if not is_self and (
+-            (existing_annotation_strategy == ExistingAnnotationStrategy.IGNORE)
+-            or not annotated
+-        ):
+-            param = param.replace(annotation=typ)
+-        params.append(param)
++    for index, param in enumerate(sig.parameters.values()):
++        # Don't annotate self/cls (first param of instance/class methods)
++        if has_self and index == 0:
++            params.append(param.replace(annotation=inspect.Parameter.empty))
++            continue
++        
++        typ = arg_types.get(param.name)
++        existing_anno = param.annotation
++        has_existing_anno = existing_anno is not inspect.Parameter.empty
++        
++        if existing_annotation_strategy == ExistingAnnotationStrategy.REPLICATE:
++            # Keep existing annotations, only add new ones where missing
++            if has_existing_anno:
++                params.append(param)
++            elif typ is not None:
++                params.append(param.replace(annotation=typ))
++            else:
++                params.append(param)
++        elif existing_annotation_strategy == ExistingAnnotationStrategy.IGNORE:
++            # Ignore existing annotations, use traced types
++            if typ is None:
++                params.append(param.replace(annotation=inspect.Parameter.empty))
++            else:
++                params.append(param.replace(annotation=typ))
++        elif existing_annotation_strategy == ExistingAnnotationStrategy.OMIT:
++            # Omit annotation where existing annotation exists
++            if has_existing_anno:
++                params.append(param.replace(annotation=inspect.Parameter.empty))
++            elif typ is not None:
++                params.append(param.replace(annotation=typ))
++            else:
++                params.append(param)
++        else:
++            params.append(param)
++    
+     return sig.replace(parameters=params)
+ 
+ 

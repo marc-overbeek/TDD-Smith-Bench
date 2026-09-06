@@ -1,0 +1,12 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -476,6 +476,9 @@
+     def _prep_datetime(self, obj):
+         type_ = 'datetime'
+         obj = datetime_normalize(self.truncate_datetime, obj)
++        # For timezone-aware datetimes, convert to UTC for consistent hashing
++        if obj.tzinfo is not None:
++            obj = obj.utctimetuple()
+         return KEY_TO_VAL_STR.format(type_, obj)
+ 
+     def _prep_date(self, obj):

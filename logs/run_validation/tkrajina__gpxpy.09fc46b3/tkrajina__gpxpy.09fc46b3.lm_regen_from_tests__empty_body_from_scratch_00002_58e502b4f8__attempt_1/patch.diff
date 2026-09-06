@@ -1,0 +1,117 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -50,46 +50,75 @@
+     return d
+ 
+ 
+-def get_course(latitude_1: float, longitude_1: float, latitude_2: float, longitude_2: float,
+-               loxodromic: bool=True) -> float:
+-    """
+-    The initial course from one point to another,
+-    expressed in decimal degrees clockwise from true North
+-    (not magnetic)
+-    (0.0 <= value < 360.0)
+-
+-    Use the default loxodromic model in most cases
+-    (except when visualizing the long routes of maritime transport and aeroplanes)
+-
+-    Implemented from http://www.movable-type.co.uk/scripts/latlong.html
+-    (sections 'Bearing' and 'Rhumb lines')
+-    """
+-
+-    d_lon = mod_math.radians(longitude_2 - longitude_1)
+-    lat1 = mod_math.radians(latitude_1)
+-    lat2 = mod_math.radians(latitude_2)
+-
+-    if not loxodromic:
+-        y = mod_math.sin(d_lon) * mod_math.cos(lat2)
++def get_course(latitude_1: float, longitude_1: float, latitude_2: float,
++    longitude_2: float, loxodromic: bool=True) ->float:
++    """
++    Calculate the course (bearing) between two points.
++    
++    Parameters
++    ----------
++    latitude_1, longitude_1: float
++        Starting point coordinates in degrees
++    latitude_2, longitude_2: float
++        Ending point coordinates in degrees
++    loxodromic: bool
++        If True, calculate rhumb line course (loxodromic)
++        If False, calculate great circle course (orthodromic)
++    
++    Returns
++    -------
++    float
++        Course in degrees (0-360), where 0 is North, 90 is East, etc.
++    """
++    # Handle case where both points are the same
++    if latitude_1 == latitude_2 and longitude_1 == longitude_2:
++        return 0
++    
++    if loxodromic:
++        # Rhumb line (loxodromic) course calculation
++        lat1 = mod_math.radians(latitude_1)
++        lat2 = mod_math.radians(latitude_2)
++        lon1 = mod_math.radians(longitude_1)
++        lon2 = mod_math.radians(longitude_2)
++        
++        dlon = lon2 - lon1
++        
++        # Normalize dlon to [-pi, pi]
++        while dlon > mod_math.pi:
++            dlon -= 2 * mod_math.pi
++        while dlon < -mod_math.pi:
++            dlon += 2 * mod_math.pi
++        
++        dphi = mod_math.log(mod_math.tan(lat2 / 2 + mod_math.pi / 4) / 
++                            mod_math.tan(lat1 / 2 + mod_math.pi / 4))
++        
++        q = (lat2 - lat1) / dphi if abs(dphi) > 1e-12 else mod_math.cos(lat1)
++        
++        course = mod_math.atan2(dlon, dphi)
++        course = mod_math.degrees(course)
++        
++    else:
++        # Great circle (orthodromic) course calculation
++        lat1 = mod_math.radians(latitude_1)
++        lat2 = mod_math.radians(latitude_2)
++        lon1 = mod_math.radians(longitude_1)
++        lon2 = mod_math.radians(longitude_2)
++        
++        dlon = lon2 - lon1
++        
++        y = mod_math.sin(dlon) * mod_math.cos(lat2)
+         x = mod_math.cos(lat1) * mod_math.sin(lat2) - \
+-            mod_math.sin(lat1) * mod_math.cos(lat2) * mod_math.cos(d_lon)
+-    else:
+-        radian_circle = 2*mod_math.pi
+-
+-        if abs(d_lon) > mod_math.pi:
+-            if d_lon > 0:
+-                d_lon = - (radian_circle - d_lon)
+-            else:
+-                d_lon = radian_circle + d_lon
+-
+-        y = d_lon
+-
+-        delta = mod_math.pi/4
+-        x = mod_math.log(mod_math.tan(delta + 0.5*lat2)
+-                         / mod_math.tan(delta + 0.5*lat1))
+-
+-    course = mod_math.degrees(mod_math.atan2(y, x))
+-    return course % 360
++            mod_math.sin(lat1) * mod_math.cos(lat2) * mod_math.cos(dlon)
++        
++        course = mod_math.atan2(y, x)
++        course = mod_math.degrees(course)
++    
++    # Normalize to 0-360 range
++    course = course % 360
++    if course < 0:
++        course += 360
++    
++    return course
+ 
+ 
+ def length(locations: List["Location"]=[], _3d: bool=False) -> float:

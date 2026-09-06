@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef parse_directive_content(self, block: 'BlockParser', m: Match[str],\n    state: 'BlockState') ->Optional[List[Dict[str, Any]]]:\n    content = self.parse_content(m)\n    if not content:\n        return None\n\n    tokens = list(self.parse_tokens(block, content, state))\n    caption = tokens[0]\n    if caption['type'] == 'paragraph':\n        caption['type'] = 'figcaption'\n        children = [caption]\n        if len(tokens) > 1:\n            children.append({\n                'type': 'legend',\n                'children': tokens[1:]\n            })\n        return children\n    return None\n```",
+  "rewrite": "def parse_directive_content(self, block: 'BlockParser', m: Match[str],\n    state: 'BlockState') ->Optional[List[Dict[str, Any]]]:\n    content = self.parse_content(m)\n    if not content:\n        return None\n\n    tokens = list(self.parse_tokens(block, content, state))\n    caption = tokens[0]\n    if caption['type'] == 'paragraph':\n        caption['type'] = 'figcaption'\n        children = [caption]\n        if len(tokens) > 1:\n            children.append({\n                'type': 'legend',\n                'children': tokens[1:]\n            })\n        return children\n    return None",
+  "strategy": "lm_regen_from_tests"
+}

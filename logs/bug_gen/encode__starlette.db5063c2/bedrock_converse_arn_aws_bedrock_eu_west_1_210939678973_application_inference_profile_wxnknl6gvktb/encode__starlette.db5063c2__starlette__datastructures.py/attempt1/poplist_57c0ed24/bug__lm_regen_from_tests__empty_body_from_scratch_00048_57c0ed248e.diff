@@ -1,0 +1,33 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -331,9 +331,30 @@
+         self._list = [(k, v) for k, v in self._list if k != key]
+         return key, value
+ 
++    q = MultiDict([('a', '123'), ('a', '456'), ('b', '789')])
++    assert q.poplist('a') == ['123', '456']
++    assert q.get('a') is None
++    assert repr(q) == "MultiDict([('b', '789')])"
++
+     def poplist(self, key: typing.Any) -> list[typing.Any]:
+         values = [v for k, v in self._list if k == key]
+         self.pop(key)
++        return values
++
++    def pop(self, key: typing.Any, default: typing.Any = None) -> typing.Any:
++        self._list = [(k, v) for k, v in self._list if k != key]
++        return self._dict.pop(key, default)
++
++    def poplist(self, key: typing.Any) -> list[typing.Any]:
++        values = [v for k, v in self._list if k == key]
++        self._list = [(k, v) for k, v in self._list if k != key]
++        self._dict.pop(key, None)
++        return values
++
++    def poplist(self, key: typing.Any) -> list[typing.Any]:
++        values = [v for k, v in self._list if k == key]
++        self._list = [(k, v) for k, v in self._list if k != key]
++        self._dict.pop(key, None)
+         return values
+ 
+     def clear(self) -> None:

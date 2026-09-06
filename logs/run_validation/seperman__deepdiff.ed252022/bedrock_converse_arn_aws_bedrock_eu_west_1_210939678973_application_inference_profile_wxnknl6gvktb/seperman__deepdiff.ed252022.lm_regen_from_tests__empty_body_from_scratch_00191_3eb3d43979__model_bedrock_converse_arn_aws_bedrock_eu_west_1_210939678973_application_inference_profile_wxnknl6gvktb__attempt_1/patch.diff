@@ -1,0 +1,23 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -462,9 +462,19 @@
+         return BoolObj.TRUE if obj else BoolObj.FALSE
+ 
+ 
++    def test_path(self):
++        a = Path('testdir')
++        b = Path('testdir2')
++        a_hash = DeepHash(a)[a]
++        b_hash = DeepHash(b)[b]
++        assert a_hash != b_hash
++
++    def _prep_path(self, obj):
++        pass
++
+     def _prep_path(self, obj):
+         type_ = obj.__class__.__name__
+-        return KEY_TO_VAL_STR.format(type_, obj)
++        return KEY_TO_VAL_STR.format(type_, str(obj))
+ 
+     def _prep_number(self, obj):
+         type_ = "number" if self.ignore_numeric_type_changes else obj.__class__.__name__

@@ -1,0 +1,29 @@
+--- a/safety/scan/ecosystems/python/dependencies.py
++++ b/safety/scan/ecosystems/python/dependencies.py
+@@ -121,24 +121,8 @@
+     return path.endswith(supported_types)
+ 
+ 
+-def parse_requirement(dep: str, found: Optional[str]) -> PythonSpecification:
+-    """
+-    Parses a requirement and creates a PythonSpecification object.
+-
+-    Args:
+-        dep (str): The dependency string.
+-        found (Optional[str]): The found path.
+-
+-    Returns:
+-        PythonSpecification: The parsed requirement.
+-    """
+-    req = PythonSpecification(dep)
+-    req.found = Path(found).resolve() if found else None
+-
+-    if req.specifier == SpecifierSet(''):
+-        req.specifier = SpecifierSet('>=0')
+-
+-    return req
++def parse_requirement(dep: str, found: Optional[str]) ->PythonSpecification:
++    return PythonSpecification(dep, found=found)
+ 
+ 
+ def read_requirements(fh, resolve: bool = True) -> Generator[PythonDependency, None, None]:

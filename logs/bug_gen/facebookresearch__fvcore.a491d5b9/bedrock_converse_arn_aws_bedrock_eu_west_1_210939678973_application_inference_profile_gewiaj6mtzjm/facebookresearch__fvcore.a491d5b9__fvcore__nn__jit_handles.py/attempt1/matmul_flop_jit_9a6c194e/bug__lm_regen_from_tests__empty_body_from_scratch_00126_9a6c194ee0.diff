@@ -1,0 +1,56 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -216,16 +216,46 @@
+         raise NotImplementedError("Unsupported einsum operation.")
+ 
+ 
+-def matmul_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-    """
+-    Count flops for matmul.
++def matmul_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:
++    """
++    Count flops for matmul operation.
+     """
+     # Inputs should be a list of length 2.
+-    # Inputs contains the shapes of two matrices.
++    # Inputs contains the shapes of two tensor.
++    assert len(inputs) == 2, len(inputs)
+     input_shapes = [get_shape(v) for v in inputs]
+-    assert len(input_shapes) == 2, input_shapes
+-    assert input_shapes[0][-1] == input_shapes[1][-2], input_shapes
+-    flop = prod(input_shapes[0]) * input_shapes[-1][-1]
++    
++    # Handle broadcasting by finding the effective batch dimensions
++    shape1, shape2 = input_shapes[0], input_shapes[1]
++    
++    # For matmul, we need to consider the last two dimensions for matrix multiplication
++    # and broadcast the leading dimensions
++    m, n = shape1[-2], shape1[-1]
++    n2, p = shape2[-2], shape2[-1]
++    
++    # Check if dimensions are compatible
++    assert n == n2, f"Matrix multiplication dimension mismatch: {m}x{n} and {n2}x{p}"
++    
++    # Calculate the batch dimensions
++    batch1 = shape1[:-2] if len(shape1) > 2 else []
++    batch2 = shape2[:-2] if len(shape2) > 2 else []
++    
++    # Compute effective batch size considering broadcasting
++    batch_dims = []
++    max_len = max(len(batch1), len(batch2))
++    
++    for i in range(max_len):
++        dim1 = batch1[i] if i < len(batch1) else 1
++        dim2 = batch2[i] if i < len(batch2) else 1
++        
++        # Broadcasting rule: if one dimension is 1, it can broadcast to any size
++        batch_dims.append(max(dim1, dim2) if dim1 != 1 and dim2 != 1 else (dim1 if dim1 != 1 else dim2))
++    
++    # Total batch size
++    batch_size = prod(batch_dims) if batch_dims else 1
++    
++    # Total flops = batch_size * m * n * p
++    flop = batch_size * m * n * p
+     return flop
+ 
+ 

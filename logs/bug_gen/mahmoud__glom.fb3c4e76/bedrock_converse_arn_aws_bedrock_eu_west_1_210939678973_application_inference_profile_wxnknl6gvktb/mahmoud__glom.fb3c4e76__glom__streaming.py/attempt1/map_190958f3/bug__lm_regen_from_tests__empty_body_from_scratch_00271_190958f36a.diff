@@ -1,0 +1,33 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -115,6 +115,21 @@
+     def _add_op(self, opname, args, callback):
+         return type(self)(subspec=self.subspec, _iter_stack=[(opname, args, callback)] + self._iter_stack)
+ 
++    def filter(self, key=T):
++        check_spec = key if isinstance(key, Check) else Check(key, default=SKIP)
++        return self._add_op(
++            'filter',
++            (key,),
++            lambda iterable, scope: ifilter(
++                lambda t: scope[glom](t, check_spec, scope) is not SKIP, iterable))
++
++    def map(self, subspec):
++        return self._add_op(
++            'map',
++            (subspec,),
++            lambda iterable, scope: imap(
++                lambda t: scope[glom](t, subspec, scope), iterable))
++
+     def map(self, subspec):
+         """Return a new :class:`Iter()` spec which will apply the provided
+         *subspec* to each element of the iterable.
+@@ -129,8 +144,6 @@
+         >>> glom(['a', 'B', 'C'], Iter().map(T.islower()).all())
+         [True, False, False]
+         """
+-        # whatever validation you want goes here
+-        # TODO: DRY the self._add_op with a decorator?
+         return self._add_op(
+             'map',
+             (subspec,),

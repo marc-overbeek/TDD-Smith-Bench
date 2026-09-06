@@ -1,0 +1,50 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -875,25 +875,29 @@
+     return mod_stubs
+ 
+ 
+-def build_module_stubs_from_traces(
+-    traces: Iterable[CallTrace],
+-    max_typed_dict_size: int,
+-    existing_annotation_strategy: ExistingAnnotationStrategy = ExistingAnnotationStrategy.REPLICATE,
+-    rewriter: Optional[TypeRewriter] = None,
+-) -> Dict[str, ModuleStub]:
+-    """Given an iterable of call traces, build the corresponding stubs."""
+-    index: DefaultDict[Callable[..., Any], Set[CallTrace]] = collections.defaultdict(
+-        set
++def build_module_stubs_from_traces(traces: Iterable[CallTrace],
++    max_typed_dict_size: int, existing_annotation_strategy:
++    ExistingAnnotationStrategy=ExistingAnnotationStrategy.REPLICATE,
++    rewriter: Optional[TypeRewriter]=None) ->Dict[str, ModuleStub]:
++    # Group traces by function
++    traces_by_func: DefaultDict[Callable[..., Any], List[CallTrace]] = collections.defaultdict(list)
++    for trace in traces:
++        traces_by_func[trace.func].append(trace)
++    
++    # Build function definitions from traces
++    defs = (
++        get_updated_definition(
++            func,
++            func_traces,
++            max_typed_dict_size,
++            rewriter,
++            existing_annotation_strategy
++        )
++        for func, func_traces in traces_by_func.items()
+     )
+-    for trace in traces:
+-        index[trace.func].add(trace)
+-    defns = []
+-    for func, traces in index.items():
+-        defn = get_updated_definition(
+-            func, traces, max_typed_dict_size, rewriter, existing_annotation_strategy
+-        )
+-        defns.append(defn)
+-    return build_module_stubs(defns)
++    
++    # Build and return module stubs
++    return build_module_stubs(defs)
+ 
+ 
+ class StubIndexBuilder(CallTraceLogger):

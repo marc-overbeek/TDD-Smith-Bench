@@ -1,0 +1,63 @@
+--- a/src/mistune/directives/toc.py
++++ b/src/mistune/directives/toc.py
+@@ -91,18 +91,49 @@
+             md.renderer.register('toc', render_html_toc)
+ 
+ 
+-def render_html_toc(
+-    renderer: "BaseRenderer", title: str, collapse: bool = False, **attrs: Any
+-) -> str:
+-    if not title:
+-        title = 'Table of Contents'
+-    content = render_toc_ul(attrs['toc'])
++def render_html_toc(renderer: 'BaseRenderer', title: str, collapse: bool=
++    False, **attrs: Any) ->str:
++    toc = attrs.get('toc', [])
++    if not toc:
++        return ''
++    
++    html = ''
++    if title:
++        html += f'<div class="toc">\n<span class="toc-title">{title}</span>\n'
++    else:
++        html += '<div class="toc">\n'
++    
++    if collapse:
++        html += '<details>\n<summary>Table of Contents</summary>\n'
++    
++    html += render_toc_ul(toc)
++    
++    if collapse:
++        html += '</details>\n'
++    
++    html += '</div>\n'
++    return html
+ 
+-    html = '<details class="toc"'
+-    if not collapse:
+-        html += ' open'
+-    html += '>\n<summary>' + title + '</summary>\n'
+-    return html + content + '</details>\n'
++def render_html_toc(renderer: 'BaseRenderer', title: str, collapse: bool=
++    False, **attrs: Any) ->str:
++    toc = attrs.get('toc', [])
++    if not toc:
++        return ''
++    
++    html = '<div class="toc">\n'
++    if title:
++        html += f'<span class="toc-title">{title}</span>\n'
++    
++    if collapse:
++        html += '<details>\n<summary>Table of Contents</summary>\n'
++    
++    html += render_toc_ul(toc)
++    
++    if collapse:
++        html += '</details>\n'
++    
++    html += '</div>\n'
++    return html
+ 
+ 
+ def _normalize_level(options: Dict[str, Any], name: str, default: Any) -> Any:

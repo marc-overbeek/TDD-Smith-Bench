@@ -1,0 +1,16 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -372,7 +372,12 @@
+ 
+ 
+ def numpy_dtype_string_to_type(dtype_str):
+-    return numpy_dtype_str_to_type[dtype_str]
++    if dtype_str in numpy_dtype_str_to_type:
++        return numpy_dtype_str_to_type[dtype_str]
++    else:
++        from deepdiff.delta import DeltaError
++        NOT_VALID_NUMPY_TYPE = "'{}' is not a valid numpy type."
++        raise DeltaError(NOT_VALID_NUMPY_TYPE.format(dtype_str))
+ 
+ 
+ def type_in_type_group(item, type_group):

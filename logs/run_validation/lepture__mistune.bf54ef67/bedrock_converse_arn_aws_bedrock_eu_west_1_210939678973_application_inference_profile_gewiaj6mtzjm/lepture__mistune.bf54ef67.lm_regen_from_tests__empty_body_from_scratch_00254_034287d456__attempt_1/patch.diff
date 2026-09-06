@@ -1,0 +1,30 @@
+--- a/src/mistune/renderers/rst.py
++++ b/src/mistune/renderers/rst.py
+@@ -147,4 +147,26 @@
+         return ''
+ 
+     def list(self, token: Dict[str, Any], state: BlockState) -> str:
+-        return render_list(self, token, state)
++        children = token['children']
++        if not children:
++            return ''
++    
++        # Handle different list types
++        if token.get('attrs', {}).get('ordered'):
++            # Ordered list
++            result = []
++            for i, child in enumerate(children, 1):
++                content = self.render_children(child, state)
++                # Remove trailing newlines from list items
++                content = content.rstrip('\n')
++                result.append(f'{i}. {content}')
++            return '\n'.join(result) + '\n\n'
++        else:
++            # Unordered list
++            result = []
++            for child in children:
++                content = self.render_children(child, state)
++                # Remove trailing newlines from list items
++                content = content.rstrip('\n')
++                result.append(f'* {content}')
++            return '\n'.join(result) + '\n\n'

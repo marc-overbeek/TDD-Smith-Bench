@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef _parse_html_to_newline(state: BlockState, newline: Pattern[str]) -> int:\n    m = newline.search(state.src, state.cursor)\n    if m:\n        end_pos = m.start()\n    else:\n        end_pos = state.cursor_max\n\n    text = state.src[state.cursor:end_pos]\n    state.append_token({'type': 'block_html', 'raw': text})\n    return end_pos\n```",
+  "rewrite": "def _parse_html_to_newline(state: BlockState, newline: Pattern[str]) -> int:\n    m = newline.search(state.src, state.cursor)\n    if m:\n        end_pos = m.start()\n    else:\n        end_pos = state.cursor_max\n\n    text = state.src[state.cursor:end_pos]\n    state.append_token({'type': 'block_html', 'raw': text})\n    return end_pos",
+  "strategy": "lm_regen_from_tests"
+}

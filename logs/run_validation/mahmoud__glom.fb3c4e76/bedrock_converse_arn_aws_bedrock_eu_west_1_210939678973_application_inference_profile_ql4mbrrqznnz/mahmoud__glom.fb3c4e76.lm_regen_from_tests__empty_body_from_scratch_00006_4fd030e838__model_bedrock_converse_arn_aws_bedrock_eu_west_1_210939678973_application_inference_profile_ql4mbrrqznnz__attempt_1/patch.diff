@@ -1,0 +1,59 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -755,27 +755,37 @@
+ 
+ 
+ def _format_path(t_path):
+-    path_parts, cur_t_path = [], []
++    # t_path is a sequence of (op, arg) pairs flattened: op0, arg0, op1, arg1, ...
++    # Check if there are any 'P' (plain path) operations
++    ops = t_path[0::2]
++    args = t_path[1::2]
++    
++    has_p = 'P' in ops
++    
++    if not has_p:
++        # All T-style operations, render as T expression
++        return _format_t(t_path)
++    
++    # Mixed or all-P: render as Path(...)
++    # Group consecutive T-ops and P-ops into segments
++    segments = []
+     i = 0
+-    while i < len(t_path):
+-        op, arg = t_path[i], t_path[i + 1]
+-        i += 2
+-        if op == 'P':
+-            if cur_t_path:
+-                path_parts.append(cur_t_path)
+-                cur_t_path = []
+-            path_parts.append(arg)
++    while i < len(ops):
++        if ops[i] == 'P':
++            segments.append(bbrepr(args[i]))
++            i += 1
+         else:
+-            cur_t_path.append(op)
+-            cur_t_path.append(arg)
+-    if path_parts and cur_t_path:
+-        path_parts.append(cur_t_path)
+-
+-    if path_parts or not cur_t_path:
+-        return 'Path(%s)' % ', '.join([_format_t(part)
+-                                       if type(part) is list else repr(part)
+-                                       for part in path_parts])
+-    return _format_t(cur_t_path)
++            # Collect consecutive non-P ops into a T expression
++            j = i
++            while j < len(ops) and ops[j] != 'P':
++                j += 1
++            t_sub_path = []
++            for k in range(i, j):
++                t_sub_path.extend([ops[k], args[k]])
++            segments.append(_format_t(tuple(t_sub_path)))
++            i = j
++    
++    return 'Path(' + ', '.join(segments) + ')'
+ 
+ 
+ class Spec:

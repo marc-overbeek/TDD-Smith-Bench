@@ -1,0 +1,18 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -277,6 +277,7 @@
+             else:
+                 tfms_flatten.append(t)
+         self.transforms = tfms_flatten
++        # this is an exact match
+ 
+     def _apply(self, x: _T, meth: str) -> _T:
+         """
+@@ -296,6 +297,7 @@
+         if name.startswith("apply_"):
+             return lambda x: self._apply(x, name)
+         return super().__getattribute__(name)
++        # this is an exact match
+ 
+     def __add__(self, other: "TransformList") -> "TransformList":
+         """

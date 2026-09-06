@@ -1,0 +1,25 @@
+--- a/oauthlib/oauth1/rfc5849/request_validator.py
++++ b/oauthlib/oauth1/rfc5849/request_validator.py
+@@ -143,6 +143,22 @@
+         return 20, 30
+ 
+     @property
++    def test_check_realms(self):
++        v = RequestValidator()
++        self.assertFalse(v.check_realms(['foo']))  # Base class should return False for ['foo']
++
++        class FooRealmValidator(RequestValidator):
++            @property
++            def realms(self):
++                return ['foo']
++        v = FooRealmValidator()
++        self.assertTrue(v.check_realms(['foo']))  # Subclass with realms=['foo'] should return True
++
++    def check_realms(self, realms):
++        """Check that the realm is one of a set allowed realms."""
++        return all(r in self.realms for r in realms)
++
++    @property
+     def realms(self):
+         return []
+ 

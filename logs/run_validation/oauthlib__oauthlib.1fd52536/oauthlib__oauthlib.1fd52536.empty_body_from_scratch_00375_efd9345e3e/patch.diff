@@ -1,0 +1,29 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/base.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/base.py
+@@ -89,25 +89,4 @@
+                                           description=('URL query parameters are not allowed'))
+ 
+ def catch_errors_and_unavailability(f):
+-    @functools.wraps(f)
+-    def wrapper(endpoint, uri, *args, **kwargs):
+-        if not endpoint.available:
+-            e = TemporarilyUnavailableError()
+-            log.info('Endpoint unavailable, ignoring request %s.' % uri)
+-            return {}, e.json, 503
+-
+-        if endpoint.catch_errors:
+-            try:
+-                return f(endpoint, uri, *args, **kwargs)
+-            except OAuth2Error:
+-                raise
+-            except FatalClientError:
+-                raise
+-            except Exception as e:
+-                error = ServerError()
+-                log.warning(
+-                    'Exception caught while processing request, %s.' % e)
+-                return {}, error.json, 500
+-        else:
+-            return f(endpoint, uri, *args, **kwargs)
+-    return wrapper
++    pass

@@ -1,0 +1,80 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -372,40 +372,44 @@
+ 
+ 
+ def pickle_load(content=None, file_obj=None, safe_to_import=None):
+-    """
+-    **pickle_load**
+-    Load the pickled content. content should be a bytes object.
+-
+-    **Parameters**
+-
+-    content : Bytes of pickled object. 
+-
+-    file_obj : A file object to load the content from
+-
+-    safe_to_import : A set of modules that needs to be explicitly allowed to be loaded.
+-        Example: {'mymodule.MyClass', 'decimal.Decimal'}
+-        Note that this set will be added to the basic set of modules that are already allowed.
+-        The set of what is already allowed can be found in deepdiff.serialization.SAFE_TO_IMPORT
+-
+-    **Returns**
+-
+-        A delta object that can be added to t1 to recreate t2.
+-
+-    **Examples**
+-
+-    Importing
+-        >>> from deepdiff import DeepDiff, Delta
+-        >>> from pprint import pprint
+-
+-
+-    """
+-    if not content and not file_obj:
+-        raise ValueError('Please either pass the content or the file_obj to pickle_load.') 
++    if content is None and file_obj is None:
++        raise ValueError("Either content or file_obj must be provided")
++    
++    if content is not None and file_obj is not None:
++        raise ValueError("Only one of content or file_obj should be provided")
++    
++    if file_obj is not None:
++        if isinstance(file_obj, io.TextIOWrapper):
++            raise ValueError("Binary mode needed. Please open the file in binary mode.")
++        content = file_obj.read()
++    
+     if isinstance(content, str):
+-        content = content.encode('utf-8')
+-    if content:
+-        file_obj = io.BytesIO(content)
+-    return _RestrictedUnpickler(file_obj, safe_to_import=safe_to_import).load()
++        # Check if it's a pickle string
++        if content.startswith('DeepDiff Delta Payload v0-0-1'):
++            # This is a delta payload, not a pickle
++            raise ValueError("This appears to be a Delta payload, not a pickle")
++        # Try to unpickle as bytes
++        try:
++            content = content.encode('latin1')  # Handle string content that might be bytes
++        except AttributeError:
++            pass
++    
++    if isinstance(content, bytes):
++        try:
++            return _RestrictedUnpickler(io.BytesIO(content), safe_to_import=safe_to_import).load()
++        except Exception as e:
++            # If it fails, try to decode as latin1 first
++            try:
++                content = content.decode('latin1')
++                return _RestrictedUnpickler(io.BytesIO(content.encode('latin1')), safe_to_import=safe_to_import).load()
++            except Exception:
++                raise e
++    else:
++        # If content is not bytes, try to read it as a file-like object
++        if hasattr(content, 'read'):
++            return _RestrictedUnpickler(content, safe_to_import=safe_to_import).load()
++        else:
++            raise TypeError("Content must be bytes or a file-like object")
+ 
+ 
+ def _get_pretty_form_text(verbose_level):

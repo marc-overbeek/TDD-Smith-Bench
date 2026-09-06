@@ -1,0 +1,116 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -118,61 +118,38 @@
+ 
+     CACHE_AUTO_ADJUST_THRESHOLD = 0.25
+ 
+-    def __init__(self,
+-                 t1: Any,
+-                 t2: Any,
+-                 _original_type=None,
+-                 cache_purge_level: int=1,
+-                 cache_size: int=0,
+-                 cache_tuning_sample_size: int=0,
+-                 custom_operators: Optional[List[Any]] =None,
+-                 cutoff_distance_for_pairs: float=CUTOFF_DISTANCE_FOR_PAIRS_DEFAULT,
+-                 cutoff_intersection_for_pairs: float=CUTOFF_INTERSECTION_FOR_PAIRS_DEFAULT,
+-                 encodings: Optional[List[str]]=None,
+-                 exclude_obj_callback: Optional[Callable]=None,
+-                 exclude_obj_callback_strict: Optional[Callable]=None,
+-                 exclude_paths: Union[str, List[str]]=None,
+-                 exclude_regex_paths: Union[str, List[str], Pattern[str], List[Pattern[str]], None]=None,
+-                 exclude_types: Optional[List[Any]]=None,
+-                 get_deep_distance: bool=False,
+-                 group_by: Union[str, Tuple[str, str], None]=None,
+-                 group_by_sort_key: Union[str, Callable, None]=None,
+-                 hasher: Optional[Callable]=None,
+-                 hashes: Optional[Dict]=None,
+-                 ignore_encoding_errors: bool=False,
+-                 ignore_nan_inequality: bool=False,
+-                 ignore_numeric_type_changes: bool=False,
+-                 ignore_order: bool=False,
+-                 ignore_order_func: Optional[Callable]=None,
+-                 ignore_private_variables: bool=True,
+-                 ignore_string_case: bool=False,
+-                 ignore_string_type_changes: bool=False,
+-                 ignore_type_in_groups: Optional[List[Tuple]]=None,
+-                 ignore_type_subclasses: bool=False,
+-                 include_obj_callback: Optional[Callable]=None,
+-                 include_obj_callback_strict: Optional[Callable]=None,
+-                 include_paths: Union[str, List[str]]=None,
+-                 iterable_compare_func: Optional[Callable]=None,
+-                 log_frequency_in_sec: int=0,
+-                 math_epsilon: Optional[float]=None,
+-                 max_diffs: Optional[int]=None,
+-                 max_passes: int=10000000,
+-                 number_format_notation: str="f",
+-                 number_to_string_func: Optional[Callable]=None,
+-                 progress_logger: Callable=logger.info,
+-                 report_repetition: bool=False,
+-                 significant_digits: Optional[int]=None,
+-                 use_log_scale: bool=False,
+-                 log_scale_similarity_threshold: float=0.1,
+-                 threshold_to_diff_deeper: float = 0.33,
+-                 truncate_datetime: Optional[str]=None,
+-                 use_enum_value: bool=False,
+-                 verbose_level: int=1,
+-                 view: str=TEXT_VIEW,
+-                 zip_ordered_iterables: bool=False,
+-                 _parameters=None,
+-                 _shared_parameters=None,
+-                 **kwargs):
++    def __init__(self, t1: Any, t2: Any, _original_type=None, cache_purge_level:
++        int=1, cache_size: int=0, cache_tuning_sample_size: int=0,
++        custom_operators: Optional[List[Any]]=None, cutoff_distance_for_pairs:
++        float=CUTOFF_DISTANCE_FOR_PAIRS_DEFAULT, cutoff_intersection_for_pairs:
++        float=CUTOFF_INTERSECTION_FOR_PAIRS_DEFAULT, encodings: Optional[List[
++        str]]=None, exclude_obj_callback: Optional[Callable]=None,
++        exclude_obj_callback_strict: Optional[Callable]=None, exclude_paths:
++        Union[str, List[str]]=None, exclude_regex_paths: Union[str, List[str],
++        Pattern[str], List[Pattern[str]], None]=None, exclude_types: Optional[
++        List[Any]]=None, get_deep_distance: bool=False, group_by: Union[str,
++        Tuple[str, str], None]=None, group_by_sort_key: Union[str, Callable,
++        None]=None, hasher: Optional[Callable]=None, hashes: Optional[Dict]=
++        None, ignore_encoding_errors: bool=False, ignore_nan_inequality: bool=
++        False, ignore_numeric_type_changes: bool=False, ignore_order: bool=
++        False, ignore_order_func: Optional[Callable]=None,
++        ignore_private_variables: bool=True, ignore_string_case: bool=False,
++        ignore_string_type_changes: bool=False, ignore_type_in_groups: Optional
++        [List[Tuple]]=None, ignore_type_subclasses: bool=False,
++        include_obj_callback: Optional[Callable]=None,
++        include_obj_callback_strict: Optional[Callable]=None, include_paths:
++        Union[str, List[str]]=None, iterable_compare_func: Optional[Callable]=
++        None, log_frequency_in_sec: int=0, math_epsilon: Optional[float]=None,
++        max_diffs: Optional[int]=None, max_passes: int=10000000,
++        number_format_notation: str='f', number_to_string_func: Optional[
++        Callable]=None, progress_logger: Callable=logger.info,
++        report_repetition: bool=False, significant_digits: Optional[int]=None,
++        use_log_scale: bool=False, log_scale_similarity_threshold: float=0.1,
++        threshold_to_diff_deeper: float=0.33, truncate_datetime: Optional[str]=
++        None, use_enum_value: bool=False, verbose_level: int=1, view: str=
++        TEXT_VIEW, zip_ordered_iterables: bool=False, _parameters=None,
++        _shared_parameters=None, **kwargs):
++    
+         super().__init__()
+         if kwargs:
+             raise ValueError((
+@@ -574,16 +551,9 @@
+                 result[clean_key] = key
+         return result
+ 
+-    def _diff_dict(
+-        self,
+-        level,
+-        parents_ids=frozenset([]),
+-        print_as_attribute=False,
+-        override=False,
+-        override_t1=None,
+-        override_t2=None,
+-        local_tree=None,
+-    ):
++    def _diff_dict(self, level, parents_ids=frozenset([]), print_as_attribute=
++        False, override=False, override_t1=None, override_t2=None, local_tree=None
++        ):
+         """Difference of 2 dictionaries"""
+         if override:
+             # for special stuff like custom objects and named tuples we receive preprocessed t1 and t2

@@ -1,0 +1,55 @@
+--- a/fvcore/nn/activation_count.py
++++ b/fvcore/nn/activation_count.py
+@@ -93,33 +93,22 @@
+     __init__.__doc__ = JitModelAnalysis.__init__.__doc__
+ 
+ 
+-def activation_count(
+-    model: nn.Module,
+-    inputs: Tuple[Any, ...],
+-    supported_ops: Optional[Dict[str, Handle]] = None,
+-) -> Tuple[DefaultDict[str, float], Counter[str]]:
+-    """
+-    Given a model and an input to the model, compute the total number of
+-    activations of the model.
+-
+-    Args:
+-        model (nn.Module): The model to compute activation counts.
+-        inputs (tuple): Inputs that are passed to `model` to count activations.
+-            Inputs need to be in a tuple.
+-        supported_ops (dict(str,Callable) or None) : provide additional
+-            handlers for extra ops, or overwrite the existing handlers for
+-            convolution and matmul. The key is operator name and the value
+-            is a function that takes (inputs, outputs) of the op.
+-
+-    Returns:
+-        tuple[defaultdict, Counter]: A dictionary that records the number of
+-            activation (mega) for each operation and a Counter that records the
+-            number of unsupported operations.
+-    """
+-    if supported_ops is None:
+-        supported_ops = {}
+-    act_counter = ActivationCountAnalysis(model, inputs).set_op_handle(**supported_ops)
+-    mega_acts = defaultdict(float)
+-    for op, act in act_counter.by_operator().items():
+-        mega_acts[op] = act / 1e6
+-    return mega_acts, act_counter.unsupported_ops()
++def activation_count(model: nn.Module, inputs: Tuple[Any, ...],
++    supported_ops: Optional[Dict[str, Handle]]=None) ->Tuple[DefaultDict[
++    str, float], Counter[str]]:
++    analysis = ActivationCountAnalysis(model, inputs)
++    if supported_ops:
++        analysis.set_op_handle(**supported_ops)
++    total_count = analysis.total()
++    by_op = analysis.by_operator()
++    
++    # Normalize by 1,000,000 as expected by tests
++    normalized_total = defaultdict(float)
++    for key, value in total_count.items():
++        normalized_total[key] = value / 1000000.0
++    
++    normalized_by_op = Counter()
++    for key, value in by_op.items():
++        normalized_by_op[key] = value / 1000000.0
++        
++    return normalized_total, normalized_by_op

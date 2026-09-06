@@ -1,0 +1,53 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -317,16 +317,16 @@
+         )
+ 
+     def rewrite_TypedDict(self, typed_dict):
+-        if is_anonymous_typed_dict(typed_dict):
+-            return self.rewrite_anonymous_TypedDict(typed_dict)
+-        return self.make_builtin_typed_dict(
+-            typed_dict.__name__,
+-            {
+-                name: self.rewrite(typ)
+-                for name, typ in typed_dict.__annotations__.items()
+-            },
+-            total=typed_dict.__total__,
+-        )
++            if is_anonymous_typed_dict(typed_dict):
++                return self.rewrite_anonymous_TypedDict(typed_dict)
++            return self.make_builtin_typed_dict(
++                typed_dict.__name__,
++                {
++                    name: self.rewrite(typ)
++                    for name, typ in typed_dict.__annotations__.items()
++                },
++                total=typed_dict.__total__,
++            )
+ 
+     def rewrite_Union(self, union):
+         return self._rewrite_container(Union, union)
+@@ -460,13 +460,16 @@
+     """TypedDict('Foo', {"k": v1, ...}) -> Dict[str, Union[v1, ...]]."""
+ 
+     def rewrite_anonymous_TypedDict(self, typed_dict):
+-        assert is_anonymous_typed_dict(typed_dict)
+-        required_fields, optional_fields = field_annotations(typed_dict)
+-        all_value_types = [*required_fields.values(), *optional_fields.values()]
+-        if not all_value_types:
+-            # Special-case this because we can't justify any type.
+-            return Dict[Any, Any]
+-        return Dict[str, Union[tuple(self.rewrite(typ) for typ in all_value_types)]]
++            assert is_anonymous_typed_dict(typed_dict)
++            required_fields, optional_fields = field_annotations(typed_dict)
++            return self.make_anonymous_typed_dict(
++                required_fields={
++                    name: self.rewrite(typ) for name, typ in required_fields.items()
++                },
++                optional_fields={
++                    name: self.rewrite(typ) for name, typ in optional_fields.items()
++                },
++            )
+ 
+ 
+ class ChainedRewriter(TypeRewriter):

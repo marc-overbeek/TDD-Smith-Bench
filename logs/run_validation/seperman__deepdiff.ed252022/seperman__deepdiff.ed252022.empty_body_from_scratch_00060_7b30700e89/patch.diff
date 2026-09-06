@@ -1,0 +1,44 @@
+--- a/deepdiff/model.py
++++ b/deepdiff/model.py
+@@ -147,38 +147,9 @@
+         self._from_tree_deep_distance(tree)
+         self._from_tree_custom_results(tree)
+ 
+-    def _from_tree_default(self, tree, report_type, ignore_if_in_iterable_opcodes=False):
+-        if report_type in tree:
+-                
+-            for change in tree[report_type]:  # report each change
+-                # When we convert from diff to delta result, we care more about opcodes than iterable_item_added or removed
+-                if (
+-                    ignore_if_in_iterable_opcodes
+-                    and report_type in {"iterable_item_added", "iterable_item_removed"}
+-                    and change.up.path(force=FORCE_DEFAULT) in self["_iterable_opcodes"]
+-                ):
+-                    continue
+-                # determine change direction (added or removed)
+-                # Report t2 (the new one) whenever possible.
+-                # In cases where t2 doesn't exist (i.e. stuff removed), report t1.
+-                if change.t2 is not notpresent:
+-                    item = change.t2
+-                else:
+-                    item = change.t1
+-
+-                # do the reporting
+-                report = self[report_type]
+-                if isinstance(report, SetOrdered):
+-                    report.add(change.path(force=FORCE_DEFAULT))
+-                elif isinstance(report, dict):
+-                    report[change.path(force=FORCE_DEFAULT)] = item
+-                elif isinstance(report, list):  # pragma: no cover
+-                    # we don't actually have any of those right now, but just in case
+-                    report.append(change.path(force=FORCE_DEFAULT))
+-                else:  # pragma: no cover
+-                    # should never happen
+-                    raise TypeError("Cannot handle {} report container type.".
+-                                    format(report))
++    def _from_tree_default(self, tree, report_type,
++        ignore_if_in_iterable_opcodes=False):
++        pass
+ 
+     def _from_tree_type_changes(self, tree):
+         if 'type_changes' in tree:

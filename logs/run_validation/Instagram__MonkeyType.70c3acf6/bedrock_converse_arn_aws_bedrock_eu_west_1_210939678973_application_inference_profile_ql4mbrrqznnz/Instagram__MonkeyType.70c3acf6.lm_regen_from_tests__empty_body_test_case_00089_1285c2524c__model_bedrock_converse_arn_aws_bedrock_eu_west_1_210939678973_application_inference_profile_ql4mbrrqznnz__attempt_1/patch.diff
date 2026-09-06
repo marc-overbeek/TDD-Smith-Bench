@@ -1,0 +1,25 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -288,6 +288,7 @@
+                 self.rewrite(elem) for elem in container.__args__
+             )
+         return self.make_container_type(self.rewrite_container_type(cls), elems)
++        # this is an exact match
+ 
+     def rewrite_Dict(self, dct):
+         return self._rewrite_container(Dict, dct)
+@@ -395,12 +396,14 @@
+     def _is_empty(self, typ):
+         args = getattr(typ, "__args__", [])
+         return args and all(is_any(e) for e in args)
++        # this is an exact match
+ 
+     def rewrite_Union(self, union):
+         elems = tuple(self.rewrite(e) for e in union.__args__ if not self._is_empty(e))
+         if elems:
+             return Union[elems]
+         return union
++        # this is an exact match
+ 
+ 
+ class RewriteConfigDict(TypeRewriter):

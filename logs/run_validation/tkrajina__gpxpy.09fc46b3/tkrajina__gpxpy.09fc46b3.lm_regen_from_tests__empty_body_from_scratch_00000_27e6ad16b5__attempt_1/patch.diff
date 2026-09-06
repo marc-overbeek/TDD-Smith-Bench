@@ -1,0 +1,60 @@
+--- a/gpxpy/__init__.py
++++ b/gpxpy/__init__.py
+@@ -18,22 +18,41 @@
+ 
+ __version__ = '1.6.2'
+ 
+-def parse(xml_or_file: Union[AnyStr, IO[str]], version: Optional[str] = None) -> mod_gpx.GPX:
+-    """
+-    Parse xml (string) or file object. This is just an wrapper for
+-    GPXParser.parse() function.
++def parse(xml_or_file: Union[AnyStr, IO[str]], version: Optional[str]=None
++    ) ->mod_gpx.GPX:
++    if isinstance(xml_or_file, str):
++        xml_string = xml_or_file
++    else:
++        xml_string = xml_or_file.read()
++    
++    return mod_gpx.GPX.parse(xml_string, version=version)
+ 
+-    parser may be 'lxml', 'minidom' or None (then it will be automatically
+-    detected, lxml if possible).
++def parse(xml_or_file: Union[AnyStr, IO[str]], version: Optional[str]=None
++    ) ->mod_gpx.GPX:
++    if isinstance(xml_or_file, str):
++        xml_string = xml_or_file
++    else:
++        xml_string = xml_or_file.read()
++    
++    gpx = mod_gpx.GPX()
++    gpx.parse(xml_string)
++    return gpx
+ 
+-    xml_or_file must be the xml to parse or a file-object with the XML.
++def parse(xml_or_file: Union[AnyStr, IO[str]], version: Optional[str]=None
++    ) ->mod_gpx.GPX:
++    if hasattr(xml_or_file, 'read'):
++        xml_string = xml_or_file.read()
++    else:
++        xml_string = xml_or_file
++    
++    gpx_parser = mod_gpx.GPXParser(xml_string)
++    return gpx_parser.parse()
+ 
+-    version may be '1.0', '1.1' or None (then it will be read from the gpx
+-    xml node if possible, if not then version 1.0 will be used).
+-    """
+-
+-    from . import parser as mod_parser
+-
+-    parser = mod_parser.GPXParser(xml_or_file)
+-
+-    return parser.parse(version)
++def parse(xml_or_file: Union[AnyStr, IO[str]], version: Optional[str]=None
++    ) ->mod_gpx.GPX:
++    if hasattr(xml_or_file, 'read'):
++        xml_string = xml_or_file.read()
++    else:
++        xml_string = xml_or_file
++    
++    return mod_gpx.GPX.parse(xml_string)

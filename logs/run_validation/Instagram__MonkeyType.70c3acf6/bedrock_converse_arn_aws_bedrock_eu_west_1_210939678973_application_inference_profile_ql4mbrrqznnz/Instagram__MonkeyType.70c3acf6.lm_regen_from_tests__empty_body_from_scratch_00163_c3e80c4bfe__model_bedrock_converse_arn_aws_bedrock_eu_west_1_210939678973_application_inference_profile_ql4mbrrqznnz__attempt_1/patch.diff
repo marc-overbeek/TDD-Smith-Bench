@@ -1,0 +1,38 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -52,20 +52,24 @@
+     return is_generic(typ) and name_of_generic(typ) == "List"
+ 
+ 
+-def make_typed_dict(*, required_fields=None, optional_fields=None) -> type:
+-    required_fields = required_fields or {}
+-    optional_fields = optional_fields or {}
+-    assert required_fields.keys().isdisjoint(optional_fields.keys())
++typed_dict.__annotations__["required_fields"].__annotations__
++typed_dict.__annotations__["optional_fields"].__annotations__
++
++def make_typed_dict(*, required_fields=None, optional_fields=None) ->type:
++    if required_fields is None:
++        required_fields = {}
++    if optional_fields is None:
++        optional_fields = {}
++    
++    required_td = TypedDict(DUMMY_REQUIRED_TYPED_DICT_NAME, required_fields)
++    optional_td = TypedDict(DUMMY_OPTIONAL_TYPED_DICT_NAME, optional_fields, total=False)
++    
+     return TypedDict(
+         DUMMY_TYPED_DICT_NAME,
+         {
+-            "required_fields": TypedDict(
+-                DUMMY_REQUIRED_TYPED_DICT_NAME, required_fields
+-            ),
+-            "optional_fields": TypedDict(
+-                DUMMY_OPTIONAL_TYPED_DICT_NAME, optional_fields
+-            ),
+-        },
++            "required_fields": required_td,
++            "optional_fields": optional_td,
++        }
+     )
+ 
+ 

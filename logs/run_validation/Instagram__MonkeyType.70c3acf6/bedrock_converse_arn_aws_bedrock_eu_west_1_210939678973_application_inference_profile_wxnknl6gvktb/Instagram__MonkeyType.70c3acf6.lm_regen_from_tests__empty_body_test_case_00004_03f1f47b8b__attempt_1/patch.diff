@@ -1,0 +1,29 @@
+--- a/demo/inbox.py
++++ b/demo/inbox.py
+@@ -29,7 +29,7 @@
+     def __init__(self, repo: RepoInterface) -> None:
+         self.events: List[CommentedEvent] = []
+         self.user_ids: Set[UserId] = set()
+-        super().__init__(repo)
++        self.repo = repo
+ 
+     def add(self, event):
+         self.events.append(event)
+@@ -54,7 +54,7 @@
+     def __init__(self, repo: RepoInterface) -> None:
+         self.events_by_feedentry_id: Dict[FeedEntryId, List[LikedEvent]] = {}
+         self.user_ids: Set[UserId] = set()
+-        super().__init__(repo)
++        self.repo = repo
+ 
+     def add(self, event):
+         self.events_by_feedentry_id.setdefault(event.feedentry_id, []).append(event)
+@@ -97,7 +97,7 @@
+     def __init__(self, repo: RepoInterface) -> None:
+         self.events: List[FollowedEvent] = []
+         self.user_ids: Set[UserId] = set()
+-        super().__init__(repo)
++        self.repo = repo
+ 
+     def add(self, event):
+         self.events.append(event)

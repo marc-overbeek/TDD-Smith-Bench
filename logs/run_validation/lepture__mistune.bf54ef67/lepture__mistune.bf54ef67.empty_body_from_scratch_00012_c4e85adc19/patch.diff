@@ -1,0 +1,30 @@
+--- a/src/mistune/__init__.py
++++ b/src/mistune/__init__.py
+@@ -65,23 +65,10 @@
+ ] = {}
+ 
+ 
+-def markdown(
+-    text: str,
+-    escape: bool = True,
+-    renderer: Optional[RendererRef] = "html",
+-    plugins: Optional[Iterable[Any]] = None,
+-) -> Union[str, List[Dict[str, Any]]]:
+-    if renderer == "ast":
+-        # explicit and more similar to 2.x's API
+-        renderer = None
+-    key = (escape, renderer, plugins)
+-    if key in __cached_parsers:
+-        return __cached_parsers[key](text)
+-
+-    md = create_markdown(escape=escape, renderer=renderer, plugins=plugins)
+-    # improve the speed for markdown parser creation
+-    __cached_parsers[key] = md
+-    return md(text)
++def markdown(text: str, escape: bool=True, renderer: Optional[RendererRef]=
++    'html', plugins: Optional[Iterable[Any]]=None) ->Union[str, List[Dict[
++    str, Any]]]:
++    pass
+ 
+ 
+ __all__ = [

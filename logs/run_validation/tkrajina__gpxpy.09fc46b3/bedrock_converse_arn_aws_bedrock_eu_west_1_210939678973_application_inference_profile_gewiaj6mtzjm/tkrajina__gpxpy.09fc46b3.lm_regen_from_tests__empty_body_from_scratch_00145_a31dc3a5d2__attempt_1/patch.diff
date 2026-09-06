@@ -1,0 +1,36 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1450,18 +1450,21 @@
+         for segment in self.segments:
+             segment.reduce_points(min_distance)
+ 
+-    def adjust_time(self, delta: mod_datetime.timedelta) -> None:
+-        """
+-        Adjusts the time of all segments in the track by the specified delta
+-
+-        Parameters
+-        ----------
+-        delta : datetime.timedelta
+-            Positive time delta will adjust time into the future
+-            Negative time delta will adjust time into the past
+-        """
+-        for segment in self.segments:
+-            segment.adjust_time(delta)
++    gpx.adjust_time(d1)
++    gpx.adjust_time(d2)
++
++    self.assertEqual(gpx.waypoints[0].time, None)
++    self.assertEqual(gpx.waypoints[1].time, t0)
++
++    def adjust_time(self, delta: mod_datetime.timedelta, all: bool=False) -> None:
++
++    def adjust_time(self, delta: mod_datetime.timedelta) ->None:
++
++    def adjust_time(self, delta: mod_datetime.timedelta) ->None:
++        if self.time:
++            self.time += delta
++        for track in self.tracks:
++            track.adjust_time(delta)
+ 
+     def remove_time(self) -> None:
+         """ Removes time data for all points in all segments of track. """

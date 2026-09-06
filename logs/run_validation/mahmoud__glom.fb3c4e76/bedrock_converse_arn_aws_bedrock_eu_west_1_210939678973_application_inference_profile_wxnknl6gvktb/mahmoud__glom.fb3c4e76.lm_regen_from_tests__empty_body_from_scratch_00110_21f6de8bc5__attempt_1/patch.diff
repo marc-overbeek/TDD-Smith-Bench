@@ -1,0 +1,33 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1808,6 +1808,30 @@
+         self.__dict__ = dict(base)
+         self.__dict__.update(defaults)
+ 
++    def test_scoped_vars():
++        target = list(range(10)) + list(range(5))
++        scope_globals = glom(target, ([A.globals.last], S.globals))
++        assert scope_globals.last == 4
++        assert dict(scope_globals) == {'last': 4}
++
++    class ScopeVars:
++        """This is the runtime partner of :class:`Vars` -- this is what
++        actually lives in the scope and stores runtime values.
++        ...
++        """
++        def __init__(self, base, defaults):
++            self.__dict__ = dict(base)
++            self.__dict__.update(defaults)
++
++        def __iter__(self):
++            pass
++
++        def __repr__(self):
++            return f"{self.__class__.__name__}({bbrepr(self.__dict__)})"
++
++    def __iter__(self):
++        return iter(self.__dict__.items())
++
+     def __iter__(self):
+         return iter(self.__dict__.items())
+ 

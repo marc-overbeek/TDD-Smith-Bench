@@ -1,0 +1,67 @@
+--- a/safety/scan/finder/file_finder.py
++++ b/safety/scan/finder/file_finder.py
+@@ -97,61 +97,9 @@
+         self.console = console
+         self.live_status = live_status
+ 
+-    def process_directory(self, dir_path: str, max_deep: Optional[int] = None) -> Tuple[str, Dict[str, Set[Path]]]:
+-        """
+-        Processes the specified directory to find files matching the handlers' criteria.
+-
+-        Args:
+-            dir_path (str): The directory path to process.
+-            max_deep (Optional[int]): Maximum depth to search within the directory.
+-
+-        Returns:
+-            Tuple[str, Dict[str, Set[Path]]]: The directory path and a dictionary of file types and their corresponding paths.
+-        """
+-        files: Dict[str, Set[Path]] = {}
+-        level : int = 0
+-        initial_depth = len(Path(dir_path).parts) - 1
+-        skip_dirs = set()
+-        skip_files = set()
+-
+-        for root, dirs, filenames in os.walk(dir_path):
+-            root_path = Path(root)
+-            current_depth = len(root_path.parts) - initial_depth
+-
+-            # Filter directories based on exclusion criteria
+-            dirs[:] = [d for d in dirs if not should_exclude(excludes=self.exclude_dirs,
+-                                                             to_analyze=(root_path / Path(d)))]
+-            if dirs:
+-                LOG.info(f"Directories to inspect -> {', '.join(dirs)}")
+-
+-            LOG.info(f"Current -> {root}")
+-            if self.live_status:
+-                self.live_status.update(f":mag: Scanning {root}")
+-
+-            # Stop descending into directories if the maximum depth is reached
+-            if max_deep is not None and current_depth > max_deep:
+-                # Don't go deeper
+-                del dirs[:]
+-
+-            # Filter filenames based on exclusion criteria
+-            filenames[:] = [f for f in filenames if not should_exclude(
+-                excludes=self.exclude_files,
+-                to_analyze=Path(f))]
+-
+-            self.file_count += len(filenames)
+-
+-            for file_name in filenames:
+-                for handler in self.handlers:
+-                    file_type = handler.can_handle(root, file_name, self.include_files)
+-                    if file_type:
+-                        inspectable_file: Path = Path(root, file_name)
+-                        if file_type.value not in files or not files[file_type.value]:
+-                            files[file_type.value] = set()
+-                        files[file_type.value].add(inspectable_file)
+-                        break
+-            level += 1
+-
+-        return dir_path, files
++    def process_directory(self, dir_path: str, max_deep: Optional[int]=None
++        ) ->Tuple[str, Dict[str, Set[Path]]]:
++        pass
+ 
+     def search(self) -> Tuple[str, Dict[str, Set[Path]]]:
+         """

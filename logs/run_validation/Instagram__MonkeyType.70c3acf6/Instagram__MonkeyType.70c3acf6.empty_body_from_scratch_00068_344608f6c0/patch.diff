@@ -1,0 +1,37 @@
+--- a/monkeytype/type_checking_imports_transformer.py
++++ b/monkeytype/type_checking_imports_transformer.py
+@@ -189,30 +189,7 @@
+         else:
+             return updated_node.with_changes(names=names_to_keep)
+ 
+-    def leave_ImportFrom(
+-        self, original_node: ImportFrom, updated_node: ImportFrom
+-    ) -> Union[
+-        BaseSmallStatement, FlattenSentinel[BaseSmallStatement], RemovalSentinel
+-    ]:
+-        if isinstance(updated_node.names, ImportStar):
+-            return updated_node
+-
+-        names_to_keep = []
+-        module_name = get_absolute_module_from_package_for_import(None, updated_node)
+-        for name in updated_node.names:
+-            name_value = name.name.value
+-            found = False
+-            for import_item in self.import_items_to_be_removed:
+-                if (
+-                    import_item.module_name == module_name
+-                    and import_item.obj_name == name_value
+-                ):
+-                    found = True
+-                    break
+-            if not found:
+-                names_to_keep.append(name.with_changes(comma=MaybeSentinel.DEFAULT))
+-
+-        if not names_to_keep:
+-            return RemoveFromParent()
+-        else:
+-            return updated_node.with_changes(names=names_to_keep)
++    def leave_ImportFrom(self, original_node: ImportFrom, updated_node: ImportFrom
++        ) ->Union[BaseSmallStatement, FlattenSentinel[BaseSmallStatement],
++        RemovalSentinel]:
++        pass

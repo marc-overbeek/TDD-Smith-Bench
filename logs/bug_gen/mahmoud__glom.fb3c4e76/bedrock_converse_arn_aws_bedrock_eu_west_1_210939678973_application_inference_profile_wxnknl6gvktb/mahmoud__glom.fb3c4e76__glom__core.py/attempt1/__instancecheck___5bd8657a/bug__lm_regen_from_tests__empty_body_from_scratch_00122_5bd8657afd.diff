@@ -1,0 +1,32 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1898,8 +1898,29 @@
+ 
+ 
+ class _ObjStyleKeysMeta(type):
++    class _ObjStyleKeysMeta(type):
++        def __instancecheck__(cls, C):
++            return hasattr(C, "__dict__") and hasattr(C.__dict__, "keys")
++
++    class A:
++        def __init__(self):
++            self.a = 1
++            self.b = {'c': 2}
++    val = A()
++    assert glom(val, '*') == [1, {'c': 2}]
++    assert glom(val, '**') == [val, 1, {'c': 2}, 2]
++
++    def __instancecheck__(cls, C):
++        return hasattr(C, "__dict__") and callable(getattr(C.__dict__, "keys", None))
++
+     def __instancecheck__(cls, C):
+         return hasattr(C, "__dict__") and hasattr(C.__dict__, "keys")
++
++    def __instancecheck__(cls, C):
++        return hasattr(C, "__dict__") and callable(getattr(C.__dict__, "keys", None))
++
++    def __instancecheck__(cls, C):
++        return hasattr(C, "__dict__") and callable(getattr(C.__dict__, "keys", None))
+ 
+ 
+ class _ObjStyleKeys(_ObjStyleKeysMeta('_AbstractKeys', (object,), {})):

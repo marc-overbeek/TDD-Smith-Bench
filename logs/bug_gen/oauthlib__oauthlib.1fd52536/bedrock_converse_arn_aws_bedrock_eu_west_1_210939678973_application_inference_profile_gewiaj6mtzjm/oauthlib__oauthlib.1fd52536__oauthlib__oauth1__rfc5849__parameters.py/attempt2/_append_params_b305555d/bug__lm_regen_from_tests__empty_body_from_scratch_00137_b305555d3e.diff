@@ -1,0 +1,68 @@
+--- a/oauthlib/oauth1/rfc5849/parameters.py
++++ b/oauthlib/oauth1/rfc5849/parameters.py
+@@ -85,25 +85,47 @@
+     return full_headers
+ 
+ 
++'a=b&oauth_nonce=14205877133089081931378988215&oauth_timestamp=1378988215&oauth_version=1.0&oauth_signature_method=HMAC-SHA1&oauth_consumer_key=client_key&oauth_signature=2JAQomgbShqoscqKWBiYQZwWq94%3D'
++
++body='a=b'
++
+ def _append_params(oauth_params, params):
+-    """Append OAuth params to an existing set of parameters.
+-
+-    Both params and oauth_params is must be lists of 2-tuples.
+-
+-    Per `section 3.5.2`_ and `3.5.3`_ of the spec.
+-
+-    .. _`section 3.5.2`: https://tools.ietf.org/html/rfc5849#section-3.5.2
+-    .. _`3.5.3`: https://tools.ietf.org/html/rfc5849#section-3.5.3
+-
+-    """
+-    merged = list(params)
+-    merged.extend(oauth_params)
+-    # The request URI / entity-body MAY include other request-specific
+-    # parameters, in which case, the protocol parameters SHOULD be appended
+-    # following the request-specific parameters, properly separated by an "&"
+-    # character (ASCII code 38)
+-    merged.sort(key=lambda i: i[0].startswith('oauth_'))
+-    return merged
++    # Convert params to list of tuples if it's a string
++    if isinstance(params, str):
++        if params:
++            parsed_params = extract_params(params)
++        else:
++            parsed_params = []
++    else:
++        parsed_params = params or []
++    
++    # Create a dictionary to hold all parameters, with oauth_params taking precedence
++    all_params = dict()
++    
++    # Add existing params first
++    for key, value in parsed_params:
++        all_params[key] = value
++    
++    # Override with oauth_params (they take precedence)
++    for key, value in oauth_params:
++        all_params[key] = value
++    
++    # Separate oauth and non-oauth parameters
++    non_oauth_params = []
++    oauth_params_list = []
++    
++    # Categorize parameters
++    for key, value in all_params.items():
++        if key.startswith('oauth_'):
++            oauth_params_list.append((key, value))
++        else:
++            non_oauth_params.append((key, value))
++    
++    # Sort oauth parameters alphabetically
++    sorted_oauth = sorted(oauth_params_list)
++    
++    # Combine: non-oauth params first, then oauth params
++    return non_oauth_params + sorted_oauth
+ 
+ 
+ def prepare_form_encoded_body(oauth_params, body):

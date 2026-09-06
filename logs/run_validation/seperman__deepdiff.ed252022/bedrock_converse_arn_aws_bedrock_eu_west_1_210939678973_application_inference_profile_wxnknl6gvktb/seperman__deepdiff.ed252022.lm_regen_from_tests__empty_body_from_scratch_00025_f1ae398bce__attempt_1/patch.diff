@@ -1,0 +1,27 @@
+--- a/deepdiff/search.py
++++ b/deepdiff/search.py
+@@ -177,6 +177,12 @@
+         self.__search_dict(
+             obj, item, parent, parents_ids, print_as_attribute=True)
+ 
++    if self.__skip_this(thing, parent=new_parent):
++        continue
++
++    if self.__skip_this(item, parent):
++        return
++
+     def __skip_this(self, item, parent):
+         skip = False
+         if parent in self.exclude_paths:
+@@ -184,9 +190,8 @@
+         elif self.exclude_regex_paths and any(
+                 [exclude_regex_path.search(parent) for exclude_regex_path in self.exclude_regex_paths]):
+             skip = True
+-        else:
+-            if isinstance(item, self.exclude_types_tuple):
+-                skip = True
++        elif isinstance(item, self.exclude_types_tuple):
++            skip = True
+ 
+         return skip
+ 

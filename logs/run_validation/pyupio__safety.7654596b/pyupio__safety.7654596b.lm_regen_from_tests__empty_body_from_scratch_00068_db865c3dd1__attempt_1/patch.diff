@@ -1,0 +1,25 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -182,15 +182,14 @@
+     """
+     @wraps(f)
+     def inner(ctx, *args, **kwargs):
+-
+-        save_json = kwargs["save_json"]
+-        output = kwargs["output"]
++        save_json = kwargs.get("save_json")
++        output = kwargs.get("output")
+         authenticated: bool = ctx.obj.auth.client.is_using_auth_credentials()
+-        files = kwargs["files"]
+-        policy_file = kwargs["policy_file"]
+-        auto_remediation_limit = kwargs["auto_remediation_limit"]
+-        audit_and_monitor = kwargs["audit_and_monitor"]
+-        exit_code = kwargs["exit_code"]
++        files = kwargs.get("files")
++        policy_file = kwargs.get("policy_file")
++        auto_remediation_limit = kwargs.get("auto_remediation_limit")
++        audit_and_monitor = kwargs.get("audit_and_monitor")
++        exit_code = kwargs.get("exit_code")
+ 
+         # This is handled in the custom subgroup Click class
+         # TODO: Remove this soon, for now it keeps a legacy behavior

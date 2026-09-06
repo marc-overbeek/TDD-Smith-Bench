@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef json_dumps(item, default_mapping=None, force_use_builtin_json: bool=False, **kwargs):\n    if orjson is not None and not force_use_builtin_json:\n        if kwargs:\n            raise TypeError('orjson does not accept the {} parameter.'.format(', '.join(kwargs.keys())))\n        return orjson.dumps(item, default=json_convertor_default(default_mapping)).decode('utf-8')\n    else:\n        return json.dumps(item, default=json_convertor_default(default_mapping), **kwargs)\n```\n\n```python\ndef object_hook(self, obj):\n    if 'old_type' in obj and 'new_type' in obj:\n        for type_key in ('old_type', 'new_type'):\n            type_str = obj[type_key]\n            obj[type_key] = TYPE_STR_TO_TYPE.get(type_str, type_str)\n    return obj\n```",
+  "rewrite": "def json_dumps(item, default_mapping=None, force_use_builtin_json: bool=False, **kwargs):\n    if orjson is not None and not force_use_builtin_json:\n        if kwargs:\n            raise TypeError('orjson does not accept the {} parameter.'.format(', '.join(kwargs.keys())))\n        return orjson.dumps(item, default=json_convertor_default(default_mapping)).decode('utf-8')\n    else:\n        return json.dumps(item, default=json_convertor_default(default_mapping), **kwargs)\n\ndef object_hook(self, obj):\n    if 'old_type' in obj and 'new_type' in obj:\n        for type_key in ('old_type', 'new_type'):\n            type_str = obj[type_key]\n            obj[type_key] = TYPE_STR_TO_TYPE.get(type_str, type_str)\n    return obj",
+  "strategy": "lm_regen_from_tests_combined"
+}

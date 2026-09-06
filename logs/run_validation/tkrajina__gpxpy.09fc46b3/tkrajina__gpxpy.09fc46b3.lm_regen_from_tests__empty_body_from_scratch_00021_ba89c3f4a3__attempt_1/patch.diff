@@ -1,0 +1,15 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -440,6 +440,12 @@
+         """
+         self.latitude, self.longitude = location_delta.move(self)
+ 
++    self.latitude, self.longitude = location_delta.move(self)
++
++    def __add__(self, location_delta: "LocationDelta") -> "Location":
++        latitude, longitude = location_delta.move(self)
++        return Location(latitude, longitude)
++
+     def __add__(self, location_delta: "LocationDelta") -> "Location":
+         latitude, longitude = location_delta.move(self)
+         return Location(latitude, longitude)

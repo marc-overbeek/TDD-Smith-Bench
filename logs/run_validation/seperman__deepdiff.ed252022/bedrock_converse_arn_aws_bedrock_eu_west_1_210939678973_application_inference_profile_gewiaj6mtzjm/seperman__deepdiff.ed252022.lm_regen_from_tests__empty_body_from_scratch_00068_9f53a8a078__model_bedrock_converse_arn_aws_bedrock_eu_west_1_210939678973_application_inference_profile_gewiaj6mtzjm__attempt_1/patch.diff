@@ -1,0 +1,18 @@
+--- a/deepdiff/model.py
++++ b/deepdiff/model.py
+@@ -258,10 +258,11 @@
+         if 'repetition_change' in tree:
+             for change in tree['repetition_change']:
+                 path = change.path(force=FORCE_DEFAULT)
+-                self['repetition_change'][path] = RemapDict(
+-                    change.additional['repetition']
+-                )
+-                self['repetition_change'][path]['value'] = change.t1
++                repetition_data = change.additional['repetition']
++                # Create a RemapDict with the repetition data and add the value
++                result_data = RemapDict(repetition_data)
++                result_data['value'] = change.t1
++                self['repetition_change'][path] = result_data
+ 
+     def _from_tree_deep_distance(self, tree):
+         if 'deep_distance' in tree:

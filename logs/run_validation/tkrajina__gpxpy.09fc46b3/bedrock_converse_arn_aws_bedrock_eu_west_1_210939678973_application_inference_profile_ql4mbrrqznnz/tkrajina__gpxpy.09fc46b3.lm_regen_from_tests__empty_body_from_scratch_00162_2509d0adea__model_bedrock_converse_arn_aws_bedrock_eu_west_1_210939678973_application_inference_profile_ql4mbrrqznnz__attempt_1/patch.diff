@@ -1,0 +1,39 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1773,9 +1773,9 @@
+ 
+         return result
+ 
+-    def get_uphill_downhill(self) -> UphillDownhill:
+-        """
+-        Calculates the uphill and downhill elevation climbs for the track.
++    def get_uphill_downhill(self) ->UphillDownhill:
++        """
++        Calculates the uphill and downhill elevation climbs for the gpx file.
+         If elevation for some points is not found those are simply ignored.
+ 
+         Returns
+@@ -1786,17 +1786,17 @@
+             downhill: float
+                 Downhill elevation descent in meters
+         """
+-        if not self.segments:
++        if not self.tracks:
+             return UphillDownhill(0, 0)
+ 
+         uphill: float = 0
+         downhill: float = 0
+ 
+-        for track_segment in self.segments:
+-            current_uphill, current_downhill = track_segment.get_uphill_downhill()
+-
+-            uphill += current_uphill or .0
+-            downhill += current_downhill or .0
++        for track in self.tracks:
++            current_uphill, current_downhill = track.get_uphill_downhill()
++
++            uphill += current_uphill or 0
++            downhill += current_downhill or 0
+ 
+         return UphillDownhill(uphill, downhill)
+ 

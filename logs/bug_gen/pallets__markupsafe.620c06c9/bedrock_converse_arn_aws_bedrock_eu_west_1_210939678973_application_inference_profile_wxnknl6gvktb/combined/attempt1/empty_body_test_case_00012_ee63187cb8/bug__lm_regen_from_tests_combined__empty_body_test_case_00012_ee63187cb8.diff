@@ -1,0 +1,19 @@
+--- a/src/markupsafe/__init__.py
++++ b/src/markupsafe/__init__.py
+@@ -229,15 +229,12 @@
+ 
+     @classmethod
+     def escape(cls, s: t.Any, /) -> te.Self:
+-        """Escape a string. Calls :func:`escape` and ensures that for
+-        subclasses the correct type is returned.
+-        """
+         rv = escape(s)
+ 
+         if rv.__class__ is not cls:
+             return cls(rv)
+ 
+-        return rv  # type: ignore[return-value]
++        return rv
+ 
+     def __getitem__(self, key: t.SupportsIndex | slice, /) -> te.Self:
+         return self.__class__(super().__getitem__(key))

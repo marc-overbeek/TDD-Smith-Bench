@@ -1,0 +1,32 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -535,7 +535,7 @@
+ 
+ class _AsyncLiftContextManager(typing.AsyncContextManager[_T]):
+     def __init__(self, cm: typing.ContextManager[_T]):
+-        self._cm = cm
++        pass
+ 
+     async def __aenter__(self) -> _T:
+         return self._cm.__enter__()
+@@ -549,16 +549,10 @@
+         return self._cm.__exit__(exc_type, exc_value, traceback)
+ 
+ 
+-def _wrap_gen_lifespan_context(
+-    lifespan_context: typing.Callable[[typing.Any], typing.Generator[typing.Any, typing.Any, typing.Any]],
+-) -> typing.Callable[[typing.Any], typing.AsyncContextManager[typing.Any]]:
+-    cmgr = contextlib.contextmanager(lifespan_context)
+-
+-    @functools.wraps(cmgr)
+-    def wrapper(app: typing.Any) -> _AsyncLiftContextManager[typing.Any]:
+-        return _AsyncLiftContextManager(cmgr(app))
+-
+-    return wrapper
++def _wrap_gen_lifespan_context(lifespan_context: typing.Callable[[typing.
++    Any], typing.Generator[typing.Any, typing.Any, typing.Any]]
++    ) ->typing.Callable[[typing.Any], typing.AsyncContextManager[typing.Any]]:
++    pass
+ 
+ 
+ class _DefaultLifespan:

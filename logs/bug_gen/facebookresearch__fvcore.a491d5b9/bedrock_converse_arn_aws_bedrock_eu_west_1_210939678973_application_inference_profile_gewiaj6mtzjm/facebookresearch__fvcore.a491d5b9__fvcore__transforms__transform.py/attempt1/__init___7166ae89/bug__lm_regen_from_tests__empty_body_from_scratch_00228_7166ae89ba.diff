@@ -1,0 +1,41 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -751,22 +751,25 @@
+         self,
+         x0: int,
+         y0: int,
+-        x1: int,
+-        y1: int,
++        w: int,
++        h: int,
+         orig_w: Optional[int] = None,
+         orig_h: Optional[int] = None,
+-        pad_value: float = 0,
+-        seg_pad_value: int = 0,
+     ):
+-        """
+-        Args:
+-            x0, y0: number of padded pixels on the left and top
+-            x1, y1: number of padded pixels on the right and bottom
+-            orig_w, orig_h: optional, original width and height.
+-                Needed to make this transform invertible.
+-            pad_value: the padding value to the image
+-            seg_pad_value: the padding value to the segmentation mask
+-        """
++
++    def __init__(
++        self,
++        x0: int,
++        y0: int,
++        w: int,
++        h: int,
++        orig_w: Optional[int] = None,
++        orig_h: Optional[int] = None,
++    ):
++
++    def __init__(self, x0: int, y0: int, x1: int, y1: int, orig_w: Optional[int
++        ]=None, orig_h: Optional[int]=None, pad_value: float=0, seg_pad_value:
++        int=0):
+         super().__init__()
+         self._set_attributes(locals())
+ 

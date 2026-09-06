@@ -1,0 +1,89 @@
+--- a/safety/scan/main.py
++++ b/safety/scan/main.py
+@@ -75,30 +75,24 @@
+     return None
+ 
+ 
+-def load_unverified_project_from_config(project_root: Path) -> UnverifiedProjectModel:
+-    """
+-    Loads an unverified project from the configuration file located at the project root.
+-
+-    Args:
+-        project_root (Path): The root directory of the project.
+-
+-    Returns:
+-        UnverifiedProjectModel: An instance of UnverifiedProjectModel.
+-    """
++def load_unverified_project_from_config(project_root: Path
++    ) ->UnverifiedProjectModel:
+     config = configparser.ConfigParser()
+-    project_path = project_root / PROJECT_CONFIG
+-    config.read(project_path)
+-    id = config.get(PROJECT_CONFIG_SECTION, PROJECT_CONFIG_ID, fallback=None)
+-    id = config.get(PROJECT_CONFIG_SECTION, PROJECT_CONFIG_ID, fallback=None)
+-    url = config.get(PROJECT_CONFIG_SECTION, PROJECT_CONFIG_URL, fallback=None)
+-    name = config.get(PROJECT_CONFIG_SECTION, PROJECT_CONFIG_NAME, fallback=None)
+-    created = True
+-    if id:
+-        created = False
+-
+-    return UnverifiedProjectModel(id=id, url_path=url,
+-                                  name=name, project_path=project_path,
+-                                  created=created)
++    config_path = project_root / PROJECT_CONFIG
++    config.read(config_path)
++
++    if PROJECT_CONFIG_SECTION not in config.sections():
++        raise SafetyError("No project configuration found.")
++
++    section = config[PROJECT_CONFIG_SECTION]
++    project_id = section.get(PROJECT_CONFIG_ID)
++    project_url = section.get(PROJECT_CONFIG_URL)
++    project_name = section.get(PROJECT_CONFIG_NAME)
++
++    if not project_id:
++        raise SafetyError("Project ID not found in configuration.")
++
++    return UnverifiedProjectModel(id=project_id, url_path=project_url, name=project_name)
+ 
+ 
+ def save_project_info(project: ProjectModel, project_path: Path) -> None:
+@@ -197,27 +191,14 @@
+         report_file.write(report)
+ 
+ 
+-def process_files(paths: Dict[str, Set[Path]], config: Optional[ConfigModel] = None) -> Generator[Tuple[Path, InspectableFile], None, None]:
+-    """
+-    Processes the files and yields each file path along with its inspectable file.
+-
+-    Args:
+-        paths (Dict[str, Set[Path]]): A dictionary of file paths by file type.
+-        config (Optional[ConfigModel]): The configuration model (optional).
+-
+-    Yields:
+-        Tuple[Path, InspectableFile]: A tuple of file path and inspectable file.
+-    """
+-    if not config:
+-        config = ConfigModel()
+-
+-    for file_type_key, f_paths in paths.items():
+-        file_type = FileType(file_type_key)
+-        if not file_type or not file_type.ecosystem:
+-            continue
+-        for f_path in f_paths:
+-            with InspectableFileContext(f_path, file_type=file_type) as inspectable_file:
+-                if inspectable_file and inspectable_file.file_type:
+-                    inspectable_file.inspect(config=config)
+-                    inspectable_file.remediate()
+-                    yield f_path, inspectable_file
++def process_files(paths: Dict[str, Set[Path]], config: Optional[ConfigModel
++    ]=None) ->Generator[Tuple[Path, InspectableFile], None, None]:
++    for file_type, file_paths in paths.items():
++        for file_path in file_paths:
++            try:
++                inspectable_file = InspectableFileContext.create_inspectable_file(
++                    file_path=file_path, file_type=FileType(file_type), config=config)
++                yield file_path, inspectable_file
++            except Exception:
++                LOG.debug(f"Could not process file {file_path}", exc_info=True)
++                continue

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef display_sample_count(traces: List[CallTrace], stderr: IO[str]) ->None:\n    # Group traces by function name\n    func_traces = collections.defaultdict(list)\n    for trace in traces:\n        func_traces[trace.func].append(trace)\n    \n    # Print sample count for each function\n    for func, func_traces_list in func_traces.items():\n        func_name = f\"{func.__module__}.{func.__name__}\"\n        count = len(func_traces_list)\n        print(f\"Annotation for {func_name} based on {count} call trace(s).\", file=stderr)\n```",
+  "rewrite": "def display_sample_count(traces: List[CallTrace], stderr: IO[str]) ->None:\n    # Group traces by function name\n    func_traces = collections.defaultdict(list)\n    for trace in traces:\n        func_traces[trace.func].append(trace)\n    \n    # Print sample count for each function\n    for func, func_traces_list in func_traces.items():\n        func_name = f\"{func.__module__}.{func.__name__}\"\n        count = len(func_traces_list)\n        print(f\"Annotation for {func_name} based on {count} call trace(s).\", file=stderr)",
+  "strategy": "lm_regen_from_tests"
+}

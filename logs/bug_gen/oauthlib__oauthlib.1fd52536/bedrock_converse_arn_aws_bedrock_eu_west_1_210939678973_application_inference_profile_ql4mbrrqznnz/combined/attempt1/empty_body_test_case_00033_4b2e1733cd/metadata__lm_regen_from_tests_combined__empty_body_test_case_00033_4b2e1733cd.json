@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef sign_plaintext_with_client(_signature_base_string, client):\n    return sign_plaintext(client.client_secret, client.resource_owner_secret)\n\n\ndef sign_plaintext(client_secret, resource_owner_secret):\n    signature = utils.escape(client_secret or '')\n    signature += '&'\n    signature += utils.escape(resource_owner_secret or '')\n    return signature\n\n\ndef verify_plaintext(request, client_secret=None, resource_owner_secret=None):\n    signature = sign_plaintext(client_secret, resource_owner_secret)\n    match = safe_string_equals(signature, request.signature)\n    if not match:\n        log.debug('Verify PLAINTEXT failed')\n    return match\n```",
+  "rewrite": "def sign_plaintext_with_client(_signature_base_string, client):\n    return sign_plaintext(client.client_secret, client.resource_owner_secret)\n\n\ndef sign_plaintext(client_secret, resource_owner_secret):\n    signature = utils.escape(client_secret or '')\n    signature += '&'\n    signature += utils.escape(resource_owner_secret or '')\n    return signature\n\n\ndef verify_plaintext(request, client_secret=None, resource_owner_secret=None):\n    signature = sign_plaintext(client_secret, resource_owner_secret)\n    match = safe_string_equals(signature, request.signature)\n    if not match:\n        log.debug('Verify PLAINTEXT failed')\n    return match",
+  "strategy": "lm_regen_from_tests_combined"
+}

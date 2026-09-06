@@ -1,0 +1,26 @@
+--- a/safety/cli_util.py
++++ b/safety/cli_util.py
+@@ -711,15 +711,8 @@
+         return proxy, key
+ 
+     def invoke(self, ctx: click.Context) -> None:
+-        """
+-        Invoke the command, handling legacy arguments.
+-
+-        Args:
+-            ctx (click.Context): Click context.
+-        """
+         args = ctx.args
+ 
+-        # Workaround for legacy check options, that now are global options
+         subcommand_args = set(args)
+         PROXY_HOST_OPTIONS = set(["--proxy-host", "-ph"])
+         if "check" in ctx.protected_args or "license" in ctx.protected_args and (bool(PROXY_HOST_OPTIONS.intersection(subcommand_args) or "--key" in subcommand_args)) :
+@@ -730,7 +723,6 @@
+             if key:
+                 ctx.params.update({"key": key})
+ 
+-        # Now, invoke the original behavior
+         super(SafetyCLILegacyGroup, self).invoke(ctx)
+ 
+ 

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef __search_tuple(self, obj, item, parent, parents_ids):\n    # Checking to see if it has _fields. Which probably means it is a named\n    # tuple.\n    try:\n        obj._asdict\n    # It must be a normal tuple\n    except AttributeError:\n        self.__search_iterable(obj, item, parent, parents_ids)\n    # We assume it is a namedtuple then\n    else:\n        self.__search_obj(\n            obj, item, parent, parents_ids, is_namedtuple=True)\n```",
+  "rewrite": "def __search_tuple(self, obj, item, parent, parents_ids):\n    # Checking to see if it has _fields. Which probably means it is a named\n    # tuple.\n    try:\n        obj._asdict\n    # It must be a normal tuple\n    except AttributeError:\n        self.__search_iterable(obj, item, parent, parents_ids)\n    # We assume it is a namedtuple then\n    else:\n        self.__search_obj(\n            obj, item, parent, parents_ids, is_namedtuple=True)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

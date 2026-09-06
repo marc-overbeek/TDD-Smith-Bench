@@ -1,0 +1,20 @@
+--- a/monkeytype/db/sqlite.py
++++ b/monkeytype/db/sqlite.py
+@@ -105,14 +105,9 @@
+                 values,
+             )
+ 
+-    def filter(
+-        self, module: str, qualname_prefix: Optional[str] = None, limit: int = 2000
+-    ) -> List[CallTraceThunk]:
+-        sql_query, values = make_query(self.table, module, qualname_prefix, limit)
+-        with self.conn:
+-            cur = self.conn.cursor()
+-            cur.execute(sql_query, values)
+-            return [CallTraceRow(*row) for row in cur.fetchall()]
++    def filter(self, module: str, qualname_prefix: Optional[str]=None, limit:
++        int=2000) ->List[CallTraceThunk]:
++        pass
+ 
+     def list_modules(self) -> List[str]:
+         with self.conn:

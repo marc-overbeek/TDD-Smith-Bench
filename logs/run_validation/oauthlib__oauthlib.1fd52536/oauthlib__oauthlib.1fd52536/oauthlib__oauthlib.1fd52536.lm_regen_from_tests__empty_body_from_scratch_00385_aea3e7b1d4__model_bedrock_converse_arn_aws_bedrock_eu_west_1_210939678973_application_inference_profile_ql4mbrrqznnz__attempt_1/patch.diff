@@ -1,0 +1,12 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/base.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/base.py
+@@ -67,6 +67,9 @@
+ 
+     def _raise_on_unsupported_token(self, request):
+         """Raise on unsupported tokens."""
++        if not request.token:
++            raise InvalidRequestError(request=request,
++                                      description='Missing token parameter.')
+         if (request.token_type_hint and
+             request.token_type_hint in self.valid_token_types and
+             request.token_type_hint not in self.supported_token_types):

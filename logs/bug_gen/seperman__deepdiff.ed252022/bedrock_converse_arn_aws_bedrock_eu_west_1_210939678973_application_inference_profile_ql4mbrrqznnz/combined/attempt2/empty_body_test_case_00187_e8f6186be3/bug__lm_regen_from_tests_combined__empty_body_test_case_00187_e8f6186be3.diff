@@ -1,0 +1,34 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -244,22 +244,20 @@
+ 
+ 
+ def logarithmic_similarity(a: numbers, b: numbers, threshold: float=0.1):
+-    """
+-    A threshold of 0.1 translates to about 10.5% difference.
+-    A threshold of 0.5 translates to about 65% difference.
+-    A threshold of 0.05 translates to about 5.1% difference.
+-    """
+-    return logarithmic_distance(a, b) < threshold
++    distance = logarithmic_distance(a, b)
++    return distance < threshold
+ 
+ 
+ def logarithmic_distance(a: numbers, b: numbers):
+-    # Apply logarithm to the absolute values and consider the sign
+-    a = float(a)
+-    b = float(b)
+     log_a = math.copysign(math.log(abs(a) + MATH_LOG_OFFSET), a)
+     log_b = math.copysign(math.log(abs(b) + MATH_LOG_OFFSET), b)
+-
+-    return abs(log_a - log_b)
++    divisor = (log_a + log_b)
++    if divisor == 0:
++        if log_a == log_b:
++            return 0
++        return 1
++    result = abs((log_a - log_b) / divisor)
++    return min(1, result)
+ 
+ 
+ def _get_numpy_array_distance(num1, num2, max_=1, use_log_scale=False, log_scale_similarity_threshold=0.1):

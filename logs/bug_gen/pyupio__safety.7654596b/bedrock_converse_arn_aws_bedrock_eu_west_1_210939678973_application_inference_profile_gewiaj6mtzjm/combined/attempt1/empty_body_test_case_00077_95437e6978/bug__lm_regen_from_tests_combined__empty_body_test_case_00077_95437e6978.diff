@@ -1,0 +1,133 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -268,32 +268,17 @@
+         return {}
+ 
+ 
+-def fetch_database_file(path: str, db_name: str, cached: int = 0, ecosystem: Optional[Ecosystem] = None) -> Dict[str, Any]:
+-    """
+-    Fetches the database from a local file.
+-
+-    Args:
+-        path (str): The path to the local file.
+-        db_name (str): The name of the database.
+-        cached (int): The cache validity in seconds.
+-        ecosystem (Optional[Ecosystem]): The ecosystem.
+-
+-    Returns:
+-        Dict[str, Any]: The fetched database.
+-    """
+-    full_path = (Path(path) / (ecosystem.value if ecosystem else '') / db_name).expanduser().resolve()
+-
+-    if not full_path.exists():
+-        raise DatabaseFileNotFoundError(db=path)
+-
+-    with open(full_path) as f:
+-        data = json.loads(f.read())
+-
+-    if cached:
+-        LOG.info('Writing %s to cache because cached value was %s', db_name, cached)
+-        write_to_cache(db_name, data)
+-
+-    return data
++def fetch_database_file(path: str, db_name: str, cached: int=0, ecosystem:
++    Optional[Ecosystem]=None) ->Dict[str, Any]:
++    file_path = os.path.join(path, db_name)
++    try:
++        with open(file_path) as f:
++            data = json.loads(f.read())
++            if cached:
++                write_to_cache(db_name, data)
++            return data
++    except (FileNotFoundError, json.JSONDecodeError, OSError):
++        return {}
+ 
+ 
+ def is_valid_database(db: Dict[str, Any]) -> bool:
+@@ -1416,42 +1401,51 @@
+ 
+ 
+ @sync_safety_context
+-def get_licenses(
+-    *,
+-    session: requests.Session,
+-    db_mirror: Union[Optional[str], bool] = False,
+-    cached: int = 0,
+-    telemetry: bool = True
+-) -> Dict[str, Any]:
+-    """
+-    Retrieves the licenses from the database.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        db_mirror (Union[Optional[str], bool]): The database mirror.
+-        cached (int): The cache validity in seconds.
+-        telemetry (bool): Whether to include telemetry data.
+-
+-    Returns:
+-        Dict[str, Any]: The licenses dictionary.
+-    """
+-    if db_mirror:
+-        mirrors = [db_mirror]
++def get_licenses(*, session: requests.Session, db_mirror: Union[Optional[
++    str], bool]=False, cached: int=0, telemetry: bool=True) ->Dict[str, Any]:
++    if not session.api_key:
++        raise InvalidCredentialError(credential=session.get_credential(), reason="No API key found")
++
++    if db_mirror is False:
++        db_mirror = "https://data.safetycli.com/licenses/"
++
++    if isinstance(db_mirror, str):
++        if db_mirror.endswith('/'):
++            db_mirror = db_mirror[:-1]
++        url = f"{db_mirror}/licenses.json"
+     else:
+-        mirrors = API_MIRRORS
+-
+-    db_name = "licenses.json"
+-
+-    for mirror in mirrors:
+-        # mirror can either be a local path or a URL
+-        if is_a_remote_mirror(mirror):
+-            licenses = fetch_database_url(session, mirror, db_name=db_name, cached=cached,
+-                                          telemetry=telemetry)
+-        else:
+-            licenses = fetch_database_file(mirror, db_name=db_name, ecosystem=None)
+-        if licenses:
+-            return licenses
+-    raise DatabaseFetchError()
++        raise DatabaseFileNotFoundError()
++
++    headers = {'schema-version': JSON_SCHEMA_VERSION}
++    telemetry_data = {'telemetry': json.dumps(build_telemetry_data(telemetry=telemetry), default=pydantic_encoder)}
++    
++    try:
++        r = session.get(url=url, timeout=REQUEST_TIMEOUT, headers=headers, params=telemetry_data)
++    except requests.exceptions.ConnectionError:
++        raise NetworkConnectionError()
++    except requests.exceptions.Timeout:
++        raise RequestTimeoutError()
++    except requests.exceptions.RequestException:
++        raise DatabaseFetchError()
++
++    if r.status_code == 403:
++        raise InvalidCredentialError(credential=session.get_credential(), reason=r.text)
++
++    if r.status_code == 429:
++        raise TooManyRequestsError(reason=r.text)
++
++    if r.status_code != 200:
++        raise ServerError(reason=r.reason)
++
++    try:
++        data = r.json()
++    except json.JSONDecodeError as e:
++        raise MalformedDatabase(reason=e)
++
++    if cached:
++        write_to_cache("licenses.json", data)
++
++    return data
+ 
+ 
+ def add_local_notifications(

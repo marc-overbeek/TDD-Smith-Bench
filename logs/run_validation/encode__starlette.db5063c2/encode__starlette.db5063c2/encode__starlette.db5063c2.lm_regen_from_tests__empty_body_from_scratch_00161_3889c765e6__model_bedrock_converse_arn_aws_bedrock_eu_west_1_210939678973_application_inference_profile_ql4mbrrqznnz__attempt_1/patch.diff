@@ -1,0 +1,25 @@
+--- a/starlette/responses.py
++++ b/starlette/responses.py
+@@ -85,18 +85,10 @@
+             self._headers = MutableHeaders(raw=self.raw_headers)
+         return self._headers
+ 
+-    def set_cookie(
+-        self,
+-        key: str,
+-        value: str = "",
+-        max_age: int | None = None,
+-        expires: datetime | str | int | None = None,
+-        path: str | None = "/",
+-        domain: str | None = None,
+-        secure: bool = False,
+-        httponly: bool = False,
+-        samesite: typing.Literal["lax", "strict", "none"] | None = "lax",
+-    ) -> None:
++    def set_cookie(self, key: str, value: str = '', max_age: int | None = None,
++        expires: datetime | str | int | None = None, path: str | None = '/',
++        domain: str | None = None, secure: bool = False, httponly: bool = False,
++        samesite: typing.Literal['lax', 'strict', 'none'] | None = 'lax') -> None:
+         cookie: http.cookies.BaseCookie[str] = http.cookies.SimpleCookie()
+         cookie[key] = value
+         if max_age is not None:

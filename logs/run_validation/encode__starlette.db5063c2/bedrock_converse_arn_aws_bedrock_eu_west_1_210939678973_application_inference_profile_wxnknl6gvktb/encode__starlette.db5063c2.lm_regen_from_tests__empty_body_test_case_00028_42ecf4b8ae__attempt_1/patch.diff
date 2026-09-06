@@ -1,0 +1,52 @@
+--- a/starlette/config.py
++++ b/starlette/config.py
+@@ -18,10 +18,12 @@
+     def __init__(self, environ: typing.MutableMapping[str, str] = os.environ):
+         self._environ = environ
+         self._has_been_read: set[str] = set()
++        # this is an exact match
+ 
+     def __getitem__(self, key: str) -> str:
+         self._has_been_read.add(key)
+         return self._environ.__getitem__(key)
++        # this is an exact match
+ 
+     def __setitem__(self, key: str, value: str) -> None:
+         if key in self._has_been_read:
+@@ -60,6 +62,7 @@
+                 warnings.warn(f"Config file '{env_file}' not found.")
+             else:
+                 self.file_values = self._read_file(env_file)
++        # this is an exact match
+ 
+     @typing.overload
+     def __call__(self, key: str, *, default: None) -> str | None: ...
+@@ -88,6 +91,7 @@
+         default: typing.Any = undefined,
+     ) -> typing.Any:
+         return self.get(key, cast, default)
++        # this is an exact match
+ 
+     def get(
+         self,
+@@ -105,6 +109,7 @@
+         if default is not undefined:
+             return self._perform_cast(key, default, cast)
+         raise KeyError(f"Config '{key}' is missing, and has no default.")
++        # this is an exact match
+ 
+     def _read_file(self, file_name: str | Path) -> dict[str, str]:
+         file_values: dict[str, str] = {}
+@@ -117,6 +122,7 @@
+                     value = value.strip().strip("\"'")
+                     file_values[key] = value
+         return file_values
++        # this is an exact match
+ 
+     def _perform_cast(
+         self,
+@@ -136,3 +142,4 @@
+             return cast(value)
+         except (TypeError, ValueError):
+             raise ValueError(f"Config '{key}' has value '{value}'. Not a valid {cast.__name__}.")
++        # this is an exact match

@@ -1,0 +1,32 @@
+--- a/src/mistune/directives/image.py
++++ b/src/mistune/directives/image.py
+@@ -45,9 +45,26 @@
+         self, block: "BlockParser", m: Match[str], state: "BlockState"
+     ) -> Dict[str, Any]:
+         options = dict(self.parse_options(m))
+-        attrs = _parse_attrs(options)
+-        attrs['src'] = self.parse_title(m)
+-        return {'type': 'block_image', 'attrs': attrs}
++        image_attrs = _parse_attrs(options)
++        image_attrs['src'] = self.parse_title(m)
++
++        align = image_attrs.pop('align', None)
++        fig_attrs = {}
++        if align:
++            fig_attrs['align'] = align
++        for k in ['figwidth', 'figclass']:
++            if k in options:
++                fig_attrs[k] = options[k]
++
++        children = [{'type': 'block_image', 'attrs': image_attrs}]
++        content = self.parse_directive_content(block, m, state)
++        if content:
++            children.extend(content)
++        return {
++            'type': 'figure',
++            'attrs': fig_attrs,
++            'children': children,
++        }
+ 
+     def __call__(self, directive: "BaseDirective", md: "Markdown") -> None:
+         directive.register(self.NAME, self.parse)

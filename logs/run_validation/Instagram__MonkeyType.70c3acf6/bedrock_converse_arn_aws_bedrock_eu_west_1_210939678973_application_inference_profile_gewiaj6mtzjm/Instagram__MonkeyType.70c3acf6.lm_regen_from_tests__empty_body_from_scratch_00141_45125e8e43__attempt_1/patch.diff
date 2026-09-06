@@ -1,0 +1,100 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -745,55 +745,51 @@
+         )
+ 
+     @classmethod
+-    def from_callable_and_traced_types(
+-        cls,
+-        func: Callable[..., Any],
+-        arg_types: Dict[str, type],
+-        return_type: Optional[type],
+-        yield_type: Optional[type],
+-        existing_annotation_strategy: ExistingAnnotationStrategy = ExistingAnnotationStrategy.REPLICATE,
+-    ) -> "FunctionDefinition":
+-        typed_dict_class_stubs: List[ClassStub] = []
+-        new_arg_types = {}
+-        for name, typ in arg_types.items():
+-            rewritten_type, stubs = ReplaceTypedDictsWithStubs.rewrite_and_get_stubs(
+-                typ, class_name_hint=name
++    def from_callable_and_traced_types(cls, func: Callable[..., Any], arg_types:
++        Dict[str, type], return_type: Optional[type], yield_type: Optional[type
++        ], existing_annotation_strategy: ExistingAnnotationStrategy=
++        ExistingAnnotationStrategy.REPLICATE) ->'FunctionDefinition':
++            typed_dict_class_stubs: List[ClassStub] = []
++            new_arg_types = {}
++            for name, typ in arg_types.items():
++                rewritten_type, stubs = ReplaceTypedDictsWithStubs.rewrite_and_get_stubs(
++                    typ, class_name_hint=name
++                )
++                new_arg_types[name] = rewritten_type
++                typed_dict_class_stubs.extend(stubs)
++
++            if return_type:
++                # Replace the dot in a qualified name.
++                class_name_hint = func.__qualname__.replace(".", "_")
++                return_type, stubs = ReplaceTypedDictsWithStubs.rewrite_and_get_stubs(
++                    return_type, class_name_hint
++                )
++                typed_dict_class_stubs.extend(stubs)
++
++            if yield_type:
++                # Replace the dot in a qualified name.
++                class_name_hint = func.__qualname__.replace(".", "_") + "Yield"
++                yield_type, stubs = ReplaceTypedDictsWithStubs.rewrite_and_get_stubs(
++                    yield_type, class_name_hint
++                )
++                typed_dict_class_stubs.extend(stubs)
++
++            function = FunctionDefinition.from_callable(func)
++            signature = function.signature
++            signature = update_signature_args(
++                signature, new_arg_types, function.has_self, existing_annotation_strategy
+             )
+-            new_arg_types[name] = rewritten_type
+-            typed_dict_class_stubs.extend(stubs)
+-
+-        if return_type:
+-            # Replace the dot in a qualified name.
+-            class_name_hint = func.__qualname__.replace(".", "_")
+-            return_type, stubs = ReplaceTypedDictsWithStubs.rewrite_and_get_stubs(
+-                return_type, class_name_hint
++            signature = update_signature_return(
++                signature, return_type, yield_type, existing_annotation_strategy
+             )
+-            typed_dict_class_stubs.extend(stubs)
+-
+-        if yield_type:
+-            # Replace the dot in a qualified name.
+-            class_name_hint = func.__qualname__.replace(".", "_") + "Yield"
+-            yield_type, stubs = ReplaceTypedDictsWithStubs.rewrite_and_get_stubs(
+-                yield_type, class_name_hint
++            return FunctionDefinition(
++                function.module,
++                function.qualname,
++                function.kind,
++                signature,
++                function.is_async,
++                typed_dict_class_stubs,
+             )
+-            typed_dict_class_stubs.extend(stubs)
+-
+-        function = FunctionDefinition.from_callable(func)
+-        signature = function.signature
+-        signature = update_signature_args(
+-            signature, new_arg_types, function.has_self, existing_annotation_strategy
+-        )
+-        signature = update_signature_return(
+-            signature, return_type, yield_type, existing_annotation_strategy
+-        )
+-        return FunctionDefinition(
+-            function.module,
+-            function.qualname,
+-            function.kind,
+-            signature,
+-            function.is_async,
+-            typed_dict_class_stubs,
+-        )
+ 
+     @property
+     def has_self(self) -> bool:

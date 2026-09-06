@@ -1,0 +1,19 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -853,13 +853,9 @@
+ 
+         return decorator
+ 
+-    def add_event_handler(self, event_type: str, func: typing.Callable[[], typing.Any]) -> None:  # pragma: no cover
+-        assert event_type in ("startup", "shutdown")
+-
+-        if event_type == "startup":
+-            self.on_startup.append(func)
+-        else:
+-            self.on_shutdown.append(func)
++    def add_event_handler(self, event_type: str, func: typing.Callable[[],
++        typing.Any]) ->None:
++        pass
+ 
+     def on_event(self, event_type: str) -> typing.Callable:  # type: ignore[type-arg]
+         warnings.warn(

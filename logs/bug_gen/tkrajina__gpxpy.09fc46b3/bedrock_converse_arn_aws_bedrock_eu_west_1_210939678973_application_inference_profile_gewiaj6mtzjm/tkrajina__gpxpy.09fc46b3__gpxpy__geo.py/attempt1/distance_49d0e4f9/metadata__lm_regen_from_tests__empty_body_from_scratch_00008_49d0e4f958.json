@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef distance(latitude_1: float, longitude_1: float, elevation_1: Optional[\n    float], latitude_2: float, longitude_2: float, elevation_2: Optional[\n    float], haversine: bool=False) ->float:\n    if haversine:\n        d = haversine_distance(latitude_1, longitude_1, latitude_2, longitude_2)\n    else:\n        d = ONE_DEGREE * mod_math.sqrt(\n            (latitude_1 - latitude_2) ** 2 +\n            (longitude_1 - longitude_2) ** 2)\n\n    if elevation_1 is not None and elevation_2 is not None:\n        d = mod_math.sqrt(d**2 + (elevation_1 - elevation_2)**2)\n\n    return d\n```",
+  "rewrite": "def distance(latitude_1: float, longitude_1: float, elevation_1: Optional[\n    float], latitude_2: float, longitude_2: float, elevation_2: Optional[\n    float], haversine: bool=False) ->float:\n    if haversine:\n        d = haversine_distance(latitude_1, longitude_1, latitude_2, longitude_2)\n    else:\n        d = ONE_DEGREE * mod_math.sqrt(\n            (latitude_1 - latitude_2) ** 2 +\n            (longitude_1 - longitude_2) ** 2)\n\n    if elevation_1 is not None and elevation_2 is not None:\n        d = mod_math.sqrt(d**2 + (elevation_1 - elevation_2)**2)\n\n    return d",
+  "strategy": "lm_regen_from_tests"
+}

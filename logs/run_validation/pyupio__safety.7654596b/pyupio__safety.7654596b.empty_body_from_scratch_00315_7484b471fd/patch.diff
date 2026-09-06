@@ -1,0 +1,56 @@
+--- a/safety/scan/ecosystems/python/dependencies.py
++++ b/safety/scan/ecosystems/python/dependencies.py
+@@ -225,50 +225,9 @@
+                       latest_version_without_known_vulnerabilities=None,
+                       more_info_url=None)
+ 
+-def read_virtual_environment_dependencies(f: InspectableFile) -> Generator[PythonDependency, None, None]:
+-    """
+-    Reads dependencies from a virtual environment.
+-
+-    Args:
+-        f (InspectableFile): The inspectable file representing the virtual environment.
+-
+-    Returns:
+-        Generator[PythonDependency, None, None]: A generator of PythonDependency objects.
+-    """
+-
+-    env_path = Path(f.file.name).resolve().parent
+-
+-    if sys.platform.startswith('win'):
+-        site_pkgs_path = env_path / Path("Lib/site-packages/")
+-    else:
+-        site_pkgs_path = Path('lib/')
+-        try:
+-            site_pkgs_path = next((env_path / site_pkgs_path).glob("*/site-packages/"))
+-        except StopIteration:
+-            # Unable to find packages for foo env
+-            return
+-
+-    if not site_pkgs_path.resolve().exists():
+-        # Unable to find packages for foo env
+-        return
+-
+-    dep_paths = site_pkgs_path.glob("*/METADATA")
+-
+-    for path in dep_paths:
+-        if not path.is_file():
+-            continue
+-
+-        dist_info_folder = path.parent
+-        dep_name, dep_version = dist_info_folder.name.replace(".dist-info", "").split("-")
+-
+-        yield PythonDependency(name=dep_name, version=dep_version,
+-                specifications=[
+-                    PythonSpecification(f"{dep_name}=={dep_version}",
+-                                        found=site_pkgs_path)],
+-                found=site_pkgs_path, insecure_versions=[],
+-                secure_versions=[], latest_version=None,
+-                latest_version_without_known_vulnerabilities=None,
+-                more_info_url=None)
++def read_virtual_environment_dependencies(f: InspectableFile) ->Generator[
++    PythonDependency, None, None]:
++    pass
+ 
+ 
+ def get_dependencies(f: InspectableFile) -> List[PythonDependency]:

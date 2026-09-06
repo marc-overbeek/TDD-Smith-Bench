@@ -1,0 +1,45 @@
+--- a/deepdiff/search.py
++++ b/deepdiff/search.py
+@@ -301,40 +301,8 @@
+             self.__search_obj(
+                 obj, item, parent, parents_ids, is_namedtuple=True)
+ 
+-    def __search(self, obj, item, parent="root", parents_ids=frozenset()):
+-        """The main search method"""
+-        if self.__skip_this(item, parent):
+-            return
+-
+-        elif isinstance(obj, strings) and isinstance(item, (strings, RE_COMPILED_TYPE)):
+-            self.__search_str(obj, item, parent)
+-
+-        elif isinstance(obj, strings) and isinstance(item, numbers):
+-            return
+-
+-        elif isinstance(obj, numbers):
+-            self.__search_numbers(obj, item, parent)
+-
+-        elif isinstance(obj, MutableMapping):
+-            self.__search_dict(obj, item, parent, parents_ids)
+-
+-        elif isinstance(obj, tuple):
+-            self.__search_tuple(obj, item, parent, parents_ids)
+-
+-        elif isinstance(obj, (set, frozenset)):
+-            if self.warning_num < 10:
+-                logger.warning(
+-                    "Set item detected in the path."
+-                    "'set' objects do NOT support indexing. But DeepSearch will still report a path."
+-                )
+-                self.warning_num += 1
+-            self.__search_iterable(obj, item, parent, parents_ids)
+-
+-        elif isinstance(obj, Iterable) and not isinstance(obj, strings):
+-            self.__search_iterable(obj, item, parent, parents_ids)
+-
+-        else:
+-            self.__search_obj(obj, item, parent, parents_ids)
++    def __search(self, obj, item, parent='root', parents_ids=frozenset()):
++        pass
+ 
+ 
+ class grep:

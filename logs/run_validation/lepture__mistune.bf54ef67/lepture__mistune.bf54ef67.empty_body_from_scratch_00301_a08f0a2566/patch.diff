@@ -1,0 +1,19 @@
+--- a/src/mistune/directives/image.py
++++ b/src/mistune/directives/image.py
+@@ -41,13 +41,9 @@
+ class Image(DirectivePlugin):
+     NAME = 'image'
+ 
+-    def parse(
+-        self, block: "BlockParser", m: Match[str], state: "BlockState"
+-    ) -> Dict[str, Any]:
+-        options = dict(self.parse_options(m))
+-        attrs = _parse_attrs(options)
+-        attrs['src'] = self.parse_title(m)
+-        return {'type': 'block_image', 'attrs': attrs}
++    def parse(self, block: 'BlockParser', m: Match[str], state: 'BlockState'
++        ) ->Dict[str, Any]:
++        pass
+ 
+     def __call__(self, directive: "BaseDirective", md: "Markdown") -> None:
+         directive.register(self.NAME, self.parse)

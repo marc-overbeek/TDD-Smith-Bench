@@ -1,0 +1,26 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -868,7 +868,22 @@
+         if 'file_obj' in param_names_of_serializer:
+             self.serializer(self.diff, file_obj=file)
+         else:
+-            file.write(self.dumps())
++            serialized = self.dumps()
++            if isinstance(serialized, str):
++                # If the serializer returns a string (like json.dumps), encode it
++                serialized = serialized.encode('utf-8')
++            file.write(serialized)
++
++    def dump(self, file):
++        """
++        Dump into file object
++        """
++        param_names_of_serializer = set(self.serializer.__code__.co_varnames)
++        if 'file_obj' in param_names_of_serializer:
++            self.serializer(self.diff, file_obj=file)
++        else:
++            serialized = self.dumps()
++            file.write(serialized)
+ 
+     def dumps(self):
+         """

@@ -1,0 +1,94 @@
+--- a/src/mistune/plugins/ruby.py
++++ b/src/mistune/plugins/ruby.py
+@@ -14,35 +14,36 @@
+ _ruby_re = re.compile(RUBY_PATTERN)
+ 
+ 
+-def parse_ruby(inline: "InlineParser", m: Match[str], state: "InlineState") -> int:
+-    text = m.group(0)[1:-2]
+-    items = text.split(')')
++def parse_ruby(inline: 'InlineParser', m: Match[str], state: 'InlineState'
++    ) ->int:
++    text = m.group()
++    pos = m.end()
+     tokens = []
+-    for item in items:
+-        rb, rt = item.split('(')
+-        tokens.append({
+-            'type': 'ruby',
+-            'raw': rb,
+-            'attrs': {'rt': rt}
+-        })
+-
+-    end_pos = m.end()
+-
+-    next_match = _ruby_re.match(state.src, end_pos)
+-    if next_match:
+-        for tok in tokens:
+-            state.append_token(tok)
+-        return parse_ruby(inline, next_match, state)
+-
+-    # repeat link logic
+-    if end_pos < len(state.src):
+-        link_pos = _parse_ruby_link(inline, state, end_pos, tokens)
+-        if link_pos:
+-            return link_pos
+-
+-    for tok in tokens:
+-        state.append_token(tok)
+-    return end_pos
++    i = 1
++    while i < len(text) - 1:
++        if text[i] == '(':
++            j = text.find(')', i)
++            if j != -1:
++                rt = text[i+1:j]
++                i = j + 1
++                while i < len(text) - 1 and text[i] != '(':
++                    if text[i] == '\\':
++                        i += 2
++                    else:
++                        i += 1
++                if i < len(text) - 1:
++                    text_content = text[:i]
++                    text_content = text_content.replace('\\(', '(').replace('\\)', ')')
++                    tokens.append({'type': 'text', 'raw': text_content})
++                    state.append_token({
++                        'type': 'ruby',
++                        'children': tokens,
++                        'attrs': {'rt': rt}
++                    })
++                    return pos
++        else:
++            i += 1
++    return pos
+ 
+ 
+ def _parse_ruby_link(
+@@ -89,22 +90,7 @@
+     return "<ruby><rb>" + text + "</rb><rt>" + rt + "</rt></ruby>"
+ 
+ 
+-def ruby(md: "Markdown") -> None:
+-    """A mistune plugin to support ``<ruby>`` tag. The syntax is defined
+-    at https://lepture.com/en/2022/markdown-ruby-markup:
+-
+-    .. code-block:: text
+-
+-        [漢字(ㄏㄢˋㄗˋ)]
+-        [漢(ㄏㄢˋ)字(ㄗˋ)]
+-
+-        [漢字(ㄏㄢˋㄗˋ)][link]
+-        [漢字(ㄏㄢˋㄗˋ)](/url "title")
+-
+-        [link]: /url "title"
+-
+-    :param md: Markdown instance
+-    """
+-    md.inline.register('ruby', RUBY_PATTERN, parse_ruby, before='link')
+-    if md.renderer and md.renderer.NAME == 'html':
+-        md.renderer.register('ruby', render_ruby)
++def ruby(md: 'Markdown') ->None:
++    md.inline_parser.rules.insert(0, 'ruby')
++    md.inline_parser.patterns['ruby'] = _ruby_re
++    md.renderer.register_rule('ruby', render_ruby)

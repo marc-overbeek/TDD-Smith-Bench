@@ -1,0 +1,40 @@
+--- a/oauthlib/common.py
++++ b/oauthlib/common.py
+@@ -97,36 +97,7 @@
+ 
+ 
+ def urldecode(query):
+-    """Decode a query string in x-www-form-urlencoded format into a sequence
+-    of two-element tuples.
+-
+-    Unlike urlparse.parse_qsl(..., strict_parsing=True) urldecode will enforce
+-    correct formatting of the query string by validation. If validation fails
+-    a ValueError will be raised. urllib.parse_qsl will only raise errors if
+-    any of name-value pairs omits the equals sign.
+-    """
+-    # Check if query contains invalid characters
+-    if query and not set(query) <= urlencoded:
+-        error = ("Error trying to decode a non urlencoded string. "
+-                 "Found invalid characters: %s "
+-                 "in the string: '%s'. "
+-                 "Please ensure the request/response body is "
+-                 "x-www-form-urlencoded.")
+-        raise ValueError(error % (set(query) - urlencoded, query))
+-
+-    # Check for correctly hex encoded values using a regular expression
+-    # All encoded values begin with % followed by two hex characters
+-    # correct = %00, %A0, %0A, %FF
+-    # invalid = %G0, %5H, %PO
+-    if INVALID_HEX_PATTERN.search(query):
+-        raise ValueError('Invalid hex encoding in query string.')
+-
+-    # We want to allow queries such as "c2" whereas urlparse.parse_qsl
+-    # with the strict_parsing flag will not.
+-    params = urlparse.parse_qsl(query, keep_blank_values=True)
+-
+-    # unicode all the things
+-    return decode_params_utf8(params)
++    pass
+ 
+ 
+ def extract_params(raw):

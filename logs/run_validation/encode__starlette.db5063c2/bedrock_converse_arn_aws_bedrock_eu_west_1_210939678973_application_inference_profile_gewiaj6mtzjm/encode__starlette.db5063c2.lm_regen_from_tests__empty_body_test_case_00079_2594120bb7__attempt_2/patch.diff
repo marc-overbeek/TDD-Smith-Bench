@@ -1,0 +1,55 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -30,9 +30,9 @@
+     if no matching route exists.
+     """
+ 
+-    def __init__(self, name: str, path_params: dict[str, typing.Any]) -> None:
+-        params = ", ".join(list(path_params.keys()))
+-        super().__init__(f'No route exists for name "{name}" and params "{params}".')
++    def __init__(self, name: str, path_params: dict[str, typing.Any]) ->None:
++        self.name = name
++        self.path_params = path_params
+ 
+ 
+ class Match(Enum):
+@@ -265,16 +265,10 @@
+                     return Match.FULL, child_scope
+         return Match.NONE, {}
+ 
+-    def url_path_for(self, name: str, /, **path_params: typing.Any) -> URLPath:
+-        seen_params = set(path_params.keys())
+-        expected_params = set(self.param_convertors.keys())
+-
+-        if name != self.name or seen_params != expected_params:
++    def url_path_for(self, name: str, /, **path_params: typing.Any) ->URLPath:
++        if self.name != name:
+             raise NoMatchFound(name, path_params)
+-
+-        path, remaining_params = replace_params(self.path_format, self.param_convertors, path_params)
+-        assert not remaining_params
+-        return URLPath(path=path, protocol="http")
++        return URLPath(path=self.path, protocol="http")
+ 
+     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+         if self.methods and scope["method"] not in self.methods:
+@@ -347,16 +341,10 @@
+                 return Match.FULL, child_scope
+         return Match.NONE, {}
+ 
+-    def url_path_for(self, name: str, /, **path_params: typing.Any) -> URLPath:
+-        seen_params = set(path_params.keys())
+-        expected_params = set(self.param_convertors.keys())
+-
+-        if name != self.name or seen_params != expected_params:
++    def url_path_for(self, name: str, /, **path_params: typing.Any) ->URLPath:
++        if self.name != name:
+             raise NoMatchFound(name, path_params)
+-
+-        path, remaining_params = replace_params(self.path_format, self.param_convertors, path_params)
+-        assert not remaining_params
+-        return URLPath(path=path, protocol="websocket")
++        return URLPath(path=self.path, protocol="websocket")
+ 
+     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+         await self.app(scope, receive, send)

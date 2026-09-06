@@ -1,0 +1,53 @@
+--- a/deepdiff/path.py
++++ b/deepdiff/path.py
+@@ -135,39 +135,20 @@
+ 
+ 
+ def _get_nested_obj_and_force(obj, elements, next_element=None):
+-    prev_elem = None
+-    prev_action = None
+-    prev_obj = obj
+-    for index, (elem, action) in enumerate(elements):
+-        _prev_obj = obj
++    for (elem, action) in elements:
+         if action == GET:
+-            try:
+-                obj = obj[elem]
+-                prev_obj = _prev_obj
+-            except KeyError:
+-                obj[elem] = _guess_type(elements, elem, index, next_element)
+-                obj = obj[elem]
+-                prev_obj = _prev_obj
+-            except IndexError:
+-                if isinstance(obj, list) and isinstance(elem, int) and elem >= len(obj):
+-                    obj.extend([None] * (elem - len(obj)))
+-                    obj.append(_guess_type(elements, elem, index), next_element)
+-                    obj = obj[-1]
+-                    prev_obj = _prev_obj
+-                elif isinstance(obj, list) and len(obj) == 0 and prev_elem:
+-                    # We ran into an empty list that should have been a dictionary
+-                    # We need to change it from an empty list to a dictionary
+-                    obj = {elem: _guess_type(elements, elem, index, next_element)}
+-                    if prev_action == GET:
+-                        prev_obj[prev_elem] = obj
+-                    else:
+-                        setattr(prev_obj, prev_elem, obj)
+-                    obj = obj[elem]
++            if elem not in obj:
++                if isinstance(obj, dict):
++                    obj[elem] = _guess_type(elements, elem, elements.index((elem, action)), next_element)
++                elif isinstance(obj, list) and isinstance(elem, int):
++                    # Handle list expansion
++                    while len(obj) <= elem:
++                        obj.append(_guess_type(elements, elem, elements.index((elem, action)), next_element))
++            obj = obj[elem]
+         elif action == GETATTR:
++            if not hasattr(obj, elem):
++                setattr(obj, elem, _guess_type(elements, elem, elements.index((elem, action)), next_element))
+             obj = getattr(obj, elem)
+-            prev_obj = _prev_obj
+-        prev_elem = elem
+-        prev_action = action
+     return obj
+ 
+ 

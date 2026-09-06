@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef get_shape(val: Any) ->Optional[List[int]]:\n    try:\n        return list(val.type().sizes())\n    except Exception:\n        return None\n```\n\n```python\ndef elementwise_flop_counter(input_scale: float=1, output_scale: float=0\n    ) ->Handle:\n    def elementwise_flop(inputs: List[Any], outputs: List[Any]) ->Number:\n        input_shape = get_shape(inputs[0])\n        output_shape = get_shape(outputs[0])\n        flop = input_scale * prod(input_shape) + output_scale * prod(output_shape)\n        return flop\n    return elementwise_flop\n```\n\n```python\ndef elementwise_flop(inputs: List[Any], outputs: List[Any]) ->Number:\n    output_shape = get_shape(outputs[0])\n    return prod(output_shape)\n```",
+  "rewrite": "def get_shape(val: Any) ->Optional[List[int]]:\n    try:\n        return list(val.type().sizes())\n    except Exception:\n        return None\n\ndef elementwise_flop_counter(input_scale: float=1, output_scale: float=0\n    ) ->Handle:\n    def elementwise_flop(inputs: List[Any], outputs: List[Any]) ->Number:\n        input_shape = get_shape(inputs[0])\n        output_shape = get_shape(outputs[0])\n        flop = input_scale * prod(input_shape) + output_scale * prod(output_shape)\n        return flop\n    return elementwise_flop\n\ndef elementwise_flop(inputs: List[Any], outputs: List[Any]) ->Number:\n    output_shape = get_shape(outputs[0])\n    return prod(output_shape)",
+  "strategy": "lm_regen_from_tests_combined"
+}

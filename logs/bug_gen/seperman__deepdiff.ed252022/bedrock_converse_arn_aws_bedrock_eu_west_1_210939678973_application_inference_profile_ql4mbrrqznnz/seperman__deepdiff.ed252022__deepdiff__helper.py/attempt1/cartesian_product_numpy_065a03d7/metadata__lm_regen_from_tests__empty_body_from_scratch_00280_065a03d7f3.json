@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the test:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the test:\n\n```python\ndef test_cartesian_product_numpy(self):\n    result = cartesian_product_numpy(np.array([3, 1, 2, 4, 3]), np.array([5, 2, 4]))\n    expected = [[3, 5], [3, 2], [3, 4], [1, 5], [1, 2], [1, 4], [2, 5], [2, 2], [2, 4], [4, 5], [4, 2], [4, 4], [3, 5], [3, 2], [3, 4]]\n    assert expected == result.tolist()\n```\n\nThe function takes multiple arrays and returns their cartesian product as a numpy array. Each row is a combination of one element from each array.\n\n```python\ndef cartesian_product_numpy(*arrays):\n    la = len(arrays)\n    arr = np.empty([len(a) for a in arrays] + [la], dtype=arrays[0].dtype)\n    for i, a in enumerate(np.ix_(*arrays)):\n        arr[..., i] = a\n    return arr.reshape(-1, la)\n```",
+  "rewrite": "def test_cartesian_product_numpy(self):\n    result = cartesian_product_numpy(np.array([3, 1, 2, 4, 3]), np.array([5, 2, 4]))\n    expected = [[3, 5], [3, 2], [3, 4], [1, 5], [1, 2], [1, 4], [2, 5], [2, 2], [2, 4], [4, 5], [4, 2], [4, 4], [3, 5], [3, 2], [3, 4]]\n    assert expected == result.tolist()\n\ndef cartesian_product_numpy(*arrays):\n    la = len(arrays)\n    arr = np.empty([len(a) for a in arrays] + [la], dtype=arrays[0].dtype)\n    for i, a in enumerate(np.ix_(*arrays)):\n        arr[..., i] = a\n    return arr.reshape(-1, la)",
+  "strategy": "lm_regen_from_tests"
+}

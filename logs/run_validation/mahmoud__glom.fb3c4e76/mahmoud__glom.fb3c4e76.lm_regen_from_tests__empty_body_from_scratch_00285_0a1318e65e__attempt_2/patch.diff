@@ -1,0 +1,20 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -376,7 +376,16 @@
+         self._first = Call(first, args=(T,), kwargs={'default': default, 'key': spec_glom})
+ 
+     def glomit(self, target, scope):
+-        return self._first.glomit(target, scope)
++        iterator = iter(target)
++        key_func = scope[glom] if self._spec is not T else lambda x, s: x
++        for item in iterator:
++            if self._spec is T:
++                val = item
++            else:
++                val = scope[glom](item, self._spec, scope)
++            if val:
++                return val
++        return self._default
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

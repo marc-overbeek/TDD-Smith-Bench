@@ -1,0 +1,15 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -345,8 +345,10 @@
+         return TransformList([x.inverse() for x in self.transforms[::-1]])
+ 
+     def __repr__(self) -> str:
+-        msgs = [str(t) for t in self.transforms]
+-        return "TransformList[{}]".format(", ".join(msgs))
++        classname = type(self).__name__
++        return "{}(src_image=..., src_weight={}, dst_weight={})".format(
++            classname, self.src_weight, self.dst_weight
++        )
+ 
+     __str__ = __repr__
+ 

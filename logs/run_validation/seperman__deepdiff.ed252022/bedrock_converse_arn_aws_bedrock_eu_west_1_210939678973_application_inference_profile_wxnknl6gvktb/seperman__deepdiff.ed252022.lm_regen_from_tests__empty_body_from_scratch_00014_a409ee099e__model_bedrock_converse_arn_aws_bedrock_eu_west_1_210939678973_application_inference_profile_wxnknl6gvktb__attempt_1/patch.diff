@@ -1,0 +1,29 @@
+--- a/deepdiff/lfucache.py
++++ b/deepdiff/lfucache.py
+@@ -170,6 +170,26 @@
+ 
+             freq_node.remove()
+ 
++    def move_forward(self, cache_node, freq_node):
++        if freq_node.nxt is None or freq_node.nxt.freq != freq_node.freq + 1:
++            target_freq_node = FreqNode(freq_node.freq + 1, None, None)
++            target_empty = True
++        else:
++            target_freq_node = freq_node.nxt
++            target_empty = False
++
++        cache_node.free_myself()
++        target_freq_node.append_cache_to_tail(cache_node)
++
++        if target_empty:
++            freq_node.insert_after_me(target_freq_node)
++
++        if freq_node.count_caches() == 0:
++            if self.freq_link_head == freq_node:
++                self.freq_link_head = target_freq_node
++
++            freq_node.remove()
++
+     def dump_cache(self):
+         head_freq_node = self.freq_link_head
+         self.cache.pop(head_freq_node.cache_head.key)

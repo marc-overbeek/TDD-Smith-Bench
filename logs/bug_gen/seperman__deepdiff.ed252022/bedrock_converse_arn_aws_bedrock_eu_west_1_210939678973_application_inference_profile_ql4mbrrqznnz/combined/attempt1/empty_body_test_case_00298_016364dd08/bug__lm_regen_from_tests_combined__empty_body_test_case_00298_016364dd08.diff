@@ -1,0 +1,86 @@
+--- a/deepdiff/search.py
++++ b/deepdiff/search.py
+@@ -82,18 +82,10 @@
+ 
+     warning_num = 0
+ 
+-    def __init__(self,
+-                 obj,
+-                 item,
+-                 exclude_paths=SetOrdered(),
+-                 exclude_regex_paths=SetOrdered(),
+-                 exclude_types=SetOrdered(),
+-                 verbose_level=1,
+-                 case_sensitive=False,
+-                 match_string=False,
+-                 use_regexp=False,
+-                 strict_checking=True,
+-                 **kwargs):
++    def __init__(self, obj, item, exclude_paths=SetOrdered(),
++        exclude_regex_paths=SetOrdered(), exclude_types=SetOrdered(),
++        verbose_level=1, case_sensitive=False, match_string=False, use_regexp=
++        False, strict_checking=True, **kwargs):
+         if kwargs:
+             raise ValueError((
+                 "The following parameter(s) are not valid: %s\n"
+@@ -107,8 +99,7 @@
+         self.exclude_paths = SetOrdered(exclude_paths)
+         self.exclude_regex_paths = [re.compile(exclude_regex_path) for exclude_regex_path in exclude_regex_paths]
+         self.exclude_types = SetOrdered(exclude_types)
+-        self.exclude_types_tuple = tuple(
+-            exclude_types)  # we need tuple for checking isinstance
++        self.exclude_types_tuple = tuple(exclude_types)
+         self.verbose_level = verbose_level
+         self.update(
+             matched_paths=self.__set_or_dict(),
+@@ -124,7 +115,6 @@
+                 raise TypeError(f"The passed item of {item} is not usable for regex: {e}") from None
+         self.strict_checking = strict_checking
+ 
+-        # Cases where user wants to match exact string item
+         self.match_string = match_string
+ 
+         self.__search(obj, item, parents_ids=frozenset({id(obj)}))
+@@ -190,13 +180,8 @@
+ 
+         return skip
+ 
+-    def __search_dict(self,
+-                      obj,
+-                      item,
+-                      parent,
+-                      parents_ids=frozenset(),
+-                      print_as_attribute=False):
+-        """Search dictionaries"""
++    def __search_dict(self, obj, item, parent, parents_ids=frozenset(),
++        print_as_attribute=False):
+         if print_as_attribute:
+             parent_text = "%s.%s"
+         else:
+@@ -224,7 +209,7 @@
+ 
+             str_item = str(item)
+             if (self.match_string and str_item == new_parent_cased) or\
+-               (not self.match_string and str_item in new_parent_cased) or\
++               (not self.match_string and not self.use_regexp and str_item in new_parent_cased) or\
+                (self.use_regexp and item.search(new_parent_cased)):
+                 self.__report(
+                     report_key='matched_paths',
+@@ -265,7 +250,6 @@
+                               (parent, i), parents_ids_added)
+ 
+     def __search_str(self, obj, item, parent):
+-        """Compare strings"""
+         obj_text = obj if self.case_sensitive else obj.lower()
+ 
+         is_matched = False
+@@ -301,8 +285,7 @@
+             self.__search_obj(
+                 obj, item, parent, parents_ids, is_namedtuple=True)
+ 
+-    def __search(self, obj, item, parent="root", parents_ids=frozenset()):
+-        """The main search method"""
++    def __search(self, obj, item, parent='root', parents_ids=frozenset()):
+         if self.__skip_this(item, parent):
+             return
+ 

@@ -1,0 +1,89 @@
+--- a/demo/inbox.py
++++ b/demo/inbox.py
+@@ -27,53 +27,27 @@
+     type = EventType.COMMENTED
+ 
+     def __init__(self, repo: RepoInterface) -> None:
+-        self.events: List[CommentedEvent] = []
+-        self.user_ids: Set[UserId] = set()
+-        super().__init__(repo)
++        self.repo = repo
+ 
+     def add(self, event):
+-        self.events.append(event)
+-        self.user_ids.add(event.commenter_id)
++        pass
+ 
+     def aggregate(self):
+-        users_by_id = self.repo.get_users_by_ids(self.user_ids)
+-
+-        return [
+-            AggregatedItem(
+-                type=self.type,
+-                text=f"{users_by_id[e.commenter_id].name} commented on your post.",
+-                published=e.published,
+-            )
+-            for e in self.events
+-        ]
++        pass
+ 
+ 
+ class LikesAggregator(AggregatorInterface[LikedEvent]):
+     type = EventType.LIKED
+ 
+     def __init__(self, repo: RepoInterface) -> None:
+-        self.events_by_feedentry_id: Dict[FeedEntryId, List[LikedEvent]] = {}
+-        self.user_ids: Set[UserId] = set()
+-        super().__init__(repo)
++        self.repo = repo
+ 
+     def add(self, event):
+         self.events_by_feedentry_id.setdefault(event.feedentry_id, []).append(event)
+         self.user_ids.add(event.liker_id)
+ 
+     def aggregate(self):
+-        feedentries_by_id = self.repo.get_feed_entries_by_ids(
+-            self.events_by_feedentry_id.keys()
+-        )
+-        users_by_id = self.repo.get_users_by_ids(self.user_ids)
+-
+-        return [
+-            AggregatedItem(
+-                type=self.type,
+-                text=self._describe(events, feedentries_by_id[fid], users_by_id),
+-                published=max(e.published for e in events),
+-            )
+-            for fid, events in self.events_by_feedentry_id.items()
+-        ]
++        pass
+ 
+     def _describe(self, events, feedentry, users_by_id: Dict[UserId, User]):
+         users = [users_by_id[e.liker_id].name for e in events]
+@@ -95,25 +69,14 @@
+     type = EventType.FOLLOWED
+ 
+     def __init__(self, repo: RepoInterface) -> None:
+-        self.events: List[FollowedEvent] = []
+-        self.user_ids: Set[UserId] = set()
+-        super().__init__(repo)
++        self.repo = repo
+ 
+     def add(self, event):
+         self.events.append(event)
+         self.user_ids.add(event.follower_id)
+ 
+     def aggregate(self):
+-        users_by_id = self.repo.get_users_by_ids(self.user_ids)
+-
+-        return [
+-            AggregatedItem(
+-                type=self.type,
+-                text=f"{users_by_id[e.follower_id].name} started following you.",
+-                published=e.published,
+-            )
+-            for e in self.events
+-        ]
++        pass
+ 
+ 
+ class Inbox:

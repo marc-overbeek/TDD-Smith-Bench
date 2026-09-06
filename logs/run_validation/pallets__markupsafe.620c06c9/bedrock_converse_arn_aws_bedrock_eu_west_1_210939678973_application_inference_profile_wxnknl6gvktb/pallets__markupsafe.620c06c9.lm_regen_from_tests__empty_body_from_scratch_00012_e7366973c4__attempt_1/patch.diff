@@ -1,0 +1,12 @@
+--- a/src/markupsafe/__init__.py
++++ b/src/markupsafe/__init__.py
+@@ -132,6 +132,9 @@
+ 
+     def __html__(self, /) -> te.Self:
+         return self
++
++    >>> Markup("<em>Hello</em> ") + "<foo>"
++    Markup('<em>Hello</em> &lt;foo&gt;')
+ 
+     def __add__(self, value: str | _HasHTML, /) -> te.Self:
+         if isinstance(value, str) or hasattr(value, "__html__"):

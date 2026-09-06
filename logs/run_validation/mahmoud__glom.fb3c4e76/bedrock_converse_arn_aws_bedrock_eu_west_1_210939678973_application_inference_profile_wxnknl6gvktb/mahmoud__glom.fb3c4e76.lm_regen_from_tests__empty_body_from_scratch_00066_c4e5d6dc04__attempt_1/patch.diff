@@ -1,0 +1,21 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -935,6 +935,18 @@
+             else:
+                 raise CoalesceError(self, skipped, scope[Path])
+         return ret
++
++    spec = Coalesce('xxx', 'yyy', default='zzz')
++    assert repr(spec) == "Coalesce('xxx', 'yyy', default='zzz')"
++
++    Spec: Coalesce('xxx', 'yyy')
++
++    def format_invocation(name='', args=(), kwargs=None, **kw):
++        # ... formats as: name(arg1, arg2, kwarg1=val1, kwarg2=val2)
++
++    def __repr__(self):
++        cn = self.__class__.__name__
++        return format_invocation(cn, self.subspecs, self._orig_kwargs, repr=bbrepr)
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

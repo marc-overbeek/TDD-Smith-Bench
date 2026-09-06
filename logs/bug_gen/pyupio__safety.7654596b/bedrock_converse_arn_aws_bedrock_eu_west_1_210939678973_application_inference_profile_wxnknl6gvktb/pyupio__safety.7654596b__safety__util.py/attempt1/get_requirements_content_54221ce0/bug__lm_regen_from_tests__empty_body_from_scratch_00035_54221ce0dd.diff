@@ -1,0 +1,64 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -1155,30 +1155,37 @@
+     return filtered_packages_licenses
+ 
+ 
+-def get_requirements_content(files: List[click.File]) -> Dict[str, str]:
+-    """
+-    Get the content of the requirements files.
+-
+-    Args:
+-        files (List[click.File]): The list of requirement files.
+-
+-    Returns:
+-        Dict[str, str]: The content of the requirement files.
+-
+-    Raises:
+-        InvalidProvidedReportError: If a file cannot be read.
+-    """
+-    requirements_files = {}
+-
+-    for f in files:
+-        try:
+-            f.seek(0)
+-            requirements_files[f.name] = f.read()
+-            f.close()
+-        except Exception as e:
+-            raise InvalidProvidedReportError(message=f"Unable to read a requirement file scanned in the report. {e}")
+-
+-    return requirements_files
++def get_requirements_content(files: List[click.File]) ->Dict[str, str]:
++    """
++    Get the content of requirement files.
++    
++    Args:
++        files (List[click.File]): List of requirement files.
++        
++    Returns:
++        Dict[str, str]: Dictionary mapping file names to their content.
++    """
++    content = {}
++    
++    if not files:
++        return content
++    
++    for file in files:
++        if file and hasattr(file, 'name') and hasattr(file, 'read'):
++            try:
++                # Store current position
++                current_pos = file.tell() if hasattr(file, 'tell') else 0
++                # Read content
++                file_content = file.read()
++                # Reset to beginning for potential re-reads
++                if hasattr(file, 'seek'):
++                    file.seek(0)
++                # Store in dictionary with file name as key
++                content[file.name] = file_content
++            except Exception as e:
++                LOG.debug(f"Error reading file {file.name}: {str(e)}")
++    
++    return content
+ 
+ 
+ def is_ignore_unpinned_mode(version: str) -> bool:

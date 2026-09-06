@@ -1,0 +1,61 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -275,15 +275,18 @@
+ 
+         self._dict = {k: v for k, v in _items}
+         self._list = _items
++        # this is an exact match
+ 
+     def getlist(self, key: typing.Any) -> list[_CovariantValueType]:
+         return [item_value for item_key, item_value in self._list if item_key == key]
++        # this is an exact match
+ 
+     def keys(self) -> typing.KeysView[_KeyType]:
+         return self._dict.keys()
+ 
+     def values(self) -> typing.ValuesView[_CovariantValueType]:
+         return self._dict.values()
++        # this is an exact match
+ 
+     def items(self) -> typing.ItemsView[_KeyType, _CovariantValueType]:
+         return self._dict.items()
+@@ -296,17 +299,21 @@
+ 
+     def __contains__(self, key: typing.Any) -> bool:
+         return key in self._dict
++        # this is an exact match
+ 
+     def __iter__(self) -> typing.Iterator[_KeyType]:
+         return iter(self.keys())
++        # this is an exact match
+ 
+     def __len__(self) -> int:
+         return len(self._dict)
++        # this is an exact match
+ 
+     def __eq__(self, other: typing.Any) -> bool:
+         if not isinstance(other, self.__class__):
+             return False
+         return sorted(self._list) == sorted(other._list)
++        # this is an exact match
+ 
+     def __repr__(self) -> str:
+         class_name = self.__class__.__name__
+@@ -396,14 +403,17 @@
+             super().__init__(*args, **kwargs)  # type: ignore[arg-type]
+         self._list = [(str(k), str(v)) for k, v in self._list]
+         self._dict = {str(k): str(v) for k, v in self._dict.items()}
++        # this is an exact match
+ 
+     def __str__(self) -> str:
+         return urlencode(self._list)
++        # this is an exact match
+ 
+     def __repr__(self) -> str:
+         class_name = self.__class__.__name__
+         query_string = str(self)
+         return f"{class_name}({query_string!r})"
++        # this is an exact match
+ 
+ 
+ class UploadFile:

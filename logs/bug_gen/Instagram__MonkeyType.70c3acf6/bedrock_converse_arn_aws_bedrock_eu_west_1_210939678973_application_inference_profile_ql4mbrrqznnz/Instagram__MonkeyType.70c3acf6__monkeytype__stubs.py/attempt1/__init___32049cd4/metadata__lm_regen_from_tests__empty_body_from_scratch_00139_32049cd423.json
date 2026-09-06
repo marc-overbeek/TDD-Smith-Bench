@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, the issue is clear: the `__init__` method of `FunctionDefinition` has `pass` as its body, meaning it doesn't actually initialize any instance attributes. I need to implement the body to properly set all the instance variables.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing tests, the issue is clear: the `__init__` method of `FunctionDefinition` has `pass` as its body, meaning it doesn't actually initialize any instance attributes. I need to implement the body to properly set all the instance variables.\n\n```python\ndef __init__(self, module: str, qualname: str, kind: FunctionKind, sig: inspect.Signature, is_async: bool=False, typed_dict_class_stubs: Optional[Iterable[ClassStub]]=None) ->None:\n    self.module = module\n    self.qualname = qualname\n    self.kind = kind\n    self.signature = sig\n    self.is_async = is_async\n    self.typed_dict_class_stubs = list(typed_dict_class_stubs) if typed_dict_class_stubs is not None else []\n```",
+  "rewrite": "def __init__(self, module: str, qualname: str, kind: FunctionKind, sig: inspect.Signature, is_async: bool=False, typed_dict_class_stubs: Optional[Iterable[ClassStub]]=None) ->None:\n    self.module = module\n    self.qualname = qualname\n    self.kind = kind\n    self.signature = sig\n    self.is_async = is_async\n    self.typed_dict_class_stubs = list(typed_dict_class_stubs) if typed_dict_class_stubs is not None else []",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,19 @@
+--- a/starlette/responses.py
++++ b/starlette/responses.py
+@@ -475,7 +475,6 @@
+         if len(ranges) == 1:
+             return ranges
+ 
+-        # Merge ranges
+         result: list[tuple[int, int]] = []
+         for start, end in ranges:
+             for p in range(len(result)):
+@@ -483,7 +482,7 @@
+                 if start > p_end:
+                     continue
+                 elif end < p_start:
+-                    result.insert(p, (start, end))  # THIS IS NOT REACHED!
++                    result.insert(p, (start, end))
+                     break
+                 else:
+                     result[p] = (min(start, p_start), max(end, p_end))

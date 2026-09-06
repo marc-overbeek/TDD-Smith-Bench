@@ -1,0 +1,34 @@
+--- a/safety/alerts/utils.py
++++ b/safety/alerts/utils.py
+@@ -56,18 +56,19 @@
+     return f"{pkg}/{remediation['requirement']['specifier']}/{remediation['recommended_version']}"
+ 
+ 
+-def generate_issue_title(pkg: str, remediation: Dict[str, Any]) -> str:
+-    """
+-    Generates an issue title for a given package and remediation.
+-
+-    Args:
+-        pkg (str): The package name.
+-        remediation (Dict[str, Any]): The remediation data.
+-
+-    Returns:
+-        str: The generated issue title.
+-    """
+-    return f"Security Vulnerability in {pkg}{remediation['requirement']['specifier']}"
++def generate_issue_title(pkg: str, remediation: Dict[str, Any]) ->str:
++    from safety.models import is_pinned_requirement
++    from packaging.specifiers import SpecifierSet
++    
++    specifier = remediation['requirement']['specifier']
++    pinned = is_pinned_requirement(SpecifierSet(specifier))
++    
++    if pinned:
++        # For pinned requirements, show the full specifier like "==2.21.0"
++        return f'Security Vulnerability in {pkg}{specifier}'
++    else:
++        # For unpinned requirements, show the specifier like ">=2.21.0,<2.22.0"
++        return f'Security Vulnerability in {pkg}{specifier}'
+ 
+ 
+ def get_hint(remediation: Dict[str, Any]) -> str:

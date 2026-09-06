@@ -1,0 +1,76 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -801,27 +801,15 @@
+         route = WebSocketRoute(path, endpoint=endpoint, name=name)
+         self.routes.append(route)
+ 
+-    def route(
+-        self,
+-        path: str,
+-        methods: list[str] | None = None,
+-        name: str | None = None,
+-        include_in_schema: bool = True,
+-    ) -> typing.Callable:  # type: ignore[type-arg]
+-        """
+-        We no longer document this decorator style API, and its usage is discouraged.
+-        Instead you should use the following approach:
+-
+-        >>> routes = [Route(path, endpoint=...), ...]
+-        >>> app = Starlette(routes=routes)
+-        """
++    def route(self, path: str, methods: list[str] | None = None, name: str | None = None, include_in_schema: bool = True) -> typing.Callable:
+         warnings.warn(
+             "The `route` decorator is deprecated, and will be removed in version 1.0.0."
+             "Refer to https://www.starlette.io/routing/#http-routing for the recommended approach.",
+             DeprecationWarning,
++            stacklevel=2,
+         )
+ 
+-        def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
++        def decorator(func: typing.Callable) -> typing.Callable:
+             self.add_route(
+                 path,
+                 func,
+@@ -833,21 +821,15 @@
+ 
+         return decorator
+ 
+-    def websocket_route(self, path: str, name: str | None = None) -> typing.Callable:  # type: ignore[type-arg]
+-        """
+-        We no longer document this decorator style API, and its usage is discouraged.
+-        Instead you should use the following approach:
+-
+-        >>> routes = [WebSocketRoute(path, endpoint=...), ...]
+-        >>> app = Starlette(routes=routes)
+-        """
++    def websocket_route(self, path: str, name: str | None = None) -> typing.Callable:
+         warnings.warn(
+             "The `websocket_route` decorator is deprecated, and will be removed in version 1.0.0. Refer to "
+             "https://www.starlette.io/routing/#websocket-routing for the recommended approach.",
+             DeprecationWarning,
++            stacklevel=2,
+         )
+ 
+-        def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
++        def decorator(func: typing.Callable) -> typing.Callable:
+             self.add_websocket_route(path, func, name=name)
+             return func
+ 
+@@ -861,14 +843,15 @@
+         else:
+             self.on_shutdown.append(func)
+ 
+-    def on_event(self, event_type: str) -> typing.Callable:  # type: ignore[type-arg]
++    def on_event(self, event_type: str) -> typing.Callable:
+         warnings.warn(
+             "The `on_event` decorator is deprecated, and will be removed in version 1.0.0. "
+             "Refer to https://www.starlette.io/lifespan/ for recommended approach.",
+             DeprecationWarning,
++            stacklevel=2,
+         )
+ 
+-        def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
++        def decorator(func: typing.Callable) -> typing.Callable:
+             self.add_event_handler(event_type, func)
+             return func
+ 

@@ -1,0 +1,98 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -107,39 +107,65 @@
+     return qualname.split(".")[0]
+ 
+ 
+-def get_imports_for_annotation(anno: Any) -> ImportMap:
+-    """Return the imports (module, name) needed for the type in the annotation"""
++def get_imports_for_annotation(anno: Any) ->ImportMap:
+     imports = ImportMap()
+-    if (
+-        anno is inspect.Parameter.empty
+-        or anno is inspect.Signature.empty
+-        or not (
+-            isinstance(anno, type) or is_any(anno) or is_union(anno) or is_generic(anno)
+-        )
+-        or anno.__module__ == "builtins"
+-    ):
++    
++    # Handle empty/None cases
++    if anno is inspect.Parameter.empty or anno is inspect.Signature.empty:
+         return imports
+-    if is_any(anno):
+-        imports["typing"].add("Any")
+-    elif _is_optional(anno):
+-        imports["typing"].add("Optional")
+-        elem_type = _get_optional_elem(anno)
+-        elem_imports = get_imports_for_annotation(elem_type)
+-        imports.merge(elem_imports)
+-    elif is_generic(anno):
+-        if is_union(anno):
+-            imports["typing"].add("Union")
++    
++    # Handle NoneType
++    if anno is NoneType or isinstance(anno, NoneType):
++        return imports
++    
++    # Handle forward references
++    if is_forward_ref(anno):
++        return imports
++    
++    # Handle Union types
++    if is_union(anno):
++        imports["typing"].add("Union")
++        for arg in anno.__args__:
++            imports.merge(get_imports_for_annotation(arg))
++        return imports
++    
++    # Handle generic types (List, Dict, etc.)
++    if is_generic(anno):
++        origin = getattr(anno, "__origin__", None)
++        if origin is not None:
++            # Get the name of the generic type
++            if hasattr(origin, "__module__") and hasattr(origin, "__name__"):
++                if origin.__module__ == "typing":
++                    imports["typing"].add(origin.__name__)
++                elif origin.__module__ == "builtins":
++                    pass
++                else:
++                    imports[origin.__module__].add(origin.__name__)
++            elif hasattr(origin, "__name__"):
++                imports["typing"].add(origin.__name__)
++        
++        # Process type arguments
++        args = getattr(anno, "__args__", None)
++        if args:
++            for arg in args:
++                imports.merge(get_imports_for_annotation(arg))
++        return imports
++    
++    # Handle regular types
++    if isinstance(anno, type):
++        if anno.__module__ == "builtins":
++            return imports
+         else:
+-            imports[anno.__module__].add(
+-                _get_import_for_qualname(qualname_of_generic(anno))
+-            )
+-        elem_types = getattr(anno, "__args__", None) or []
+-        for et in elem_types:
+-            elem_imports = get_imports_for_annotation(et)
+-            imports.merge(elem_imports)
+-    else:
+-        name = _get_import_for_qualname(anno.__qualname__)
+-        imports[anno.__module__].add(name)
++            # For nested classes, import the root class
++            qualname = anno.__qualname__
++            root_name = _get_import_for_qualname(qualname)
++            imports[anno.__module__].add(root_name)
++            return imports
++    
++    # Handle string annotations
++    if isinstance(anno, str):
++        return imports
++    
+     return imports
+ 
+ 

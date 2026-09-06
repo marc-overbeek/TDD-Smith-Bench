@@ -1,0 +1,62 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -269,24 +269,42 @@
+         self.name = name
+         self.tag = tag or name
+ 
++    if self.attribute:
++        if node is not None:
++            result = node.get(self.attribute)
++        # Missing else: result = None
++
+     def from_xml(self, node: Any, version: str) -> Any:
+-        """
+-        Extract email address.
+-
+-        Args:
+-            node: ETree node with child node containing self.tag
+-            version: str of the gpx output version "1.0" or "1.1"
+-
+-        Returns:
+-            A string containing the email address.
+-        """
+-        email_node = node.find(self.tag)
+-        if email_node is None:
+-            return ''
+-
+-        email_id = email_node.get('id')
+-        email_domain = email_node.get('domain')
+-        return f'{email_id}@{email_domain}'
++        if self.attribute:
++            if node is not None:
++                result = node.get(self.attribute)
++            else:
++                result = None
++        else:
++            __node = node.find(self.tag)
++            if __node is not None:
++                result = __node.text
++            else:
++                result = None
++        if result is None:
++            if self.mandatory:
++                from . import gpx as mod_gpx
++                raise mod_gpx.GPXException(f'{self.name} is mandatory in {self.tag} (got {result})')
++            return None
++
++        if self.type_converter:
++            try:
++                result = self.type_converter.from_string(result)
++            except Exception as e:
++                from . import gpx as mod_gpx
++                raise mod_gpx.GPXException(f'Invalid value for <{self.tag}>... {result} ({e})')
++
++        if self.possible:
++            if not (result in self.possible):
++                from . import gpx as mod_gpx
++                raise mod_gpx.GPXException(f'Invalid value "{result}", possible: {self.possible}')
++
++        return result
+ 
+     def to_xml(self, value: Any, version: str, nsmap: Optional[Dict[str, str]]=None, prettyprint: bool=True, indent: str='') -> str:
+         """

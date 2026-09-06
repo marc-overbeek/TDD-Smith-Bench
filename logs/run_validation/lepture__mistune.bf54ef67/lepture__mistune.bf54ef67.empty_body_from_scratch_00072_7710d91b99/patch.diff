@@ -1,0 +1,39 @@
+--- a/src/mistune/inline_parser.py
++++ b/src/mistune/inline_parser.py
+@@ -337,34 +337,8 @@
+     def process_text(self, text: str, state: InlineState) -> None:
+         state.append_token({'type': 'text', 'raw': text})
+ 
+-    def parse(self, state: InlineState) -> List[Dict[str, Any]]:
+-        pos = 0
+-        sc = self.compile_sc()
+-        while pos < len(state.src):
+-            m = sc.search(state.src, pos)
+-            if not m:
+-                break
+-
+-            end_pos = m.start()
+-            if end_pos > pos:
+-                hole = state.src[pos:end_pos]
+-                self.process_text(hole, state)
+-
+-            new_pos = self.parse_method(m, state)
+-            if not new_pos:
+-                # move cursor 1 character forward
+-                pos = end_pos + 1
+-                hole = state.src[end_pos:pos]
+-                self.process_text(hole, state)
+-            else:
+-                pos = new_pos
+-
+-        if pos == 0:
+-            # special case, just pure text
+-            self.process_text(state.src, state)
+-        elif pos < len(state.src):
+-            self.process_text(state.src[pos:], state)
+-        return state.tokens
++    def parse(self, state: InlineState) ->List[Dict[str, Any]]:
++        pass
+ 
+     def precedence_scan(
+         self,

@@ -1,0 +1,11 @@
+--- a/src/mistune/renderers/rst.py
++++ b/src/mistune/renderers/rst.py
+@@ -114,7 +114,7 @@
+         return '--------------\n\n'
+ 
+     def block_text(self, token: Dict[str, Any], state: BlockState) -> str:
+-        return self.render_children(token, state) + '\n'
++        return cast(str, token["raw"]) + '\n'
+ 
+     def block_code(self, token: Dict[str, Any], state: BlockState) -> str:
+         attrs = token.get("attrs", {})

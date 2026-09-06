@@ -1,0 +1,23 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -101,10 +101,17 @@
+             self[module].update(names)
+ 
+ 
++imports[anno.__module__].add(
++    _get_import_for_qualname(qualname_of_generic(anno))
++)
++
++name = _get_import_for_qualname(anno.__qualname__)
++imports[anno.__module__].add(name)
++
+ def _get_import_for_qualname(qualname: str) -> str:
+-    # Nested classes are annotated using the path from the root class
+-    # (e.g. Parent.Child, where Child is defined inside Parent)
+-    return qualname.split(".")[0]
++    # For nested classes like "Parent.Child", return only "Parent"
++    # For simple names like "Dict" or "Callable", return as-is
++    return qualname.split('.')[0]
+ 
+ 
+ def get_imports_for_annotation(anno: Any) -> ImportMap:

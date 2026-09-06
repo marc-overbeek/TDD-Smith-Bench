@@ -1,0 +1,39 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -296,23 +296,20 @@
+     return data
+ 
+ 
+-def is_valid_database(db: Dict[str, Any]) -> bool:
+-    """
+-    Checks if the database is valid.
+-
+-    Args:
+-        db (Dict[str, Any]): The database.
+-
+-    Returns:
+-        bool: True if the database is valid, False otherwise.
+-    """
+-    try:
+-        if db['meta']['schema_version'] == JSON_SCHEMA_VERSION:
+-            return True
+-    except Exception:
++def is_valid_database(db: Dict[str, Any]) ->bool:
++    if not isinstance(db, dict):
+         return False
+-
+-    return False
++    
++    meta = db.get('meta', {})
++    if not isinstance(meta, dict):
++        return False
++    
++    schema_version = meta.get('schema_version')
++    if not schema_version:
++        return False
++    
++    from .constants import JSON_SCHEMA_VERSION
++    return str(schema_version) == str(JSON_SCHEMA_VERSION)
+ 
+ 
+ def fetch_database(

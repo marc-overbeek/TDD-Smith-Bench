@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing test, it's testing `safety.auth.cli` functionality where `pass_safety_cli_obj` decorator is used. The `inner` function needs to properly wrap the decorated function by checking if `ctx.obj` exists and creating a `SafetyCLI` object if not, then calling the original function.\n\nThe current implementation has `pass` instead of the actual logic. Let me fix it:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing test, it's testing `safety.auth.cli` functionality where `pass_safety_cli_obj` decorator is used. The `inner` function needs to properly wrap the decorated function by checking if `ctx.obj` exists and creating a `SafetyCLI` object if not, then calling the original function.\n\nThe current implementation has `pass` instead of the actual logic. Let me fix it:\n\n```\ndef inner(ctx, *args, **kwargs):\n    if not ctx.obj:\n        from .models import SafetyCLI\n        ctx.obj = SafetyCLI()\n\n    return func(ctx, *args, **kwargs)\n```",
+  "rewrite": "def inner(ctx, *args, **kwargs):\n    if not ctx.obj:\n        from .models import SafetyCLI\n        ctx.obj = SafetyCLI()\n\n    return func(ctx, *args, **kwargs)",
+  "strategy": "lm_regen_from_tests"
+}

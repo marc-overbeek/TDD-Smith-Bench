@@ -1,0 +1,45 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -296,24 +296,24 @@
+             self._raise_or_log('Failed to set {} due to {}'.format(path_for_err_reporting, e))
+ 
+     def _coerce_obj(self, parent, obj, path, parent_to_obj_elem,
+-                    parent_to_obj_action, elements, to_type, from_type):
+-        """
+-        Coerce obj and mark it in post_process_paths_to_convert for later to be converted back.
+-        Also reassign it to its parent to replace the old object.
+-        """
+-        self.post_process_paths_to_convert[elements[:-1]] = {'old_type': to_type, 'new_type': from_type}
+-        # If this function is going to ever be used to convert numpy arrays, uncomment these lines:
+-        # if from_type is np_ndarray:
+-        #     obj = obj.tolist()
+-        # else:
+-        obj = to_type(obj)
+-
+-        if parent:
+-            # Making sure that the object is re-instated inside the parent especially if it was immutable
+-            # and we had to turn it into a mutable one. In such cases the object has a new id.
+-            self._simple_set_elem_value(obj=parent, path_for_err_reporting=path, elem=parent_to_obj_elem,
+-                                        value=obj, action=parent_to_obj_action)
+-        return obj
++                        parent_to_obj_action, elements, to_type, from_type):
++            """
++            Coerce obj and mark it in post_process_paths_to_convert for later to be converted back.
++            Also reassign it to its parent to replace the old object.
++            """
++            self.post_process_paths_to_convert[elements[:-1]] = {'old_type': to_type, 'new_type': from_type}
++            # If this function is going to ever be used to convert numpy arrays, uncomment these lines:
++            # if from_type is np_ndarray:
++            #     obj = obj.tolist()
++            # else:
++            obj = to_type(obj)
++
++            if parent:
++                # Making sure that the object is re-instated inside the parent especially if it was immutable
++                # and we had to turn it into a mutable one. In such cases the object has a new id.
++                self._simple_set_elem_value(obj=parent, path_for_err_reporting=path, elem=parent_to_obj_elem,
++                                            value=obj, action=parent_to_obj_action)
++            return obj
+ 
+     def _set_new_value(self, parent, parent_to_obj_elem, parent_to_obj_action,
+                        obj, elements, path, elem, action, new_value):

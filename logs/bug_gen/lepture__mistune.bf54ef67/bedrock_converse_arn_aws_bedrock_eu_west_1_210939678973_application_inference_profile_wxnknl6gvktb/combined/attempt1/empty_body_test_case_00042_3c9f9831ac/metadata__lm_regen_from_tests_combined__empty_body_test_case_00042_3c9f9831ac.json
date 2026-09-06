@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef parse_block_math(block: 'BlockParser', m: Match[str], state: 'BlockState'\n    ) ->int:\n    text = m.group(\"math_text\")\n    state.append_token({\"type\": \"block_math\", \"raw\": text})\n    return m.end()\n\n\ndef math(md: 'Markdown') ->None:\n    md.block.register('block_math', BLOCK_MATH_PATTERN, parse_block_math)\n    md.inline.register('inline_math', INLINE_MATH_PATTERN, parse_inline_math)\n    md.add_render_rule('block_math', render_block_math)\n    md.add_render_rule('inline_math', render_inline_math)\n\n\ndef math_in_list(md: 'Markdown') ->None:\n    md.block.insert_rule(md.block.list_rules, 'block_math', before='list')\n```",
+  "rewrite": "def parse_block_math(block: 'BlockParser', m: Match[str], state: 'BlockState'\n    ) ->int:\n    text = m.group(\"math_text\")\n    state.append_token({\"type\": \"block_math\", \"raw\": text})\n    return m.end()\n\n\ndef math(md: 'Markdown') ->None:\n    md.block.register('block_math', BLOCK_MATH_PATTERN, parse_block_math)\n    md.inline.register('inline_math', INLINE_MATH_PATTERN, parse_inline_math)\n    md.add_render_rule('block_math', render_block_math)\n    md.add_render_rule('inline_math', render_inline_math)\n\n\ndef math_in_list(md: 'Markdown') ->None:\n    md.block.insert_rule(md.block.list_rules, 'block_math', before='list')",
+  "strategy": "lm_regen_from_tests_combined"
+}

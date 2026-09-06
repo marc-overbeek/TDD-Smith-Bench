@@ -1,0 +1,25 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -2531,6 +2531,22 @@
+         scope[MODE] = FILL
+         return scope[glom](target, self.spec, scope)
+ 
++    def test():
++        assert glom('abc', Fill((T[0], {T[1]: T[2]}))) == ('a', {'b': 'c'})
++        # ... more tests ...
++        assert Fill((T, T, T)).fill(1) == (1, 1, 1)
++
++    class Fill:
++        def __init__(self, spec=None):
++            self.spec = spec
++
++        def glomit(self, target, scope):
++            scope[MODE] = FILL
++            return scope[glom](target, self.spec, scope)
++
++        def fill(self, target):
++            return glom(target, self)  # <-- This is what needs to be implemented
++
+     def fill(self, target):
+         return glom(target, self)
+ 

@@ -1,0 +1,55 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -324,30 +324,30 @@
+                                 f"install specifier to ensure a vulnerable version cannot be installed."
+ 
+ 
+-def get_specifier_range_info(style: bool = True, pin_hint: bool = False) -> str:
+-    """
+-    Get the specifier range information.
+-
+-    Args:
+-        style (bool, optional): Whether to apply styling. Defaults to True.
+-        pin_hint (bool, optional): Whether to include a pin hint. Defaults to False.
+-
+-    Returns:
+-        str: The specifier range information.
+-    """
+-    hint = ''
+-
++'   To learn more about reporting these, specifier range handling, and'
++'   options for scanning unpinned packages visit'
++'   https://docs.pyup.io/docs/safety-range-specs'
++
++def get_specifier_range_info(style: bool=True, pin_hint: bool=False) ->str:
++    """
++    Get information about specifier ranges.
++    
++    Args:
++        style (bool): Whether to apply styling to the output.
++        pin_hint (bool): Whether to include pinning hints.
++    
++    Returns:
++        str: Information about specifier ranges.
++    """
++    base_msg = "To learn more about reporting these, specifier range handling, and options for scanning unpinned packages visit https://docs.pyup.io/docs/safety-range-specs"
++    
+     if pin_hint:
+-        hint = 'It is recommended to pin your dependencies unless this is a library meant for distribution. '
+-
+-    msg = f'{hint}To learn more about reporting these, specifier range handling, and options for scanning unpinned' \
+-          f' packages visit'
+-    link = 'https://docs.pyup.io/docs/safety-range-specs'
+-
++        base_msg = "We recommend either pinning to one of the versions above or updating your install specifier to ensure a vulnerable version cannot be installed. " + base_msg
++    
+     if style:
+-        msg = click.style(msg, bold=True)
+-
+-    return f'{msg} {link}'
++        return click.style(base_msg, bold=True, fg='green')
++    
++    return base_msg
+ 
+ 
+ def build_other_options_msg(fix_version: Optional[str], is_spec: bool, secure_options: List[str]) -> str:

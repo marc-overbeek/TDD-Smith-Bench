@@ -1,0 +1,83 @@
+--- a/starlette/templating.py
++++ b/starlette/templating.py
+@@ -26,15 +26,9 @@
+ 
+ 
+ class _TemplateResponse(HTMLResponse):
+-    def __init__(
+-        self,
+-        template: typing.Any,
+-        context: dict[str, typing.Any],
+-        status_code: int = 200,
+-        headers: typing.Mapping[str, str] | None = None,
+-        media_type: str | None = None,
+-        background: BackgroundTask | None = None,
+-    ):
++    def __init__(self, template: typing.Any, context: dict[str, typing.Any],
++        status_code: int=200, headers: (typing.Mapping[str, str] | None)=None,
++        media_type: (str | None)=None, background: (BackgroundTask | None)=None):
+         self.template = template
+         self.context = context
+         content = template.render(context)
+@@ -80,14 +74,10 @@
+         context_processors: list[typing.Callable[[Request], dict[str, typing.Any]]] | None = None,
+     ) -> None: ...
+ 
+-    def __init__(
+-        self,
+-        directory: str | PathLike[str] | typing.Sequence[str | PathLike[str]] | None = None,
+-        *,
+-        context_processors: list[typing.Callable[[Request], dict[str, typing.Any]]] | None = None,
+-        env: jinja2.Environment | None = None,
+-        **env_options: typing.Any,
+-    ) -> None:
++    def __init__(self, directory: (str | PathLike[str] | typing.Sequence[str |
++        PathLike[str]] | None)=None, *, context_processors: (list[typing.
++        Callable[[Request], dict[str, typing.Any]]] | None)=None, env: (jinja2.
++        Environment | None)=None, **env_options: typing.Any) ->None:
+         if env_options:
+             warnings.warn(
+                 "Extra environment options are deprecated. Use a preconfigured jinja2.Environment instead.",
+@@ -103,18 +93,15 @@
+ 
+         self._setup_env_defaults(self.env)
+ 
+-    def _create_env(
+-        self,
+-        directory: str | PathLike[str] | typing.Sequence[str | PathLike[str]],
+-        **env_options: typing.Any,
+-    ) -> jinja2.Environment:
++    def _create_env(self, directory: (str | PathLike[str] | typing.Sequence[str |
++        PathLike[str]]), **env_options: typing.Any) ->jinja2.Environment:
+         loader = jinja2.FileSystemLoader(directory)
+         env_options.setdefault("loader", loader)
+         env_options.setdefault("autoescape", True)
+ 
+         return jinja2.Environment(**env_options)
+ 
+-    def _setup_env_defaults(self, env: jinja2.Environment) -> None:
++    def _setup_env_defaults(self, env: jinja2.Environment) ->None:
+         @pass_context
+         def url_for(
+             context: dict[str, typing.Any],
+@@ -126,10 +113,6 @@
+             return request.url_for(name, **path_params)
+ 
+         env.globals.setdefault("url_for", url_for)
+-
+-    def get_template(self, name: str) -> jinja2.Template:
+-        return self.env.get_template(name)
+-
+     @typing.overload
+     def TemplateResponse(
+         self,
+@@ -155,7 +138,8 @@
+         # Deprecated usage
+         ...
+ 
+-    def TemplateResponse(self, *args: typing.Any, **kwargs: typing.Any) -> _TemplateResponse:
++    def TemplateResponse(self, *args: typing.Any, **kwargs: typing.Any
++        ) ->_TemplateResponse:
+         if args:
+             if isinstance(args[0], str):  # the first argument is template name (old style)
+                 warnings.warn(

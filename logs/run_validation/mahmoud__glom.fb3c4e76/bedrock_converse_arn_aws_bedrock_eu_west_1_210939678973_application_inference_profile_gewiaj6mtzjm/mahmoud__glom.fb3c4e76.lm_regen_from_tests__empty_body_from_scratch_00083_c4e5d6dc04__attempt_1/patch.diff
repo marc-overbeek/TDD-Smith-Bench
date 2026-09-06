@@ -1,0 +1,37 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1341,6 +1341,34 @@
+         else:
+             scope[scope_key] = subspec
+         return scope[glom](target, subspec, scope)
++
++    class Ref:
++        """Name a part of a spec and refer to it elsewhere in the same spec,
++        useful for trees and other self-similar data structures.
++
++        Args:
++           name (str): The name of the spec to reference.
++           subspec: Pass a spec to name it *name*, or leave unset to refer
++              to an already-named spec.
++        """
++        def __init__(self, name, subspec=_MISSING):
++            self.name, self.subspec = name, subspec
++
++        def glomit(self, target, scope):
++            subspec = self.subspec
++            scope_key = (Ref, self.name)
++            if subspec is _MISSING:
++                subspec = scope[scope_key]
++            else:
++                scope[scope_key] = subspec
++            return scope[glom](target, subspec, scope)
++
++        def __repr__(self):
++            if self.subspec is _MISSING:
++                args = bbrepr(self.name)
++            else:
++                args = bbrepr((self.name, self.subspec))[1:-1]
++            return "Ref(" + args + ")"
+ 
+     def __repr__(self):
+         if self.subspec is _MISSING:

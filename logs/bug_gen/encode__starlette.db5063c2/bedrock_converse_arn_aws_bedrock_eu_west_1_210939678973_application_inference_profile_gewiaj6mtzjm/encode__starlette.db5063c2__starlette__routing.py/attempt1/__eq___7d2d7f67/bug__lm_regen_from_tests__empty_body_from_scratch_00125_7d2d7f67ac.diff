@@ -1,0 +1,32 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -362,7 +362,28 @@
+         await self.app(scope, receive, send)
+ 
+     def __eq__(self, other: typing.Any) -> bool:
+-        return isinstance(other, WebSocketRoute) and self.path == other.path and self.endpoint == other.endpoint
++        return (
++            isinstance(other, Route)
++            and self.path == other.path
++            and self.endpoint == other.endpoint
++            and self.methods == other.methods
++        )
++
++    if methods is None:
++        self.methods = None
++    else:
++        self.methods = {method.upper() for method in methods}
++        if "GET" in self.methods:
++            self.methods.add("HEAD")
++
++    def __eq__(self, other: typing.Any) -> bool:
++        return (
++            isinstance(other, Route)
++            and self.path == other.path
++            and self.endpoint == other.endpoint
++            and self.methods == other.methods
++            and self.include_in_schema == other.include_in_schema
++        )
+ 
+     def __repr__(self) -> str:
+         return f"{self.__class__.__name__}(path={self.path!r}, name={self.name!r})"

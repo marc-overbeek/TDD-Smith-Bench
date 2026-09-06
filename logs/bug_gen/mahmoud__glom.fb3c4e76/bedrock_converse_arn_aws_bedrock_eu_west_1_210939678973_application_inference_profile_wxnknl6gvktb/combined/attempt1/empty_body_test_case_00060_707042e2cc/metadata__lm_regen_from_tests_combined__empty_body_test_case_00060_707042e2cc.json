@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef target_iter(target, scope):\n    try:\n        return iter(target)\n    except TypeError:\n        raise BadSpec(f\"Group() expected an iterable target, not: {type(target)!r}\")\n```\n\n```python\ndef glomit(self, target, scope):\n    scope[MODE] = GROUP\n    scope[CUR_AGG] = None\n    scope[ACC_TREE] = {}\n\n    if type(self.spec) in (dict, list):\n        ret = type(self.spec)()\n    else:\n        ret = None\n\n    for t in target_iter(target, scope):\n        last, ret = ret, scope[glom](t, self.spec, scope)\n        if ret is STOP:\n            return last\n    return ret\n```",
+  "rewrite": "def target_iter(target, scope):\n    try:\n        return iter(target)\n    except TypeError:\n        raise BadSpec(f\"Group() expected an iterable target, not: {type(target)!r}\")\n\ndef glomit(self, target, scope):\n    scope[MODE] = GROUP\n    scope[CUR_AGG] = None\n    scope[ACC_TREE] = {}\n\n    if type(self.spec) in (dict, list):\n        ret = type(self.spec)()\n    else:\n        ret = None\n\n    for t in target_iter(target, scope):\n        last, ret = ret, scope[glom](t, self.spec, scope)\n        if ret is STOP:\n            return last\n    return ret",
+  "strategy": "lm_regen_from_tests_combined"
+}

@@ -1,0 +1,39 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -180,7 +180,7 @@
+         else:
+             self.hashes = dict_()
+         exclude_types = set() if exclude_types is None else set(exclude_types)
+-        self.exclude_types_tuple = tuple(exclude_types)  # we need tuple for checking isinstance
++        self.exclude_types_tuple = tuple(exclude_types)
+         self.ignore_repetition = ignore_repetition
+         self.exclude_paths = add_root_to_paths(convert_item_or_items_into_set_else_none(exclude_paths))
+         self.include_paths = add_root_to_paths(convert_item_or_items_into_set_else_none(include_paths))
+@@ -201,12 +201,8 @@
+         self.ignore_numeric_type_changes = ignore_numeric_type_changes
+         self.ignore_string_case = ignore_string_case
+         self.exclude_obj_callback = exclude_obj_callback
+-        # makes the hash return constant size result if true
+-        # the only time it should be set to False is when
+-        # testing the individual hash functions for different types of objects.
+         self.apply_hash = apply_hash
+         self.type_check_func = type_in_type_group if ignore_type_subclasses else type_is_subclass_of_type_group
+-        # self.type_check_func = type_is_subclass_of_type_group if ignore_type_subclasses else type_in_type_group
+         self.number_to_string = number_to_string_func or number_to_string
+         self.ignore_private_variables = ignore_private_variables
+         self.encodings = encodings
+@@ -385,14 +381,12 @@
+         return skip
+ 
+     def _prep_dict(self, obj, parent, parents_ids=EMPTY_FROZENSET, print_as_attribute=False, original_type=None):
+-
+         result = []
+         counts = 1
+ 
+         key_text = "%s{}".format(INDEX_VS_ATTRIBUTE[print_as_attribute])
+         for key, item in obj.items():
+             counts += 1
+-            # ignore private variables
+             if self.ignore_private_variables and isinstance(key, str) and key.startswith('__'):
+                 continue
+             key_formatted = "'%s'" % key if not print_as_attribute and isinstance(key, strings) else key

@@ -1,0 +1,36 @@
+--- a/deepdiff/search.py
++++ b/deepdiff/search.py
+@@ -277,15 +277,24 @@
+             self.__report(report_key='matched_values', key=parent, value=obj)
+ 
+     def __search_numbers(self, obj, item, parent):
+-        if (
+-            item == obj or (
+-                not self.strict_checking and (
+-                    item == str(obj) or (
+-                        self.use_regexp and item.search(str(obj))
+-                    )
+-                )
+-            )
+-        ):
++        is_matched = False
++    
++        # Direct match (both are numbers)
++        if item == obj:
++            is_matched = True
++        # When strict_checking is False, allow string/regex matching against number
++        elif not self.strict_checking:
++            obj_str = str(obj)
++            if self.use_regexp:
++                # item is a compiled regex pattern
++                if item.search(obj_str):
++                    is_matched = True
++            elif isinstance(item, strings):
++                # item is a string, compare with stringified obj
++                if item == obj_str:
++                    is_matched = True
++    
++        if is_matched:
+             self.__report(report_key='matched_values', key=parent, value=obj)
+ 
+     def __search_tuple(self, obj, item, parent, parents_ids):

@@ -1,0 +1,36 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -75,7 +75,6 @@
+             fb = FunctionBuilder.from_func(meth)
+             fb.args = fb.args[1:]  # drop self
+             arg_names = fb.get_arg_names()
+-            # TODO: something fancier with defaults:
+             kwargs = []
+             if len(args) > 1 and arg_names:
+                 args, kwargs = (), zip(arg_names, args)
+@@ -105,9 +104,6 @@
+             if yld is SKIP:
+                 continue
+             elif yld is self.sentinel or yld is STOP:
+-                # NB: sentinel defaults to STOP so I was torn whether
+-                # to also check for STOP, and landed on the side of
+-                # never letting STOP through.
+                 return
+             yield yld
+         return
+@@ -323,15 +319,6 @@
+     # Terminal methods follow
+ 
+     def all(self):
+-        """A convenience method which returns a new spec which turns an
+-        iterable into a list.
+-
+-        >>> glom(range(5), Iter(lambda t: t * 2).all())
+-        [0, 2, 4, 6, 8]
+-
+-        Note that this spec will always consume the whole iterable, and as
+-        such, the spec returned is *not* an :class:`Iter()` instance.
+-        """
+         return Pipe(self, list)
+ 
+     def first(self, key=T, default=None):

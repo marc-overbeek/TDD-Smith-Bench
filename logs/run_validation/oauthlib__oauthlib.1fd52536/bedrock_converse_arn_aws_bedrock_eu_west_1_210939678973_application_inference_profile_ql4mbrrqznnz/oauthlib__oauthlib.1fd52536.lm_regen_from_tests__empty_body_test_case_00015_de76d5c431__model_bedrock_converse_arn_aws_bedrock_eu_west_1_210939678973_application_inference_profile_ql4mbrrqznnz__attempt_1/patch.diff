@@ -1,0 +1,158 @@
+--- a/oauthlib/oauth1/rfc5849/signature.py
++++ b/oauthlib/oauth1/rfc5849/signature.py
+@@ -235,90 +235,28 @@
+ 
+ 
+ def collect_parameters(uri_query='', body=None, headers=None,
+-                       exclude_oauth_signature=True, with_realm=False):
+-    """
+-    Gather the request parameters from all the parameter sources.
+-
+-    This function is used to extract all the parameters, which are then passed
+-    to ``normalize_parameters`` to produce one of the components that make up
+-    the *signature base string*.
+-
+-    Parameters starting with `oauth_` will be unescaped.
+-
+-    Body parameters must be supplied as a dict, a list of 2-tuples, or a
+-    form encoded query string.
+-
+-    Headers must be supplied as a dict.
+-
+-    The rules where the parameters must be sourced from are defined in
+-    `section 3.4.1.3.1`_ of RFC 5849.
+-
+-    .. _`Sec 3.4.1.3.1`: https://tools.ietf.org/html/rfc5849#section-3.4.1.3.1
+-    """
+-    if body is None:
+-        body = []
+-    headers = headers or {}
++    exclude_oauth_signature=True, with_realm=False):
+     params = []
+ 
+-    # The parameters from the following sources are collected into a single
+-    # list of name/value pairs:
+-
+-    # *  The query component of the HTTP request URI as defined by
+-    #    `RFC3986, Section 3.4`_.  The query component is parsed into a list
+-    #    of name/value pairs by treating it as an
+-    #    "application/x-www-form-urlencoded" string, separating the names
+-    #    and values and decoding them as defined by W3C.REC-html40-19980424
+-    #    `W3C-HTML-4.0`_, Section 17.13.4.
+-    #
+-    # .. _`RFC3986, Sec 3.4`: https://tools.ietf.org/html/rfc3986#section-3.4
+-    # .. _`W3C-HTML-4.0`: https://www.w3.org/TR/1998/REC-html40-19980424/
+     if uri_query:
+         params.extend(urldecode(uri_query))
+ 
+-    # *  The OAuth HTTP "Authorization" header field (`Section 3.5.1`_) if
+-    #    present.  The header's content is parsed into a list of name/value
+-    #    pairs excluding the "realm" parameter if present.  The parameter
+-    #    values are decoded as defined by `Section 3.5.1`_.
+-    #
+-    # .. _`Section 3.5.1`: https://tools.ietf.org/html/rfc5849#section-3.5.1
++    if body:
++        params.extend(extract_params(body) or [])
++
+     if headers:
+         headers_lower = {k.lower(): v for k, v in headers.items()}
+         authorization_header = headers_lower.get('authorization')
+-        if authorization_header is not None:
+-            params.extend([i for i in utils.parse_authorization_header(
+-                authorization_header) if with_realm or i[0] != 'realm'])
+-
+-    # *  The HTTP request entity-body, but only if all of the following
+-    #    conditions are met:
+-    #     *  The entity-body is single-part.
+-    #
+-    #     *  The entity-body follows the encoding requirements of the
+-    #        "application/x-www-form-urlencoded" content-type as defined by
+-    #        W3C.REC-html40-19980424 `W3C-HTML-4.0`_.
+-
+-    #     *  The HTTP request entity-header includes the "Content-Type"
+-    #        header field set to "application/x-www-form-urlencoded".
+-    #
+-    # .. _`W3C-HTML-4.0`: https://www.w3.org/TR/1998/REC-html40-19980424/
+-
+-    # TODO: enforce header param inclusion conditions
+-    bodyparams = extract_params(body) or []
+-    params.extend(bodyparams)
+-
+-    # ensure all oauth params are unescaped
+-    unescaped_params = []
+-    for k, v in params:
+-        if k.startswith('oauth_'):
+-            v = utils.unescape(v)
+-        unescaped_params.append((k, v))
+-
+-    # The "oauth_signature" parameter MUST be excluded from the signature
+-    # base string if present.
+-    if exclude_oauth_signature:
+-        unescaped_params = list(filter(lambda i: i[0] != 'oauth_signature',
+-                                       unescaped_params))
+-
+-    return unescaped_params
++        if authorization_header:
++            auth_params = utils.parse_authorization_header(authorization_header)
++            for k, v in auth_params:
++                if exclude_oauth_signature and k == 'oauth_signature':
++                    continue
++                if not with_realm and k == 'realm':
++                    continue
++                params.append((k, v))
++
++    return params
+ 
+ 
+ def normalize_parameters(params) -> str:
+@@ -804,47 +742,12 @@
+ 
+ 
+ def sign_plaintext(client_secret, resource_owner_secret):
+-    """Sign a request using plaintext.
+-
+-    Per `section 3.4.4`_ of the spec.
+-
+-    The "PLAINTEXT" method does not employ a signature algorithm.  It
+-    MUST be used with a transport-layer mechanism such as TLS or SSL (or
+-    sent over a secure channel with equivalent protections).  It does not
+-    utilize the signature base string or the "oauth_timestamp" and
+-    "oauth_nonce" parameters.
+-
+-    .. _`section 3.4.4`: https://tools.ietf.org/html/rfc5849#section-3.4.4
+-
+-    """
+-
+-    # The "oauth_signature" protocol parameter is set to the concatenated
+-    # value of:
+-
+-    # 1.  The client shared-secret, after being encoded (`Section 3.6`_).
+-    #
+-    # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    signature = utils.escape(client_secret or '')
+-
+-    # 2.  An "&" character (ASCII code 38), which MUST be included even
+-    #     when either secret is empty.
+-    signature += '&'
+-
+-    # 3.  The token shared-secret, after being encoded (`Section 3.6`_).
+-    #
+-    # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    signature += utils.escape(resource_owner_secret or '')
+-
+-    return signature
++    escaped_client_secret = utils.escape(client_secret or '')
++    escaped_resource_owner_secret = utils.escape(resource_owner_secret or '')
++    return escaped_client_secret + '&' + escaped_resource_owner_secret
+ 
+ 
+ def verify_plaintext(request, client_secret=None, resource_owner_secret=None):
+-    """Verify a PLAINTEXT signature.
+-
+-    Per `section 3.4`_ of the spec.
+-
+-    .. _`section 3.4`: https://tools.ietf.org/html/rfc5849#section-3.4
+-    """
+     signature = sign_plaintext(client_secret, resource_owner_secret)
+     match = safe_string_equals(signature, request.signature)
+     if not match:

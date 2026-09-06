@@ -1,0 +1,21 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -480,7 +480,18 @@
+ 
+ 
+ class NoOpRewriter(TypeRewriter):
++    class ChainedRewriter(TypeRewriter):
++        def __init__(self, rewriters: Iterable[TypeRewriter]) -> None:
++            self.rewriters = rewriters
++
++        def rewrite(self, typ):
++            for rw in self.rewriters:
++                typ = rw.rewrite(typ)
++            return typ
++
+     def rewrite(self, typ):
++        for rw in self.rewriters:
++            typ = rw.rewrite(typ)
+         return typ
+ 
+ 

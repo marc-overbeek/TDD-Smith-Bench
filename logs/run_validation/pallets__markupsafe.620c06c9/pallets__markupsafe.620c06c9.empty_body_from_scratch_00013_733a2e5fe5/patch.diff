@@ -1,0 +1,16 @@
+--- a/src/markupsafe/__init__.py
++++ b/src/markupsafe/__init__.py
+@@ -139,11 +139,8 @@
+ 
+         return NotImplemented
+ 
+-    def __radd__(self, value: str | _HasHTML, /) -> te.Self:
+-        if isinstance(value, str) or hasattr(value, "__html__"):
+-            return self.escape(value).__add__(self)
+-
+-        return NotImplemented
++    def __radd__(self, value: (str | _HasHTML), /) ->te.Self:
++        pass
+ 
+     def __mul__(self, value: t.SupportsIndex, /) -> te.Self:
+         return self.__class__(super().__mul__(value))

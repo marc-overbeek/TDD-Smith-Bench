@@ -1,0 +1,243 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -55,24 +55,8 @@
+     return path.endswith(supported_types)
+ 
+ 
+-def parse_requirement(dep: Any, found: str) -> SafetyRequirement:
+-    """
+-    Parse a requirement.
+-
+-    Args:
+-        dep (Any): The dependency.
+-        found (str): The location where the dependency was found.
+-
+-    Returns:
+-        SafetyRequirement: The parsed requirement.
+-    """
+-    req = SafetyRequirement(dep)
+-    req.found = found
+-
+-    if req.specifier == SpecifierSet(''):
+-        req.specifier = SpecifierSet('>=0')
+-
+-    return req
++def parse_requirement(dep: Any, found: str) ->SafetyRequirement:
++    pass
+ 
+ 
+ def find_version(requirements: List[SafetyRequirement]) -> Optional[str]:
+@@ -98,58 +82,9 @@
+     return ver
+ 
+ 
+-def read_requirements(fh: Any, resolve: bool = True) -> Generator[Package, None, None]:
+-    """
+-    Reads requirements from a file-like object and (optionally) from referenced files.
+-
+-    Args:
+-        fh (Any): The file-like object to read from.
+-        resolve (bool): Resolves referenced files.
+-
+-    Returns:
+-        Generator: Yields Package objects.
+-    """
+-    is_temp_file = not hasattr(fh, 'name')
+-    path = None
+-    found = 'temp_file'
+-    file_type = filetypes.requirements_txt
+-    absolute_path: Optional[str] = None
+-
+-    if not is_temp_file and is_supported_by_parser(fh.name):
+-        LOG.debug('not temp and a compatible file')
+-        path = fh.name
+-        absolute_path = os.path.abspath(path)
+-        SafetyContext().scanned_full_path.append(absolute_path)
+-        found = path
+-        file_type = None
+-
+-    LOG.debug(f'Path: {path}')
+-    LOG.debug(f'File Type: {file_type}')
+-    LOG.debug('Trying to parse file using dparse...')
+-    content = fh.read()
+-    LOG.debug(f'Content: {content}')
+-    dependency_file = parse(content, path=path, resolve=resolve,
+-                            file_type=file_type)
+-    LOG.debug(f'Dependency file: {dependency_file.serialize()}')
+-    LOG.debug(f'Parsed, dependencies: {[dep.serialize() for dep in dependency_file.resolved_dependencies]}')
+-
+-    reqs_pkg = defaultdict(list)
+-
+-    for req in dependency_file.resolved_dependencies:
+-        reqs_pkg[canonicalize_name(req.name)].append(req)
+-
+-    for pkg, reqs in reqs_pkg.items():
+-        requirements = list(map(lambda req: parse_requirement(req, absolute_path), reqs))
+-        version = find_version(requirements)
+-
+-        yield Package(name=pkg, version=version,
+-                      requirements=requirements,
+-                      found=found,
+-                      absolute_path=absolute_path,
+-                      insecure_versions=[],
+-                      secure_versions=[], latest_version=None,
+-                      latest_version_without_known_vulnerabilities=None,
+-                      more_info_url=None)
++def read_requirements(fh: Any, resolve: bool=True) ->Generator[Package,
++    None, None]:
++    pass
+ 
+ 
+ def get_proxy_dict(proxy_protocol: str, proxy_host: str, proxy_port: int) -> Optional[Dict[str, str]]:
+@@ -170,22 +105,9 @@
+     return None
+ 
+ 
+-def get_license_name_by_id(license_id: int, db: Dict[str, Any]) -> Optional[str]:
+-    """
+-    Get the license name by its ID.
+-
+-    Args:
+-        license_id (int): The license ID.
+-        db (Dict[str, Any]): The database containing license information.
+-
+-    Returns:
+-        Optional[str]: The license name if found, None otherwise.
+-    """
+-    licenses = db.get('licenses', [])
+-    for name, id in licenses.items():
+-        if id == license_id:
+-            return name
+-    return None
++def get_license_name_by_id(license_id: int, db: Dict[str, Any]) ->Optional[str
++    ]:
++    pass
+ 
+ 
+ def get_flags_from_context() -> Dict[str, str]:
+@@ -265,20 +187,9 @@
+     return None
+ 
+ 
+-def get_basic_announcements(announcements: List[Dict[str, Any]], include_local: bool = True) -> List[Dict[str, Any]]:
+-    """
+-    Get the basic announcements from a list of announcements.
+-
+-    Args:
+-        announcements (List[Dict[str, Any]]): The list of announcements.
+-        include_local (bool): Whether to include local announcements.
+-
+-    Returns:
+-        List[Dict[str, Any]]: The list of basic announcements.
+-    """
+-    return [announcement for announcement in announcements if
+-            announcement.get('type', '').lower() != 'primary_announcement' and not announcement.get('local', False)
+-            or (announcement.get('local', False) and include_local)]
++def get_basic_announcements(announcements: List[Dict[str, Any]],
++    include_local: bool=True) ->List[Dict[str, Any]]:
++    pass
+ 
+ 
+ def filter_announcements(announcements: List[Dict[str, Any]], by_type: str = 'error') -> List[Dict[str, Any]]:
+@@ -1067,100 +978,7 @@
+ 
+ 
+ def sync_safety_context(f):
+-    """
+-    Decorator to sync the Safety context with the function arguments.
+-    """
+-    def new_func(*args, **kwargs):
+-        ctx = SafetyContext()
+-
+-        legacy_key_added = False
+-        if "session" in kwargs:
+-            legacy_key_added = True
+-            kwargs["key"] = kwargs.get("session").api_key
+-
+-        for attr in dir(ctx):
+-            if attr in kwargs:
+-                setattr(ctx, attr, kwargs.get(attr))
+-
+-        if legacy_key_added:
+-            kwargs.pop("key")
+-
+-        return f(*args, **kwargs)
+-
+-    return new_func
+-
+-
+-@sync_safety_context
+-def get_packages_licenses(*, packages: Optional[List[Package]] = None, licenses_db: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+-    """
+-    Get the licenses for the specified packages based on their version.
+-
+-    Args:
+-        packages (Optional[List[Package]]): The list of packages.
+-        licenses_db (Optional[Dict[str, Any]]): The licenses database.
+-
+-    Returns:
+-        List[Dict[str, Any]]: The list of packages and their licenses.
+-    """
+-    SafetyContext().command = 'license'
+-
+-    if not packages:
+-        packages = []
+-    if not licenses_db:
+-        licenses_db = {}
+-
+-    packages_licenses_db = licenses_db.get('packages', {})
+-    filtered_packages_licenses = []
+-
+-    for pkg in packages:
+-        # Ignore recursive files not resolved
+-        if isinstance(pkg, RequirementFile):
+-            continue
+-        # normalize the package name
+-        pkg_name = canonicalize_name(pkg.name)
+-        # packages may have different licenses depending their version.
+-        pkg_licenses = packages_licenses_db.get(pkg_name, [])
+-        if not pkg.version:
+-            for req in pkg.requirements:
+-                if is_pinned_requirement(req.specifier):
+-                    pkg.version = next(iter(req.specifier)).version
+-                    break
+-
+-            if not pkg.version:
+-                continue
+-        version_requested = parse_version(pkg.version)
+-        license_id = None
+-        license_name = None
+-        for pkg_version in pkg_licenses:
+-            license_start_version = parse_version(pkg_version['start_version'])
+-            # Stops and return the previous stored license when a new
+-            # license starts on a version above the requested one.
+-            if version_requested >= license_start_version:
+-                license_id = pkg_version['license_id']
+-            else:
+-                # We found the license for the version requested
+-                break
+-
+-        if license_id:
+-            license_name = get_license_name_by_id(license_id, licenses_db)
+-        if not license_id or not license_name:
+-            license_name = "unknown"
+-
+-        filtered_packages_licenses.append({
+-            "package": pkg_name,
+-            "version": pkg.version,
+-            "license": license_name
+-        })
+-
+-    return filtered_packages_licenses
+-
+-
+-def get_requirements_content(files: List[click.File]) -> Dict[str, str]:
+-    """
+-    Get the content of the requirements files.
+-
+-    Args:
+-        files (List[click.File]): The list of requirement files.
++    pass
+ 
+     Returns:
+         Dict[str, str]: The content of the requirement files.

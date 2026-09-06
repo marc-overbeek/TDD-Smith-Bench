@@ -1,0 +1,18 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -202,6 +202,15 @@
+     Holds a string value that should not be revealed in tracebacks etc.
+     You should cast the value to `str` at the point it is required.
+     """
++
++    SECRET_KEY = config('SECRET_KEY', cast=Secret)
++    UNSET_SECRET = config('UNSET_SECRET', cast=Secret, default=None)
++    EMPTY_SECRET = config('EMPTY_SECRET', cast=Secret, default='')
++    assert repr(SECRET_KEY) == "Secret('**********')"
++    assert str(SECRET_KEY) == '12345'
++    assert bool(SECRET_KEY)
++    assert not bool(EMPTY_SECRET)
++    assert not bool(UNSET_SECRET)
+ 
+     def __init__(self, value: str):
+         self._value = value

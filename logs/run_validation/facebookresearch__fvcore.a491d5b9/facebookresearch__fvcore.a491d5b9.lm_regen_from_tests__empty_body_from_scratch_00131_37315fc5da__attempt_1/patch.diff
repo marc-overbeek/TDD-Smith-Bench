@@ -1,0 +1,25 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -247,6 +247,22 @@
+         flop = prod(input_shape) * (5 if has_affine else 4)
+         return flop
+ 
++    def norm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
++        """
++        Count flops for norm layers.
++        """
++        # Inputs[0] contains the shape of the input.
++        input_shape = get_shape(inputs[0])
++        # Check for affine parameters - could be at different indices
++        # For batch_norm: weight at index 1
++        # For group_norm: weight at index 2
++        has_affine = (len(inputs) > 1 and get_shape(inputs[1]) is not None) or \
++                     (len(inputs) > 2 and get_shape(inputs[2]) is not None)
++        assert 2 <= len(input_shape) <= 5, input_shape
++        # 5 is just a rough estimate
++        flop = prod(input_shape) * (5 if has_affine else 4)
++        return flop
++
+     return norm_flop_jit
+ 
+ 

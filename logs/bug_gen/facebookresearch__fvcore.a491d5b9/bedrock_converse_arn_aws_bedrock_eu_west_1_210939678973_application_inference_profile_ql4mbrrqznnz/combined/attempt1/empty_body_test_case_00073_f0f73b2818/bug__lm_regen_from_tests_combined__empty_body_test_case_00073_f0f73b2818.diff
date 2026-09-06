@@ -1,0 +1,52 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -46,13 +46,6 @@
+     """
+ 
+     def _set_attributes(self, params: Optional[List[Any]] = None) -> None:
+-        """
+-        Set attributes from the input list of parameters.
+-
+-        Args:
+-            params (list): list of parameters.
+-        """
+-
+         if params:
+             for k, v in params.items():
+                 if k != "self" and not k.startswith("_"):
+@@ -585,34 +578,13 @@
+ 
+ class GridSampleTransform(Transform):
+     def __init__(self, grid: np.ndarray, interp: str):
+-        """
+-        Args:
+-            grid (ndarray): grid has x and y input pixel locations which are
+-                used to compute output. Grid has values in the range of [-1, 1],
+-                which is normalized by the input height and width. The dimension
+-                is `N x H x W x 2`.
+-            interp (str): interpolation methods. Options include `nearest` and
+-                `bilinear`.
+-        """
+         super().__init__()
+         self._set_attributes(locals())
+ 
+     def apply_image(self, img: np.ndarray, interp: str = None) -> np.ndarray:
+-        """
+-        Apply grid sampling on the image(s).
+-
+-        Args:
+-            img (ndarray): of shape NxHxWxC, or HxWxC or HxW. The array can be
+-                of type uint8 in range [0, 255], or floating point in range
+-                [0, 1] or [0, 255].
+-            interp (str): interpolation methods. Options include `nearest` and
+-                `bilinear`.
+-        Returns:
+-            ndarray: grid sampled image(s).
+-        """
+         interp_method = interp if interp is not None else self.interp
+         float_tensor = torch.nn.functional.grid_sample(
+-            to_float_tensor(img),  # NxHxWxC -> NxCxHxW.
++            to_float_tensor(img),
+             torch.from_numpy(self.grid),
+             mode=interp_method,
+             padding_mode="border",

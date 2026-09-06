@@ -1,0 +1,40 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -254,6 +254,13 @@
+     def __init__(self, size):
+         self.size = size
+ 
++    def test_sample():
++        spec = Group(Sample(5))
++        assert glom([1, 2, 3], spec) == [1, 2, 3]
++        assert repr(spec) == 'Group(Sample(5))'
++        s = glom([1, 2, 3], Group(Sample(2)))
++        assert s in [[1, 2], [1, 3], [2, 1], [2, 3], [3, 1], [3, 2]]
++
+     def agg(self, target, tree):
+         # simple reservoir sampling scheme
+         # https://en.wikipedia.org/wiki/Reservoir_sampling#Simple_algorithm
+@@ -269,6 +276,23 @@
+         tree[self][0] += 1
+         return sample
+ 
++    def agg(self, target, tree):
++        # simple reservoir sampling scheme
++        # https://en.wikipedia.org/wiki/Reservoir_sampling#Simple_algorithm
++        if self not in tree:
++            tree[self] = [0, []]
++        num_seen, sample = tree[self]
++        num_seen += 1
++        tree[self][0] = num_seen
++    
++        if len(sample) < self.size:
++            sample.append(target)
++        else:
++            pos = random.randint(0, num_seen - 1)
++            if pos < self.size:
++                sample[pos] = target
++        return sample
++
+     def __repr__(self):
+         return f'{self.__class__.__name__}({self.size!r})'
+ 

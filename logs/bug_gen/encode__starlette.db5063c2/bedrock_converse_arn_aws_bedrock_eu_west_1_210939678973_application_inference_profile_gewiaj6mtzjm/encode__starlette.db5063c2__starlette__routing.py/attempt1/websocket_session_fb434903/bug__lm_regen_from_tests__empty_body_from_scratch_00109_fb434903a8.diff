@@ -1,0 +1,37 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -78,22 +78,20 @@
+     return app
+ 
+ 
+-def websocket_session(
+-    func: typing.Callable[[WebSocket], typing.Awaitable[None]],
+-) -> ASGIApp:
+-    """
+-    Takes a coroutine `func(session)`, and returns an ASGI application.
+-    """
+-    # assert asyncio.iscoroutinefunction(func), "WebSocket endpoints must be async"
+-
++def websocket_session(func: typing.Callable[[WebSocket], typing.Awaitable[
++    None]]) ->ASGIApp:
++    """
++    Takes a function or coroutine `func(websocket) -> None`,
++    and returns an ASGI application.
++    """
+     async def app(scope: Scope, receive: Receive, send: Send) -> None:
+-        session = WebSocket(scope, receive=receive, send=send)
+-
++        websocket = WebSocket(scope, receive, send)
++        
+         async def app(scope: Scope, receive: Receive, send: Send) -> None:
+-            await func(session)
+-
+-        await wrap_app_handling_exceptions(app, session)(scope, receive, send)
+-
++            await func(websocket)
++            
++        await wrap_app_handling_exceptions(app, websocket)(scope, receive, send)
++        
+     return app
+ 
+ 

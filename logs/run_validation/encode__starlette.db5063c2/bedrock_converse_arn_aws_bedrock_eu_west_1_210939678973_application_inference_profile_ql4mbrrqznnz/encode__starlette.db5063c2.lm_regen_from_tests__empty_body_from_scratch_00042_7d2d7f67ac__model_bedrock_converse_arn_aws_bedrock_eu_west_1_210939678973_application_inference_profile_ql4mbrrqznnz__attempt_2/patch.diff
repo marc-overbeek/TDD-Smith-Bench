@@ -1,0 +1,16 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -306,7 +306,12 @@
+     def __eq__(self, other: typing.Any) -> bool:
+         if not isinstance(other, self.__class__):
+             return False
+-        return sorted(self._list) == sorted(other._list)
++        if set(self._dict.keys()) != set(other._dict.keys()):
++            return False
++        for key in self._dict:
++            if self.getlist(key) != other.getlist(key):
++                return False
++        return True
+ 
+     def __repr__(self) -> str:
+         class_name = self.__class__.__name__

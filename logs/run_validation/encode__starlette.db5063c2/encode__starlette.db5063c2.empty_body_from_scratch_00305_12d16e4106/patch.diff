@@ -1,0 +1,17 @@
+--- a/starlette/requests.py
++++ b/starlette/requests.py
+@@ -147,12 +147,8 @@
+         return self._cookies
+ 
+     @property
+-    def client(self) -> Address | None:
+-        # client is a 2 item tuple of (host, port), None if missing
+-        host_port = self.scope.get("client")
+-        if host_port is not None:
+-            return Address(*host_port)
+-        return None
++    def client(self) ->(Address | None):
++        pass
+ 
+     @property
+     def session(self) -> dict[str, typing.Any]:

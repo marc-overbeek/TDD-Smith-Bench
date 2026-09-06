@@ -1,0 +1,30 @@
+--- a/src/mistune/renderers/_list.py
++++ b/src/mistune/renderers/_list.py
+@@ -6,22 +6,11 @@
+     from ..core import BaseRenderer, BlockState
+ 
+ 
+-def render_list(
+-    renderer: "BaseRenderer", token: Dict[str, Any], state: "BlockState"
+-) -> str:
+-    attrs = token["attrs"]
+-    if attrs["ordered"]:
+-        children = _render_ordered_list(renderer, token, state)
+-    else:
+-        children = _render_unordered_list(renderer, token, state)
+-
+-    text = ''.join(children)
+-    parent = token.get('parent')
+-    if parent:
+-        if parent['tight']:
+-            return text
+-        return text + '\n'
+-    return strip_end(text) + '\n'
++def render_list(renderer: 'BaseRenderer', token: Dict[str, Any], state:
++    'BlockState') ->str:
++    if token["ordered"]:
++        return "".join(_render_ordered_list(renderer, token, state))
++    return "".join(_render_unordered_list(renderer, token, state))
+ 
+ 
+ def _render_list_item(

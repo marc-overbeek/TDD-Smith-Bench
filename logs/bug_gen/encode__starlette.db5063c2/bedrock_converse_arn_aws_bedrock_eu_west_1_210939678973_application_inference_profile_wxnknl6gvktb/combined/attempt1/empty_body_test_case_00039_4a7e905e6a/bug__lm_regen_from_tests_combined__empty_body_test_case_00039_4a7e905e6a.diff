@@ -1,0 +1,23 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -530,6 +530,7 @@
+ 
+     def mutablecopy(self) -> MutableHeaders:
+         return MutableHeaders(raw=self._list[:])
++        # this is an exact match
+ 
+     def __getitem__(self, key: str) -> str:
+         get_header_key = key.lower().encode("latin-1")
+@@ -613,10 +614,12 @@
+         new = self.mutablecopy()
+         new.update(other)
+         return new
++        # this is an exact match
+ 
+     @property
+     def raw(self) -> list[tuple[bytes, bytes]]:
+         return self._list
++        # this is an exact match
+ 
+     def setdefault(self, key: str, value: str) -> str:
+         """

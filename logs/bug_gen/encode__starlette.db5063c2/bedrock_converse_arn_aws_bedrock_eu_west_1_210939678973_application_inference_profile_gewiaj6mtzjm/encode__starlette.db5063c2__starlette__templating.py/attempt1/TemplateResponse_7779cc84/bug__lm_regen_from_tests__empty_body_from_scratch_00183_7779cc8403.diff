@@ -1,0 +1,25 @@
+--- a/starlette/templating.py
++++ b/starlette/templating.py
+@@ -190,11 +190,18 @@
+                     'Replace `TemplateResponse(name, {"context": context})` by `TemplateResponse(request, name)`.',
+                     DeprecationWarning,
+                 )
+-                if "request" not in kwargs.get("context", {}):
++                # Check if request is in context (old style usage)
++                context = kwargs.get("context", {})
++                if "request" not in context:
+                     raise ValueError('context must include a "request" key')
+-
+-            context = kwargs.get("context", {})
+-            request = kwargs.get("request", context.get("request"))
++            
++                # If we get here, request is in context, so proceed normally
++                request = context["request"]
++            else:
++                # New style with explicit request parameter
++                context = kwargs.get("context", {})
++                request = kwargs.get("request", context.get("request"))
++        
+             name = typing.cast(str, kwargs["name"])
+             status_code = kwargs.get("status_code", 200)
+             headers = kwargs.get("headers")

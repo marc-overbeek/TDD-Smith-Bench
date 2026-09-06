@@ -1,0 +1,27 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1852,6 +1852,24 @@
+     {'val': 9}
+ 
+     """
++    def test_let():
++        data = {'a': 1, 'b': [{'c': 2}, {'c': 3}]}
++        output = [{'a': 1, 'c': 2}, {'a': 1, 'c': 3}]
++        assert glom(data, (Let(a='a'), ('b', [{'a': S['a'], 'c': 'c'}]))) == output
++        # ... more tests
++        with pytest.raises(TypeError):
++            Let('posarg')  # Should raise TypeError for positional args
++        with pytest.raises(TypeError):
++            Let()  # Should raise TypeError for no args
++
++    def __init__(self, **kw):
++        pass
++
++    def __init__(self, **kw):
++        if not kw:
++            raise TypeError('expected at least one keyword argument')
++        self._binding = kw
++
+     def __init__(self, **kw):
+         if not kw:
+             raise TypeError('expected at least one keyword argument')

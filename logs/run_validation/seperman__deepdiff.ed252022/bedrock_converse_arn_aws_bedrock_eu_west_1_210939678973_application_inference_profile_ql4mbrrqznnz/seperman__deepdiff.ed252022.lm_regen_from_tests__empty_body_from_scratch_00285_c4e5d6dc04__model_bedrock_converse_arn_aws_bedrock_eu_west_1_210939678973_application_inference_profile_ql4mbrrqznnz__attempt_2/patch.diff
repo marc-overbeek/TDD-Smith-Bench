@@ -1,0 +1,21 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -29,7 +29,17 @@
+ 
+ class SetOrdered(SetOrderedBase):
+     def __repr__(self):
+-        return str(list(self))
++        try:
++            result = {}
++            for key, value in self.items():
++                try:
++                    # Try to convert set of DiffLevel objects to list of paths
++                    result[key] = [item.path() for item in value]
++                except (AttributeError, TypeError):
++                    result[key] = value
++            return str(result)
++        except Exception:
++            return str({key: value for key, value in self.items()})
+ 
+ 
+ try:

@@ -1,0 +1,34 @@
+--- a/src/mistune/renderers/markdown.py
++++ b/src/mistune/renderers/markdown.py
+@@ -19,15 +19,8 @@
+         out += '\n\n'.join(self.render_referrences(state)) + '\n'
+         return strip_end(out)
+ 
+-    def render_referrences(self, state: BlockState) -> Iterable[str]:
+-        ref_links = state.env['ref_links']
+-        for key in ref_links:
+-            attrs = ref_links[key]
+-            text = '[' + attrs['label'] + ']: ' + attrs['url']
+-            title = attrs.get('title')
+-            if title:
+-                text += ' "' + title + '"'
+-            yield text
++    def render_referrences(self, state: BlockState) ->Iterable[str]:
++        pass
+ 
+     def render_children(self, token: Dict[str, Any], state: BlockState) -> str:
+         children = token['children']
+@@ -88,11 +81,8 @@
+         text = self.render_children(token, state)
+         return text + '\n\n'
+ 
+-    def heading(self, token: Dict[str, Any], state: BlockState) -> str:
+-        level = cast(int, token["attrs"]["level"])
+-        marker = "#" * level
+-        text = self.render_children(token, state)
+-        return marker + ' ' + text + '\n\n'
++    def heading(self, token: Dict[str, Any], state: BlockState) ->str:
++        pass
+ 
+     def thematic_break(self, token: Dict[str, Any], state: BlockState) -> str:
+         return '***\n\n'

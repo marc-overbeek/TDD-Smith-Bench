@@ -1,0 +1,15 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -376,6 +376,12 @@
+         return self.child._m_repr()
+ 
+     def __repr__(self):
++        if self.default is not _MISSING:
++            # Use parent class repr when default is set
++            child_reprs = [_bool_child_repr(self.child)]
++            child_reprs.append("default=" + repr(self.default))
++            return self.__class__.__name__ + "(" + ", ".join(child_reprs) + ")"
++    
+         if self.child is M:
+             return '~M'
+         if self._m_repr():  # is in M repr

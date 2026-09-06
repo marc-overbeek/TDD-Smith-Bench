@@ -1,0 +1,164 @@
+--- a/oauthlib/oauth1/rfc5849/signature.py
++++ b/oauthlib/oauth1/rfc5849/signature.py
+@@ -657,82 +657,87 @@
+     return binascii.b2a_base64(s)[:-1].decode('ascii')
+ 
+ 
+-def _verify_rsa(hash_algorithm_name: str,
+-                request,
+-                rsa_public_key: str):
+-    """
+-    Verify a base64 encoded signature for a RSA-based signature method.
+-
+-    The ``alg`` is used to calculate the digest over the signature base string.
+-    For the "RSA_SHA1" signature method, the alg must be SHA-1. While OAuth 1.0a
+-    only defines the RSA-SHA1 signature method, this function can be used for
+-    other non-standard signature methods that only differ from RSA-SHA1 by the
+-    digest algorithm.
+-
+-    Verification for the RSA-SHA1 signature method is defined in
+-    `section 3.4.3`_ of RFC 5849.
+-
+-    .. _`section 3.4.3`: https://tools.ietf.org/html/rfc5849#section-3.4.3
+-
+-        To satisfy `RFC2616 section 5.2`_ item 1, the request argument's uri
+-        attribute MUST be an absolute URI whose netloc part identifies the
+-        origin server or gateway on which the resource resides. Any Host
+-        item of the request argument's headers dict attribute will be
+-        ignored.
+-
+-        .. _`RFC2616 Sec 5.2`: https://tools.ietf.org/html/rfc2616#section-5.2
+-    """
+-
++def _verify_rsa(hash_algorithm_name: str, request, rsa_public_key: str):
++    """Verify an RSA signature.
++
++    Per `section 3.4`_ of the spec.
++
++    .. _`section 3.4`: https://tools.ietf.org/html/rfc5849#section-3.4
++    """
++    # Get the implementation of RSA-hash
++    alg = _get_jwt_rsa_algorithm(hash_algorithm_name)
++    
++    # Check public key - must be a valid public key string
++    if not rsa_public_key or not isinstance(rsa_public_key, str):
++        raise TypeError('rsa_public_key must be a non-empty string')
++    
++    # Try to prepare the key - this will raise InvalidKeyError if invalid
+     try:
+-        # Calculate the *signature base string* of the actual received request
+-
+-        norm_params = normalize_parameters(request.params)
+-        bs_uri = base_string_uri(request.uri)
+-        sig_base_str = signature_base_string(
+-            request.http_method, bs_uri, norm_params)
+-
+-        # Obtain the signature that was received in the request
+-
+-        sig = binascii.a2b_base64(request.signature.encode('ascii'))
+-
+-        # Get the implementation of RSA-with-hash algorithm to use
+-
+-        alg = _get_jwt_rsa_algorithm(hash_algorithm_name)
+-
+-        # Verify the received signature was produced by the private key
+-        # corresponding to the `rsa_public_key`, signing exact same
+-        # *signature base string*.
+-        #
+-        #     RSASSA-PKCS1-V1_5-VERIFY ((n, e), M, S)
+-
+         key = _prepare_key_plus(alg, rsa_public_key)
+-
+-        # The signature base string only contain printable US-ASCII characters.
+-        # The ``encode`` method with the default "strict" error handling will
+-        # raise a ``UnicodeError`` if it can't encode the value. So using
+-        # "ascii" will always work.
+-
+-        verify_ok = alg.verify(sig_base_str.encode('ascii'), key, sig)
+-
+-        if not verify_ok:
+-            log.debug('Verify failed: RSA with ' + alg.hash_alg.name +
+-                      ': signature base string=%s' + sig_base_str)
+-        return verify_ok
+-
+-    except UnicodeError:
+-        # A properly encoded signature will only contain printable US-ASCII
+-        # characters. The ``encode`` method with the default "strict" error
+-        # handling will raise a ``UnicodeError`` if it can't decode the value.
+-        # So using "ascii" will work with all valid signatures. But an
+-        # incorrectly or maliciously produced signature could contain other
+-        # bytes.
+-        #
+-        # This implementation treats that situation as equivalent to the
+-        # signature verification having failed.
+-        #
+-        # Note: simply changing the encode to use 'utf-8' will not remove this
+-        # case, since an incorrect or malicious request can contain bytes which
+-        # are invalid as UTF-8.
++    except Exception as e:
++        # If it's not a valid public key, raise TypeError
++        raise TypeError('Invalid RSA public key') from e
++    
++    # Calculate the signature base string
++    norm_params = normalize_parameters(request.params)
++    bs_uri = base_string_uri(request.uri)
++    sig_base_str = signature_base_string(request.http_method, bs_uri, norm_params)
++    
++    # Convert signature from base64
++    try:
++        signature_bytes = binascii.a2b_base64(request.signature.encode('ascii'))
++    except (binascii.Error, AttributeError, UnicodeDecodeError):
++        return False
++    
++    # Convert the signature base string to bytes
++    m = sig_base_str.encode('ascii')
++    
++    # Verify the signature
++    try:
++        alg.verify(signature_bytes, m, key)
++        return True
++    except Exception:
++        return False
++
++def _verify_rsa(hash_algorithm_name: str, request, rsa_public_key: str):
++    """Verify an RSA signature.
++
++    Per `section 3.4`_ of the spec.
++
++    .. _`section 3.4`: https://tools.ietf.org/html/rfc5849#section-3.4
++    """
++    # Get the implementation of RSA-hash
++    alg = _get_jwt_rsa_algorithm(hash_algorithm_name)
++    
++    # Check public key - must be a valid public key string
++    if not rsa_public_key or not isinstance(rsa_public_key, str):
++        raise TypeError('rsa_public_key must be a non-empty string')
++    
++    # Try to prepare the key - this will raise an error if invalid
++    try:
++        key = _prepare_key_plus(alg, rsa_public_key)
++    except Exception:
++        raise TypeError('Invalid RSA public key')
++    
++    # Calculate the signature base string
++    norm_params = normalize_parameters(request.params)
++    bs_uri = base_string_uri(request.uri)
++    sig_base_str = signature_base_string(request.http_method, bs_uri, norm_params)
++    
++    # Convert signature from base64
++    try:
++        signature_bytes = binascii.a2b_base64(request.signature.encode('ascii'))
++    except (binascii.Error, AttributeError, UnicodeDecodeError, TypeError):
++        return False
++    
++    # Convert the signature base string to bytes
++    m = sig_base_str.encode('ascii')
++    
++    # Verify the signature
++    try:
++        alg.verify(signature_bytes, m, key)
++        return True
++    except Exception:
+         return False
+ 
+ 

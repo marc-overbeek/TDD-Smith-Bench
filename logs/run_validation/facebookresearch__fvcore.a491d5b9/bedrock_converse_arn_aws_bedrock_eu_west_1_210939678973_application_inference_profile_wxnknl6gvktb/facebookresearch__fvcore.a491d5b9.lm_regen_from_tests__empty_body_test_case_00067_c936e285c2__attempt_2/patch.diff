@@ -1,0 +1,91 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -19,27 +19,29 @@
+ ### Pre-processing functions ###
+ 
+ 
+-def _format_size(x: int, sig_figs: int = 3, hide_zero: bool = False) -> str:
+-    """
+-    Formats an integer for printing in a table or model representation.
+-    Expresses the number in terms of 'kilo', 'mega', etc., using
+-    'K', 'M', etc. as a suffix.
+-
+-    Args:
+-        x (int) : The integer to format.
+-        sig_figs (int) : The number of significant figures to keep
+-        hide_zero (bool) : If True, x=0 is replaced with an empty string
+-            instead of '0'.
+-
+-    Returns:
+-        str : The formatted string.
+-    """
+-    if hide_zero and x == 0:
+-        return str("")
+-
+-    def fmt(x: float) -> str:
+-        # use fixed point to avoid scientific notation
+-        return "{{:.{}f}}".format(sig_figs).format(x).rstrip("0").rstrip(".")
++def _format_size(x: int, sig_figs: int=3, hide_zero: bool=False) ->str:
++    if x == 0:
++        return "" if hide_zero else "0"
++    
++    import math
++    
++    units = ["", "K", "M", "B"]
++    unit_idx = 0
++    x_float = float(x)
++    
++    while x_float >= 1000 and unit_idx < len(units) - 1:
++        x_float /= 1000
++        unit_idx += 1
++    
++    magnitude = math.floor(math.log10(abs(x_float)))
++    scale = 10 ** (sig_figs - magnitude - 1)
++    rounded = round(x_float * scale) / scale
++    
++    if magnitude >= sig_figs - 1:
++        return str(int(rounded)) + units[unit_idx]
++    else:
++        decimal_places = sig_figs - magnitude - 1
++        return f"{rounded:.{decimal_places}f}" + units[unit_idx]
+ 
+     if abs(x) > 1e14:
+         return fmt(x / 1e15) + "P"
+@@ -54,30 +56,13 @@
+     return str(x)
+ 
+ 
+-def _pretty_statistics(
+-    statistics: Dict[str, Dict[str, int]], sig_figs: int = 3, hide_zero: bool = False
+-) -> Dict[str, Dict[str, str]]:
+-    """
+-    Converts numeric statistics to strings with kilo/mega/giga/etc.
+-    labels.
+-
+-    Args:
+-        statistics (dict(str, dict(str, int))) : the statistics to
+-            format. Organized as a dictionary over modules, which are
+-            each a dictionary over statistic types.
+-        sig_figs (int) : the number of significant figures for each stat
+-        hide_zero (bool) : if True, statistics that are zero will be
+-            written as an empty string. Defaults to False.
+-
+-    Return:
+-        dict(str, dict(str, str)) : the input statistics as pretty strings
+-    """
+-    out_stats = {}
+-    for mod, stats in statistics.items():
+-        out_stats[mod] = {
+-            s: _format_size(val, sig_figs, hide_zero) for s, val in stats.items()
+-        }
+-    return out_stats
++def _pretty_statistics(statistics: Dict[str, Dict[str, int]], sig_figs: int=3, hide_zero: bool=False) ->Dict[str, Dict[str, str]]:
++    result = {}
++    for mod_name, stats in statistics.items():
++        result[mod_name] = {}
++        for stat_name, stat_value in stats.items():
++            result[mod_name][stat_name] = _format_size(stat_value, sig_figs=sig_figs, hide_zero=hide_zero)
++    return result
+ 
+ 
+ def _group_by_module(

@@ -1,0 +1,21 @@
+--- a/deepdiff/search.py
++++ b/deepdiff/search.py
+@@ -126,6 +126,8 @@
+ 
+         # Cases where user wants to match exact string item
+         self.match_string = match_string
++    
++        self.item = item
+ 
+         self.__search(obj, item, parents_ids=frozenset({id(obj)}))
+ 
+@@ -256,6 +258,9 @@
+             if not self.use_regexp and thing_cased == item:
+                 self.__report(
+                     report_key='matched_values', key=new_parent, value=thing)
++            elif self.use_regexp and isinstance(thing, strings) and item.search(thing_cased):
++                self.__report(
++                    report_key='matched_values', key=new_parent, value=thing)
+             else:
+                 item_id = id(thing)
+                 if parents_ids and item_id in parents_ids:

@@ -1,0 +1,61 @@
+--- a/safety/scan/render.py
++++ b/safety/scan/render.py
+@@ -27,37 +27,29 @@
+ 
+ import datetime
+ 
+-def render_header(targets: List[Path], is_system_scan: bool) -> Text:
+-    """
+-    Render the header text for the scan.
+-
+-    Args:
+-        targets (List[Path]): List of target paths for the scan.
+-        is_system_scan (bool): Indicates if the scan is a system scan.
+-
+-    Returns:
+-        Text: Rendered header text.
+-    """
++def render_header(targets: List[Path], is_system_scan: bool) ->Text:
++    from rich.text import Text
+     version = get_safety_version()
+-    scan_datetime = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
+-
+-    action = f"scanning {', '.join([str(t) for t in targets])}"
++    now = datetime.datetime.now(datetime.timezone.utc)
++    timestamp = now.strftime("%Y-%m-%d %H:%M:%S UTC")
++    
+     if is_system_scan:
+-        action = "running [bold]system scan[/bold]"
+-
+-    return Text.from_markup(
+-        f"[bold]Safety[/bold] {version} {action}\n{scan_datetime}")
+-
+-def print_header(console, targets: List[Path], is_system_scan: bool = False) -> None:
+-    """
+-    Print the header for the scan.
+-
+-    Args:
+-        console (Console): The console for output.
+-        targets (List[Path]): List of target paths for the scan.
+-        is_system_scan (bool): Indicates if the scan is a system scan.
+-    """
+-    console.print(render_header(targets, is_system_scan), markup=True)
++        header_text = f"Safety {version} running system scan"
++    else:
++        if targets:
++            target_names = ", ".join(str(t) for t in targets)
++            header_text = f"Safety {version} scanning {target_names}"
++        else:
++            header_text = f"Safety {version} scanning"
++    
++    text = Text(header_text)
++    text.append(f"\n{timestamp}")
++    return text
++
++def print_header(console, targets: List[Path], is_system_scan: bool=False
++    ) ->None:
++    header_text = render_header(targets, is_system_scan)
++    console.print(header_text)
+ 
+ def print_announcements(console: Console, ctx: typer.Context):
+     """

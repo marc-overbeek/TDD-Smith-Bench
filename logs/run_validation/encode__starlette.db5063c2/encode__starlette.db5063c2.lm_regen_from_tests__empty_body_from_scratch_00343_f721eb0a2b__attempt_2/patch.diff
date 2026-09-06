@@ -1,0 +1,18 @@
+--- a/starlette/middleware/wsgi.py
++++ b/starlette/middleware/wsgi.py
+@@ -118,6 +118,15 @@
+         self,
+         status: str,
+         response_headers: list[tuple[str, str]],
++        exc_info: typing.Any,
++    ) -> None:
++
++    def start_response(self, status: str, response_headers: list[tuple[str, str]], exc_info: typing.Any)
++
++    def start_response(
++        self,
++        status: str,
++        response_headers: list[tuple[str, str]],
+         exc_info: typing.Any = None,
+     ) -> None:
+         self.exc_info = exc_info

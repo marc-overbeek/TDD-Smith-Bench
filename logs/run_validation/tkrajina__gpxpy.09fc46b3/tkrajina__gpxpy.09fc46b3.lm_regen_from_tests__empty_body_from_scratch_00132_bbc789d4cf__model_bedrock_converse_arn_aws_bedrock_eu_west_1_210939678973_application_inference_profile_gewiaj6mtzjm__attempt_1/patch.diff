@@ -1,0 +1,50 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1116,36 +1116,19 @@
+         return [(distance / from_start_to_end) if from_start_to_end else 0
+                 for distance in distances]
+ 
+-    def get_duration(self) -> Optional[float]:
+-        """
+-        Calculates duration or track segment
+-
+-        Returns
+-        -------
+-        duration: float
+-            Duration in seconds
+-        """
+-        if not self.points or len(self.points) < 2:
++    def get_duration(self) ->Optional[float]:
++        if not self.tracks:
+             return 0.0
+ 
+-        # Search for start:
+-        first = self.points[0]
+-        if not first.time:
+-            first = self.points[1]
+-
+-        last = self.points[-1]
+-        if not last.time:
+-            last = self.points[-2]
+-
+-        if not last.time or not first.time:
+-            log.debug('Can\'t find time')
+-            return None
+-
+-        if last.time < first.time:
+-            log.debug('Not enough time data')
+-            return None
+-
+-        return mod_utils.total_seconds(last.time - first.time)
++        result = 0.
++        for track in self.tracks:
++            duration = track.get_duration()
++            if duration or duration == 0:
++                result += duration
++            elif duration is None:
++                return None
++
++        return result
+ 
+     def get_uphill_downhill(self) -> UphillDownhill:
+         """

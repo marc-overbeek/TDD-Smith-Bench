@@ -1,0 +1,141 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -56,113 +56,25 @@
+ 
+     """
+     def __init__(self, subspec=T, **kwargs):
+-        self.subspec = subspec
+-        self._iter_stack = kwargs.pop('_iter_stack', [])
+-
+-        self.sentinel = kwargs.pop('sentinel', STOP)
+-        if kwargs:
+-            raise TypeError('unexpected keyword arguments: %r' % sorted(kwargs))
+-        return
++        pass
+ 
+     def __repr__(self):
+-        base_args = ()
+-        if self.subspec != T:
+-            base_args = (self.subspec,)
+-        base = format_invocation(self.__class__.__name__, base_args, repr=bbrepr)
+-        chunks = [base]
+-        for fname, args, _ in reversed(self._iter_stack):
+-            meth = getattr(self, fname)
+-            fb = FunctionBuilder.from_func(meth)
+-            fb.args = fb.args[1:]  # drop self
+-            arg_names = fb.get_arg_names()
+-            # TODO: something fancier with defaults:
+-            kwargs = []
+-            if len(args) > 1 and arg_names:
+-                args, kwargs = (), zip(arg_names, args)
+-            chunks.append('.' + format_invocation(fname, args, kwargs, repr=bbrepr))
+-        return ''.join(chunks)
++        pass
+ 
+     def glomit(self, target, scope):
+-        iterator = self._iterate(target, scope)
+-
+-        for _, _, callback in reversed(self._iter_stack):
+-            iterator = callback(iterator, scope)
+-
+-        return iter(iterator)
++        pass
+ 
+     def _iterate(self, target, scope):
+-        iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
+-        try:
+-            iterator = iterate(target)
+-        except Exception as e:
+-            raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+-                            % (target.__class__.__name__, Path(*scope[Path]), e))
+-
+-        base_path = scope[Path]
+-        for i, t in enumerate(iterator):
+-            scope[Path] = base_path + [i]
+-            yld = (t if self.subspec is T else scope[glom](t, self.subspec, scope))
+-            if yld is SKIP:
+-                continue
+-            elif yld is self.sentinel or yld is STOP:
+-                # NB: sentinel defaults to STOP so I was torn whether
+-                # to also check for STOP, and landed on the side of
+-                # never letting STOP through.
+-                return
+-            yield yld
+-        return
++        pass
+ 
+     def _add_op(self, opname, args, callback):
+         return type(self)(subspec=self.subspec, _iter_stack=[(opname, args, callback)] + self._iter_stack)
+ 
+     def map(self, subspec):
+-        """Return a new :class:`Iter()` spec which will apply the provided
+-        *subspec* to each element of the iterable.
+-
+-        >>> glom(range(5), Iter().map(lambda x: x * 2).all())
+-        [0, 2, 4, 6, 8]
+-
+-        Because a spec can be a callable, :meth:`Iter.map()` does
+-        everything the built-in :func:`map` does, but with the full
+-        power of glom specs.
+-
+-        >>> glom(['a', 'B', 'C'], Iter().map(T.islower()).all())
+-        [True, False, False]
+-        """
+-        # whatever validation you want goes here
+-        # TODO: DRY the self._add_op with a decorator?
+-        return self._add_op(
+-            'map',
+-            (subspec,),
+-            lambda iterable, scope: imap(
+-                lambda t: scope[glom](t, subspec, scope), iterable))
++        pass
+ 
+     def filter(self, key=T):
+-        """Return a new :class:`Iter()` spec which will include only elements matching the
+-        given *key*.
+-
+-        >>> glom(range(6), Iter().filter(lambda x: x % 2).all())
+-        [1, 3, 5]
+-
+-        Because a spec can be a callable, :meth:`Iter.filter()` does
+-        everything the built-in :func:`filter` does, but with the full
+-        power of glom specs. For even more power, combine,
+-        :meth:`Iter.filter()` with :class:`Check()`.
+-
+-        >>> # PROTIP: Python's ints know how many binary digits they require, using the bit_length method
+-        >>> glom(range(9), Iter().filter(Check(T.bit_length(), one_of=(2, 4), default=SKIP)).all())
+-        [2, 3, 8]
+-
+-        """
+-        # NB: Check's validate function defaults to bool, and
+-        # *default* is returned on access errors as well validation
+-        # errors, so the lambda passed to ifilter below works fine.
+-        check_spec = key if isinstance(key, Check) else Check(key, default=SKIP)
+-        return self._add_op(
+-            'filter',
+-            (key,),
+-            lambda iterable, scope: ifilter(
+-                lambda t: scope[glom](t, check_spec, scope) is not SKIP, iterable))
++        pass
+ 
+     def chunked(self, size, fill=_MISSING):
+         """Return a new :class:`Iter()` spec which groups elements in the iterable
+@@ -186,17 +98,7 @@
+             'chunked', args, lambda it, scope: chunked_iter(it, **kw))
+ 
+     def windowed(self, size):
+-        """Return a new :class:`Iter()` spec which will yield a sliding window of
+-        adjacent elements in the iterable. Each tuple yielded will be
+-        of length *size*.
+-
+-        Useful for getting adjacent pairs and triples.
+-
+-        >>> list(glom(range(4), Iter().windowed(2)))
+-        [(0, 1), (1, 2), (2, 3)]
+-        """
+-        return self._add_op(
+-            'windowed', (size,), lambda it, scope: windowed_iter(it, size))
++        pass
+ 
+     def split(self, sep=None, maxsplit=None):
+         """Return a new :class:`Iter()` spec which will lazily split an iterable based

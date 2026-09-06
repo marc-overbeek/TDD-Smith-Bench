@@ -1,0 +1,123 @@
+--- a/src/mistune/directives/image.py
++++ b/src/mistune/directives/image.py
+@@ -17,24 +17,11 @@
+ _allowed_aligns = ["top", "middle", "bottom", "left", "center", "right"]
+ 
+ 
+-def _parse_attrs(options: Dict[str, Any]) -> Dict[str, Any]:
++def _parse_attrs(options: Dict[str, Any]) ->Dict[str, Any]:
+     attrs = {}
+-    if 'alt' in options:
+-        attrs['alt'] = options['alt']
+-
+-    # validate align
+-    align = options.get('align')
+-    if align and align in _allowed_aligns:
+-        attrs['align'] = align
+-
+-    height = options.get('height')
+-    width = options.get('width')
+-    if height and _num_re.match(height):
+-        attrs['height'] = height
+-    if width and _num_re.match(width):
+-        attrs['width'] = width
+-    if 'target' in options:
+-        attrs['target'] = escape_url(options['target'])
++    for key in ['alt', 'width', 'height', 'align']:
++        if key in options:
++            attrs[key] = options[key]
+     return attrs
+ 
+ 
+@@ -56,45 +43,18 @@
+             md.renderer.register('block_image', render_block_image)
+ 
+ 
+-def render_block_image(
+-    self: 'HTMLRenderer',
+-    src: str,
+-    alt: Optional[str] = None,
+-    width: Optional[str] = None,
+-    height: Optional[str] = None,
+-    **attrs: Any,
+-) -> str:
+-    img = '<img src="' + escape_text(src) + '"'
+-    style = ''
++def render_block_image(self: 'HTMLRenderer', src: str, alt: Optional[str]=
++    None, width: Optional[str]=None, height: Optional[str]=None, **attrs: Any
++    ) ->str:
++    s = '<img src="' + escape_url(src) + '"'
+     if alt:
+-        img += ' alt="' + escape_text(alt) + '"'
++        s += ' alt="' + escape_text(alt) + '"'
+     if width:
+-        if width.isdigit():
+-            img += ' width="' + width + '"'
+-        else:
+-            style += 'width:' + width + ';'
++        s += ' width="' + escape_text(width) + '"'
+     if height:
+-        if height.isdigit():
+-            img += ' height="' + height + '"'
+-        else:
+-            style += 'height:' + height + ';'
+-    if style:
+-        img += ' style="' + escape_text(style) + '"'
+-
+-    img += ' />'
+-
+-    _cls = 'block-image'
+-    align = attrs.get('align')
+-    if align:
+-        _cls += ' align-' + align
+-
+-    target = attrs.get('target')
+-    if target:
+-        href = self.safe_url(target)
+-        outer = '<a class="' + _cls + '" href="' + href + '">'
+-        return outer + img + '</a>\n'
+-    else:
+-        return '<div class="' + _cls + '">' + img + '</div>\n'
++        s += ' height="' + escape_text(height) + '"'
++    s += ' />'
++    return s
+ 
+ 
+ class Figure(DirectivePlugin):
+@@ -156,27 +116,19 @@
+             md.renderer.register('legend', render_legend)
+ 
+ 
+-def render_figure(
+-    self: Any,
+-    text: str,
+-    align: Optional[str] = None,
+-    figwidth: Optional[str] = None,
+-    figclass: Optional[str] = None,
+-) -> str:
+-    _cls = "figure"
++def render_figure(self: Any, text: str, align: Optional[str]=None, figwidth:
++    Optional[str]=None, figclass: Optional[str]=None) ->str:
++    s = '<figure'
+     if align:
+-        _cls += ' align-' + align
+-    if figclass:
+-        _cls += ' ' + figclass
+-
+-    html = '<figure class="' + _cls + '"'
++        s += ' class="align-' + escape_text(align) + '"'
+     if figwidth:
+-        html += ' style="width:' + figwidth + '"'
+-    return html + '>\n' + text + '</figure>\n'
++        s += ' style="width:' + escape_text(figwidth) + '"'
++    s += '>\n' + text + '</figure>\n'
++    return s
+ 
+ 
+-def render_figcaption(self: Any, text: str) -> str:
+-    return '<figcaption>' + text + '</figcaption>\n'
++def render_figcaption(self: Any, text: str) ->str:
++    return '<figcaption>\n' + text + '</figcaption>\n'
+ 
+ 
+ def render_legend(self: Any, text: str) -> str:

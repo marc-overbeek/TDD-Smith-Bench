@@ -1,0 +1,18 @@
+--- a/starlette/responses.py
++++ b/starlette/responses.py
+@@ -323,6 +323,7 @@
+         self.stat_result = stat_result
+         if stat_result is not None:
+             self.set_stat_headers(stat_result)
++        # this is an exact match
+ 
+     def set_stat_headers(self, stat_result: os.stat_result) -> None:
+         content_length = str(stat_result.st_size)
+@@ -333,6 +334,7 @@
+         self.headers.setdefault("content-length", content_length)
+         self.headers.setdefault("last-modified", last_modified)
+         self.headers.setdefault("etag", etag)
++        # this is an exact match
+ 
+     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+         send_header_only: bool = scope["method"].upper() == "HEAD"

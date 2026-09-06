@@ -1,0 +1,49 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -350,36 +350,16 @@
+     return f'{msg} {link}'
+ 
+ 
+-def build_other_options_msg(fix_version: Optional[str], is_spec: bool, secure_options: List[str]) -> str:
+-    """
+-    Build the message for other secure options.
+-
+-    Args:
+-        fix_version (Optional[str]): The recommended fix version.
+-        is_spec (bool): Whether the package is specified.
+-        secure_options (List[str]): List of secure options.
+-
+-    Returns:
+-        str: The message for other secure options.
+-    """
+-    other_options_msg = ''
+-    raw_pre_other_options = ''
+-    outside = ''
+-
+-    if fix_version:
+-        raw_pre_other_options = 'other '
+-    elif is_spec:
+-        outside = 'outside of your current specified range '
+-
+-    if secure_options:
+-        if len(secure_options) == 1:
+-            raw_pre_other_options += f'version without known vulnerabilities {outside}is'
+-        else:
+-            raw_pre_other_options += f'versions without known vulnerabilities {outside}are:'
+-
+-        other_options_msg = f"{raw_pre_other_options} {', '.join(secure_options)}".capitalize()
+-
+-    return other_options_msg
++def build_other_options_msg(fix_version: Optional[str], is_spec: bool,
++    secure_options: List[str]) ->str:
++    if not secure_options:
++        return ''
++    
++    if len(secure_options) == 1:
++        return f'Other version without known vulnerabilities is {secure_options[0]}'
++    else:
++        versions_list = ', '.join(secure_options)
++        return f'Other versions without known vulnerabilities are: {versions_list}'
+ 
+ 
+ def build_remediation_section(remediations: Dict[str, Any], only_text: bool = False, columns: int = get_terminal_size().columns, kwargs: Optional[Dict[str, Any]] = None) -> List[str]:

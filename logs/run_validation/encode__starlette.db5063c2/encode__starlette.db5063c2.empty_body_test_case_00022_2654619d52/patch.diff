@@ -1,0 +1,63 @@
+--- a/starlette/requests.py
++++ b/starlette/requests.py
+@@ -97,27 +97,12 @@
+         return self.scope["app"]
+ 
+     @property
+-    def url(self) -> URL:
+-        if not hasattr(self, "_url"):  # pragma: no branch
+-            self._url = URL(scope=self.scope)
+-        return self._url
+-
+-    @property
+-    def base_url(self) -> URL:
+-        if not hasattr(self, "_base_url"):
+-            base_url_scope = dict(self.scope)
+-            # This is used by request.url_for, it might be used inside a Mount which
+-            # would have its own child scope with its own root_path, but the base URL
+-            # for url_for should still be the top level app root path.
+-            app_root_path = base_url_scope.get("app_root_path", base_url_scope.get("root_path", ""))
+-            path = app_root_path
+-            if not path.endswith("/"):
+-                path += "/"
+-            base_url_scope["path"] = path
+-            base_url_scope["query_string"] = b""
+-            base_url_scope["root_path"] = app_root_path
+-            self._base_url = URL(scope=base_url_scope)
+-        return self._base_url
++    def url(self) ->URL:
++        pass
++
++    @property
++    def base_url(self) ->URL:
++        pass
+ 
+     @property
+     def headers(self) -> Headers:
+@@ -160,9 +145,8 @@
+         return self.scope["session"]  # type: ignore[no-any-return]
+ 
+     @property
+-    def auth(self) -> typing.Any:
+-        assert "auth" in self.scope, "AuthenticationMiddleware must be installed to access request.auth"
+-        return self.scope["auth"]
++    def auth(self) ->typing.Any:
++        pass
+ 
+     @property
+     def user(self) -> typing.Any:
+@@ -179,12 +163,8 @@
+             self._state = State(self.scope["state"])
+         return self._state
+ 
+-    def url_for(self, name: str, /, **path_params: typing.Any) -> URL:
+-        url_path_provider: Router | Starlette | None = self.scope.get("router") or self.scope.get("app")
+-        if url_path_provider is None:
+-            raise RuntimeError("The `url_for` method can only be used inside a Starlette application or with a router.")
+-        url_path = url_path_provider.url_path_for(name, **path_params)
+-        return url_path.make_absolute_url(base_url=self.base_url)
++    def url_for(self, name: str, /, **path_params: typing.Any) ->URL:
++        pass
+ 
+ 
+ async def empty_receive() -> typing.NoReturn:

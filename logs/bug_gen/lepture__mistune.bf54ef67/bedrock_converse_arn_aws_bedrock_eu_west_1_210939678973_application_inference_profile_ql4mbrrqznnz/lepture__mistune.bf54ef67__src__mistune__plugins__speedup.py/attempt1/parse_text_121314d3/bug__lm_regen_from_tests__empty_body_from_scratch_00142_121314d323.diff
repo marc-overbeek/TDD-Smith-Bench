@@ -1,0 +1,16 @@
+--- a/src/mistune/plugins/speedup.py
++++ b/src/mistune/plugins/speedup.py
+@@ -19,10 +19,10 @@
+ __all__ = ['speedup']
+ 
+ 
+-def parse_text(inline: "InlineParser", m: Match[str], state: "InlineState") -> int:
++def parse_text(inline: 'InlineParser', m: Match[str], state: 'InlineState'
++    ) ->int:
+     text = m.group(0)
+-    text = HARD_LINEBREAK_RE.sub('\n', text)
+-    inline.process_text(text, state)
++    state.append_token({'type': 'text', 'raw': text})
+     return m.end()
+ 
+ 

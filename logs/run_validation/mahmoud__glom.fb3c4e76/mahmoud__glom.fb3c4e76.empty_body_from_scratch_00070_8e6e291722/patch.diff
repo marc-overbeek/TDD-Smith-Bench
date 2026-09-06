@@ -1,0 +1,32 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1016,28 +1016,7 @@
+         return scope[glom](target, self.wrapped, scope)
+ 
+     def _trace(self, target, spec, scope):
+-        if not self.recursive:
+-            scope[glom] = scope[Inspect]
+-        if self.echo:
+-            print('---')
+-            # TODO: switch from scope[Path] to the Target-Spec format trace above
+-            # ... but maybe be smart about only printing deltas instead of the whole
+-            # thing
+-            print('path:  ', scope[Path] + [spec])
+-            print('target:', target)
+-        if self.breakpoint:
+-            # TODO: real debugger here?
+-            self.breakpoint()
+-        try:
+-            ret = scope[Inspect](target, spec, scope)
+-        except Exception:
+-            if self.post_mortem:
+-                self.post_mortem()
+-            raise
+-        if self.echo:
+-            print('output:', ret)
+-            print('---')
+-        return ret
++        pass
+ 
+ 
+ class Call:

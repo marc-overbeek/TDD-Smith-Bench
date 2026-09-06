@@ -1,0 +1,30 @@
+--- a/oauthlib/oauth2/rfc6749/clients/base.py
++++ b/oauthlib/oauth2/rfc6749/clients/base.py
+@@ -549,8 +549,16 @@
+ 
+         return code_challenge
+ 
+-    def _add_mac_token(self, uri, http_method='GET', body=None,
+-                       headers=None, token_placement=AUTH_HEADER, ext=None, **kwargs):
++    def _add_mac_token(self, uri, http_method='GET', body=None, headers=None,
++                       token_placement=AUTH_HEADER, ext=None, **kwargs):
++        pass
++
++    def _add_mac_token(self, uri, http_method, body, headers, token_placement, ext)
++
++    return case_insensitive_token_types[self.token_type.lower()](uri, http_method, body,
++                                                                 headers, token_placement, **kwargs)
++
++    def _add_mac_token(self, uri, http_method, body, headers, token_placement, ext):
+         """Add a MAC token to the request authorization header.
+ 
+         Warning: MAC token support is experimental as the spec is not yet stable.
+@@ -560,7 +568,7 @@
+ 
+         headers = tokens.prepare_mac_header(self.access_token, uri,
+                                             self.mac_key, http_method, headers=headers, body=body, ext=ext,
+-                                            hash_algorithm=self.mac_algorithm, **kwargs)
++                                            hash_algorithm=self.mac_algorithm)
+         return uri, headers, body
+ 
+     def _populate_attributes(self, response):

@@ -1,0 +1,20 @@
+--- a/src/mistune/block_parser.py
++++ b/src/mistune/block_parser.py
+@@ -474,10 +474,13 @@
+         text = state.src[state.cursor:]
+         end_pos = state.cursor_max
+     else:
+-        text = state.get_text(marker_pos)
+-        state.cursor = marker_pos
+-        end_pos = state.find_line_end()
+-        text += state.get_text(end_pos)
++        end_of_marker = marker_pos + len(end_marker)
++        newline_pos = state.src.find('\n', end_of_marker)
++        if newline_pos == -1:
++            end_pos = state.cursor_max
++        else:
++            end_pos = newline_pos + 1
++        text = state.src[state.cursor:end_pos]
+ 
+     state.append_token({'type': 'block_html', 'raw': text})
+     return end_pos

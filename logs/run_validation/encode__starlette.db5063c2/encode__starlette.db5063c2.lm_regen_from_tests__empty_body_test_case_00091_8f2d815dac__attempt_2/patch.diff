@@ -1,0 +1,31 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -21,12 +21,7 @@
+ 
+ 
+ class URL:
+-    def __init__(
+-        self,
+-        url: str = "",
+-        scope: Scope | None = None,
+-        **components: typing.Any,
+-    ) -> None:
++    def __init__(self, url: str = "", scope: Scope | None = None, **components: typing.Any) -> None:
+         if scope is not None:
+             assert not url, 'Cannot set both "url" and "scope".'
+             assert not components, 'Cannot set both "scope" and "**components".'
+@@ -101,7 +96,13 @@
+ 
+     @property
+     def port(self) -> int | None:
+-        return self.components.port
++        components = self.components
++        if components.port is not None:
++            return components.port
++        if components.hostname is not None and components.scheme:
++            default_ports = {"http": 80, "https": 443, "ws": 80, "wss": 443}
++            return default_ports.get(components.scheme)
++        return None
+ 
+     @property
+     def is_secure(self) -> bool:

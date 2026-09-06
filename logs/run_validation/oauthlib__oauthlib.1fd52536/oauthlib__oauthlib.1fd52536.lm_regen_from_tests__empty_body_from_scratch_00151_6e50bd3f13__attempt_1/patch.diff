@@ -1,0 +1,18 @@
+--- a/oauthlib/oauth1/rfc5849/errors.py
++++ b/oauthlib/oauth1/rfc5849/errors.py
+@@ -46,6 +46,15 @@
+         return add_params_to_uri(uri, self.twotuples)
+ 
+     @property
++    @property
++    def twotuples(self):
++        error = [('error', self.error)]
++        if self.description:
++            error.append(('error_description', self.description))
++        if self.uri:
++            error.append(('error_uri', self.uri))
++        return error
++
+     def twotuples(self):
+         error = [('error', self.error)]
+         if self.description:

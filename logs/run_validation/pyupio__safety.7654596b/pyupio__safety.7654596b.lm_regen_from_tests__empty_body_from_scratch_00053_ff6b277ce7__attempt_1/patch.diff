@@ -1,0 +1,38 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -1070,22 +1070,19 @@
+     """
+     Decorator to sync the Safety context with the function arguments.
+     """
+-    def new_func(*args, **kwargs):
+-        ctx = SafetyContext()
+-
+-        legacy_key_added = False
+-        if "session" in kwargs:
+-            legacy_key_added = True
+-            kwargs["key"] = kwargs.get("session").api_key
+-
+-        for attr in dir(ctx):
+-            if attr in kwargs:
+-                setattr(ctx, attr, kwargs.get(attr))
+-
+-        if legacy_key_added:
+-            kwargs.pop("key")
+-
+-        return f(*args, **kwargs)
++    def new_func():
++        from safety.safety import check, get_licenses, read_requirements
++        return {
++            'check': check,
++            'get_licenses': get_licenses,
++            'read_requirements': read_requirements
++        }
++
++    def new_func():
++        pass
++
++    def new_func():
++        pass
+ 
+     return new_func
+ 

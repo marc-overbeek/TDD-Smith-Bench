@@ -1,0 +1,33 @@
+--- a/safety/auth/cli_utils.py
++++ b/safety/auth/cli_utils.py
+@@ -136,28 +136,8 @@
+ 
+     return func
+ 
+-def auth_options(stage: bool = True) -> Callable:
+-    """
+-    Decorator that defines authentication options for Click commands.
+-
+-    Args:
+-        stage (bool): Whether to include the stage option.
+-
+-    Returns:
+-        Callable: The decorator function.
+-    """
+-    def decorator(func: Callable) -> Callable:
+-
+-        func = click.option("--key", default=None, envvar="SAFETY_API_KEY",
+-            help=CLI_KEY_HELP)(func)
+-
+-        if stage:
+-            func = click.option("--stage", default=None, envvar="SAFETY_STAGE",
+-                                help=CLI_STAGE_HELP)(func)
+-
+-        return func
+-
+-    return decorator
++def auth_options(stage: bool=True) ->Callable:
++    pass
+ 
+ 
+ def inject_session(func: Callable) -> Callable:

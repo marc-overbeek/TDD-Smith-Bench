@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef parse_inline_math(inline: 'InlineParser', m: Match[str], state:\n    'InlineState') ->int:\n    text = m.group(\"math_text\")\n    state.append_token({\"type\": \"inline_math\", \"raw\": text})\n    return m.end()\n\n\ndef render_inline_math(renderer: 'BaseRenderer', text: str) ->str:\n    return '<span class=\"math\">$' + text + '$</span>'\n\n\ndef math(md: 'Markdown') ->None:\n    md.block_rules.insert(0, 'block_math')\n    md.inline_rules.append('inline_math')\n    md.register_plugin('block_math', parse_block_math, render_block_math)\n    md.register_plugin('inline_math', parse_inline_math, render_inline_math)\n```",
+  "rewrite": "def parse_inline_math(inline: 'InlineParser', m: Match[str], state:\n    'InlineState') ->int:\n    text = m.group(\"math_text\")\n    state.append_token({\"type\": \"inline_math\", \"raw\": text})\n    return m.end()\n\n\ndef render_inline_math(renderer: 'BaseRenderer', text: str) ->str:\n    return '<span class=\"math\">$' + text + '$</span>'\n\n\ndef math(md: 'Markdown') ->None:\n    md.block_rules.insert(0, 'block_math')\n    md.inline_rules.append('inline_math')\n    md.register_plugin('block_math', parse_block_math, render_block_math)\n    md.register_plugin('inline_math', parse_inline_math, render_inline_math)",
+  "strategy": "lm_regen_from_tests_combined"
+}

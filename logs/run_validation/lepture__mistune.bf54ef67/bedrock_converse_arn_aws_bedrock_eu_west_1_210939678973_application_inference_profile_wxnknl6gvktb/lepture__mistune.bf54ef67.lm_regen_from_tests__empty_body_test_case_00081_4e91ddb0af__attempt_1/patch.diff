@@ -1,0 +1,35 @@
+--- a/src/mistune/renderers/rst.py
++++ b/src/mistune/renderers/rst.py
+@@ -21,12 +21,10 @@
+     }
+     INLINE_IMAGE_PREFIX = 'img-'
+ 
+-    def iter_tokens(
+-        self, tokens: Iterable[Dict[str, Any]], state: BlockState
+-    ) -> Iterable[str]:
++    def iter_tokens(self, tokens: Iterable[Dict[str, Any]], state: BlockState
++        ) ->Iterable[str]:
+         prev = None
+         for tok in tokens:
+-            # ignore blank line
+             if tok['type'] == 'blank_line':
+                 continue
+             tok['prev'] = prev
+@@ -40,7 +38,7 @@
+         out += '\n\n'.join(self.render_referrences(state)) + '\n'
+         return strip_end(out)
+ 
+-    def render_referrences(self, state: BlockState) -> Iterable[str]:
++    def render_referrences(self, state: BlockState) ->Iterable[str]:
+         images = state.env['inline_images']
+         for index, token in enumerate(images):
+             attrs = token['attrs']
+@@ -104,7 +102,7 @@
+                 text = '\n'.join('| ' + line for line in lines)
+         return text + '\n\n'
+ 
+-    def heading(self, token: Dict[str, Any], state: BlockState) -> str:
++    def heading(self, token: Dict[str, Any], state: BlockState) ->str:
+         attrs = token['attrs']
+         text = self.render_children(token, state)
+         marker = self.HEADING_MARKERS[attrs['level']]

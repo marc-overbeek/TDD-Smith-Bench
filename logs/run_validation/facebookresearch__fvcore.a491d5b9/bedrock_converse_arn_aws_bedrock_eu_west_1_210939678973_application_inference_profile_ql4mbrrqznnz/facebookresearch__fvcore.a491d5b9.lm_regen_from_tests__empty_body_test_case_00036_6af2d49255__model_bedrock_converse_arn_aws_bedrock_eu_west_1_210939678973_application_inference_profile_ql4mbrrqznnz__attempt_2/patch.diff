@@ -1,0 +1,168 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -22,20 +22,12 @@
+ Handle = Callable[[List[Any], List[Any]], Union[typing.Counter[str], Number]]
+ 
+ 
+-def get_shape(val: Any) -> Optional[List[int]]:
+-    """
+-    Get the shapes from a jit value object.
+-
+-    Args:
+-        val (torch._C.Value): jit value object.
+-
+-    Returns:
+-        list(int): return a list of ints.
+-    """
+-    if val.isCompleteTensor():
+-        return val.type().sizes()
+-    else:
+-        return None
++def get_shape(val: Any) ->Optional[List[int]]:
++    if hasattr(val, "type") and callable(val.type):
++        val_type = val.type()
++        if hasattr(val_type, "sizes") and callable(val_type.sizes):
++            return val_type.sizes()
++    return None
+ 
+ 
+ """
+@@ -98,17 +90,14 @@
+     return flops
+ 
+ 
+-def linear_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-    """
+-    Count flops for the aten::linear operator.
+-    """
+-    # Inputs is a list of length 3; unlike aten::addmm, it is the first
+-    # two elements that are relevant.
+-    input_shapes = [get_shape(v) for v in inputs[0:2]]
+-    # input_shapes[0]: [dim0, dim1, ..., input_feature_dim]
+-    # input_shapes[1]: [output_feature_dim, input_feature_dim]
+-    assert input_shapes[0][-1] == input_shapes[1][-1]
+-    flops = prod(input_shapes[0]) * input_shapes[1][0]
++def linear_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:
++    input_shapes = [get_shape(v) for v in inputs[:2]]
++    assert input_shapes[0] is not None
++    assert input_shapes[1] is not None
++    batch_dims = input_shapes[0][:-1]
++    input_dim = input_shapes[0][-1]
++    output_dim = input_shapes[1][0]
++    flops = prod(batch_dims) * input_dim * output_dim
+     return flops
+ 
+ 
+@@ -126,51 +115,33 @@
+     return flop
+ 
+ 
+-def conv_flop_count(
+-    x_shape: List[int],
+-    w_shape: List[int],
+-    out_shape: List[int],
+-    transposed: bool = False,
+-) -> Number:
+-    """
+-    Count flops for convolution. Note only multiplication is
+-    counted. Computation for addition and bias is ignored.
+-
+-    Flops for a transposed convolution are calculated as
+-    flops = (x_shape[2:] * prod(w_shape) * batch_size).
+-
+-    Args:
+-        x_shape (list(int)): The input shape before convolution.
+-        w_shape (list(int)): The filter shape.
+-        out_shape (list(int)): The output shape after convolution.
+-        transposed (bool): is the convolution transposed
+-    Returns:
+-        int: the number of flops
+-    """
+-    batch_size = x_shape[0]
+-    conv_shape = (x_shape if transposed else out_shape)[2:]
+-    flop = batch_size * prod(w_shape) * prod(conv_shape)
+-    return flop
+-
+-
+-def conv_flop_jit(inputs: List[Any], outputs: List[Any]) -> typing.Counter[str]:
+-    """
+-    Count flops for convolution.
+-    """
+-    # Inputs of Convolution should be a list of length 12 or 13. They represent:
+-    # 0) input tensor, 1) convolution filter, 2) bias, 3) stride, 4) padding,
+-    # 5) dilation, 6) transposed, 7) out_pad, 8) groups, 9) benchmark_cudnn,
+-    # 10) deterministic_cudnn and 11) user_enabled_cudnn.
+-    # starting with #40737 it will be 12) user_enabled_tf32
+-    assert len(inputs) == 12 or len(inputs) == 13, len(inputs)
+-    x, w = inputs[:2]
+-    x_shape, w_shape, out_shape = (get_shape(x), get_shape(w), get_shape(outputs[0]))
++def conv_flop_count(x_shape: List[int], w_shape: List[int], out_shape: List[int], transposed: bool=False) ->Number:
++    batch_size = out_shape[0]
++    out_channels = out_shape[1]
++    kernel_shape = w_shape[2:]
++    kernel_size = prod(kernel_shape)
++    output_dims = out_shape[2:]
++    
++    if transposed:
++        groups = x_shape[1] // w_shape[0]
++        in_channels_per_group = w_shape[1]
++    else:
++        groups = x_shape[1] // w_shape[1]
++        in_channels_per_group = w_shape[1]
++    
++    flops = batch_size * out_channels * in_channels_per_group * kernel_size * prod(output_dims)
++    return flops
++
++
++def conv_flop_jit(inputs: List[Any], outputs: List[Any]) ->typing.Counter[str]:
++    x = inputs[0]
++    w = inputs[1]
++    x_shape = get_shape(x)
++    w_shape = get_shape(w)
++    out_shape = get_shape(outputs[0])
+     transposed = inputs[6].toIValue()
+-
+-    # use a custom name instead of "_convolution"
+-    return Counter(
+-        {"conv": conv_flop_count(x_shape, w_shape, out_shape, transposed=transposed)}
+-    )
++    flop_count = conv_flop_count(x_shape, w_shape, out_shape, transposed=transposed)
++    return Counter({"conv": flop_count})
+ 
+ 
+ def einsum_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+@@ -260,24 +231,16 @@
+     return input_shape * (2 if has_affine else 1)
+ 
+ 
+-def elementwise_flop_counter(input_scale: float = 1, output_scale: float = 0) -> Handle:
+-    """
+-    Count flops by
+-        input_tensor.numel() * input_scale + output_tensor.numel() * output_scale
+-
+-    Args:
+-        input_scale: scale of the input tensor (first argument)
+-        output_scale: scale of the output tensor (first element in outputs)
+-    """
+-
+-    def elementwise_flop(inputs: List[Any], outputs: List[Any]) -> Number:
++def elementwise_flop_counter(input_scale: float=1, output_scale: float=0) ->Handle:
++    def elementwise_flop(inputs: List[Any], outputs: List[Any]) ->Number:
+         ret = 0
+-        if input_scale != 0:
+-            shape = get_shape(inputs[0])
+-            ret += input_scale * prod(shape)
+-        if output_scale != 0:
+-            shape = get_shape(outputs[0])
+-            ret += output_scale * prod(shape)
++        for inp in inputs:
++            shape = get_shape(inp)
++            if shape is not None:
++                ret += input_scale * prod(shape)
++        for out in outputs:
++            shape = get_shape(out)
++            if shape is not None:
++                ret += output_scale * prod(shape)
+         return ret
+-
+     return elementwise_flop

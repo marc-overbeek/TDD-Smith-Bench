@@ -1,0 +1,58 @@
+--- a/src/mistune/helpers.py
++++ b/src/mistune/helpers.py
+@@ -53,29 +53,33 @@
+     return _ESCAPE_CHAR_RE.sub(r'\1', text)
+ 
+ 
+-def parse_link_text(src: str, pos: int) -> Union[Tuple[str, int], Tuple[None, None]]:
+-    level = 1
+-    found = False
+-    start_pos = pos
+-
+-    while pos < len(src):
+-        m = _INLINE_SQUARE_BRACKET_RE.search(src, pos)
++def parse_link_text(src: str, pos: int) ->Union[Tuple[str, int], Tuple[None,
++    None]]:
++    """Parse link text, handling nested brackets."""
++    depth = 1
++    i = pos
++    
++    while i < len(src):
++        m = _INLINE_SQUARE_BRACKET_RE.search(src, i)
+         if not m:
+-            break
+-
+-        pos = m.end()
+-        marker = m.group(0)
+-        if marker == ']':
+-            level -= 1
+-            if level == 0:
+-                found = True
+-                break
+-        else:
+-            level += 1
+-
+-    if found:
+-        text = src[start_pos:pos-1]
+-        return text, pos
++            # No more brackets found
++            return None, None
++        
++        # Get the bracket character
++        bracket_pos = m.end() - 1
++        bracket_char = src[bracket_pos]
++        
++        if bracket_char == '[':
++            depth += 1
++        elif bracket_char == ']':
++            depth -= 1
++            if depth == 0:
++                # Found the matching closing bracket
++                text = src[pos:bracket_pos]
++                return text, bracket_pos + 1
++        
++        i = m.end()
++    
+     return None, None
+ 
+ 

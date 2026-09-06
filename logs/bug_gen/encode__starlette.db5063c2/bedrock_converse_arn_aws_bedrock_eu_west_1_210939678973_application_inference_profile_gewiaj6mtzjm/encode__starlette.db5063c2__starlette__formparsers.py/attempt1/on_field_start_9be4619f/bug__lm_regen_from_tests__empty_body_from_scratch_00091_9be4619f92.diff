@@ -1,0 +1,15 @@
+--- a/starlette/formparsers.py
++++ b/starlette/formparsers.py
+@@ -60,7 +60,11 @@
+         self.stream = stream
+         self.messages: list[tuple[FormMessage, bytes]] = []
+ 
+-    def on_field_start(self) -> None:
++    def on_field_start(self) ->None:
++        message = (FormMessage.FIELD_START, b"")
++        self.messages.append(message)
++
++    def on_field_start(self) ->None:
+         message = (FormMessage.FIELD_START, b"")
+         self.messages.append(message)
+ 

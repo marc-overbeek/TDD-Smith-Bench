@@ -1,0 +1,35 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -641,23 +641,15 @@
+ 
+ 
+ class CropTransform(Transform):
+-    def __init__(
+-        self,
+-        x0: int,
+-        y0: int,
+-        w: int,
+-        h: int,
+-        orig_w: Optional[int] = None,
+-        orig_h: Optional[int] = None,
+-    ):
+-        """
+-        Args:
+-            x0, y0, w, h (int): crop the image(s) by img[y0:y0+h, x0:x0+w].
+-            orig_w, orig_h (int): optional, the original width and height
+-                before cropping. Needed to make this transform invertible.
+-        """
+-        super().__init__()
+-        self._set_attributes(locals())
++    def __init__(self, x0: int, y0: int, w: int, h: int, orig_w: Optional[int] = None, orig_h: Optional[int] = None):
++            """
++            Args:
++                x0, y0, w, h (int): crop the image(s) by img[y0:y0+h, x0:x0+w].
++                orig_w, orig_h (int): optional, the original width and height
++                    before cropping. Needed to make this transform invertible.
++            """
++            super().__init__()
++            self._set_attributes(locals())
+ 
+     def apply_image(self, img: np.ndarray) -> np.ndarray:
+         """

@@ -1,0 +1,28 @@
+--- a/fvcore/nn/parameter_count.py
++++ b/fvcore/nn/parameter_count.py
+@@ -9,7 +9,7 @@
+ from torch import nn
+ 
+ 
+-def parameter_count(model: nn.Module) -> typing.DefaultDict[str, int]:
++def parameter_count(model: nn.Module) ->typing.DefaultDict[str, int]:
+     """
+     Count parameters of a model and its submodules.
+ 
+@@ -22,12 +22,12 @@
+         parameters of the module. The key "" corresponds to the total
+         number of parameters of the model.
+     """
+-    r = defaultdict(int)
++    r: typing.DefaultDict[str, int] = defaultdict(int)
+     for name, prm in model.named_parameters():
+         size = prm.numel()
+-        name = name.split(".")
+-        for k in range(0, len(name) + 1):
+-            prefix = ".".join(name[:k])
++        name_parts = name.split(".")
++        for k in range(len(name_parts) + 1):
++            prefix = ".".join(name_parts[:k])
+             r[prefix] += size
+     return r
+ 

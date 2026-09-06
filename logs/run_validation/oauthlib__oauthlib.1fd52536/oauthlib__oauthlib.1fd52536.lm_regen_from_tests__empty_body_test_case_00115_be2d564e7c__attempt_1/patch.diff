@@ -1,0 +1,26 @@
+--- a/oauthlib/openid/connect/core/grant_types/dispatchers.py
++++ b/oauthlib/openid/connect/core/grant_types/dispatchers.py
+@@ -29,7 +29,6 @@
+         return handler
+ 
+     def create_authorization_response(self, request, token_handler):
+-        """Read scope and route to the designated handler."""
+         return self._handler_for_request(request).create_authorization_response(request, token_handler)
+ 
+     def validate_authorization_request(self, request):
+@@ -84,8 +83,6 @@
+         code = parameters.get('code')
+         redirect_uri = parameters.get('redirect_uri')
+ 
+-        # If code is not present fallback to `default_grant` which will
+-        # raise an error for the missing `code` in `create_token_response` step.
+         if code:
+             scopes = self.request_validator.get_authorization_code_scopes(client_id, code, redirect_uri, request)
+ 
+@@ -96,6 +93,5 @@
+         return handler
+ 
+     def create_token_response(self, request, token_handler):
+-        """Read scope and route to the designated handler."""
+         handler = self._handler_for_request(request)
+         return handler.create_token_response(request, token_handler)

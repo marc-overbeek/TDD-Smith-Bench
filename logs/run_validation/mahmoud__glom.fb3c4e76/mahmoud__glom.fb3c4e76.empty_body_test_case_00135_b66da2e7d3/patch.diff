@@ -1,0 +1,61 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -639,41 +639,14 @@
+ 
+     @classmethod
+     def from_text(cls, text):
+-        """Make a Path from .-delimited text:
+-
+-        >>> Path.from_text('a.b.c')
+-        Path('a', 'b', 'c')
+-
+-        This is the default behavior when :func:`~glom.glom` gets a string spec.
+-        """
+-        def create():
+-            segs = text.split('.')
+-            if PATH_STAR:
+-                segs = [
+-                    _T_STAR if seg == '*' else
+-                    _T_STARSTAR if seg == '**' else seg
+-                    for seg in segs]
+-            elif not cls._STAR_WARNED:
+-                if '*' in segs or '**' in segs:
+-                    warnings.warn(
+-                        "'*' and '**' have changed behavior in glom version 23.1."
+-                        " Recommend switch to T['*'] or T['**'].")
+-                    cls._STAR_WARNED = True
+-            return cls(*segs)
+-
+-        cache = cls._CACHE[PATH_STAR]  # remove this when PATH_STAR is default
+-        if text not in cache:
+-            if len(cache) > cls._MAX_CACHE:
+-                return create()
+-            cache[text] = create()
+-        return cache[text]
++        pass
+ 
+     def glomit(self, target, scope):
+         # The entrypoint for the Path extension
+         return _t_eval(target, self.path_t, scope)
+ 
+     def __len__(self):
+-        return (len(self.path_t.__ops__) - 1) // 2
++        pass
+ 
+     def __eq__(self, other):
+         if type(other) is Path:
+@@ -1437,13 +1410,7 @@
+         return _t_child(self, '[', item)
+ 
+     def __call__(self, *args, **kwargs):
+-        if self is S:
+-            if args:
+-                raise TypeError(f'S() takes no positional arguments, got: {args!r}')
+-            if not kwargs:
+-                raise TypeError('S() expected at least one kwarg, got none')
+-            # TODO: typecheck kwarg vals?
+-        return _t_child(self, '(', (args, kwargs))
++        pass
+ 
+     def __star__(self):
+         return _t_child(self, 'x', None)

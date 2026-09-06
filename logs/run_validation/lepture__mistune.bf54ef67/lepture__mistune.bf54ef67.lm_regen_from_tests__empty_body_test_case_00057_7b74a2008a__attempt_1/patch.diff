@@ -1,0 +1,79 @@
+--- a/src/mistune/plugins/formatting.py
++++ b/src/mistune/plugins/formatting.py
+@@ -18,9 +18,8 @@
+ SUBSCRIPT_PATTERN = r'~(?:' + PREVENT_BACKSLASH + r'\\~|\S|\\ )+?~'
+ 
+ 
+-def parse_strikethrough(
+-    inline: "InlineParser", m: Match[str], state: "InlineState"
+-) -> Optional[int]:
++def parse_strikethrough(inline: 'InlineParser', m: Match[str], state:
++    'InlineState') ->Optional[int]:
+     return _parse_to_end(inline, m, state, "strikethrough", _STRIKE_END)
+ 
+ 
+@@ -66,23 +65,27 @@
+     return "<sub>" + text + "</sub>"
+ 
+ 
+-def _parse_to_end(
+-    inline: "InlineParser",
+-    m: Match[str],
+-    state: "InlineState",
+-    tok_type: str,
+-    end_pattern: Pattern[str],
+-) -> Optional[int]:
++def _parse_to_end(inline: 'InlineParser', m: Match[str], state:
++    'InlineState', tok_type: str, end_pattern: Pattern[str]) ->Optional[int]:
++    text = m.group(0)
++    marker = text[0]
+     pos = m.end()
+-    m1 = end_pattern.search(state.src, pos)
+-    if not m1:
++    src = state.src
++    
++    end_match = end_pattern.search(src, pos)
++    if not end_match:
+         return None
+-    end_pos = m1.end()
+-    text = state.src[pos:end_pos-2]
++    
++    end_pos = end_match.end()
++    inner_text = src[pos:end_pos-2]
++    
+     new_state = state.copy()
+-    new_state.src = text
++    new_state.src = inner_text
+     children = inline.render(new_state)
+-    state.append_token({'type': tok_type, 'children': children})
++    state.append_token({
++        'type': tok_type,
++        'children': children
++    })
+     return end_pos
+ 
+ 
+@@ -100,19 +103,13 @@
+     return m.end()
+ 
+ 
+-def strikethrough(md: "Markdown") -> None:
+-    """A mistune plugin to support strikethrough. Spec defined by
+-    GitHub flavored Markdown and commonly used by many parsers:
++def strikethrough(md: 'Markdown') ->None:
++    """A mistune plugin to add ``<del>`` tag. Spec defined at
++    https://facelessuser.github.io/pymdown-extensions/extensions/strikethrough/:
+ 
+     .. code-block:: text
+ 
+-        ~~This was mistaken text~~
+-
+-    It will be converted into HTML:
+-
+-    .. code-block:: html
+-
+-        <del>This was mistaken text</del>
++        ~~strikethrough me~~
+ 
+     :param md: Markdown instance
+     """

@@ -1,0 +1,547 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -53,14 +53,8 @@
+     return section
+ 
+ 
+-def add_empty_line() -> str:
+-    """
+-    Add an empty line.
+-
+-    Returns:
+-        str: Empty line.
+-    """
+-    return format_long_text('')
++def add_empty_line() ->str:
++    return '\n'
+ 
+ 
+ def style_lines(lines: List[Dict[str, Any]], columns: int, pre_processed_text: str = '', start_line: str = ' ' * 4, end_line: str = ' ' * 4) -> str:
+@@ -590,150 +584,85 @@
+     return format_long_text("{0}".format(licenses_text), start_line_decorator=' ', **kwargs)
+ 
+ 
+-def format_long_text(text: str, color: str = '', columns: int = get_terminal_size().columns, start_line_decorator: str = ' ', end_line_decorator: str = ' ', max_lines: Optional[int] = None, styling: Optional[Dict[str, Any]] = None, indent: str = '', sub_indent: str = '') -> str:
+-    """
+-    Format long text with wrapping and styling.
+-
+-    Args:
+-        text (str): The text to format.
+-        color (str, optional): Color for the text. Defaults to ''.
+-        columns (int, optional): Number of columns for formatting. Defaults to terminal size.
+-        start_line_decorator (str, optional): Starting line decorator. Defaults to ' '.
+-        end_line_decorator (str, optional): Ending line decorator. Defaults to ' '.
+-        max_lines (Optional[int], optional): Maximum number of lines. Defaults to None.
+-        styling (Optional[Dict[str, Any]], optional): Additional styling options. Defaults to None.
+-        indent (str, optional): Indentation for the text. Defaults to ''.
+-        sub_indent (str, optional): Sub-indentation for the text. Defaults to ''.
+-
+-    Returns:
+-        str: Formatted text.
+-    """
++def format_long_text(text: str, color: str='', columns: int=
++    get_terminal_size().columns, start_line_decorator: str=' ',
++    end_line_decorator: str=' ', max_lines: Optional[int]=None, styling:
++    Optional[Dict[str, Any]]=None, indent: str='', sub_indent: str='') ->str:
+     if not styling:
+         styling = {}
+-
++    
+     if color:
+-        styling.update({'fg': color})
+-
+-    columns -= len(start_line_decorator) + len(end_line_decorator)
+-    formatted_lines = []
+-    lines = text.replace('\r', '').splitlines()
+-
+-    for line in lines:
+-        base_format = "{:" + str(columns) + "}"
+-        if line == '':
+-            empty_line = base_format.format(" ")
+-            formatted_lines.append("{0}{1}{2}".format(start_line_decorator, empty_line, end_line_decorator))
+-        wrapped_lines = textwrap.wrap(line, width=columns, max_lines=max_lines, initial_indent=indent,
+-                                      subsequent_indent=sub_indent, placeholder='...')
+-        for wrapped_line in wrapped_lines:
+-            new_line = f'{wrapped_line}'
+-
+-            if styling:
+-                new_line = click.style(new_line, **styling)
+-
+-            formatted_lines.append(f"{start_line_decorator}{new_line}{end_line_decorator}")
+-
+-    return "\n".join(formatted_lines)
+-
+-
+-def get_printable_list_of_scanned_items(scanning_target: str) -> Tuple[List[Dict[str, Any]], List[str]]:
+-    """
+-    Get a printable list of scanned items.
+-
+-    Args:
+-        scanning_target (str): The scanning target (environment, stdin, files, or file).
+-
+-    Returns:
+-        Tuple[List[Dict[str, Any]], List[str]]: Printable list of scanned items and scanned items data.
+-    """
+-    context = SafetyContext()
+-
+-    result = []
+-    scanned_items_data = []
+-
++        text = click.style(text, fg=color)
++        
++    wrapped_text = textwrap.fill(text, width=columns - len(indent) - len(sub_indent), 
++                                 initial_indent=indent, subsequent_indent=sub_indent,
++                                 break_long_words=False, break_on_hyphens=False)
++    
++    if max_lines is not None:
++        lines = wrapped_text.split('\n')
++        if len(lines) > max_lines:
++            wrapped_text = '\n'.join(lines[:max_lines]) + '...'
++    
++    return f"{start_line_decorator}{wrapped_text}{end_line_decorator}"
++
++
++def get_printable_list_of_scanned_items(scanning_target: str) ->Tuple[List[
++    Dict[str, Any]], List[str]]:
++    ctx = SafetyContext()
++    scanned_items = []
++    scanned_names = []
++    
+     if scanning_target == 'environment':
+-        locations = set(SafetyContext().scanned_full_path)
+-
+-        for path in locations:
+-            result.append([{'styled': False, 'value': '-> ' + path}])
+-            scanned_items_data.append(path)
+-
+-        if len(locations) <= 0:
+-            msg = 'No locations found in the environment'
+-            result.append([{'styled': False, 'value': msg}])
+-            scanned_items_data.append(msg)
+-
++        if not ctx.packages:
++            scanned_items.append([{'styled': False, 'value': 'No locations found in the environment'}])
++            scanned_names.append('No locations found in the environment')
++        else:
++            scanned_items.append([{'styled': False, 'value': 'Environment scanned'}])
++            scanned_names.append('Environment scanned')
++            
++    elif scanning_target == 'file':
++        if hasattr(ctx, 'params') and 'file' in ctx.params:
++            file_path = ctx.params['file'].name
++            scanned_items.append([{'styled': False, 'value': f'-> {file_path}'}])
++            scanned_names.append(file_path)
++        else:
++            scanned_items.append([{'styled': False, 'value': 'No file found'}])
++            scanned_names.append('No file found')
++            
++    elif scanning_target == 'files':
++        if hasattr(ctx, 'params') and 'files' in ctx.params:
++            for f in ctx.params['files']:
++                scanned_items.append([{'styled': False, 'value': f'-> {f.name}'}])
++                scanned_names.append(f.name)
++        else:
++            scanned_items.append([{'styled': False, 'value': 'No files found'}])
++            scanned_names.append('No files found')
++            
+     elif scanning_target == 'stdin':
+-        scanned_stdin = [pkg.name for pkg in context.packages if isinstance(pkg, Package)]
+-        value = 'No found packages in stdin'
+-        scanned_items_data = [value]
+-
+-        if len(scanned_stdin) > 0:
+-            value = ', '.join(scanned_stdin)
+-            scanned_items_data = scanned_stdin
+-
+-        result.append(
+-            [{'styled': False, 'value': value}])
+-
+-    elif scanning_target == 'files':
+-        for file in context.params.get('files', []):
+-            result.append([{'styled': False, 'value': f'-> {file.name}'}])
+-            scanned_items_data.append(file.name)
+-    elif scanning_target == 'file':
+-        file = context.params.get('file', None)
+-        name = file.name if file else ''
+-        result.append([{'styled': False, 'value': f'-> {name}'}])
+-        scanned_items_data.append(name)
+-
+-    return result, scanned_items_data
++        if not ctx.packages:
++            scanned_items.append([{'styled': False, 'value': 'No found packages in stdin'}])
++            scanned_names.append('No found packages in stdin')
++        else:
++            scanned_items.append([{'styled': False, 'value': ctx.packages[0].name}])
++            scanned_names.append(ctx.packages[0].name)
++            
++    return scanned_items, scanned_names
+ 
+ 
+ REPORT_HEADING = format_long_text(click.style('REPORT', bold=True))
+ 
+ 
+-def build_report_brief_section(columns: Optional[int] = None, primary_announcement: Optional[Dict[str, Any]] = None, report_type: int = 1, **kwargs: Any) -> str:
+-    """
+-    Build the brief section of the report.
+-
+-    Args:
+-        columns (Optional[int], optional): Number of columns for formatting. Defaults to None.
+-        primary_announcement (Optional[Dict[str, Any]], optional): Primary announcement details. Defaults to None.
+-        report_type (int, optional): Type of the report. Defaults to 1.
+-        **kwargs: Additional arguments for formatting.
+-
+-    Returns:
+-        str: Brief section of the report.
+-    """
+-    if not columns:
++def build_report_brief_section(columns: Optional[int]=None,
++    primary_announcement: Optional[Dict[str, Any]]=None, report_type: int=1,
++    **kwargs: Any) ->str:
++    if columns is None:
+         columns = get_terminal_size().columns
+-
+-    styled_brief_lines = []
+-
++        
+     if primary_announcement:
+-        styled_brief_lines.append(
+-            build_primary_announcement(columns=columns, primary_announcement=primary_announcement))
+-
+-    for line in get_report_brief_info(report_type=report_type, **kwargs):
+-        ln = ''
+-        padding = ' ' * 2
+-
+-        for i, words in enumerate(line):
+-            processed_words = words.get('value', '')
+-            if words.get('style', False):
+-                text = ''
+-                if i == 0:
+-                    text = padding
+-                    padding = ''
+-                text += processed_words
+-
+-                processed_words = click.style(text, bold=True)
+-
+-            ln += processed_words
+-
+-        styled_brief_lines.append(format_long_text(ln, color='', columns=columns, start_line_decorator='',
+-                                                   indent=padding, end_line_decorator='', sub_indent=' ' * 2))
+-
+-    return "\n".join([add_empty_line(), REPORT_HEADING, add_empty_line(), '\n'.join(styled_brief_lines)])
++        announcement_text = build_primary_announcement(primary_announcement, columns=columns)
++        return f"{REPORT_HEADING}\n{announcement_text}"
++    else:
++        return REPORT_HEADING
+ 
+ 
+ def build_report_for_review_vuln_report(as_dict: bool = False) -> Union[Dict[str, Any], List[List[Dict[str, Any]]]]:
+@@ -794,60 +723,31 @@
+     return brief_info
+ 
+ 
+-def build_using_sentence(account: Optional[str], key: Optional[str], db: Optional[str]) -> List[Dict[str, Any]]:
+-    """
+-    Build the sentence for the used components.
+-
+-    Args:
+-        account (Optional[str]): The account details.
+-        key (Optional[str]): The API key.
+-        db (Optional[str]): The database details.
+-
+-    Returns:
+-        List[Dict[str, Any]]: Sentence for the used components.
+-    """
+-    key_sentence = []
+-    custom_integration = os.environ.get('SAFETY_CUSTOM_INTEGRATION',
+-                                        'false').lower() == 'true'
+-
+-    if key or account:
+-        t = {'style': True, 'value': 'an API KEY'}
+-        if not key:
+-            t = {'style': True, 'value': f'the account {account}'}
+-        key_sentence = [t,
+-                        {'style': False, 'value': ' and the '}]
+-        db_name = 'Safety Commercial'
+-    elif db:
+-        if is_a_remote_mirror(db):
+-            if custom_integration:
+-                return []
+-            db_name = f"remote URL {db}"
+-        else:
+-            db_name = f"local file {db}"
++def build_using_sentence(account: Optional[str], key: Optional[str], db:
++    Optional[str]) ->List[Dict[str, Any]]:
++    sentence_parts = []
++    
++    if account:
++        sentence_parts.append({'style': False, 'value': 'Using account '})
++        sentence_parts.append({'style': True, 'value': account})
++    elif key:
++        sentence_parts.append({'style': False, 'value': 'Using API key '})
++        sentence_parts.append({'style': True, 'value': key})
+     else:
+-        db_name = 'open-source vulnerability'
+-
+-    database_sentence = [{'style': True, 'value': db_name + ' database'}]
+-
+-    return [{'style': False, 'value': 'Using '}] + key_sentence + database_sentence
+-
+-
+-def build_scanned_count_sentence(packages: List[Package]) -> List[Dict[str, Any]]:
+-    """
+-    Build the sentence for the scanned count.
+-
+-    Args:
+-        packages (List[Package]): List of packages.
+-
+-    Returns:
+-        List[Dict[str, Any]]: Sentence for the scanned count.
+-    """
+-    scanned_count = 'No packages found'
+-    if len(packages) >= 1:
+-        scanned_count = 'Found and scanned {0} {1}'.format(len(packages),
+-                                                           'packages' if len(packages) > 1 else 'package')
+-
+-    return [{'style': True, 'value': scanned_count}]
++        sentence_parts.append({'style': False, 'value': 'Using public database'})
++        
++    if db:
++        sentence_parts.append({'style': False, 'value': ' with local database '})
++        sentence_parts.append({'style': True, 'value': db})
++        
++    return sentence_parts
++
++
++def build_scanned_count_sentence(packages: List[Package]) ->List[Dict[str, Any]
++    ]:
++    count = len(packages)
++    package_text = 'package' if count == 1 else 'packages'
++    return [{'style': False, 'value': f'Scanned {count} {package_text}'}]
+ 
+ 
+ def add_warnings_if_needed(brief_info: List[List[Dict[str, Any]]]):
+@@ -873,154 +773,19 @@
+         brief_info += [[{'style': False, 'value': ''}]] + warnings
+ 
+ 
+-def get_report_brief_info(as_dict: bool = False, report_type: int = 1, **kwargs: Any):
+-    """
+-    Get the brief info of the report.
+-
+-    Args:
+-        as_dict (bool, optional): Whether to return as a dictionary. Defaults to False.
+-        report_type (int, optional): Type of the report. Defaults to 1.
+-        **kwargs: Additional arguments for the report.
+-
+-    Returns:
+-        Union[Dict[str, Any], List[List[Dict[str, Any]]]]: Brief info of the report.
+-    """
+-    LOG.info('get_report_brief_info: %s, %s, %s', as_dict, report_type, kwargs)
+-
+-    context = SafetyContext()
+-
+-    packages = [pkg for pkg in context.packages if isinstance(pkg, Package)]
+-    brief_data = {}
+-    command = context.command
+-
+-    if command == 'review':
+-        review = build_report_for_review_vuln_report(as_dict)
+-        return review
+-
+-    account = context.account
+-    key = context.key
+-    db = context.db_mirror
+-
+-    scanning_types = {'check': {'name': 'Vulnerabilities', 'action': 'Scanning dependencies', 'scanning_target': 'environment'}, # Files, Env or Stdin
+-                      'license': {'name': 'Licenses', 'action': 'Scanning licenses', 'scanning_target': 'environment'}, # Files or Env
+-                      'review': {'name': 'Report', 'action': 'Reading the report',
+-                                 'scanning_target': 'file'}} # From file
+-
+-    targets = ['stdin', 'environment', 'files', 'file']
+-    for target in targets:
+-        if context.params.get(target, False):
+-            scanning_types[command]['scanning_target'] = target
+-            break
+-
+-    scanning_target = scanning_types.get(context.command, {}).get('scanning_target', '')
+-    brief_data['scan_target'] = scanning_target
+-    scanned_items, data = get_printable_list_of_scanned_items(scanning_target)
+-    brief_data['scanned'] = data
+-    nl = [{'style': False, 'value': ''}]
+-
+-    brief_data['scanned_full_path'] = SafetyContext().scanned_full_path
+-    brief_data['target_languages'] = ['python']
+-
+-    action_executed = [
+-        {'style': True, 'value': scanning_types.get(context.command, {}).get('action', '')},
+-        {'style': False, 'value': ' in your '},
+-        {'style': True, 'value': scanning_target + ':'},
+-        ]
+-
+-    policy_file = context.params.get('policy_file', None)
+-    safety_policy_used = []
+-
+-    brief_data['policy_file'] = policy_file.get('filename', '-') if policy_file else None
+-    brief_data['policy_file_source'] = 'server' if brief_data['policy_file'] and 'server-safety-policy' in brief_data['policy_file'] else 'local'
+-
+-    if policy_file and policy_file.get('filename', False):
+-        safety_policy_used = [
+-            {'style': False, 'value': '\nScan configuration using a security policy file'},
+-            {'style': True, 'value': ' {0}'.format(policy_file.get('filename', '-'))},
+-        ]
+-
+-    audit_and_monitor = []
+-    if context.params.get('audit_and_monitor'):
+-        logged_url = context.params.get('audit_and_monitor_url') if context.params.get('audit_and_monitor_url') else "https://safetycli.com"
+-        audit_and_monitor = [
+-            {'style': False, 'value': '\nLogging scan results to'},
+-            {'style': True, 'value': ' {0}'.format(logged_url)},
+-        ]
+-        brief_data['audit_and_monitor'] = logged_url
++def get_report_brief_info(as_dict: bool=False, report_type: int=1, **kwargs:
++    Any):
++    ctx = SafetyContext()
++    packages = ctx.packages
++    
++    if as_dict:
++        return {
++            'packages': packages,
++            'report_type': report_type,
++            'kwargs': kwargs
++        }
+     else:
+-        brief_data['audit_and_monitor'] = False
+-
+-
+-    current_time = str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+-
+-    brief_data['api_key'] = bool(key)
+-    brief_data['account'] = account
+-    brief_data['local_database_path'] = db if db else None
+-    brief_data['safety_version'] = get_safety_version()
+-    brief_data['timestamp'] = current_time
+-    brief_data['packages_found'] = len(packages)
+-    # Vuln report
+-    additional_data = []
+-    if report_type == 1:
+-        brief_data['vulnerabilities_found'] = kwargs.get('vulnerabilities_found', 0)
+-        brief_data['vulnerabilities_ignored'] = kwargs.get('vulnerabilities_ignored', 0)
+-        brief_data['remediations_recommended'] = 0
+-
+-        additional_data = [
+-            [{'style': True, 'value': str(brief_data['vulnerabilities_found'])},
+-             {'style': True, 'value': f' vulnerabilit{"y" if brief_data["vulnerabilities_found"] == 1 else "ies"} reported'}],
+-            [{'style': True, 'value': str(brief_data['vulnerabilities_ignored'])},
+-             {'style': True, 'value': f' vulnerabilit{"y" if brief_data["vulnerabilities_ignored"] == 1 else "ies"} ignored'}],
+-        ]
+-
+-        if is_using_api_key():
+-            brief_data['remediations_recommended'] = get_remediations_count(kwargs.get('remediations_recommended', {}))
+-            additional_data.extend(
+-                [[{'style': True, 'value': str(brief_data['remediations_recommended'])},
+-                 {'style': True, 'value':
+-                     f' remediation{"" if brief_data["remediations_recommended"] == 1 else "s"} recommended'}]])
+-
+-    elif report_type == 2:
+-        brief_data['licenses_found'] = kwargs.get('licenses_found', 0)
+-        additional_data = [
+-            [{'style': True, 'value': str(brief_data['licenses_found'])},
+-             {'style': True, 'value': f' license {"type" if brief_data["licenses_found"] == 1 else "types"} found'}],
+-        ]
+-
+-    brief_data['telemetry'] = asdict(build_telemetry_data())
+-
+-    brief_data['git'] = build_git_data()
+-    brief_data['project'] = context.params.get('project', None)
+-
+-    brief_data['json_version'] = "1.1"
+-
+-    using_sentence = build_using_sentence(account, key, db)
+-    sentence_array = []
+-    for section in using_sentence:
+-        sentence_array.append(section['value'])
+-    brief_using_sentence = ' '.join(sentence_array)
+-    brief_data['using_sentence'] = brief_using_sentence
+-
+-    using_sentence_section = [nl] if not using_sentence else [nl] + [using_sentence]
+-    scanned_count_sentence = build_scanned_count_sentence(packages)
+-
+-    timestamp = [{'style': False, 'value': 'Timestamp '}, {'style': True, 'value': current_time}]
+-
+-    brief_info = [[{'style': False, 'value': 'Safety '},
+-     {'style': True, 'value': 'v' + get_safety_version()},
+-     {'style': False, 'value': ' is scanning for '},
+-     {'style': True, 'value': scanning_types.get(context.command, {}).get('name', '')},
+-     {'style': True, 'value': '...'}] + safety_policy_used + audit_and_monitor, action_executed
+-     ] + [nl] + scanned_items + using_sentence_section + [scanned_count_sentence] + [timestamp]
+-
+-    brief_info.extend(additional_data)
+-
+-    add_warnings_if_needed(brief_info)
+-
+-    LOG.info('Brief info data: %s', brief_data)
+-    LOG.info('Brief info, styled output: %s', '\n\n LINE ---->\n ' + '\n\n LINE ---->\n '.join(map(str, brief_info)))
+-
+-    return brief_data if as_dict else brief_info
++        return build_report_for_review_vuln_report(as_dict=False)
+ 
+ 
+ def build_primary_announcement(primary_announcement, columns: Optional[int] = None, only_text: bool = False) -> str:
+@@ -1248,45 +1013,18 @@
+     return template.render(**kwargs)
+ 
+ 
+-def format_unpinned_vulnerabilities(unpinned_packages: Dict[str, List[Any]], columns: Optional[int] = None) -> List[str]:
+-    """
+-    Format unpinned vulnerabilities.
+-
+-    Args:
+-        unpinned_packages (Dict[str, List[Any]]): Unpinned packages and their vulnerabilities.
+-        columns (Optional[int], optional): Number of columns for formatting. Defaults to None.
+-
+-    Returns:
+-        List[str]: Formatted unpinned vulnerabilities.
+-    """
++def format_unpinned_vulnerabilities(unpinned_packages: Dict[str, List[Any]],
++    columns: Optional[int]=None) ->List[str]:
++    if columns is None:
++        columns = get_terminal_size().columns
++        
++    if not unpinned_packages:
++        return []
++        
+     lines = []
+-
+-    if not unpinned_packages:
+-        return lines
+-
+     for pkg_name, vulns in unpinned_packages.items():
+-        total = {vuln.vulnerability_id for vuln in vulns}
+-        pkg = vulns[0].pkg
+-        doc_msg: str = get_specifier_range_info(style=False, pin_hint=True)
+-
+-        match_text = 'vulnerabilities match' if len(total) > 1 else 'vulnerability matches'
+-        reqs = ', '.join([str(r) for r in pkg.get_unpinned_req()])
+-
+-        msg = f"-> Warning: {len(total)} known {match_text} the {pkg.name} versions that could be " \
+-              f"installed from your specifier{'s' if len(pkg.requirements) > 1 else ''}: {reqs} (unpinned). These vulnerabilities are not " \
+-              f"reported by default. To report these vulnerabilities set 'ignore-unpinned-requirements' to False " \
+-              f"under 'security' in your policy file. " \
+-              f"See https://docs.pyup.io/docs/safety-20-policy-file for more information."
+-
+-        kwargs = {'color': 'yellow', 'indent': '', 'sub_indent': ' ' * 3, 'start_line_decorator': '',
+-                  'end_line_decorator': ' '}
+-
+-        if columns:
+-            kwargs.update({'columns': columns})
+-
+-        msg = format_long_text(text=msg, **kwargs)
+-        doc_msg = format_long_text(text=doc_msg, **{**kwargs, **{'indent': ' ' * 3}})
+-
+-        lines.append(f'{msg}\n{doc_msg}')
+-
++        vuln_count = len(vulns)
++        vuln_text = 'vulnerability' if vuln_count == 1 else 'vulnerabilities'
++        lines.append(f"Warning: {pkg_name} has {vuln_count} known {vuln_text} that could be exploited.")
++        
+     return lines

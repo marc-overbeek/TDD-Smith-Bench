@@ -1,0 +1,59 @@
+--- a/src/mistune/plugins/formatting.py
++++ b/src/mistune/plugins/formatting.py
+@@ -58,11 +58,12 @@
+     return "<sup>" + text + "</sup>"
+ 
+ 
+-def parse_subscript(inline: "InlineParser", m: Match[str], state: "InlineState") -> int:
++def parse_subscript(inline: 'InlineParser', m: Match[str], state: 'InlineState'
++    ) ->int:
+     return _parse_script(inline, m, state, "subscript")
+ 
+ 
+-def render_subscript(renderer: "BaseRenderer", text: str) -> str:
++def render_subscript(renderer: 'BaseRenderer', text: str) ->str:
+     return "<sub>" + text + "</sub>"
+ 
+ 
+@@ -86,17 +87,15 @@
+     return end_pos
+ 
+ 
+-def _parse_script(
+-    inline: "InlineParser", m: Match[str], state: "InlineState", tok_type: str
+-) -> int:
++def _parse_script(inline: 'InlineParser', m: Match[str], state:
++    'InlineState', tok_type: str) ->int:
+     text = m.group(0)
++    text = text[1:-1]
++    text = text.replace('\\ ', ' ')
+     new_state = state.copy()
+-    new_state.src = text[1:-1].replace('\\ ', ' ')
++    new_state.src = text
+     children = inline.render(new_state)
+-    state.append_token({
+-        'type': tok_type,
+-        'children': children
+-    })
++    state.append_token({'type': tok_type, 'children': children})
+     return m.end()
+ 
+ 
+@@ -181,16 +180,7 @@
+         md.renderer.register('superscript', render_superscript)
+ 
+ 
+-def subscript(md: "Markdown") -> None:
+-    """A mistune plugin to add ``<sub>`` tag. Spec defined at
+-    https://pandoc.org/MANUAL.html#superscripts-and-subscripts:
+-
+-    .. code-block:: text
+-
+-        H~2~O is a liquid.
+-
+-    :param md: Markdown instance
+-    """
++def subscript(md: 'Markdown') ->None:
+     md.inline.register('subscript', SUBSCRIPT_PATTERN, parse_subscript, before='linebreak')
+     if md.renderer and md.renderer.NAME == 'html':
+         md.renderer.register('subscript', render_subscript)

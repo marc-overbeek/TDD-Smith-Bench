@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the code, `get_locals_from_previous_frames` needs to iterate through previous frames and yield all local variables from each frame. This is used to find locally defined functions that aren't in globals.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the code, `get_locals_from_previous_frames` needs to iterate through previous frames and yield all local variables from each frame. This is used to find locally defined functions that aren't in globals.\n\n```python\ndef get_locals_from_previous_frames(frame: FrameType) ->Iterator[Any]:\n    for prev_frame in get_previous_frames(frame.f_back):\n        for v in prev_frame.f_locals.values():\n            yield v\n```",
+  "rewrite": "def get_locals_from_previous_frames(frame: FrameType) ->Iterator[Any]:\n    for prev_frame in get_previous_frames(frame.f_back):\n        for v in prev_frame.f_locals.values():\n            yield v",
+  "strategy": "lm_regen_from_tests"
+}

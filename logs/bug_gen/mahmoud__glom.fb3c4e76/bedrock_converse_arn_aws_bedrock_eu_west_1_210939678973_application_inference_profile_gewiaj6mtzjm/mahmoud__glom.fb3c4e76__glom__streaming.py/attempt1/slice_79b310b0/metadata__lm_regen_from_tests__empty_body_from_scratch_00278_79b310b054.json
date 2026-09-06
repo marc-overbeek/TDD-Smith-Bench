@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef slice(self, *args):\n    \"\"\"Returns a new :class:`Iter()` spec which trims iterables in the\n    same manner as :func:`itertools.islice`.\n\n    >>> target = [0, 1, 2, 3, 4, 5]\n    >>> glom(target, Iter().slice(3).all())\n    [0, 1, 2]\n    >>> glom(target, Iter().slice(2, 4).all())\n    [2, 3]\n\n    This method accepts only positional arguments.\n    \"\"\"\n    # TODO: make a kwarg-compatible version of this (islice takes no kwargs)\n    # TODO: also support slice syntax Iter()[::]\n    try:\n        islice([], *args)\n    except TypeError:\n        raise TypeError(f'invalid slice arguments: {args!r}')\n    return self._add_op('slice', args, lambda it, scope: islice(it, *args))\n```",
+  "rewrite": "def slice(self, *args):\n    \"\"\"Returns a new :class:`Iter()` spec which trims iterables in the\n    same manner as :func:`itertools.islice`.\n\n    >>> target = [0, 1, 2, 3, 4, 5]\n    >>> glom(target, Iter().slice(3).all())\n    [0, 1, 2]\n    >>> glom(target, Iter().slice(2, 4).all())\n    [2, 3]\n\n    This method accepts only positional arguments.\n    \"\"\"\n    # TODO: make a kwarg-compatible version of this (islice takes no kwargs)\n    # TODO: also support slice syntax Iter()[::]\n    try:\n        islice([], *args)\n    except TypeError:\n        raise TypeError(f'invalid slice arguments: {args!r}')\n    return self._add_op('slice', args, lambda it, scope: islice(it, *args))\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,391 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -639,34 +639,7 @@
+ 
+     @classmethod
+     def from_text(cls, text):
+-        """Make a Path from .-delimited text:
+-
+-        >>> Path.from_text('a.b.c')
+-        Path('a', 'b', 'c')
+-
+-        This is the default behavior when :func:`~glom.glom` gets a string spec.
+-        """
+-        def create():
+-            segs = text.split('.')
+-            if PATH_STAR:
+-                segs = [
+-                    _T_STAR if seg == '*' else
+-                    _T_STARSTAR if seg == '**' else seg
+-                    for seg in segs]
+-            elif not cls._STAR_WARNED:
+-                if '*' in segs or '**' in segs:
+-                    warnings.warn(
+-                        "'*' and '**' have changed behavior in glom version 23.1."
+-                        " Recommend switch to T['*'] or T['**'].")
+-                    cls._STAR_WARNED = True
+-            return cls(*segs)
+-
+-        cache = cls._CACHE[PATH_STAR]  # remove this when PATH_STAR is default
+-        if text not in cache:
+-            if len(cache) > cls._MAX_CACHE:
+-                return create()
+-            cache[text] = create()
+-        return cache[text]
++        pass
+ 
+     def glomit(self, target, scope):
+         # The entrypoint for the Path extension
+@@ -1331,23 +1304,13 @@
+           to an already-named spec.
+     """
+     def __init__(self, name, subspec=_MISSING):
+-        self.name, self.subspec = name, subspec
++        pass
+ 
+     def glomit(self, target, scope):
+-        subspec = self.subspec
+-        scope_key = (Ref, self.name)
+-        if subspec is _MISSING:
+-            subspec = scope[scope_key]
+-        else:
+-            scope[scope_key] = subspec
+-        return scope[glom](target, subspec, scope)
++        pass
+ 
+     def __repr__(self):
+-        if self.subspec is _MISSING:
+-            args = bbrepr(self.name)
+-        else:
+-            args = bbrepr((self.name, self.subspec))[1:-1]
+-        return "Ref(" + args + ")"
++        pass
+ 
+ 
+ class TType:
+@@ -1713,50 +1676,11 @@
+ 
+ 
+ def _format_slice(x):
+-    if type(x) is not slice:
+-        return bbrepr(x)
+-    fmt = lambda v: "" if v is None else bbrepr(v)
+-    if x.step is None:
+-        return fmt(x.start) + ":" + fmt(x.stop)
+-    return fmt(x.start) + ":" + fmt(x.stop) + ":" + fmt(x.step)
++    pass
+ 
+ 
+ def _format_t(path, root=T):
+-    prepr = [{T: 'T', S: 'S', A: 'A'}[root]]
+-    i = 0
+-    while i < len(path):
+-        op, arg = path[i], path[i + 1]
+-        if op == '.':
+-            prepr.append('.' + arg)
+-        elif op == '[':
+-            if type(arg) is tuple:
+-                index = ", ".join([_format_slice(x) for x in arg])
+-            else:
+-                index = _format_slice(arg)
+-            prepr.append(f"[{index}]")
+-        elif op == '(':
+-            args, kwargs = arg
+-            prepr.append(format_invocation(args=args, kwargs=kwargs, repr=bbrepr))
+-        elif op == 'P':
+-            return _format_path(path)
+-        elif op == 'x':
+-            prepr.append(".__star__()")
+-        elif op == 'X':
+-            prepr.append(".__starstar__()")
+-        elif op in ('_', '~'):  # unary arithmetic operators
+-            if any([o in path[:i] for o in '+-/%:&|^~_']):
+-                prepr = ['('] + prepr + [')']
+-            prepr = ['-' if op == '_' else op] + prepr
+-        else:  # binary arithmetic operators
+-            formatted_arg = bbrepr(arg)
+-            if type(arg) is TType:
+-                arg_path = arg.__ops__
+-                if any([o in arg_path for o in '+-/%:&|^~_']):
+-                    formatted_arg = '(' + formatted_arg + ')'
+-            prepr.append(' ' + ('**' if op == ':' else op) + ' ')
+-            prepr.append(formatted_arg)
+-        i += 2
+-    return "".join(prepr)
++    pass
+ 
+ 
+ class Val:
+@@ -1931,24 +1855,7 @@
+ 
+ 
+ def _handle_list(target, spec, scope):
+-    subspec = spec[0]
+-    iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
+-    try:
+-        iterator = iterate(target)
+-    except Exception as e:
+-        raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+-                        % (target.__class__.__name__, Path(*scope[Path]), e))
+-    ret = []
+-    base_path = scope[Path]
+-    for i, t in enumerate(iterator):
+-        scope[Path] = base_path + [i]
+-        val = scope[glom](t, subspec, scope)
+-        if val is SKIP:
+-            continue
+-        if val is STOP:
+-            break
+-        ret.append(val)
+-    return ret
++    pass
+ 
+ 
+ def _handle_tuple(target, spec, scope):
+@@ -2060,36 +1967,7 @@
+         self.register(_ObjStyleKeys, keys=_ObjStyleKeys.get_keys)
+ 
+     def _register_fuzzy_type(self, op, new_type, _type_tree=None):
+-        """Build a "type tree", an OrderedDict mapping registered types to
+-        their subtypes
+-
+-        The type tree's invariant is that a key in the mapping is a
+-        valid parent type of all its children.
+-
+-        Order is preserved such that non-overlapping parts of the
+-        subtree take precedence by which was most recently added.
+-        """
+-        if _type_tree is None:
+-            try:
+-                _type_tree = self._op_type_tree[op]
+-            except KeyError:
+-                _type_tree = self._op_type_tree[op] = OrderedDict()
+-
+-        registered = False
+-        for cur_type, sub_tree in list(_type_tree.items()):
+-            if issubclass(cur_type, new_type):
+-                sub_tree = _type_tree.pop(cur_type)  # mutation for recursion brevity
+-                try:
+-                    _type_tree[new_type][cur_type] = sub_tree
+-                except KeyError:
+-                    _type_tree[new_type] = OrderedDict({cur_type: sub_tree})
+-                registered = True
+-            elif issubclass(new_type, cur_type):
+-                _type_tree[cur_type] = self._register_fuzzy_type(op, new_type, _type_tree=sub_tree)
+-                registered = True
+-        if not registered:
+-            _type_tree[new_type] = OrderedDict()
+-        return _type_tree
++        pass
+ 
+     def register(self, target_type, **kwargs):
+         if not isinstance(target_type, type):
+@@ -2128,195 +2006,21 @@
+         return
+ 
+     def register_op(self, op_name, auto_func=None, exact=False):
+-        """add operations beyond the builtins ('get' and 'iterate' at the time
+-        of writing).
+-
+-        auto_func is a function that when passed a type, returns a
+-        handler associated with op_name if it's supported, or False if
+-        it's not.
+-
+-        See glom.core.register_op() for the global version used by
+-        extensions.
+-        """
+-        if not isinstance(op_name, basestring):
+-            raise TypeError(f'expected op_name to be a text name, not: {op_name!r}')
+-        if auto_func is None:
+-            auto_func = lambda t: False
+-        elif not callable(auto_func):
+-            raise TypeError(f'expected auto_func to be callable, not: {auto_func!r}')
+-
+-        # determine support for any previously known types
+-        known_types = set(sum([list(m.keys()) for m
+-                               in self._op_type_map.values()], []))
+-        type_map = self._op_type_map.get(op_name, OrderedDict())
+-        type_tree = self._op_type_tree.get(op_name, OrderedDict())
+-        for t in sorted(known_types, key=lambda t: t.__name__):
+-            if t in type_map:
+-                continue
+-            try:
+-                handler = auto_func(t)
+-            except Exception as e:
+-                raise TypeError('error while determining support for operation'
+-                                ' "%s" on target type: %s (got %r)'
+-                                % (op_name, t.__name__, e))
+-            if handler is not False and not callable(handler):
+-                raise TypeError('expected handler for op "%s" to be'
+-                                ' callable or False, not: %r' % (op_name, handler))
+-            type_map[t] = handler
+-
+-        if not exact:
+-            for t in known_types:
+-                self._register_fuzzy_type(op_name, t, _type_tree=type_tree)
+-
+-        self._op_type_map[op_name] = type_map
+-        self._op_type_tree[op_name] = type_tree
+-        self._op_auto_map[op_name] = auto_func
++        pass
+ 
+     def _register_builtin_ops(self):
+-        def _get_iterable_handler(type_obj):
+-            return iter if callable(getattr(type_obj, '__iter__', None)) else False
+-
+-        self.register_op('iterate', _get_iterable_handler)
+-        self.register_op('get', lambda _: getattr)
++        pass
+ 
+ 
+ _DEFAULT_SCOPE = ChainMap({})
+ 
+ 
+ def glom(target, spec, **kwargs):
+-    """Access or construct a value from a given *target* based on the
+-    specification declared by *spec*.
+-
+-    Accessing nested data, aka deep-get:
+-
+-    >>> target = {'a': {'b': 'c'}}
+-    >>> glom(target, 'a.b')
+-    'c'
+-
+-    Here the *spec* was just a string denoting a path,
+-    ``'a.b'``. As simple as it should be. You can also use 
+-    :mod:`glob`-like wildcard selectors:
+-
+-    >>> target = {'a': [{'k': 'v1'}, {'k': 'v2'}]}
+-    >>> glom(target, 'a.*.k')
+-    ['v1', 'v2']
+-
+-    In addition to ``*``, you can also use ``**`` for recursive access:
+-
+-    >>> target = {'a': [{'k': 'v3'}, {'k': 'v4'}], 'k': 'v0'}
+-    >>> glom(target, '**.k')
+-    ['v0', 'v3', 'v4']
+-    
+-    The next example shows how to use nested data to 
+-    access many fields at once, and make a new nested structure.
+-
+-    Constructing, or restructuring more-complicated nested data:
+-
+-    >>> target = {'a': {'b': 'c', 'd': 'e'}, 'f': 'g', 'h': [0, 1, 2]}
+-    >>> spec = {'a': 'a.b', 'd': 'a.d', 'h': ('h', [lambda x: x * 2])}
+-    >>> output = glom(target, spec)
+-    >>> pprint(output)
+-    {'a': 'c', 'd': 'e', 'h': [0, 2, 4]}
+-
+-    ``glom`` also takes a keyword-argument, *default*. When set,
+-    if a ``glom`` operation fails with a :exc:`GlomError`, the
+-    *default* will be returned, very much like
+-    :meth:`dict.get()`:
+-
+-    >>> glom(target, 'a.xx', default='nada')
+-    'nada'
+-
+-    The *skip_exc* keyword argument controls which errors should
+-    be ignored.
+-
+-    >>> glom({}, lambda x: 100.0 / len(x), default=0.0, skip_exc=ZeroDivisionError)
+-    0.0
+-
+-    Args:
+-       target (object): the object on which the glom will operate.
+-       spec (object): Specification of the output object in the form
+-         of a dict, list, tuple, string, other glom construct, or
+-         any composition of these.
+-       default (object): An optional default to return in the case
+-         an exception, specified by *skip_exc*, is raised.
+-       skip_exc (Exception): An optional exception or tuple of
+-         exceptions to ignore and return *default* (None if
+-         omitted). If *skip_exc* and *default* are both not set,
+-         glom raises errors through.
+-       scope (dict): Additional data that can be accessed
+-         via S inside the glom-spec. Read more: :ref:`scope`.
+-
+-    It's a small API with big functionality, and glom's power is
+-    only surpassed by its intuitiveness. Give it a whirl!
+-
+-    """
+-    # TODO: check spec up front
+-    default = kwargs.pop('default', None if 'skip_exc' in kwargs else _MISSING)
+-    skip_exc = kwargs.pop('skip_exc', () if default is _MISSING else GlomError)
+-    glom_debug = kwargs.pop('glom_debug', GLOM_DEBUG)
+-    scope = _DEFAULT_SCOPE.new_child({
+-        Path: kwargs.pop('path', []),
+-        Inspect: kwargs.pop('inspector', None),
+-        MODE: AUTO,
+-        MIN_MODE: None,
+-        CHILD_ERRORS: [],
+-        'globals': ScopeVars({}, {}),
+-    })
+-    scope[UP] = scope
+-    scope[ROOT] = scope
+-    scope[T] = target
+-    scope.update(kwargs.pop('scope', {}))
+-    err = None
+-    if kwargs:
+-        raise TypeError('unexpected keyword args: %r' % sorted(kwargs.keys()))
+-    try:
+-        try:
+-            ret = _glom(target, spec, scope)
+-        except skip_exc:
+-            if default is _MISSING:
+-                raise
+-            ret = default  # should this also be arg_val'd?
+-    except Exception as e:
+-        if glom_debug:
+-            raise
+-        if isinstance(e, GlomError):
+-            # need to change id or else py3 seems to not let us truncate the
+-            # stack trace with the explicit "raise err" below
+-            err = copy.copy(e)
+-            err._set_wrapped(e)
+-        else:
+-            err = GlomError.wrap(e)
+-        if isinstance(err, GlomError):
+-            err._finalize(scope[LAST_CHILD_SCOPE])
+-        else:  # wrapping failed, fall back to default behavior
+-            raise
+-
+-    if err:
+-        raise err
+-    return ret
++    pass
+ 
+ 
+ def chain_child(scope):
+-    """
+-    used for specs like Auto(tuple), Switch(), etc
+-    that want to chain their child scopes together
+-
+-    returns a new scope that can be passed to
+-    the next recursive glom call, e.g.
+-
+-    scope[glom](target, spec, chain_child(scope))
+-    """
+-    if LAST_CHILD_SCOPE not in scope.maps[0]:
+-        return scope  # no children yet, nothing to do
+-    # NOTE: an option here is to drill down on LAST_CHILD_SCOPE;
+-    # this would have some interesting consequences for scoping
+-    # of tuples
+-    nxt_in_chain = scope[LAST_CHILD_SCOPE]
+-    nxt_in_chain.maps[0][NO_PYFRAME] = True
+-    # previous failed branches are forgiven as the
+-    # scope is re-wired into a new stack
+-    del nxt_in_chain.maps[0][CHILD_ERRORS][:]
+-    return nxt_in_chain
++    pass
+ 
+ 
+ unbound_methods = {type(str.__len__)} #, type(Ref.glomit)])
+@@ -2525,7 +2229,7 @@
+ 
+     """
+     def __init__(self, spec=None):
+-        self.spec = spec
++        pass
+ 
+     def glomit(self, target, scope):
+         scope[MODE] = FILL

@@ -1,0 +1,48 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -562,44 +562,7 @@
+                 self._do_verify_changes(path, expected_old_value, current_old_value)
+ 
+     def _do_item_removed(self, items):
+-        """
+-        Handle removing items.
+-        """
+-        # Sorting the iterable_item_removed in reverse order based on the paths.
+-        # So that we delete a bigger index before a smaller index
+-        try:
+-            sorted_item = sorted(items.items(), key=self._sort_key_for_item_added, reverse=True)
+-        except TypeError:
+-            sorted_item = sorted(items.items(), key=cmp_to_key(self._sort_comparison), reverse=True)
+-        for path, expected_old_value in sorted_item:
+-            elem_and_details = self._get_elements_and_details(path)
+-            if elem_and_details:
+-                elements, parent, parent_to_obj_elem, parent_to_obj_action, obj, elem, action = elem_and_details
+-            else:
+-                continue  # pragma: no cover. Due to cPython peephole optimizer, this line doesn't get covered. https://github.com/nedbat/coveragepy/issues/198
+-
+-            look_for_expected_old_value = False
+-            current_old_value = not_found
+-            try:
+-                if action == GET:
+-                    current_old_value = obj[elem]
+-                elif action == GETATTR:
+-                    current_old_value = getattr(obj, elem)
+-                look_for_expected_old_value = current_old_value != expected_old_value
+-            except (KeyError, IndexError, AttributeError, TypeError):
+-                look_for_expected_old_value = True
+-
+-            if look_for_expected_old_value and isinstance(obj, list) and not self._iterable_compare_func_was_used:
+-                # It may return None if it doesn't find it
+-                elem = self._find_closest_iterable_element_for_index(obj, elem, expected_old_value)
+-                if elem is not None:
+-                    current_old_value = expected_old_value
+-            if current_old_value is not_found or elem is None:
+-                continue
+-
+-            self._del_elem(parent, parent_to_obj_elem, parent_to_obj_action,
+-                           obj, elements, path, elem, action)
+-            self._do_verify_changes(path, expected_old_value, current_old_value)
++        pass
+ 
+     def _find_closest_iterable_element_for_index(self, obj, elem, expected_old_value):
+         closest_elem = None

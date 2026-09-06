@@ -1,0 +1,26 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -81,21 +81,8 @@
+     return _generic_activation_jit
+ 
+ 
+-def addmm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-    """
+-    Count flops for fully connected layers.
+-    """
+-    # Count flop for nn.Linear
+-    # inputs is a list of length 3.
+-    input_shapes = [get_shape(v) for v in inputs[1:3]]
+-    # input_shapes[0]: [batch size, input feature dimension]
+-    # input_shapes[1]: [batch size, output feature dimension]
+-    assert len(input_shapes[0]) == 2, input_shapes[0]
+-    assert len(input_shapes[1]) == 2, input_shapes[1]
+-    batch_size, input_dim = input_shapes[0]
+-    output_dim = input_shapes[1][1]
+-    flops = batch_size * input_dim * output_dim
+-    return flops
++def addmm_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:
++    pass
+ 
+ 
+ def linear_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:

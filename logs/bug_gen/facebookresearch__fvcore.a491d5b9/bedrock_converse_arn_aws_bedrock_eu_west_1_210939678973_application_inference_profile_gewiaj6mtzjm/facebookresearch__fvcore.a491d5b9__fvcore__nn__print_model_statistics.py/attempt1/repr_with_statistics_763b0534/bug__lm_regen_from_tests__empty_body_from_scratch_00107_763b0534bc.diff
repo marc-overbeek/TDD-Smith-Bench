@@ -1,0 +1,34 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -252,16 +252,19 @@
+ 
+     # This comes directly from nn.Module.__repr__ with small changes
+     # to include the statistics.
+-    def repr_with_statistics(module: nn.Module, name: str) -> str:
++    def repr_with_statistics(module: nn.Module, name: str) ->str:
+         # We treat the extra repr like the sub-module, one item per line
+         extra_lines = []
+         extra_repr = module.extra_repr()
+-        printed_stats = print_statistics(name)
+         # empty string will be split into list ['']
+         if extra_repr:
+             extra_lines.extend(extra_repr.split("\n"))
+-        if printed_stats:
+-            extra_lines.extend(printed_stats.split("\n"))
++    
++        # Add statistics if available
++        if name in statistics:
++            printed_stats = ["{}: {}".format(k, v) for k, v in statistics[name].items()]
++            extra_lines.extend(", ".join(printed_stats).split("\n"))
++    
+         child_lines = []
+         for key, submod in module._modules.items():
+             submod_name = name + ("." if name else "") + key
+@@ -270,6 +273,7 @@
+             submod_str = repr_with_statistics(submod, submod_name)
+             submod_str = _addindent(submod_str, 2)
+             child_lines.append("(" + key + "): " + submod_str)
++    
+         lines = extra_lines + child_lines
+ 
+         main_str = module._get_name() + "("

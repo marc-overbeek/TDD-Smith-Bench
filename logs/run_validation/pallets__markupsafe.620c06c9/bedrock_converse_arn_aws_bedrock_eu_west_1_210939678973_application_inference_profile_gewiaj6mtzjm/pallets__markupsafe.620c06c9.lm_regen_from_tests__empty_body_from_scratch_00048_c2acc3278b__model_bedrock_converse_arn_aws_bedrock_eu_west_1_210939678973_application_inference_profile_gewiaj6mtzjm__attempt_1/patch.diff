@@ -1,0 +1,18 @@
+--- a/src/markupsafe/__init__.py
++++ b/src/markupsafe/__init__.py
+@@ -323,10 +323,11 @@
+         return self.__class__(formatter.vformat(self, (), mapping))
+ 
+     def __html_format__(self, format_spec: str, /) -> te.Self:
+-        if format_spec:
+-            raise ValueError("Unsupported format specification for Markup.")
+-
+-        return self
++            if format_spec:
++                # Convert format_spec to string and delegate to parent's __format__ method
++                return self.__class__(super().__format__(str(format_spec)))
++        
++            return self
+ 
+ 
+ class EscapeFormatter(string.Formatter):

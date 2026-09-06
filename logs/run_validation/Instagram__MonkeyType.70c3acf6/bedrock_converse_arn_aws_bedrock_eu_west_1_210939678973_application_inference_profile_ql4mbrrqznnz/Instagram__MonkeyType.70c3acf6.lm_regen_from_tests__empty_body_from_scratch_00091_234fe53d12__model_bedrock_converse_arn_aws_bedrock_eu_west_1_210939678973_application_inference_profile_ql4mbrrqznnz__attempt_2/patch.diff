@@ -1,0 +1,32 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -143,16 +143,22 @@
+     return imports
+ 
+ 
++def test_default_none_parameter_imports(self):
++    stub = FunctionStub('test', inspect.signature(default_none_parameter),
++        FunctionKind.MODULE)
++    expected = {'typing': {'Optional'}}
++    assert get_imports_for_signature(stub.signature) == expected
++
+ def get_imports_for_signature(sig: inspect.Signature) -> ImportMap:
+-    """Return the imports (module, name) needed for all types in annotations"""
+     imports = ImportMap()
+     for param in sig.parameters.values():
+-        param_imports = get_imports_for_annotation(param.annotation)
+-        if not _is_optional(param.annotation) and param.default is None:
+-            imports["typing"].add("Optional")
+-        imports.merge(param_imports)
+-    return_imports = get_imports_for_annotation(sig.return_annotation)
+-    imports.merge(return_imports)
++        if param.annotation is not inspect.Parameter.empty:
++            anno = param.annotation
++            if not _is_optional(anno) and param.default is None:
++                anno = Optional[anno]
++            imports.merge(get_imports_for_annotation(anno))
++    if sig.return_annotation is not inspect.Signature.empty:
++        imports.merge(get_imports_for_annotation(sig.return_annotation))
+     return imports
+ 
+ 

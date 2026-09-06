@@ -1,0 +1,21 @@
+--- a/starlette/middleware/errors.py
++++ b/starlette/middleware/errors.py
+@@ -137,15 +137,9 @@
+     always result in an appropriate 500 response.
+     """
+ 
+-    def __init__(
+-        self,
+-        app: ASGIApp,
+-        handler: typing.Callable[[Request, Exception], typing.Any] | None = None,
+-        debug: bool = False,
+-    ) -> None:
+-        self.app = app
+-        self.handler = handler
+-        self.debug = debug
++    def __init__(self, app: ASGIApp, handler: (typing.Callable[[Request,
++        Exception], typing.Any] | None)=None, debug: bool=False) ->None:
++        pass
+ 
+     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+         if scope["type"] != "http":

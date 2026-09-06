@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, the `url_path_for` method in the `Router` class needs to be implemented. The current implementation just has `pass`. Looking at the existing code, I can see the correct implementation is already present in the file - it iterates through routes and tries each one, raising `NoMatchFound` if none match.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing tests, the `url_path_for` method in the `Router` class needs to be implemented. The current implementation just has `pass`. Looking at the existing code, I can see the correct implementation is already present in the file - it iterates through routes and tries each one, raising `NoMatchFound` if none match.\n\n```\ndef url_path_for(self, name: str, /, **path_params: typing.Any) -> URLPath:\n    for route in self.routes:\n        try:\n            return route.url_path_for(name, **path_params)\n        except NoMatchFound:\n            pass\n    raise NoMatchFound(name, path_params)\n```",
+  "rewrite": "def url_path_for(self, name: str, /, **path_params: typing.Any) -> URLPath:\n    for route in self.routes:\n        try:\n            return route.url_path_for(name, **path_params)\n        except NoMatchFound:\n            pass\n    raise NoMatchFound(name, path_params)",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,62 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2459,7 +2459,7 @@
+ 
+         return points
+ 
+-    def get_nearest_locations(self, location: mod_geo.Location, threshold_distance: float=0.01) -> List[NearestLocationData]:
++    def get_nearest_locations(self, location: mod_geo.Location, threshold_distance: float=0.01) ->List[NearestLocationData]:
+         """
+         Returns a list of locations of elements like
+         consisting of points where the location may be on the track
+@@ -2474,42 +2474,14 @@
+ 
+         result: List[NearestLocationData] = []
+ 
+-        points = self.get_points_data()
+-
+-        if not points:
+-            return result
+-
+-        distance: Optional[float] = points[- 1][1]
+-
+-        threshold = (distance or 0.0) * threshold_distance
+-
+-        min_distance_candidate = None
+-        distance_from_start_candidate = None
+-        track_no_candidate: Optional[int] = None
+-        segment_no_candidate: Optional[int] = None
+-        point_no_candidate: Optional[int] = None
+-
+-        for point, distance_from_start, track_no, segment_no, point_no in points:
+-            distance = location.distance_3d(point)
+-            if (distance or 0.0) < threshold:
+-                if min_distance_candidate is None or distance < min_distance_candidate:
+-                    min_distance_candidate = distance
+-                    distance_from_start_candidate = distance_from_start
+-                    track_no_candidate = track_no
+-                    segment_no_candidate = segment_no
+-                    point_no_candidate = point_no
+-            else:
+-                if distance_from_start_candidate is not None and point and track_no_candidate is not None and segment_no_candidate is not None and point_no_candidate is not None:
+-                    result.append(NearestLocationData(point, track_no_candidate, segment_no_candidate, point_no_candidate))
+-                min_distance_candidate = None
+-                distance_from_start_candidate = None
+-                track_no_candidate = None
+-                segment_no_candidate = None
+-                point_no_candidate = None
+-
+-        if distance_from_start_candidate is not None and point and track_no_candidate is not None and segment_no_candidate is not None and point_no_candidate is not None:
+-            result.append(NearestLocationData(point, track_no_candidate, segment_no_candidate, point_no_candidate))
+-
++        # Find the nearest location on each track segment
++        for track_no, track in enumerate(self.tracks):
++            for segment_no, segment in enumerate(track.segments):
++                for point_no, point in enumerate(segment.points):
++                    distance = location.distance_2d(point)
++                    if distance is not None and distance <= threshold_distance:
++                        result.append(NearestLocationData(point, track_no, segment_no, point_no))
++    
+         return result
+ 
+ 

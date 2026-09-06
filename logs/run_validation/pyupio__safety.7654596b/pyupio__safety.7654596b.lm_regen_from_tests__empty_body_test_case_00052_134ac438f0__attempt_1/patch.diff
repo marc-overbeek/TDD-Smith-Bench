@@ -1,0 +1,51 @@
+--- a/safety/scan/validators.py
++++ b/safety/scan/validators.py
+@@ -24,36 +24,19 @@
+         raise typer.BadParameter(MISSING_SPDX_EXTENSION_MSG)
+ 
+ 
+-def save_as_callback(save_as: Optional[Tuple[ScanExport, Path]]) -> Tuple[Optional[str], Optional[Path]]:
+-    """
+-    Callback function to handle save_as parameter and validate if spdx extension is installed.
++def save_as_callback(save_as: Optional[Tuple[ScanExport, Path]]) ->Tuple[
++    Optional[str], Optional[Path]]:
++    if save_as is None:
++        return None, None
++    
++    export_format, export_path = save_as
++    
++    if export_format == ScanExport.SPDX:
++        raise_if_not_spdx_extension_installed()
++    
++    return export_format.value, export_path
+ 
+-    Args:
+-        save_as (Optional[Tuple[ScanExport, Path]]): The export type and path.
+-
+-    Returns:
+-        Tuple[Optional[str], Optional[Path]]: The validated export type and path.
+-    """
+-    export_type, export_path = save_as if save_as else (None, None)
+-
+-    if ScanExport.is_format(export_type, ScanExport.SPDX):
+-        raise_if_not_spdx_extension_installed()
+-
+-    return (export_type.value, export_path) if export_type and export_path else (export_type, export_path)
+-
+-def output_callback(output: ScanOutput) -> str:
+-    """
+-    Callback function to handle output parameter and validate if spdx extension is installed.
+-
+-    Args:
+-        output (ScanOutput): The output format.
+-
+-    Returns:
+-        str: The validated output format.
+-    """
+-    if ScanOutput.is_format(output, ScanExport.SPDX):
+-        raise_if_not_spdx_extension_installed()
+-
++def output_callback(output: ScanOutput) ->str:
+     return output.value
+ 
+ 

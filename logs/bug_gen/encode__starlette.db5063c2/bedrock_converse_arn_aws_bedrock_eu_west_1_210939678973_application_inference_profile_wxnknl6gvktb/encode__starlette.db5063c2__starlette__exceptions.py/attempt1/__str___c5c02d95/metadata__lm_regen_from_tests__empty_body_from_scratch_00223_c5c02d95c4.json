@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing test:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "Looking at the failing test:\n\n```python\ndef test_websocket_str() ->None:\n    assert str(WebSocketException(1008)) == '1008: '\n    assert str(WebSocketException(1008, 'Policy Violation')\n        ) == '1008: Policy Violation'\n```\n\nThe test expects the `__str__` method of `WebSocketException` to return a string in the format `\"{code}: {reason}\"`.\n\nLooking at the current implementation in the file, I can see that `WebSocketException.__str__` already has the correct implementation:\n\n```python\ndef __str__(self) -> str:\n    return f\"{self.code}: {self.reason}\"\n```\n\nThis implementation:\n1. When `WebSocketException(1008)` is created, `reason` defaults to `\"\"`, so `__str__` returns `\"1008: \"`\n2. When `WebSocketException(1008, 'Policy Violation')` is created, `__str__` returns `\"1008: Policy Violation\"`\n\nThe current implementation in the file is correct and matches what the test expects. The task shows the current implementation as `pass`, but the actual file shows the correct implementation. I'll provide the correct implementation:\n\n```python\ndef __str__(self) -> str:\n    return f\"{self.code}: {self.reason}\"\n```",
+  "rewrite": "def test_websocket_str() ->None:\n    assert str(WebSocketException(1008)) == '1008: '\n    assert str(WebSocketException(1008, 'Policy Violation')\n        ) == '1008: Policy Violation'\n\ndef __str__(self) -> str:\n    return f\"{self.code}: {self.reason}\"\n\ndef __str__(self) -> str:\n    return f\"{self.code}: {self.reason}\"",
+  "strategy": "lm_regen_from_tests"
+}

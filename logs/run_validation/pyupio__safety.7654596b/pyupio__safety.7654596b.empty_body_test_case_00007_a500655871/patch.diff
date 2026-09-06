@@ -1,0 +1,206 @@
+--- a/safety/models.py
++++ b/safety/models.py
+@@ -52,72 +52,15 @@
+     """
+     A subclass of Requirement that includes additional attributes and methods for safety requirements.
+     """
+-    def __init__(self, requirement: Union[str, Dependency], found: Optional[str] = None) -> None:
+-        """
+-        Initialize a SafetyRequirement.
+-
+-        Args:
+-            requirement (Union[str, Dependency]): The requirement as a string or Dependency object.
+-            found (Optional[str], optional): Where the requirement was found. Defaults to None.
+-
+-        Raises:
+-            InvalidRequirementError: If the requirement cannot be parsed.
+-        """
+-        dep = requirement
+-
+-        if isinstance(requirement, str):
+-            deps = parse(requirement, file_type=filetypes.requirements_txt).dependencies
+-            dep = deps[0] if deps else None
+-
+-        if not dep:
+-            raise InvalidRequirementError(line=str(requirement))
+-
+-        raw_line = dep.line
+-        to_parse = dep.line
+-        # Hash and comments are only a pip feature, so removing them.
+-        if '#' in to_parse:
+-            to_parse = dep.line.split('#')[0]
+-
+-        for req_hash in dep.hashes:
+-            to_parse = to_parse.replace(req_hash, '')
+-
+-        to_parse = to_parse.replace('\\', '').rstrip()
+-
+-        try:
+-            # Try to build a PEP Requirement from the cleaned line
+-            super(SafetyRequirement, self).__init__(to_parse)
+-        except Exception:
+-            raise InvalidRequirementError(line=requirement.line if isinstance(requirement, Dependency) else requirement)
+-
+-        self.raw = raw_line
+-        self.found = found
++    def __init__(self, requirement: Union[str, Dependency], found: Optional[str
++        ]=None) ->None:
++        pass
+ 
+     def __eq__(self, other: Any) -> bool:
+         return str(self) == str(other)
+ 
+-    def to_dict(self, **kwargs: Any) -> Dict:
+-        """
+-        Convert the requirement to a dictionary.
+-
+-        Args:
+-            **kwargs: Additional keyword arguments.
+-
+-        Returns:
+-            dict: The dictionary representation of the requirement.
+-        """
+-        specifier_obj = self.specifier
+-        if not "specifier_obj" in kwargs:
+-            specifier_obj = str(self.specifier)
+-
+-        return   {
+-                        'raw': self.raw,
+-                        'extras': list(self.extras),
+-                        'marker': str(self.marker) if self.marker else None,
+-                        'name': self.name,
+-                        'specifier': specifier_obj,
+-                        'url': self.url,
+-                        'found': self.found
+-                    }
++    def to_dict(self, **kwargs: Any) ->Dict:
++        pass
+ 
+ 
+ def is_pinned_requirement(spec: SpecifierSet) -> bool:
+@@ -230,33 +173,8 @@
+ 
+         self.update(kwargs)
+ 
+-    def to_dict(self, **kwargs: Any) -> Dict:
+-        """
+-        Convert the package to a dictionary.
+-
+-        Args:
+-            **kwargs: Additional keyword arguments.
+-
+-        Returns:
+-            dict: The dictionary representation of the package.
+-        """
+-        if kwargs.get('short_version', False):
+-            return {
+-                'name': self.name,
+-                'version': self.version,
+-                'requirements': self.requirements
+-            }
+-
+-        return {'name': self.name,
+-                'version': self.version,
+-                'requirements': self.requirements,
+-                'found': None,
+-                'insecure_versions': self.insecure_versions,
+-                'secure_versions': self.secure_versions,
+-                'latest_version_without_known_vulnerabilities': self.latest_version_without_known_vulnerabilities,
+-                'latest_version': self.latest_version,
+-                'more_info_url': self.more_info_url
+-                }
++    def to_dict(self, **kwargs: Any) ->Dict:
++        pass
+ 
+     def update(self, new: Dict) -> None:
+         """
+@@ -333,41 +251,16 @@
+     """
+     A class representing the severity of a vulnerability.
+     """
+-    def to_dict(self) -> Dict:
+-        """
+-        Convert the severity to a dictionary.
+-
+-        Returns:
+-            Dict: The dictionary representation of the severity.
+-        """
+-        result = {'severity': {'source': self.source}}
+-
+-        result['severity']['cvssv2'] = self.cvssv2
+-        result['severity']['cvssv3'] = self.cvssv3
+-
+-        return result
++    def to_dict(self) ->Dict:
++        pass
+ 
+ 
+ class SafetyEncoder(json.JSONEncoder):
+     """
+     A custom JSON encoder for Safety related objects.
+     """
+-    def default(self, value: Any) -> Any:
+-        """
+-        Override the default method to handle custom objects.
+-
+-        Args:
+-            value (Any): The value to encode.
+-
+-        Returns:
+-            Any: The encoded value.
+-        """
+-        if isinstance(value, SafetyRequirement):
+-            return value.to_dict()
+-        elif isinstance(value, Version) or (legacyType and isinstance(value, legacyType)):
+-            return str(value)
+-        else:
+-            return super().default(value)
++    def default(self, value: Any) ->Any:
++        pass
+ 
+ 
+ class Vulnerability(vulnerability_nmt):
+@@ -375,41 +268,8 @@
+     A class representing a vulnerability.
+     """
+ 
+-    def to_dict(self) -> Dict:
+-        """
+-        Convert the vulnerability to a dictionary.
+-
+-        Returns:
+-            Dict: The dictionary representation of the vulnerability.
+-        """
+-        empty_list_if_none = ['fixed_versions', 'closest_versions_without_known_vulnerabilities', 'resources']
+-        result = {
+-        }
+-
+-        ignore = ['pkg']
+-
+-        for field, value in zip(self._fields, self):
+-            if field in ignore:
+-                continue
+-
+-            if value is None and field in empty_list_if_none:
+-                value = []
+-
+-            if isinstance(value, set):
+-                result[field] = list(value)
+-            elif isinstance(value, CVE):
+-                val = None
+-                if value.name.startswith("CVE"):
+-                    val = value.name
+-                result[field] = val
+-            elif isinstance(value, DictConverter):
+-                result.update(value.to_dict())
+-            elif isinstance(value, SpecifierSet) or isinstance(value, datetime):
+-                result[field] = str(value)
+-            else:
+-                result[field] = value
+-
+-        return result
++    def to_dict(self) ->Dict:
++        pass
+ 
+     def get_advisory(self) -> str:
+         """

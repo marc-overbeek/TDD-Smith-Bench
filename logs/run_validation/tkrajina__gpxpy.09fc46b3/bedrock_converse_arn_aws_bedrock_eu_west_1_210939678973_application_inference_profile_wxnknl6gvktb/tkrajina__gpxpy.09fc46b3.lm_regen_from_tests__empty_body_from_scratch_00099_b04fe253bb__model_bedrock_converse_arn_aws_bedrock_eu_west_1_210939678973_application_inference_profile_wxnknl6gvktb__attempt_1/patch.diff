@@ -1,0 +1,23 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -454,6 +454,20 @@
+             return mod_geo.Location(0, 0)
+ 
+         return mod_geo.Location(latitude=sum_lat / n, longitude=sum_lon / n)
++
++    def walk(self, only_points: bool=False) -> Iterator[Any]:
++        """
++        Generator for iterating over route points
++        ...
++        """
++        for point_no, point in enumerate(self.points):
++            if only_points:
++                yield point
++            else:
++                yield point, point_no
++
++    for point, _ in route.walk():
++        self.assertTrue(point.time is None)
+ 
+     def walk(self, only_points: bool=False) -> Iterator[Any]:
+         """

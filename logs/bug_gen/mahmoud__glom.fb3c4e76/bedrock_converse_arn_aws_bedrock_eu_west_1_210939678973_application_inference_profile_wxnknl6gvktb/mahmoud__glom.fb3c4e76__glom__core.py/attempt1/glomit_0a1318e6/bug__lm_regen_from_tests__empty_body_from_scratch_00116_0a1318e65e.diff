@@ -1,0 +1,30 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1857,6 +1857,27 @@
+             raise TypeError('expected at least one keyword argument')
+         self._binding = kw
+ 
++    def test_let():
++        data = {'a': 1, 'b': [{'c': 2}, {'c': 3}]}
++        output = [{'a': 1, 'c': 2}, {'a': 1, 'c': 3}]
++        assert glom(data, (Let(a='a'), ('b', [{'a': S['a'], 'c': 'c'}]))) == output
++
++    def glomit(self, target, scope):
++        pass
++
++    class Let:
++        """
++        Deprecated, kept for backwards compat. Use S(x='y') instead.
++        ...
++        """
++        def __init__(self, **kw):
++            if not kw:
++                raise TypeError('expected at least one keyword argument')
++            self._binding = kw
++
++    with pytest.raises(GlomError):
++        glom(1, (Let(v=lambda t: 1), A.v.a))
++
+     def glomit(self, target, scope):
+         scope.update({
+             k: scope[glom](target, v, scope) for k, v in self._binding.items()})

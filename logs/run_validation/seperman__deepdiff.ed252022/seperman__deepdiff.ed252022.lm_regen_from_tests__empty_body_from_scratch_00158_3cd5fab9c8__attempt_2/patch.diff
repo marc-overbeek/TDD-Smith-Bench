@@ -1,0 +1,62 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -262,27 +262,42 @@
+     return abs(log_a - log_b)
+ 
+ 
+-def _get_numpy_array_distance(num1, num2, max_=1, use_log_scale=False, log_scale_similarity_threshold=0.1):
+-    """
+-    Get the distance of 2 numbers. The output is a number between 0 to the max.
+-    The reason is the
+-    When max is returned means the 2 numbers are really far, and 0 means they are equal.
+-    """
+-    # Since we have a default cutoff of 0.3 distance when
+-    # getting the pairs of items during the ingore_order=True
+-    # calculations, we need to make the divisor of comparison very big
+-    # so that any 2 numbers can be chosen as pairs.
++def _get_numpy_array_distance(num1, num2, max_=1, use_log_scale=False,
++    log_scale_similarity_threshold=0.1):
++    """
++    Get the distance between two numpy arrays.
++    """
+     if use_log_scale:
+         num1 = numpy_apply_log_keep_sign(num1)
+         num2 = numpy_apply_log_keep_sign(num2)
+-
+-    divisor = (num1 + num2) / max_
+-    result = _numpy_div((num1 - num2), divisor, replace_inf_with=max_)
+-
+-    distance_array = np.clip(np.absolute(result), 0, max_)
++    
++    # Calculate absolute difference
++    diff = np.abs(num1 - num2)
++    
++    # If using log scale, we want to normalize by the maximum of the two values
+     if use_log_scale:
+-        distance_array[distance_array < log_scale_similarity_threshold] = 0
+-    return distance_array
++        # For log scale, we want to normalize by the maximum of the two values
++        # But we need to be careful about zeros
++        max_vals = np.maximum(np.abs(num1), np.abs(num2))
++        # Avoid division by zero
++        max_vals = np.where(max_vals == 0, 1, max_vals)
++        normalized_diff = diff / max_vals
++    else:
++        # For regular scale, we normalize by the sum of absolute values
++        sum_abs = np.abs(num1) + np.abs(num2)
++        # Avoid division by zero
++        sum_abs = np.where(sum_abs == 0, 1, sum_abs)
++        normalized_diff = diff / sum_abs
++    
++    # Take the maximum along the last axis to get per-pair distances
++    # Handle case where arrays might be 1D or higher dimensional
++    if normalized_diff.ndim > 1:
++        distances = np.max(normalized_diff, axis=-1)
++    else:
++        distances = normalized_diff
++    
++    # Clip to max_ and return
++    return np.clip(distances, 0, max_)
+ 
+ 
+ def _get_datetime_distance(date1, date2, max_, use_log_scale, log_scale_similarity_threshold):

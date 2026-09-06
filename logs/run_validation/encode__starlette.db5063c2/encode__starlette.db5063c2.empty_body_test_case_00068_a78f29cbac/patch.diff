@@ -1,0 +1,95 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -101,18 +101,9 @@
+     return getattr(endpoint, "__name__", endpoint.__class__.__name__)
+ 
+ 
+-def replace_params(
+-    path: str,
+-    param_convertors: dict[str, Convertor[typing.Any]],
+-    path_params: dict[str, str],
+-) -> tuple[str, dict[str, str]]:
+-    for key, value in list(path_params.items()):
+-        if "{" + key + "}" in path:
+-            convertor = param_convertors[key]
+-            value = convertor.to_string(value)
+-            path = path.replace("{" + key + "}", value)
+-            path_params.pop(key)
+-    return path, path_params
++def replace_params(path: str, param_convertors: dict[str, Convertor[typing.
++    Any]], path_params: dict[str, str]) ->tuple[str, dict[str, str]]:
++    pass
+ 
+ 
+ # Match parameters in URL paths, eg. '{param}', and '{param:int}'
+@@ -265,16 +256,8 @@
+                     return Match.FULL, child_scope
+         return Match.NONE, {}
+ 
+-    def url_path_for(self, name: str, /, **path_params: typing.Any) -> URLPath:
+-        seen_params = set(path_params.keys())
+-        expected_params = set(self.param_convertors.keys())
+-
+-        if name != self.name or seen_params != expected_params:
+-            raise NoMatchFound(name, path_params)
+-
+-        path, remaining_params = replace_params(self.path_format, self.param_convertors, path_params)
+-        assert not remaining_params
+-        return URLPath(path=path, protocol="http")
++    def url_path_for(self, name: str, /, **path_params: typing.Any) ->URLPath:
++        pass
+ 
+     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+         if self.methods and scope["method"] not in self.methods:
+@@ -469,16 +452,12 @@
+ 
+ 
+ class Host(BaseRoute):
+-    def __init__(self, host: str, app: ASGIApp, name: str | None = None) -> None:
+-        assert not host.startswith("/"), "Host must not start with '/'"
+-        self.host = host
+-        self.app = app
+-        self.name = name
+-        self.host_regex, self.host_format, self.param_convertors = compile_path(host)
++    def __init__(self, host: str, app: ASGIApp, name: (str | None)=None) ->None:
++        pass
+ 
+     @property
+-    def routes(self) -> list[BaseRoute]:
+-        return getattr(self.app, "routes", [])
++    def routes(self) ->list[BaseRoute]:
++        pass
+ 
+     def matches(self, scope: Scope) -> tuple[Match, Scope]:
+         if scope["type"] in ("http", "websocket"):
+@@ -495,28 +474,8 @@
+                 return Match.FULL, child_scope
+         return Match.NONE, {}
+ 
+-    def url_path_for(self, name: str, /, **path_params: typing.Any) -> URLPath:
+-        if self.name is not None and name == self.name and "path" in path_params:
+-            # 'name' matches "<mount_name>".
+-            path = path_params.pop("path")
+-            host, remaining_params = replace_params(self.host_format, self.param_convertors, path_params)
+-            if not remaining_params:
+-                return URLPath(path=path, host=host)
+-        elif self.name is None or name.startswith(self.name + ":"):
+-            if self.name is None:
+-                # No mount name.
+-                remaining_name = name
+-            else:
+-                # 'name' matches "<mount_name>:<child_name>".
+-                remaining_name = name[len(self.name) + 1 :]
+-            host, remaining_params = replace_params(self.host_format, self.param_convertors, path_params)
+-            for route in self.routes or []:
+-                try:
+-                    url = route.url_path_for(remaining_name, **remaining_params)
+-                    return URLPath(path=str(url), protocol=url.protocol, host=host)
+-                except NoMatchFound:
+-                    pass
+-        raise NoMatchFound(name, path_params)
++    def url_path_for(self, name: str, /, **path_params: typing.Any) ->URLPath:
++        pass
+ 
+     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+         await self.app(scope, receive, send)

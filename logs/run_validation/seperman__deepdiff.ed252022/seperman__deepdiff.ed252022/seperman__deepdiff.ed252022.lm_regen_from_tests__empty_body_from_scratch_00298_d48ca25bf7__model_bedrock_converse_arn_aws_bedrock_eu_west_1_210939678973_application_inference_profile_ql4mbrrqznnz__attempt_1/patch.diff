@@ -1,0 +1,87 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -374,37 +374,60 @@
+ def pickle_load(content=None, file_obj=None, safe_to_import=None):
+     """
+     **pickle_load**
+-    Load the pickled content. content should be a bytes object.
++    Loads the pickled content.
+ 
+     **Parameters**
+ 
+-    content : Bytes of pickled object. 
+-
+-    file_obj : A file object to load the content from
+-
+-    safe_to_import : A set of modules that needs to be explicitly allowed to be loaded.
+-        Example: {'mymodule.MyClass', 'decimal.Decimal'}
+-        Note that this set will be added to the basic set of modules that are already allowed.
+-        The set of what is already allowed can be found in deepdiff.serialization.SAFE_TO_IMPORT
++    content : bytes (Optional) The pickle serialized bytes to load
++
++    file_obj : (Optional) A file object to load the contents from
++
++    safe_to_import : (Optional) A set of modules that are safe to import
+ 
+     **Returns**
+ 
+-        A delta object that can be added to t1 to recreate t2.
+-
+-    **Examples**
+-
+-    Importing
+-        >>> from deepdiff import DeepDiff, Delta
+-        >>> from pprint import pprint
+-
+-
+-    """
+-    if not content and not file_obj:
+-        raise ValueError('Please either pass the content or the file_obj to pickle_load.') 
++    The deserialized python object
++    """
++    if file_obj is not None:
++        return _RestrictedUnpickler(file_obj, safe_to_import=safe_to_import).load()
++    
+     if isinstance(content, str):
+-        content = content.encode('utf-8')
+-    if content:
+-        file_obj = io.BytesIO(content)
++        # Strings are not valid pickle content - try to decode or raise error
++        try:
++            content = content.encode('latin-1')
++        except Exception:
++            raise pickle.UnpicklingError("Could not unpickle the content")
++    
++    file_obj = io.BytesIO(content)
++    return _RestrictedUnpickler(file_obj, safe_to_import=safe_to_import).load()
++
++def pickle_load(content=None, file_obj=None, safe_to_import=None):
++    """
++    **pickle_load**
++    Loads the pickled content.
++
++    **Parameters**
++
++    content : bytes (Optional) The pickle serialized bytes to load
++
++    file_obj : (Optional) A file object to load the contents from
++
++    safe_to_import : (Optional) A set of modules that are safe to import
++
++    **Returns**
++
++    The deserialized python object
++    """
++    if file_obj is not None:
++        return _RestrictedUnpickler(file_obj, safe_to_import=safe_to_import).load()
++    
++    if isinstance(content, str):
++        try:
++            content = content.encode('latin-1')
++        except Exception:
++            raise pickle.UnpicklingError("Could not unpickle the content")
++    
++    file_obj = io.BytesIO(content)
+     return _RestrictedUnpickler(file_obj, safe_to_import=safe_to_import).load()
+ 
+ 

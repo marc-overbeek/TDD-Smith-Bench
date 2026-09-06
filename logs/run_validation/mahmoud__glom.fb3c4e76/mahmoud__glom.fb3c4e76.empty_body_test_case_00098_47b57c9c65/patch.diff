@@ -1,0 +1,43 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -829,35 +829,14 @@
+ 
+     """
+     def __init__(self, cases, default=_MISSING):
+-        if type(cases) is dict:
+-            cases = list(cases.items())
+-        if type(cases) is not list:
+-            raise TypeError(
+-                "expected cases argument to be of format {{keyspec: valspec}}"
+-                " or [(keyspec, valspec)] not: {}".format(type(cases)))
+-        self.cases = cases
+-        # glom.match(cases, Or([(object, object)], dict))
+-        # start dogfooding ^
+-        self.default = default
+-        if not cases:
+-            raise ValueError('expected at least one case in %s, got: %r'
+-                             % (self.__class__.__name__, self.cases))
+-        return
++        pass
+ 
+ 
+     def glomit(self, target, scope):
+-        for keyspec, valspec in self.cases:
+-            try:
+-                scope[glom](target, keyspec, scope)
+-            except GlomError as ge:
+-                continue
+-            return scope[glom](target, valspec, chain_child(scope))
+-        if self.default is not _MISSING:
+-            return arg_val(target, self.default, scope)
+-        raise MatchError("no matches for target in %s"  % self.__class__.__name__)
+-
+-    def __repr__(self):
+-        return f'{self.__class__.__name__}({bbrepr(self.cases)})'
++        pass
++
++    def __repr__(self):
++        pass
+ 
+ 
+ RAISE = make_sentinel('RAISE')  # flag object for "raise on check failure"

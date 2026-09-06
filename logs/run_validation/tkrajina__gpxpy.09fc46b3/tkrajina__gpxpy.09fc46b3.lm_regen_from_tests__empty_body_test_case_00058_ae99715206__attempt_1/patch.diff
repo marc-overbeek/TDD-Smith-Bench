@@ -1,0 +1,97 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -37,7 +37,7 @@
+ class SimpleTZ(mod_datetime.tzinfo):
+     __slots__ = ('offset',)
+ 
+-    def __init__(self, s: str="") -> None:
++    def __init__(self, s: str="") ->None:
+         self.offset = 0
+         if s and len(s) >= 2:
+             if s[0] in ('−', '-'):
+@@ -71,8 +71,15 @@
+     def __deepcopy__(self, memodict: Optional[Dict[Any, Any]]={}) -> mod_datetime.tzinfo:
+         return self.__class__(self.tzname(None))
+ 
+-    def __repr__(self) -> str:
+-        return f'SimpleTZ({self.tzname(None)!r})'
++    def __repr__(self) ->str:
++        if self.offset == 0:
++            return 'Z'
++        hours = self.offset // 60
++        minutes = self.offset % 60
++        if hours >= 0:
++            return f'+{hours:02d}:{minutes:02d}'
++        else:
++            return f'-{abs(hours):02d}:{minutes:02d}'
+ 
+     def __eq__(self, other: Any) -> bool:
+         return self.offset == other.offset # type: ignore
+@@ -178,10 +185,12 @@
+         self.possible = possible
+         self.mandatory = mandatory
+ 
+-    def from_xml(self, node: Any, version: str) -> Any:
++    def from_xml(self, node: Any, version: str) ->Any:
+         if self.attribute:
+             if node is not None:
+                 result = node.get(self.attribute)
++            else:
++                result = None
+         else:
+             __node = node.find(self.tag)
+             if __node is not None:
+@@ -556,38 +565,24 @@
+     return ''.join(body)
+ 
+ 
+-def gpx_fields_from_xml(class_or_instance: Any, node: str, version: str) -> Any:
++def gpx_fields_from_xml(class_or_instance: Any, node: str, version: str) ->Any:
+     if mod_inspect.isclass(class_or_instance):
+-        result = class_or_instance()
++        instance = class_or_instance()
+     else:
+-        result = class_or_instance
+-
+-    fields = result.gpx_10_fields
++        instance = class_or_instance
++
++    fields = instance.gpx_10_fields
+     if version == '1.1':
+-        fields = result.gpx_11_fields
+-
+-    node_path: List[Union[str, int]] = [node]
+-
+-    for gpx_field in fields:
+-        current_node = node_path[-1]
+-        if isinstance(gpx_field, str):
+-            gpx_field = gpx_field.partition(':')[0]
+-            if gpx_field.startswith('/'):
+-                node_path.pop()
+-            else:
+-                if current_node is None:
+-                    node_path.append(None)
+-                else:
+-                    node_path.append(cast(str, current_node).find(gpx_field))
+-        else:
+-            if current_node is not None:
+-                value = gpx_field.from_xml(current_node, version)
+-                setattr(result, gpx_field.name, value)
+-            elif gpx_field.attribute:
+-                value = gpx_field.from_xml(node, version)
+-                setattr(result, gpx_field.name, value)
+-
+-    return result
++        fields = instance.gpx_11_fields
++
++    for field in fields:
++        if isinstance(field, str):
++            continue
++        value = field.from_xml(node, version)
++        if value is not None:
++            setattr(instance, field.name, value)
++
++    return instance
+ 
+ def gpx_check_slots_and_default_values(classs: Callable[[], Any]) -> None:
+     """

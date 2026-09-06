@@ -1,0 +1,59 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -281,31 +281,31 @@
+         return deepcopy(dict(result))
+ 
+     def pretty(self, prefix: Optional[Union[str, Callable]]=None):
+-        """
+-        The pretty human readable string output for the diff object
+-        regardless of what view was used to generate the diff.
+-
+-        prefix can be a callable or a string or None.
+-
+-        Example:
+-            >>> t1={1,2,4}
+-            >>> t2={2,3}
+-            >>> print(DeepDiff(t1, t2).pretty())
+-            Item root[3] added to set.
+-            Item root[4] removed from set.
+-            Item root[1] removed from set.
+-        """
+-        result = []
+-        if prefix is None:
+-            prefix = ''
+-        keys = sorted(self.tree.keys())  # sorting keys to guarantee constant order across python versions.
+-        for key in keys:
+-            for item_key in self.tree[key]:
+-                result += [pretty_print_diff(item_key)]
+-
+-        if callable(prefix):
+-            return "\n".join(f"{prefix(diff=self)}{r}" for r in result)
+-        return "\n".join(f"{prefix}{r}" for r in result)
++            """
++            The pretty human readable string output for the diff object
++            regardless of what view was used to generate the diff.
++
++            prefix can be a callable or a string or None.
++
++            Example:
++                >>> t1={1,2,4}
++                >>> t2={2,3}
++                >>> print(DeepDiff(t1, t2).pretty())
++                Item root[3] added to set.
++                Item root[4] removed from set.
++                Item root[1] removed from set.
++            """
++            result = []
++            if prefix is None:
++                prefix = ''
++            keys = sorted(self.tree.keys())  # sorting keys to guarantee constant order across python versions.
++            for key in keys:
++                for item_key in self.tree[key]:
++                    result += [pretty_print_diff(item_key)]
++
++            if callable(prefix):
++                return "\n".join(f"{prefix(diff=self)}{r}" for r in result)
++            return "\n".join(f"{prefix}{r}" for r in result)
+ 
+ 
+ class _RestrictedUnpickler(pickle.Unpickler):

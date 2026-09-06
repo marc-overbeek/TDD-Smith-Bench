@@ -1,0 +1,28 @@
+--- a/oauthlib/oauth2/rfc8628/endpoints/device_authorization.py
++++ b/oauthlib/oauth2/rfc8628/endpoints/device_authorization.py
+@@ -141,9 +141,7 @@
+         self._raise_on_invalid_client(request)
+ 
+     @catch_errors_and_unavailability
+-    def create_device_authorization_response(
+-        self, uri, http_method="POST", body=None, headers=None
+-    ):
++    def create_device_authorization_response(self, uri, http_method, body, headers):
+         """
+            Generate a unique device verification code and an end-user code that are valid for a limited time.
+            Include them in the HTTP response body using the "application/json" format [RFC8259] with a
+@@ -213,7 +211,7 @@
+         self.validate_device_authorization_request(request)
+         log.debug("Pre resource owner authorization validation ok for %r.", request)
+ 
+-        headers = {}
++        response_headers = {}
+         user_code = self.user_code_generator() if self.user_code_generator else generate_token()
+         data = {
+             "verification_uri": self.verification_uri,
+@@ -228,4 +226,4 @@
+         if verification_uri_complete:
+             data["verification_uri_complete"] = verification_uri_complete
+ 
+-        return headers, data, 200
++        return response_headers, data, 200

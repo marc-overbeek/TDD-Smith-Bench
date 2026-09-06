@@ -1,0 +1,48 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -2463,43 +2463,10 @@
+ 
+     """
+     def __init__(self, **kwargs):
+-        register_default_types = kwargs.pop('register_default_types', True)
+-        scope = kwargs.pop('scope', _DEFAULT_SCOPE)
+-
+-        # this "freezes" the scope in at the time of construction
+-        self.scope = ChainMap(dict(scope))
+-        self.scope[TargetRegistry] = TargetRegistry(register_default_types=register_default_types)
++        pass
+ 
+     def register(self, target_type, **kwargs):
+-        """Register *target_type* so :meth:`~Glommer.glom()` will
+-        know how to handle instances of that type as targets.
+-
+-        Args:
+-           target_type (type): A type expected to appear in a glom()
+-              call target
+-           get (callable): A function which takes a target object and
+-              a name, acting as a default accessor. Defaults to
+-              :func:`getattr`.
+-           iterate (callable): A function which takes a target object
+-              and returns an iterator. Defaults to :func:`iter` if
+-              *target_type* appears to be iterable.
+-           exact (bool): Whether or not to match instances of subtypes
+-              of *target_type*.
+-
+-        .. note::
+-
+-           The module-level :func:`register()` function affects the
+-           module-level :func:`glom()` function's behavior. If this
+-           global effect is undesirable for your application, or
+-           you're implementing a library, consider instantiating a
+-           :class:`Glommer` instance, and using the
+-           :meth:`~Glommer.register()` and :meth:`Glommer.glom()`
+-           methods instead.
+-
+-        """
+-        exact = kwargs.pop('exact', False)
+-        self.scope[TargetRegistry].register(target_type, exact=exact, **kwargs)
+-        return
++        pass
+ 
+     def glom(self, target, spec, **kwargs):
+         return glom(target, spec, scope=self.scope, **kwargs)

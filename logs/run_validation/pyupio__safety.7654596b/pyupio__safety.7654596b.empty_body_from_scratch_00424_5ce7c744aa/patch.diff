@@ -1,0 +1,32 @@
+--- a/safety/auth/server.py
++++ b/safety/auth/server.py
+@@ -89,27 +89,8 @@
+         sys.exit(1)
+ 
+ class CallbackHandler(http.server.BaseHTTPRequestHandler):
+-    def auth(self, code: str, state: str, err: str, error_description: str) -> None:
+-        """
+-        Handle the authentication callback.
+-
+-        Args:
+-            code (str): The authorization code.
+-            state (str): The state parameter.
+-            err (str): The error message, if any.
+-            error_description (str): The error description, if any.
+-        """
+-        initial_state = self.server.initial_state
+-        ctx = self.server.ctx
+-
+-        result = auth_process(code=code,
+-                              state=state,
+-                              initial_state=initial_state,
+-                              code_verifier=ctx.obj.auth.code_verifier,
+-                              client=ctx.obj.auth.client)
+-
+-        self.server.callback = result
+-        self.do_redirect(location=CLI_AUTH_SUCCESS, params={})
++    def auth(self, code: str, state: str, err: str, error_description: str) ->None:
++        pass
+ 
+     def logout(self) -> None:
+         """

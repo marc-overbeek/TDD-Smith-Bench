@@ -1,0 +1,24 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -646,12 +646,16 @@
+     return dt.tzinfo is not None and dt.tzinfo.utcoffset(dt) is not None
+ 
+ 
++def test_get_truncate_datetime(self):
++    result = get_truncate_datetime('hour')
++    assert 'hour' == result
++    with pytest.raises(ValueError):
++        get_truncate_datetime('blah')
++
+ def get_truncate_datetime(truncate_datetime):
+-    """
+-    Validates truncate_datetime value
+-    """
+-    if truncate_datetime not in {None, 'second', 'minute', 'hour', 'day'}:
+-        raise ValueError("truncate_datetime must be second, minute, hour or day")
++    valid_values = {'second', 'minute', 'hour', 'day'}
++    if truncate_datetime not in valid_values:
++        raise ValueError(f"truncate_datetime must be one of {valid_values}, got {truncate_datetime!r}")
+     return truncate_datetime
+ 
+ 

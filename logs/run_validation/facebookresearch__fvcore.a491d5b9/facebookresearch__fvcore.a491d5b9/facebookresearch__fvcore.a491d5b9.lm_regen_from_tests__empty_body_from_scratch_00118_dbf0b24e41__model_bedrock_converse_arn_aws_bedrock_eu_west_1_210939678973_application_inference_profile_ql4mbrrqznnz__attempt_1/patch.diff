@@ -1,0 +1,51 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -22,7 +22,7 @@
+ Handle = Callable[[List[Any], List[Any]], Union[typing.Counter[str], Number]]
+ 
+ 
+-def get_shape(val: Any) -> Optional[List[int]]:
++def get_shape(val: Any) ->Optional[List[int]]:
+     """
+     Get the shapes from a jit value object.
+ 
+@@ -32,9 +32,36 @@
+     Returns:
+         list(int): return a list of ints.
+     """
+-    if val.isCompleteTensor():
+-        return val.type().sizes()
+-    else:
++    if val is None:
++        return None
++    try:
++        if val.isCompleteTensor():
++            return val.type().sizes()
++        else:
++            return None
++    except Exception:
++        try:
++            return list(val.type().sizes())
++        except Exception:
++            return None
++
++def get_shape(val: Any) ->Optional[List[int]]:
++    """
++    Get the shapes from a jit value object.
++
++    Args:
++        val (torch._C.Value): jit value object.
++
++    Returns:
++        list(int): return a list of ints.
++    """
++    if val is None:
++        return None
++    try:
++        if val.isCompleteTensor():
++            return val.type().sizes()
++        return None
++    except Exception:
+         return None
+ 
+ 

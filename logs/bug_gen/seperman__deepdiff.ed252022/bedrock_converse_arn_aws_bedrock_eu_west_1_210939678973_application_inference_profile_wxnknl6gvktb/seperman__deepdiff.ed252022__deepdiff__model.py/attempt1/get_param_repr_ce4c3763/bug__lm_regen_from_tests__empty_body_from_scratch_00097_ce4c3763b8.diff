@@ -1,0 +1,27 @@
+--- a/deepdiff/model.py
++++ b/deepdiff/model.py
+@@ -956,13 +956,23 @@
+     def get_param_repr(self, force=None):
+         if force == 'yes':
+             result = "(unrepresentable)"
+-        elif force == 'fake' and self.param:
++        elif force == 'fake' and self.param is not None:
+             result = self.stringify_param()
+         else:
+             result = None
+ 
+         return result
+ 
++    def get_param_repr(self, force=None):
++        if force == 'yes':
++            result = "(unrepresentable)"
++        elif force == 'fake' and self.param is not None:
++            result = self.stringify_param()
++        else:
++            result = None
++
++        return result
++
+ 
+ class AttributeRelationship(ChildRelationship):
+     param_repr_format = ".{}"

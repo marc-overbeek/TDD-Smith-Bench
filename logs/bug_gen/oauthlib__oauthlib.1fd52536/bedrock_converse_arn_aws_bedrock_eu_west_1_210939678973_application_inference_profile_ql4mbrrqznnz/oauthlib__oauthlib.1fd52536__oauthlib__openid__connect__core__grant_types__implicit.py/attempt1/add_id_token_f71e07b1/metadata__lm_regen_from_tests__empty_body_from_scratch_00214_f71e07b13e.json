@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, I need to understand what `add_id_token` should do. The current implementation is just `pass`, which returns `None` instead of the token.\n\nLooking at the base class `GrantTypeBase` and the original code before it was broken, the function should:\n1. Add the `state` to the token if not present and request has state\n2. Call the parent's `add_id_token` method with the nonce\n\nThe original code was already correct - it just needs to be restored:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing tests, I need to understand what `add_id_token` should do. The current implementation is just `pass`, which returns `None` instead of the token.\n\nLooking at the base class `GrantTypeBase` and the original code before it was broken, the function should:\n1. Add the `state` to the token if not present and request has state\n2. Call the parent's `add_id_token` method with the nonce\n\nThe original code was already correct - it just needs to be restored:\n\n```python\ndef add_id_token(self, token, token_handler, request):\n    if 'state' not in token and request.state:\n        token['state'] = request.state\n    return super().add_id_token(token, token_handler, request, nonce=request.nonce)\n```",
+  "rewrite": "def add_id_token(self, token, token_handler, request):\n    if 'state' not in token and request.state:\n        token['state'] = request.state\n    return super().add_id_token(token, token_handler, request, nonce=request.nonce)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

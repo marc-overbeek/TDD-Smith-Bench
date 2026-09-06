@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef get_shape(val: Any) ->Optional[List[int]]:\n    if hasattr(val, 'type') and callable(val.type):\n        try:\n            return val.type().sizes()\n        except Exception:\n            return None\n    return None\n```\n\n```\ndef linear_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:\n    output_size = get_shape(outputs[0])\n    assert output_size is not None\n    output_dim = output_size[-1]\n    input_size = get_shape(inputs[0])\n    assert input_size is not None\n    input_dim = input_size[-1]\n    batch_size = prod(output_size[:-1])\n    flops = batch_size * input_dim * output_dim\n    return flops\n```",
+  "rewrite": "def get_shape(val: Any) ->Optional[List[int]]:\n    if hasattr(val, 'type') and callable(val.type):\n        try:\n            return val.type().sizes()\n        except Exception:\n            return None\n    return None\n\ndef linear_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:\n    output_size = get_shape(outputs[0])\n    assert output_size is not None\n    output_dim = output_size[-1]\n    input_size = get_shape(inputs[0])\n    assert input_size is not None\n    input_dim = input_size[-1]\n    batch_size = prod(output_size[:-1])\n    flops = batch_size * input_dim * output_dim\n    return flops",
+  "strategy": "lm_regen_from_tests_combined"
+}

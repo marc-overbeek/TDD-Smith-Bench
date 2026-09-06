@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef _set_attributes(self, params: Optional[List[Any]] = None) -> None:\n    if params:\n        for k, v in params.items():\n            if k != \"self\" and not k.startswith(\"_\"):\n                setattr(self, k, v)\n```\n\n```python\ndef __init__(self, width: int):\n    super().__init__()\n    self._set_attributes(locals())\n```\n\n```python\ndef apply_coords(self, coords: np.ndarray) -> np.ndarray:\n    coords[:, 0] = self.width - coords[:, 0]\n    return coords\n```\n\n```python\ndef inverse(self) -> Transform:\n    return self\n```",
+  "rewrite": "def _set_attributes(self, params: Optional[List[Any]] = None) -> None:\n    if params:\n        for k, v in params.items():\n            if k != \"self\" and not k.startswith(\"_\"):\n                setattr(self, k, v)\n\ndef __init__(self, width: int):\n    super().__init__()\n    self._set_attributes(locals())\n\ndef apply_coords(self, coords: np.ndarray) -> np.ndarray:\n    coords[:, 0] = self.width - coords[:, 0]\n    return coords\n\ndef inverse(self) -> Transform:\n    return self",
+  "strategy": "lm_regen_from_tests_combined"
+}

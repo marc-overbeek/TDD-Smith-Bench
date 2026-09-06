@@ -1,0 +1,16 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1980,7 +1980,12 @@
+         self.steps = steps
+ 
+     def glomit(self, target, scope):
+-        return _handle_tuple(target, self.steps, scope)
++        if type(self) is TType:  # must go first, due to callability
++            return _t_eval(target, self, scope)
++        elif _has_callable_glomit(self):
++            return self.glomit(target, scope)
++        else:
++            return AUTO(target, self, scope)
+ 
+     def __repr__(self):
+         return self.__class__.__name__ + bbrepr(self.steps)

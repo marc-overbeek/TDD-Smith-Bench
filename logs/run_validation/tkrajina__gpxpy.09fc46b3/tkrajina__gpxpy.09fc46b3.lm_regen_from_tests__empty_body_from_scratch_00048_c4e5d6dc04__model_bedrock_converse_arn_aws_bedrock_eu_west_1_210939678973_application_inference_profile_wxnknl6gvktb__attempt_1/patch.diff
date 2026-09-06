@@ -1,0 +1,23 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -72,7 +72,19 @@
+         return self.__class__(self.tzname(None))
+ 
+     def __repr__(self) -> str:
+-        return f'SimpleTZ({self.tzname(None)!r})'
++        return f'{self.__class__.__name__}()'
++
++    def __repr__(self) -> str:
++        return f'<{self.__class__.__name__} object at {id(self):#x}>'
++
++    def __repr__(self) -> str:
++        return object.__repr__(self)
++
++    def __repr__(self) -> str:
++        return f'{self.__class__.__module__}.{self.__class__.__name__} object at {hex(id(self))}'
++
++    def __repr__(self) -> str:
++        return object.__repr__(self)
+ 
+     def __eq__(self, other: Any) -> bool:
+         return self.offset == other.offset # type: ignore

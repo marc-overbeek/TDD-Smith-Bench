@@ -1,0 +1,63 @@
+--- a/fvcore/nn/flop_count.py
++++ b/fvcore/nn/flop_count.py
+@@ -118,34 +118,33 @@
+     __init__.__doc__ = JitModelAnalysis.__init__.__doc__
+ 
+ 
+-def flop_count(
+-    model: nn.Module,
+-    inputs: Tuple[Any, ...],
+-    supported_ops: Optional[Dict[str, Handle]] = None,
+-) -> Tuple[DefaultDict[str, float], Counter[str]]:
++def flop_count(model: nn.Module, inputs: Tuple[Any, ...], supported_ops:
++    Optional[Dict[str, Handle]]=None) ->Tuple[DefaultDict[str, float],
++    Counter[str]]:
+     """
+-    Given a model and an input to the model, compute the per-operator Gflops
+-    of the given model.
+-
++    Compute FLOPs for a model.
++    
+     Args:
+-        model (nn.Module): The model to compute flop counts.
+-        inputs (tuple): Inputs that are passed to `model` to count flops.
+-            Inputs need to be in a tuple.
+-        supported_ops (dict(str,Callable) or None) : provide additional
+-            handlers for extra ops, or overwrite the existing handlers for
+-            convolution and matmul and einsum. The key is operator name and the value
+-            is a function that takes (inputs, outputs) of the op. We count
+-            one Multiply-Add as one FLOP.
+-
++        model: The model to analyze
++        inputs: Input tuple for the model
++        supported_ops: Optional dictionary mapping operation names to their flop count handlers
++        
+     Returns:
+-        tuple[defaultdict, Counter]: A dictionary that records the number of
+-            gflops for each operation and a Counter that records the number of
+-            unsupported operations.
++        A tuple of (flop_dict, skip_dict) where:
++        - flop_dict is a DefaultDict mapping operation names to their flop counts (in billions)
++        - skip_dict is a Counter of operations that were skipped
+     """
+-    if supported_ops is None:
+-        supported_ops = {}
+-    flop_counter = FlopCountAnalysis(model, inputs).set_op_handle(**supported_ops)
+-    giga_flops = defaultdict(float)
+-    for op, flop in flop_counter.by_operator().items():
+-        giga_flops[op] = flop / 1e9
+-    return giga_flops, flop_counter.unsupported_ops()
++    flop_counter = FlopCountAnalysis(model, inputs)
++    
++    if supported_ops is not None:
++        for op_name, handle in supported_ops.items():
++            flop_counter.set_op_handle(op_name, handle)
++    
++    flop_dict = defaultdict(float)
++    by_op = flop_counter.by_operator()
++    for op_name, flop_count_val in by_op.items():
++        flop_dict[op_name] = flop_count_val / 1e9
++    
++    skip_dict = flop_counter.unsupported_ops()
++    
++    return flop_dict, skip_dict

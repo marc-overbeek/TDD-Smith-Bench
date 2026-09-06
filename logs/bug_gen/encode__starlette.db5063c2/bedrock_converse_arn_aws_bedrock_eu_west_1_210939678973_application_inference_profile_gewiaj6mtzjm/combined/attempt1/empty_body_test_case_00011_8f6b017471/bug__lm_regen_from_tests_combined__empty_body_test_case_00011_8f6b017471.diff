@@ -1,0 +1,88 @@
+--- a/starlette/middleware/wsgi.py
++++ b/starlette/middleware/wsgi.py
+@@ -85,13 +85,13 @@
+     stream_receive: ObjectReceiveStream[typing.MutableMapping[str, typing.Any]]
+ 
+     def __init__(self, app: typing.Callable[..., typing.Any], scope: Scope) -> None:
+-        self.app = app
+-        self.scope = scope
+-        self.status = None
+-        self.response_headers = None
+-        self.stream_send, self.stream_receive = anyio.create_memory_object_stream(math.inf)
+-        self.response_started = False
+-        self.exc_info: typing.Any = None
++            self.app = app
++            self.scope = scope
++            self.status = None
++            self.response_headers = None
++            self.stream_send, self.stream_receive = anyio.create_memory_object_stream(math.inf)
++            self.response_started = False
++            self.exc_info: typing.Any = None
+ 
+     async def __call__(self, receive: Receive, send: Send) -> None:
+         body = b""
+@@ -114,39 +114,30 @@
+             async for message in self.stream_receive:
+                 await send(message)
+ 
+-    def start_response(
+-        self,
+-        status: str,
+-        response_headers: list[tuple[str, str]],
+-        exc_info: typing.Any = None,
+-    ) -> None:
+-        self.exc_info = exc_info
+-        if not self.response_started:
+-            self.response_started = True
+-            status_code_string, _ = status.split(" ", 1)
+-            status_code = int(status_code_string)
+-            headers = [
+-                (name.strip().encode("ascii").lower(), value.strip().encode("ascii"))
+-                for name, value in response_headers
+-            ]
+-            anyio.from_thread.run(
+-                self.stream_send.send,
+-                {
+-                    "type": "http.response.start",
+-                    "status": status_code,
+-                    "headers": headers,
+-                },
+-            )
++    def start_response(self, status: str, response_headers: list[tuple[str, str]], exc_info: typing.Any=None) -> None:
++            self.exc_info = exc_info
++            if not self.response_started:
++                self.response_started = True
++                status_code_string, _ = status.split(" ", 1)
++                status_code = int(status_code_string)
++                headers = [
++                    (name.strip().encode("ascii").lower(), value.strip().encode("ascii"))
++                    for name, value in response_headers
++                ]
++                anyio.from_thread.run(
++                    self.stream_send.send,
++                    {
++                        "type": "http.response.start",
++                        "status": status_code,
++                        "headers": headers,
++                    },
++                )
+ 
+-    def wsgi(
+-        self,
+-        environ: dict[str, typing.Any],
+-        start_response: typing.Callable[..., typing.Any],
+-    ) -> None:
+-        for chunk in self.app(environ, start_response):
+-            anyio.from_thread.run(
+-                self.stream_send.send,
+-                {"type": "http.response.body", "body": chunk, "more_body": True},
+-            )
++    def wsgi(self, environ: dict[str, typing.Any], start_response: typing.Callable[..., typing.Any]) -> None:
++            for chunk in self.app(environ, start_response):
++                anyio.from_thread.run(
++                    self.stream_send.send,
++                    {"type": "http.response.body", "body": chunk, "more_body": True},
++                )
+ 
+-        anyio.from_thread.run(self.stream_send.send, {"type": "http.response.body", "body": b""})
++            anyio.from_thread.run(self.stream_send.send, {"type": "http.response.body", "body": b""})

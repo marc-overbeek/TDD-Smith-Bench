@@ -1,0 +1,45 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -320,29 +320,19 @@
+ 
+ 
+ def merge(target, **kwargs):
+-    """By default, ``merge()`` turns an iterable of mappings into a
+-    single, merged :class:`dict`, leveraging the behavior of the
+-    :meth:`~dict.update` method. A new mapping is created and none of
+-    the passed mappings are modified.
+-
+-    >>> target = [{'a': 'alpha'}, {'b': 'B'}, {'a': 'A'}]
+-    >>> res = merge(target)
+-    >>> pprint(res)
+-    {'a': 'A', 'b': 'B'}
+-
++    """Merge an iterable of mappings into a single dict.
++    
+     Args:
+-       target: The list of dicts, or some other iterable of mappings.
+-
+-    The start state can be customized with the *init* keyword
+-    argument, as well as the update operation, with the *op* keyword
+-    argument. For more on those customizations, see the :class:`Merge`
+-    spec.
+-
+-    """
+-    subspec = kwargs.pop('spec', T)
+-    init = kwargs.pop('init', dict)
+-    op = kwargs.pop('op', None)
++        target: An iterable of mappings to merge.
++        **kwargs: Additional keyword arguments are not supported.
++    
++    Returns:
++        A single merged dictionary.
++    
++    Raises:
++        TypeError: If unexpected keyword arguments are provided.
++    """
+     if kwargs:
+         raise TypeError('unexpected keyword args: %r' % sorted(kwargs.keys()))
+-    spec = Merge(subspec, init, op)
+-    return glom(target, spec)
++    
++    return glom(target, Merge())

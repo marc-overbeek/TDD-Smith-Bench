@@ -1,0 +1,47 @@
+--- a/safety/models.py
++++ b/safety/models.py
+@@ -52,17 +52,8 @@
+     """
+     A subclass of Requirement that includes additional attributes and methods for safety requirements.
+     """
+-    def __init__(self, requirement: Union[str, Dependency], found: Optional[str] = None) -> None:
+-        """
+-        Initialize a SafetyRequirement.
+-
+-        Args:
+-            requirement (Union[str, Dependency]): The requirement as a string or Dependency object.
+-            found (Optional[str], optional): Where the requirement was found. Defaults to None.
+-
+-        Raises:
+-            InvalidRequirementError: If the requirement cannot be parsed.
+-        """
++    def __init__(self, requirement: Union[str, Dependency], found: Optional[str
++        ]=None) ->None:
+         dep = requirement
+ 
+         if isinstance(requirement, str):
+@@ -74,7 +65,6 @@
+ 
+         raw_line = dep.line
+         to_parse = dep.line
+-        # Hash and comments are only a pip feature, so removing them.
+         if '#' in to_parse:
+             to_parse = dep.line.split('#')[0]
+ 
+@@ -84,7 +74,6 @@
+         to_parse = to_parse.replace('\\', '').rstrip()
+ 
+         try:
+-            # Try to build a PEP Requirement from the cleaned line
+             super(SafetyRequirement, self).__init__(to_parse)
+         except Exception:
+             raise InvalidRequirementError(line=requirement.line if isinstance(requirement, Dependency) else requirement)
+@@ -92,7 +81,7 @@
+         self.raw = raw_line
+         self.found = found
+ 
+-    def __eq__(self, other: Any) -> bool:
++    def __eq__(self, other: Any) ->bool:
+         return str(self) == str(other)
+ 
+     def to_dict(self, **kwargs: Any) -> Dict:

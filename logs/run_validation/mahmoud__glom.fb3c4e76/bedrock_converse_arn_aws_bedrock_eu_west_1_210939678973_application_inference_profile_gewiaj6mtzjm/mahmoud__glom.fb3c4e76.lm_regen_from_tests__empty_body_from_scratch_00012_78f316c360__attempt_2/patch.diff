@@ -1,0 +1,39 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1673,28 +1673,14 @@
+ 
+ 
+ def _extend_children(children, item, get_handler):
+-    try:  # dict or obj-like
+-        keys = get_handler('keys', item)
+-        get = get_handler('get', item)
+-    except UnregisteredTarget:
+-        try:
+-            iterate = get_handler('iterate', item)
+-        except UnregisteredTarget:
+-            pass
+-        else:
+-            try:  # list-like
+-                children.extend(iterate(item))
+-            except Exception:
+-                pass
+-    else:
+-        try:
+-            for key in keys(item):
+-                try:
+-                    children.append(get(item, key))
+-                except Exception:
+-                    pass
+-        except Exception:
+-            pass
++    try:
++        iterate = get_handler('iterate', item)
++        if iterate is not False and iterate is not None:
++            children.extend(iterate(item))
++    except Exception:
++        # Silently ignore iteration errors to allow star patterns to work
++        # when some items in a collection aren't iterable
++        pass
+ 
+ 
+ T = TType()  # target aka Mr. T aka "this"

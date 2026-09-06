@@ -1,0 +1,113 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -213,28 +213,6 @@
+         return dict(self._get_view_results(view))
+ 
+     def _to_delta_dict(self, directed=True, report_repetition_required=True, always_include_values=False):
+-        """
+-        Dump to a dictionary suitable for delta usage.
+-        Unlike to_dict, this is not dependent on the original view that the user chose to create the diff.
+-
+-        **Parameters**
+-
+-        directed : Boolean, default=True, whether to create a directional delta dictionary or a symmetrical
+-
+-        Note that in the current implementation the symmetrical delta (non-directional) is ONLY used for verifying that
+-        the delta is being applied to the exact same values as what was used to generate the delta and has
+-        no other usages.
+-
+-        If this option is set as True, then the dictionary will not have the "old_value" in the output.
+-        Otherwise it will have the "old_value". "old_value" is the value of the item in t1.
+-
+-        If delta = Delta(DeepDiff(t1, t2)) then
+-        t1 + delta == t2
+-
+-        Note that it the items in t1 + delta might have slightly different order of items than t2 if ignore_order
+-        was set to be True in the diff object.
+-
+-        """
+         if self.group_by is not None:
+             raise ValueError(DELTA_ERROR_WHEN_GROUP_BY)
+ 
+@@ -271,8 +249,6 @@
+                         if isinstance(value, Mapping) and 'old_value' in value:
+                             del value['old_value']
+         if self._numpy_paths:
+-            # Note that keys that start with '_' are considered internal to DeepDiff
+-            # and will be omitted when counting distance. (Look inside the distance module.)
+             result['_numpy_paths'] = self._numpy_paths
+ 
+         if self.iterable_compare_func:
+@@ -349,63 +325,19 @@
+ 
+ 
+ def pickle_dump(obj, file_obj=None, protocol=4):
+-    """
+-    **pickle_dump**
+-    Dumps the obj into pickled content.
+-
+-    **Parameters**
+-
+-    obj : Any python object
+-
+-    file_obj : (Optional) A file object to dump the contents into
+-
+-    **Returns**
+-
+-    If file_obj is passed the return value will be None. It will write the object's pickle contents into the file.
+-    However if no file_obj is passed, then it will return the pickle serialization of the obj in the form of bytes.
+-    """
+-    file_obj_passed = bool(file_obj)
+-    file_obj = file_obj or io.BytesIO()
+-    _RestrictedPickler(file_obj, protocol=protocol, fix_imports=False).dump(obj)
+-    if not file_obj_passed:
+-        return file_obj.getvalue()
++    pickler = _RestrictedPickler(file_obj, protocol=protocol)
++    pickler.dump(obj)
++    if file_obj is None:
++        return pickler.file.getvalue()
+ 
+ 
+ def pickle_load(content=None, file_obj=None, safe_to_import=None):
+-    """
+-    **pickle_load**
+-    Load the pickled content. content should be a bytes object.
+-
+-    **Parameters**
+-
+-    content : Bytes of pickled object. 
+-
+-    file_obj : A file object to load the content from
+-
+-    safe_to_import : A set of modules that needs to be explicitly allowed to be loaded.
+-        Example: {'mymodule.MyClass', 'decimal.Decimal'}
+-        Note that this set will be added to the basic set of modules that are already allowed.
+-        The set of what is already allowed can be found in deepdiff.serialization.SAFE_TO_IMPORT
+-
+-    **Returns**
+-
+-        A delta object that can be added to t1 to recreate t2.
+-
+-    **Examples**
+-
+-    Importing
+-        >>> from deepdiff import DeepDiff, Delta
+-        >>> from pprint import pprint
+-
+-
+-    """
+-    if not content and not file_obj:
+-        raise ValueError('Please either pass the content or the file_obj to pickle_load.') 
+-    if isinstance(content, str):
+-        content = content.encode('utf-8')
+-    if content:
++    if file_obj is None:
++        if isinstance(content, str):
++            content = content.encode('utf-8')
+         file_obj = io.BytesIO(content)
+-    return _RestrictedUnpickler(file_obj, safe_to_import=safe_to_import).load()
++    unpickler = _RestrictedUnpickler(file_obj, safe_to_import=safe_to_import)
++    return unpickler.load()
+ 
+ 
+ def _get_pretty_form_text(verbose_level):

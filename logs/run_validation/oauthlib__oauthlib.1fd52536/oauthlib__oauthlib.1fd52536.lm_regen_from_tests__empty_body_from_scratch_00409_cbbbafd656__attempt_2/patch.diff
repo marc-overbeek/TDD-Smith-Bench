@@ -1,0 +1,87 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/authorization.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/authorization.py
+@@ -101,14 +101,75 @@
+             request, self.default_token_type)
+ 
+     @catch_errors_and_unavailability
+-    def validate_authorization_request(self, uri, http_method='GET', body=None,
+-                                       headers=None):
+-        """Extract response_type and route to the designated handler."""
+-        request = Request(
+-            uri, http_method=http_method, body=body, headers=headers)
++    @catch_errors_and_unavailability
++        def validate_authorization_request(self, uri, http_method='GET', body=None,
++                                           headers=None):
++            """Extract response_type and route to the designated handler."""
++            request = Request(
++                uri, http_method=http_method, body=body, headers=headers)
+ 
+-        request.scopes = utils.scope_to_list(request.scope)
++            # Validate request parameters
++            if not request.client_id:
++                raise errors.MissingClientIdError()
++        
++            if not request.response_type:
++                raise errors.MissingResponseTypeError()
++            
++            if not request.redirect_uri:
++                # Check if default redirect URI is available
++                default_redirect_uri = self.validator.get_default_redirect_uri(
++                    request.client_id)
++                if not default_redirect_uri:
++                    raise errors.MissingRedirectURIError()
++                request.redirect_uri = default_redirect_uri
++            
++            # Validate client ID
++            if not self.validator.validate_client_id(request.client_id):
++                raise errors.InvalidClientIdError()
++            
++            # Validate redirect URI
++            if not self.validator.validate_redirect_uri(
++                    request.client_id, request.redirect_uri):
++                raise errors.InvalidRedirectURIError()
++            
++            # Validate scopes
++            if not self.validator.validate_scopes(
++                    request.client_id, request.scopes, request.response_type):
++                raise errors.InvalidScopeError()
++            
++            # Validate grant type
++            if not self.validator.validate_grant_type(
++                    request.client_id, request.response_type):
++                raise errors.UnauthorizedClientError()
++            
++            # Validate response type
++            if not self.validator.validate_response_type(
++                    request.client_id, request.response_type):
++                raise errors.UnsupportedResponseTypeError()
++            
++            # Validate that prompt=none is not used with other prompt values
++            if request.prompt and 'none' in request.prompt:
++                if len(request.prompt) > 1:
++                    raise errors.InvalidRequestError(
++                        "prompt=none cannot be combined with other prompt values")
++                
++            # Validate that there are no duplicate parameters
++            if 'client_id' in request.uri and request.uri.count('client_id') > 1:
++                raise errors.InvalidRequestFatalError(
++                    "Duplicate client_id parameter.")
++            
++            # Validate that there are no empty parameters
++            if not request.client_id or request.client_id.strip() == '':
++                raise errors.InvalidRequestFatalError(
++                    "Empty client_id parameter.")
++                
++            # Validate that there are no empty redirect_uri parameters
++            if not request.redirect_uri or request.redirect_uri.strip() == '':
++                raise errors.InvalidRequestFatalError(
++                    "Empty redirect_uri parameter.")
+ 
+-        response_type_handler = self.response_types.get(
+-            request.response_type, self.default_response_type_handler)
+-        return response_type_handler.validate_authorization_request(request)
++            request.scopes = utils.scope_to_list(request.scope)
++
++            response_type_handler = self.response_types.get(
++                request.response_type, self.default_response_type_handler)
++            return response_type_handler.validate_authorization_request(request)

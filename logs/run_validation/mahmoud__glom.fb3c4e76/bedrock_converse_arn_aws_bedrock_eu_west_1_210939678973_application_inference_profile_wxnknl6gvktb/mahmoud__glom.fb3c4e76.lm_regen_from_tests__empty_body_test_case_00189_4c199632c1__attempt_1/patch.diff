@@ -1,0 +1,88 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -58,11 +58,9 @@
+     def __init__(self, subspec=T, **kwargs):
+         self.subspec = subspec
+         self._iter_stack = kwargs.pop('_iter_stack', [])
+-
+         self.sentinel = kwargs.pop('sentinel', STOP)
+         if kwargs:
+             raise TypeError('unexpected keyword arguments: %r' % sorted(kwargs))
+-        return
+ 
+     def __repr__(self):
+         base_args = ()
+@@ -84,10 +82,8 @@
+ 
+     def glomit(self, target, scope):
+         iterator = self._iterate(target, scope)
+-
+         for _, _, callback in reversed(self._iter_stack):
+             iterator = callback(iterator, scope)
+-
+         return iter(iterator)
+ 
+     def _iterate(self, target, scope):
+@@ -97,7 +93,6 @@
+         except Exception as e:
+             raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+                             % (target.__class__.__name__, Path(*scope[Path]), e))
+-
+         base_path = scope[Path]
+         for i, t in enumerate(iterator):
+             scope[Path] = base_path + [i]
+@@ -105,12 +100,8 @@
+             if yld is SKIP:
+                 continue
+             elif yld is self.sentinel or yld is STOP:
+-                # NB: sentinel defaults to STOP so I was torn whether
+-                # to also check for STOP, and landed on the side of
+-                # never letting STOP through.
+                 return
+             yield yld
+-        return
+ 
+     def _add_op(self, opname, args, callback):
+         return type(self)(subspec=self.subspec, _iter_stack=[(opname, args, callback)] + self._iter_stack)
+@@ -279,20 +270,9 @@
+         return self._add_op('slice', args, lambda it, scope: islice(it, *args))
+ 
+     def limit(self, count):
+-        """A convenient alias for :meth:`~Iter.slice`, which takes a single
+-        argument, *count*, the max number of items to yield.
+-        """
+         return self._add_op('limit', (count,), lambda it, scope: islice(it, count))
+ 
+     def takewhile(self, key=T):
+-        """Returns a new :class:`Iter()` spec which stops the stream once
+-        *key* becomes falsy.
+-
+-        >>> glom([3, 2, 0, 1], Iter().takewhile().all())
+-        [3, 2]
+-
+-        :func:`itertools.takewhile` for more details.
+-        """
+         return self._add_op(
+             'takewhile',
+             (key,),
+@@ -300,20 +280,6 @@
+                 lambda t: scope[glom](t, key, scope), it))
+ 
+     def dropwhile(self, key=T):
+-        """Returns a new :class:`Iter()` spec which drops stream items until
+-        *key* becomes falsy.
+-
+-        >>> glom([0, 0, 3, 2, 0], Iter().dropwhile(lambda t: t < 1).all())
+-        [3, 2, 0]
+-
+-        Note that while similar to :meth:`Iter.filter()`, the filter
+-        only applies to the beginning of the stream. In a way,
+-        :meth:`Iter.dropwhile` can be thought of as
+-        :meth:`~str.lstrip()` for streams. See
+-        :func:`itertools.dropwhile` for more details.
+-
+-        """
+-
+         return self._add_op(
+             'dropwhile',
+             (key,),

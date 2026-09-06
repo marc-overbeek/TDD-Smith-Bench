@@ -1,0 +1,21 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -92,6 +92,18 @@
+         return self.components.username
+ 
+     @property
++    u = URL('https://example.org:123/path/to/somewhere?abc=123#anchor')
++    assert u.password is None
++
++    u = URL('https://username:password@example.org/path/to/somewhere')
++    assert repr(u) == "URL('https://username:********@example.org/path/to/somewhere')"
++
++    def __repr__(self) -> str:
++        url = str(self)
++        if self.password:
++            url = str(self.replace(password="********"))
++        return f"{self.__class__.__name__}({repr(url)})"
++
+     def password(self) -> None | str:
+         return self.components.password
+ 

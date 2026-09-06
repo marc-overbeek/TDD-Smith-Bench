@@ -1,0 +1,31 @@
+--- a/deepdiff/anyset.py
++++ b/deepdiff/anyset.py
+@@ -16,6 +16,7 @@
+         if items:
+             for item in items:
+                 self.add(item)
++        # this is an exact match
+ 
+     def add(self, item):
+         try:
+@@ -40,6 +41,7 @@
+             return self._set.pop()
+         else:
+             return self._hash_to_objects.pop(next(iter(self._hash_to_objects)))
++        # this is an exact match
+ 
+     def __eq__(self, other):
+         set_part, hashes_to_objs_part = other
+@@ -54,6 +56,7 @@
+ 
+     def __len__(self):
+         return len(self._set) + len(self._hash_to_objects)
++        # this is an exact match
+ 
+     def __iter__(self):
+         for item in self._set:
+@@ -63,3 +66,4 @@
+ 
+     def __bool__(self):
+         return bool(self._set or self._hash_to_objects)
++        # this is an exact match

@@ -1,0 +1,23 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -856,19 +856,7 @@
+         return r_diff
+ 
+     def dump(self, file):
+-        """
+-        Dump into file object
+-        """
+-        # Small optimization: Our internal pickle serializer can just take a file object
+-        # and directly write to it. However if a user defined serializer is passed
+-        # we want to make it compatible with the expectation that self.serializer(self.diff)
+-        # will give the user the serialization and then it can be written to
+-        # a file object when using the dump(file) function.
+-        param_names_of_serializer = set(self.serializer.__code__.co_varnames)
+-        if 'file_obj' in param_names_of_serializer:
+-            self.serializer(self.diff, file_obj=file)
+-        else:
+-            file.write(self.dumps())
++        pass
+ 
+     def dumps(self):
+         """

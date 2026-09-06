@@ -1,0 +1,53 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -101,18 +101,38 @@
+     return getattr(endpoint, "__name__", endpoint.__class__.__name__)
+ 
+ 
+-def replace_params(
+-    path: str,
+-    param_convertors: dict[str, Convertor[typing.Any]],
+-    path_params: dict[str, str],
+-) -> tuple[str, dict[str, str]]:
+-    for key, value in list(path_params.items()):
+-        if "{" + key + "}" in path:
+-            convertor = param_convertors[key]
+-            value = convertor.to_string(value)
+-            path = path.replace("{" + key + "}", value)
+-            path_params.pop(key)
+-    return path, path_params
++def replace_params(path: str, param_convertors: dict[str, Convertor[typing.Any]], path_params: dict[str, str]) -> tuple[str, dict[str, str]]:
++    remaining_params = dict(path_params)
++    
++    def replace_func(match: typing.Match[str]) -> str:
++        param_name = match.group(1)
++        if param_name in param_convertors:
++            value = remaining_params.pop(param_name, None)
++            if value is None:
++                raise AssertionError(f"Missing required path parameter: {param_name}")
++            convertor = param_convertors[param_name]
++            # Use the convertor's to_string method to convert the value
++            return convertor.to_string(value)
++        return match.group(0)
++    
++    formatted_path = PARAM_REGEX.sub(replace_func, path)
++    return formatted_path, remaining_params
++
++def replace_params(path: str, param_convertors: dict[str, Convertor[typing.Any]], path_params: dict[str, str]) -> tuple[str, dict[str, str]]:
++    remaining_params = dict(path_params)
++    
++    def replace_func(match: typing.Match[str]) -> str:
++        param_name = match.group(1)
++        if param_name in param_convertors:
++            value = remaining_params.pop(param_name, None)
++            if value is None:
++                raise AssertionError(f"Missing required path parameter: {param_name}")
++            convertor = param_convertors[param_name]
++            return convertor.to_string(value)
++        return match.group(0)
++    
++    formatted_path = PARAM_REGEX.sub(replace_func, path)
++    return formatted_path, remaining_params
+ 
+ 
+ # Match parameters in URL paths, eg. '{param}', and '{param:int}'

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing test, I can see that:\n\n1. The test mocks `generate_token` to return `'abc'` then `'def'`\n2. It expects the response body to contain `'expires_in': 1800`\n3. The `DeviceAuthorizationEndpoint` is initialized with `expires_in=1800` (default value)\n\nThe issue is that the `expires_in` property currently just has `pass` as its body, so it returns `None`. Looking at the `__init__` method, I can see that `expires_in` is stored as `self._expires_in`.\n\nThe property should return `self._expires_in`:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "Looking at the failing test, I can see that:\n\n1. The test mocks `generate_token` to return `'abc'` then `'def'`\n2. It expects the response body to contain `'expires_in': 1800`\n3. The `DeviceAuthorizationEndpoint` is initialized with `expires_in=1800` (default value)\n\nThe issue is that the `expires_in` property currently just has `pass` as its body, so it returns `None`. Looking at the `__init__` method, I can see that `expires_in` is stored as `self._expires_in`.\n\nThe property should return `self._expires_in`:\n\n```python\n@property\ndef expires_in(self):\n    \"\"\"The lifetime in seconds of the \"device_code\" and \"user_code\".\"\"\"\n    return self._expires_in\n```",
+  "rewrite": "@property\ndef expires_in(self):\n    \"\"\"The lifetime in seconds of the \"device_code\" and \"user_code\".\"\"\"\n    return self._expires_in",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,52 @@
+--- a/safety/scan/render.py
++++ b/safety/scan/render.py
+@@ -60,27 +60,28 @@
+     console.print(render_header(targets, is_system_scan), markup=True)
+ 
+ def print_announcements(console: Console, ctx: typer.Context):
+-    """
+-    Print announcements from Safety.
+-
+-    Args:
+-        console (Console): The console for output.
+-        ctx (typer.Context): The context of the Typer command.
+-    """
+-    colors = {"error": "red", "warning": "yellow", "info": "default"}
+-
+-    announcements = safety.get_announcements(ctx.obj.auth.client,
+-                                             telemetry=ctx.obj.config.telemetry_enabled,
+-                                             with_telemetry=ctx.obj.telemetry)
+-    basic_announcements = get_basic_announcements(announcements, False)
+-
+-    if any(basic_announcements):
+-        console.print()
+-        console.print("[bold]Safety Announcements:[/bold]")
+-        console.print()
+-        for announcement in announcements:
+-            color = colors.get(announcement.get('type', "info"), "default")
+-            console.print(f"[{color}]* {announcement.get('message')}[/{color}]")
++    from safety.scan.render import get_announcements
++    
++    announcements = get_announcements(ctx)
++    basic_announcements = get_basic_announcements(announcements)
++    
++    if not basic_announcements:
++        return
++        
++    console.print()
++    console.print("[bold]Safety Announcements:[/bold]")
++    console.print()
++    
++    for announcement in basic_announcements:
++        message = announcement['message']
++        ann_type = announcement['type']
++        
++        if ann_type == 'info':
++            console.print(f"[default]* {message}[/default]")
++        elif ann_type == 'warning':
++            console.print(f"[yellow]* {message}[/yellow]")
++        elif ann_type == 'error':
++            console.print(f"[red]* {message}[/red]")
+ 
+ def print_detected_ecosystems_section(console: Console, file_paths: Dict[str, Set[Path]], include_safety_prjs: bool = True) -> None:
+     """

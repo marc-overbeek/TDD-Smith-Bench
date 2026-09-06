@@ -1,0 +1,16 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -547,6 +547,13 @@
+             result, counts = self._prep_tuple(obj=obj, parent=parent, parents_ids=parents_ids)
+ 
+         elif (pandas and isinstance(obj, pandas.DataFrame)):
++            elif (pandas and isinstance(obj, pandas.DataFrame)):
++                def gen():
++                    yield ('dtype', obj.dtypes)
++                    yield ('index', obj.index)
++                    yield from obj.items()  # which contains (column name, series tuples)
++                result, counts = self._prep_iterable(obj=gen(), parent=parent, parents_ids=parents_ids)
++
+             def gen():
+                 yield ('dtype', obj.dtypes)
+                 yield ('index', obj.index)

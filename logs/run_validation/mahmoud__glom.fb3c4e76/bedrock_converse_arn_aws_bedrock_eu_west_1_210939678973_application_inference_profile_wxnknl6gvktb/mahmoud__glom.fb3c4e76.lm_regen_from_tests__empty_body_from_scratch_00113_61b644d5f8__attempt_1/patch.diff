@@ -1,0 +1,16 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1831,7 +1831,12 @@
+         self.base = base
+         self.defaults = kw
+ 
+-    def glomit(self, target, spec):
++    let = S(v=Vars({'b': 2}, c=3))
++
++    scope.update({
++        k: arg_val(target, v, scope) for k, v in kwargs.items()})
++
++    def glomit(self, target, scope):
+         return ScopeVars(self.base, self.defaults)
+ 
+     def __repr__(self):

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef move_forward(self, cache_node, freq_node):\n    if freq_node.nxt is None or freq_node.nxt.freq != freq_node.freq + 1:\n        target_freq_node = FreqNode(freq_node.freq + 1, None, None)\n        target_empty = True\n    else:\n        target_freq_node = freq_node.nxt\n        target_empty = False\n\n    cache_node.free_myself()\n    target_freq_node.append_cache_to_tail(cache_node)\n\n    if target_empty:\n        freq_node.insert_after_me(target_freq_node)\n\n    if freq_node.count_caches() == 0:\n        if self.freq_link_head == freq_node:\n            self.freq_link_head = target_freq_node\n\n        freq_node.remove()\n```",
+  "rewrite": "def move_forward(self, cache_node, freq_node):\n    if freq_node.nxt is None or freq_node.nxt.freq != freq_node.freq + 1:\n        target_freq_node = FreqNode(freq_node.freq + 1, None, None)\n        target_empty = True\n    else:\n        target_freq_node = freq_node.nxt\n        target_empty = False\n\n    cache_node.free_myself()\n    target_freq_node.append_cache_to_tail(cache_node)\n\n    if target_empty:\n        freq_node.insert_after_me(target_freq_node)\n\n    if freq_node.count_caches() == 0:\n        if self.freq_link_head == freq_node:\n            self.freq_link_head = target_freq_node\n\n        freq_node.remove()\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

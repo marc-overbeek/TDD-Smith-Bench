@@ -1,0 +1,13 @@
+--- a/oauthlib/openid/connect/core/grant_types/dispatchers.py
++++ b/oauthlib/openid/connect/core/grant_types/dispatchers.py
+@@ -27,6 +27,10 @@
+ 
+         log.debug('Selecting handler for request %r.', handler)
+         return handler
++
++    def create_authorization_response(self, request, token_handler):
++        """Read scope and route to the designated handler."""
++        return self._handler_for_request(request).create_authorization_response(request, token_handler)
+ 
+     def create_authorization_response(self, request, token_handler):
+         """Read scope and route to the designated handler."""

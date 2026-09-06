@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef activation_count(model: nn.Module, inputs: Tuple[Any, ...],\n    supported_ops: Optional[Dict[str, Handle]]=None) ->Tuple[DefaultDict[\n    str, float], Counter[str]]:\n    analysis = ActivationCountAnalysis(model, inputs)\n    if supported_ops is not None:\n        analysis.set_op_handle(**supported_ops)\n    activation_count_dict = analysis.by_operator()\n    # Convert to MegaActivations\n    result: DefaultDict[str, float] = defaultdict(float)\n    for op, count in activation_count_dict.items():\n        result[op] = count / 1e6\n    return result, analysis.unsupported_ops()\n```",
+  "rewrite": "def activation_count(model: nn.Module, inputs: Tuple[Any, ...],\n    supported_ops: Optional[Dict[str, Handle]]=None) ->Tuple[DefaultDict[\n    str, float], Counter[str]]:\n    analysis = ActivationCountAnalysis(model, inputs)\n    if supported_ops is not None:\n        analysis.set_op_handle(**supported_ops)\n    activation_count_dict = analysis.by_operator()\n    # Convert to MegaActivations\n    result: DefaultDict[str, float] = defaultdict(float)\n    for op, count in activation_count_dict.items():\n        result[op] = count / 1e6\n    return result, analysis.unsupported_ops()",
+  "strategy": "lm_regen_from_tests"
+}

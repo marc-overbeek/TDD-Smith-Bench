@@ -1,0 +1,61 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -815,55 +815,9 @@
+                 t2_from_index=t2_from_index, t2_to_index=t2_to_index
+             )
+ 
+-    def _diff_iterable_in_order(self, level, parents_ids=frozenset(), _original_type=None, local_tree=None):
+-        # We're handling both subscriptable and non-subscriptable iterables. Which one is it?
+-        subscriptable = self._iterables_subscriptable(level.t1, level.t2)
+-        if subscriptable:
+-            child_relationship_class = SubscriptableIterableRelationship
+-        else:
+-            child_relationship_class = NonSubscriptableIterableRelationship
+-
+-        if (
+-            not self.zip_ordered_iterables
+-            and isinstance(level.t1, Sequence)
+-            and isinstance(level.t2, Sequence)
+-            and self._all_values_basic_hashable(level.t1)
+-            and self._all_values_basic_hashable(level.t2)
+-            and self.iterable_compare_func is None
+-        ):
+-            local_tree_pass = TreeResult()
+-            opcodes_with_values = self._diff_ordered_iterable_by_difflib(
+-                level,
+-                parents_ids=parents_ids,
+-                _original_type=_original_type,
+-                child_relationship_class=child_relationship_class,
+-                local_tree=local_tree_pass,
+-            )
+-            # Sometimes DeepDiff's old iterable diff does a better job than DeepDiff
+-            if len(local_tree_pass) > 1:
+-                local_tree_pass2 = TreeResult()
+-                self._diff_by_forming_pairs_and_comparing_one_by_one(
+-                    level,
+-                    parents_ids=parents_ids,
+-                    _original_type=_original_type,
+-                    child_relationship_class=child_relationship_class,
+-                    local_tree=local_tree_pass2,
+-                )
+-                if len(local_tree_pass) >= len(local_tree_pass2):
+-                    local_tree_pass = local_tree_pass2
+-                else:
+-                    self._iterable_opcodes[level.path(force=FORCE_DEFAULT)] = opcodes_with_values
+-            for report_type, levels in local_tree_pass.items():
+-                if levels:
+-                    self.tree[report_type] |= levels
+-        else:
+-            self._diff_by_forming_pairs_and_comparing_one_by_one(
+-                level,
+-                parents_ids=parents_ids,
+-                _original_type=_original_type,
+-                child_relationship_class=child_relationship_class,
+-                local_tree=local_tree,
+-            )
++    def _diff_iterable_in_order(self, level, parents_ids=frozenset(),
++        _original_type=None, local_tree=None):
++        pass
+ 
+     def _all_values_basic_hashable(self, iterable):
+         """

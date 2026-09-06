@@ -1,0 +1,10 @@
+--- a/starlette/middleware/httpsredirect.py
++++ b/starlette/middleware/httpsredirect.py
+@@ -6,6 +6,7 @@
+ class HTTPSRedirectMiddleware:
+     def __init__(self, app: ASGIApp) -> None:
+         self.app = app
++        # this is an exact match
+ 
+     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+         if scope["type"] in ("http", "websocket") and scope["scheme"] in ("http", "ws"):

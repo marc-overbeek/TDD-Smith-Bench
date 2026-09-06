@@ -1,0 +1,122 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -560,49 +560,79 @@
+ @click.argument('version', required=False)
+ @click.pass_context
+ def validate(ctx, name, version, path):
+-    """Verify that a local policy file is valid. NAME is the name of the file type to validate. Valid values are: policy_file
+-    """
+     if name != 'policy_file':
+-        click.secho(f'This Safety version only supports "policy_file" validation. "{name}" is not supported.', fg='red',
+-                    file=sys.stderr)
++        msg = f'This Safety version only supports "policy_file" validation. "{name}" is not supported.\n'
++        click.echo(click.style(msg, fg='red'), err=True)
+         sys.exit(EXIT_CODE_FAILURE)
+-
+-    LOG.info('Running validate %s', name)
+-
+-    if not os.path.exists(path):
+-        click.secho(f'The path "{path}" does not exist.', fg='red', file=sys.stderr)
++    
++    path_obj = Path(path)
++    if not path_obj.exists():
++        msg = f'The path "{path}" does not exist.\n'
++        click.echo(click.style(msg, fg='red'), err=True)
+         sys.exit(EXIT_CODE_FAILURE)
+-
+-    if version not in ["3.0", "2.0", None]:
+-        click.secho(f'Version "{version}" is not a valid value, allowed values are 3.0 and 2.0. Use --path to specify the target file.', fg='red', file=sys.stderr)
+-        sys.exit(EXIT_CODE_FAILURE)
+-
+-    def fail_validation(e):
+-        click.secho(str(e).lstrip(), fg='red', file=sys.stderr)
+-        sys.exit(EXIT_CODE_FAILURE)
+-
+-    if not version:
+-        version = "3.0"
+-
+-    result = ""
+-
+-    if version == "3.0":
+-        policy = None
+-
+-        try:
+-            from .scan.main import load_policy_file
+-            policy = load_policy_file(Path(path))
+-        except Exception as e:
+-            fail_validation(e)
+-
+-        click.secho(f"The Safety policy ({version}) file " \
+-                    "(Used for scan and system-scan commands) " \
+-                    "was successfully parsed " \
+-                    "with the following values:", fg="green")
+-        if policy and policy.config:
+-            result = policy.config.as_v30().json()
+-    else:
+-        try:
++        
++    from safety.util import SafetyPolicyFile
++    try:
++        policy_file = SafetyPolicyFile()
++        policy_data = policy_file.load(path_obj)
++        
++        if version == '2.0':
++            # Validate policy file structure for version 2.0
++            from safety_schemas.models import PolicyFileV2
++            validated_data = PolicyFileV2(**policy_data)
++            
++            # Prepare output
++            output_data = {
++                'project-id': validated_data.project_id or '',
++                'security': {
++                    'ignore-cvss-severity-below': validated_data.security.ignore_cvss_severity_below,
++                    'ignore-cvss-unknown-severity': validated_data.security.ignore_cvss_unknown_severity,
++                    'ignore-vulnerabilities': validated_data.security.ignore_vulnerabilities,
++                    'continue-on-vulnerability-error': validated_data.security.continue_on_vulnerability_error
++                },
++                'filename': str(path_obj)
++            }
++            
++            msg = 'The Safety policy file (Valid only for the check command) was successfully parsed with the following values:\n'
++            parsed = json.dumps(output_data, indent=2) + '\n'
++            click.echo(msg + parsed)
++            
++        elif version == '3.0':
++            # Validate policy file structure for version 3.0
++            from safety_schemas.models import ConfigModel
++            validated_data = ConfigModel(**policy_data)
++            
++            # Prepare output
++            output_data = validated_data.dict()
++            output_data.pop('installation', None)  # Remove installation field
++            
++            msg = 'The Safety policy (3.0) file (Used for scan and system-scan commands) was successfully parsed with the following values:\n'
++            parsed = json.dumps(output_data, indent=2) + '\n'
++            click.echo(msg + parsed)
++            
++        else:
++            msg = f'Unsupported policy file version: {version}\n'
++            click.echo(click.style(msg, fg='red'), err=True)
++            sys.exit(EXIT_CODE_FAILURE)
++            
++    except Exception as e:
++        if hasattr(e, 'errors'):
++            # Pydantic validation error
++            errors = e.errors()
++            error_details = []
++            for error in errors:
++                loc = ' -> '.join([str(loc) for loc in error['loc']])
++                msg = error['msg']
++                error_details.append(f'HINT: "{loc}" is not a valid keyword. {msg}')
++            error_msg = '\n'.join(error_details)
++            msg = f'Unable to load the Safety Policy file "{path}".\n{error_msg}\n'
++            click.echo(click.style(msg, fg='red'), err=True)
++            sys.exit(EXIT_CODE_FAILURE)
++        else:
++            # Other validation errors
++            msg = f'Unable to load the Safety Policy file "{path}".\n'
++            click.echo(click.style(msg, fg='red'), err=True)
++            sys.exit(EXIT_CODE_FAILURE)
+             values = SafetyPolicyFile().convert(path, None, None)
+         except Exception as e:
+             click.secho(str(e).lstrip(), fg='red', file=sys.stderr)

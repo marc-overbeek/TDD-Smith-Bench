@@ -1,0 +1,106 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -710,59 +710,51 @@
+                 'more_info_url': vuln.pkg.more_info_url}
+ 
+ 
+-def get_closest_ver(
+-    versions: List[str],
+-    version: Optional[str],
+-    spec: SpecifierSet
+-) -> Dict[str, Optional[Union[str, Version]]]:
+-    """
+-    Retrieves the closest versions for the given version and specifier set.
+-
+-    Args:
+-        versions (List[str]): The list of versions.
+-        version (Optional[str]): The current version.
+-        spec (SpecifierSet): The specifier set.
+-
+-    Returns:
+-        Dict[str, Optional[Union[str, Version]]]: The closest versions.
+-    """
+-    results: Dict[str, Optional[Union[str, Version]]] = {'upper': None, 'lower': None}
+-
+-    if (not version and not spec) or not versions:
+-        return results
+-
+-    sorted_versions = sorted(versions, key=lambda ver: parse_version(ver), reverse=True)
+-
+-    if not version:
+-        sorted_versions = spec.filter(sorted_versions, prereleases=False)
+-
+-        upper = None
+-        lower = None
+-
++def get_closest_ver(versions: List[str], version: Optional[str], spec:
++    SpecifierSet) ->Dict[str, Optional[Union[str, Version]]]:
++    """
++    Finds the closest secure versions (lower and upper) relative to the given version.
++    
++    Args:
++        versions (List[str]): List of available versions to search through.
++        version (Optional[str]): The current version to compare against.
++        spec (SpecifierSet): The specifier set (currently unused but kept for compatibility).
++    
++    Returns:
++        Dict[str, Optional[Union[str, Version]]]: Dictionary with 'lower' and 'upper' keys
++                                                   containing the closest versions or None.
++    """
++    if version is None or spec is None or not versions:
++        return {'lower': None, 'upper': None}
++    
++    try:
++        current_version = parse_version(version)
++    except Exception:
++        return {'lower': None, 'upper': None}
++    
++    lower_versions = []
++    upper_versions = []
++    
++    for v in versions:
+         try:
+-            sorted_versions = list(sorted_versions)
+-            upper = sorted_versions[0]
+-            lower = sorted_versions[-1]
+-            results['upper'] = upper
+-            results['lower'] = lower if upper != lower else None
+-        except IndexError:
+-            pass
+-
+-        return results
+-
+-    current_v = parse_version(version)
+-
+-    for v in sorted_versions:
+-        index = parse_version(v)
+-
+-        if index > current_v:
+-            results['upper'] = index
+-
+-        if index < current_v:
+-            results['lower'] = index
+-            break
+-
+-    return results
++            parsed_v = parse_version(v)
++            if parsed_v < current_version:
++                lower_versions.append(parsed_v)
++            elif parsed_v > current_version:
++                upper_versions.append(parsed_v)
++        except Exception:
++            continue
++    
++    lower = None
++    upper = None
++    
++    if lower_versions:
++        lower = max(lower_versions)
++    
++    if upper_versions:
++        upper = min(upper_versions)
++    
++    return {'lower': lower, 'upper': upper}
+ 
+ 
+ def compute_sec_ver_for_user(

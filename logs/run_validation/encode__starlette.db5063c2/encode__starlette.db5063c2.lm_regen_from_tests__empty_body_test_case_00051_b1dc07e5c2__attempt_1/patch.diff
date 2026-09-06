@@ -1,0 +1,21 @@
+--- a/starlette/formparsers.py
++++ b/starlette/formparsers.py
+@@ -171,9 +171,6 @@
+             )
+         else:
+             self._file_parts_to_finish.append(self._current_part)
+-            # The file can be added to the items right now even though it's not
+-            # finished yet, because it will be finished in the `parse()` method, before
+-            # self.items is used in the return value.
+             self.items.append((self._current_part.field_name, self._current_part.file))
+ 
+     def on_header_field(self, data: bytes, start: int, end: int) -> None:
+@@ -204,7 +201,7 @@
+             tempfile = SpooledTemporaryFile(max_size=self.max_file_size)
+             self._files_to_close_on_error.append(tempfile)
+             self._current_part.file = UploadFile(
+-                file=tempfile,  # type: ignore[arg-type]
++                file=tempfile,
+                 size=0,
+                 filename=filename,
+                 headers=Headers(raw=self._current_part.item_headers),

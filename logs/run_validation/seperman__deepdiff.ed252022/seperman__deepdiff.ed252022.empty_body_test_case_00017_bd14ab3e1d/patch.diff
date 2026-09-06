@@ -1,0 +1,94 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -199,86 +199,11 @@
+         )
+ 
+     def to_dict(self, view_override=None):
+-        """
+-        convert the result to a python dictionary. You can override the view type by passing view_override.
+-
+-        **Parameters**
+-
+-        view_override: view type, default=None,
+-            override the view that was used to generate the diff when converting to the dictionary.
+-            The options are the text or tree.
+-        """
+-
+-        view = view_override if view_override else self.view
+-        return dict(self._get_view_results(view))
+-
+-    def _to_delta_dict(self, directed=True, report_repetition_required=True, always_include_values=False):
+-        """
+-        Dump to a dictionary suitable for delta usage.
+-        Unlike to_dict, this is not dependent on the original view that the user chose to create the diff.
+-
+-        **Parameters**
+-
+-        directed : Boolean, default=True, whether to create a directional delta dictionary or a symmetrical
+-
+-        Note that in the current implementation the symmetrical delta (non-directional) is ONLY used for verifying that
+-        the delta is being applied to the exact same values as what was used to generate the delta and has
+-        no other usages.
+-
+-        If this option is set as True, then the dictionary will not have the "old_value" in the output.
+-        Otherwise it will have the "old_value". "old_value" is the value of the item in t1.
+-
+-        If delta = Delta(DeepDiff(t1, t2)) then
+-        t1 + delta == t2
+-
+-        Note that it the items in t1 + delta might have slightly different order of items than t2 if ignore_order
+-        was set to be True in the diff object.
+-
+-        """
+-        if self.group_by is not None:
+-            raise ValueError(DELTA_ERROR_WHEN_GROUP_BY)
+-
+-        if directed and not always_include_values:
+-            _iterable_opcodes = {}
+-            for path, op_codes in self._iterable_opcodes.items():
+-                _iterable_opcodes[path] = []
+-                for op_code in op_codes:
+-                    new_op_code = Opcode(
+-                        tag=op_code.tag,
+-                        t1_from_index=op_code.t1_from_index,
+-                        t1_to_index=op_code.t1_to_index,
+-                        t2_from_index=op_code.t2_from_index,
+-                        t2_to_index=op_code.t2_to_index,
+-                        new_values=op_code.new_values,
+-                    )
+-                    _iterable_opcodes[path].append(new_op_code)
+-        else:
+-            _iterable_opcodes = self._iterable_opcodes
+-
+-        result = DeltaResult(
+-            tree_results=self.tree,
+-            ignore_order=self.ignore_order,
+-            always_include_values=always_include_values,
+-            _iterable_opcodes=_iterable_opcodes,
+-        )
+-        result.remove_empty_keys()
+-        if report_repetition_required and self.ignore_order and not self.report_repetition:
+-            raise ValueError(DELTA_IGNORE_ORDER_NEEDS_REPETITION_REPORT)
+-        if directed:
+-            for report_key, report_value in result.items():
+-                if isinstance(report_value, Mapping):
+-                    for path, value in report_value.items():
+-                        if isinstance(value, Mapping) and 'old_value' in value:
+-                            del value['old_value']
+-        if self._numpy_paths:
+-            # Note that keys that start with '_' are considered internal to DeepDiff
+-            # and will be omitted when counting distance. (Look inside the distance module.)
+-            result['_numpy_paths'] = self._numpy_paths
+-
+-        if self.iterable_compare_func:
+-            result['_iterable_compare_func_was_used'] = True
+-
+-        return deepcopy(dict(result))
++        pass
++
++    def _to_delta_dict(self, directed=True, report_repetition_required=True,
++        always_include_values=False):
++        pass
+ 
+     def pretty(self, prefix: Optional[Union[str, Callable]]=None):
+         """

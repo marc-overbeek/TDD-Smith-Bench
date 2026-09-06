@@ -1,0 +1,17 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -361,8 +361,13 @@
+     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+         await self.app(scope, receive, send)
+ 
++    Host('{subdomain}.example.org', app=Router(routes=[Route('/', endpoint=custom_subdomain)]))
++
+     def __eq__(self, other: typing.Any) -> bool:
+-        return isinstance(other, WebSocketRoute) and self.path == other.path and self.endpoint == other.endpoint
++        return isinstance(other, Router) and self.routes == other.routes
++
++    def __eq__(self, other: typing.Any) -> bool:
++        return isinstance(other, Router) and self.routes == other.routes
+ 
+     def __repr__(self) -> str:
+         return f"{self.__class__.__name__}(path={self.path!r}, name={self.name!r})"

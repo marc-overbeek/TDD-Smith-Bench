@@ -1,0 +1,16 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -518,7 +518,13 @@
+     def keys(self) -> list[str]:  # type: ignore[override]
+         return [key.decode("latin-1") for key, value in self._list]
+ 
++    h = Headers(raw=[(b'a', b'123'), (b'a', b'456'), (b'b', b'789')])
++    assert h.values() == ['123', '456', '789']
++
+     def values(self) -> list[str]:  # type: ignore[override]
++        return [value.decode("latin-1") for key, value in self._list]
++
++    def values(self) -> list[str]:
+         return [value.decode("latin-1") for key, value in self._list]
+ 
+     def items(self) -> list[tuple[str, str]]:  # type: ignore[override]

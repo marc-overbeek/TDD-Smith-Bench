@@ -1,0 +1,107 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -132,52 +132,38 @@
+     return length(locations, True)
+ 
+ 
+-def calculate_max_speed(speeds_and_distances: List[Tuple[float, float]], extreemes_percentile: float, ignore_nonstandard_distances: bool) -> Optional[float]:
+-    """
+-    Compute average distance and standard deviation for distance. Extremes
+-    in distances are usually extremes in speeds, so we will ignore them,
+-    here.
+-
+-    speeds_and_distances must be a list containing pairs of (speed, distance)
+-    for every point in a track segment.
+-
+-    In many cases the top speeds are measurement errors. For that reason extreme speeds can be removed
+-    with the extreemes_percentile (for example, a value of 0.05 will remove top 5%).
+-    """
+-    assert speeds_and_distances
+-    if len(speeds_and_distances) > 0:
+-        assert len(speeds_and_distances[0]) == 2
+-        # ...
+-        assert len(speeds_and_distances[-1]) == 2
+-
+-    if not ignore_nonstandard_distances:
+-        return max(x[0] or 0 for x in speeds_and_distances)
+-
+-    size = len(speeds_and_distances)
+-
+-    if size < 2:
+-        # log.debug('Segment too small to compute speed, size=%s', size)
++def calculate_max_speed(speeds_and_distances: List[Tuple[float, float]],
++    extreemes_percentile: float, ignore_nonstandard_distances: bool
++    ) ->Optional[float]:
++    if not speeds_and_distances:
+         return None
+-
+-    distances = [x[1] for x in speeds_and_distances]
+-    average_distance = sum(distances) / size
+-    standard_distance_deviation = mod_math.sqrt(sum((distance - average_distance) ** 2 for distance in distances) / size)
+-
+-    # Ignore items where the distance is too big:
+-    filtered_speeds_and_distances = [x for x in speeds_and_distances if abs(x[1] - average_distance) <= standard_distance_deviation * 1.5]
+-
+-    # sort by speed:
+-    speeds = [x[0] for x in filtered_speeds_and_distances]
++    
++    speeds = [speed for speed, distance in speeds_and_distances]
++    
+     if not speeds:
+         return None
+-    speeds.sort()
+-
+-    # Even here there may be some extremes => ignore the last 5%:
+-    index = int(len(speeds) * (1-extreemes_percentile))
+-    if index >= len(speeds):
+-        index = -1
+-
+-    return speeds[index]
++    
++    if extreemes_percentile == 0:
++        return max(speeds)
++    
++    if ignore_nonstandard_distances:
++        distances = [distance for speed, distance in speeds_and_distances]
++        if distances:
++            avg_distance = sum(distances) / len(distances)
++            if avg_distance > 0:
++                filtered_speeds = [speed for speed, distance in speeds_and_distances 
++                                 if distance > 0 and abs(distance - avg_distance) / avg_distance < 0.5]
++                if filtered_speeds:
++                    speeds = filtered_speeds
++    
++    if not speeds:
++        return None
++    
++    sorted_speeds = sorted(speeds, reverse=True)
++    percentile_index = int(len(sorted_speeds) * extreemes_percentile / 100)
++    percentile_index = min(percentile_index, len(sorted_speeds) - 1)
++    
++    return sorted_speeds[percentile_index]
+ 
+ 
+ def calculate_uphill_downhill(elevations: List[Optional[float]]) -> Tuple[float, float]:
+@@ -390,21 +376,7 @@
+ 
+         return distance(self.latitude, self.longitude, None, location.latitude, location.longitude, None)
+ 
+-    def distance_3d(self, location: "Location") -> Optional[float]:
+-        """
+-        Calculate the distance between self and location in meters.
+-        Takes elevation in account.
+-
+-        Parameters
+-        ----------
+-        location: Location
+-            Location to calculate the distance to.
+-
+-        Returns
+-        ----------
+-        distance : float
+-            Distance returned in meters.
+-        """
++    def distance_3d(self, location: 'Location') ->Optional[float]:
+         if not location:
+             return None
+ 

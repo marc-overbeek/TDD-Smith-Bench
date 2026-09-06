@@ -1,0 +1,20 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -361,12 +361,12 @@
+         self.child = child
+ 
+     def glomit(self, target, scope):
+-        try:  # one child must match without exception
+-            scope[glom](target, self.child, scope)
++        try:
++            return self._glomit(target, scope)
+         except GlomError:
+-            return target
+-        else:
+-            raise GlomError("child shouldn't have passed", self.child)
++            if self.default is not _MISSING:
++                return arg_val(target, self.default, scope)
++            raise
+ 
+     def _m_repr(self):
+         if isinstance(self.child, (_MType, _MExpr)):

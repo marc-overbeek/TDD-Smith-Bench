@@ -1,0 +1,53 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -1009,49 +1009,7 @@
+ 
+ 
+     def _diff_str(self, level, local_tree=None):
+-        """Compare strings"""
+-        if self.ignore_string_case:
+-            level.t1 = level.t1.lower()
+-            level.t2 = level.t2.lower()
+-
+-        if type(level.t1) == type(level.t2) and level.t1 == level.t2:  # NOQA
+-            return
+-
+-        # do we add a diff for convenience?
+-        do_diff = True
+-        t1_str = level.t1
+-        t2_str = level.t2
+-
+-        if isinstance(level.t1, bytes_type):
+-            try:
+-                t1_str = level.t1.decode('ascii')
+-            except UnicodeDecodeError:
+-                do_diff = False
+-
+-        if isinstance(level.t2, bytes_type):
+-            try:
+-                t2_str = level.t2.decode('ascii')
+-            except UnicodeDecodeError:
+-                do_diff = False
+-
+-        if isinstance(level.t1, Enum):
+-            t1_str = level.t1.value
+-
+-        if isinstance(level.t2, Enum):
+-            t2_str = level.t2.value
+-
+-        if t1_str == t2_str:
+-            return
+-
+-        if do_diff:
+-            if '\n' in t1_str or isinstance(t2_str, str) and '\n' in t2_str:
+-                diff = difflib.unified_diff(
+-                    t1_str.splitlines(), t2_str.splitlines(), lineterm='')
+-                diff = list(diff)
+-                if diff:
+-                    level.additional['diff'] = '\n'.join(diff)
+-
+-        self._report_result('values_changed', level, local_tree=local_tree)
++        pass
+ 
+     def _diff_tuple(self, level, parents_ids, local_tree=None):
+         # Checking to see if it has _fields. Which probably means it is a named

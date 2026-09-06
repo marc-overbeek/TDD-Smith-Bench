@@ -1,0 +1,77 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -576,67 +576,13 @@
+ 
+ 
+ class Router:
+-    def __init__(
+-        self,
+-        routes: typing.Sequence[BaseRoute] | None = None,
+-        redirect_slashes: bool = True,
+-        default: ASGIApp | None = None,
+-        on_startup: typing.Sequence[typing.Callable[[], typing.Any]] | None = None,
+-        on_shutdown: typing.Sequence[typing.Callable[[], typing.Any]] | None = None,
+-        # the generic to Lifespan[AppType] is the type of the top level application
+-        # which the router cannot know statically, so we use typing.Any
+-        lifespan: Lifespan[typing.Any] | None = None,
+-        *,
+-        middleware: typing.Sequence[Middleware] | None = None,
+-    ) -> None:
+-        self.routes = [] if routes is None else list(routes)
+-        self.redirect_slashes = redirect_slashes
+-        self.default = self.not_found if default is None else default
+-        self.on_startup = [] if on_startup is None else list(on_startup)
+-        self.on_shutdown = [] if on_shutdown is None else list(on_shutdown)
+-
+-        if on_startup or on_shutdown:
+-            warnings.warn(
+-                "The on_startup and on_shutdown parameters are deprecated, and they "
+-                "will be removed on version 1.0. Use the lifespan parameter instead. "
+-                "See more about it on https://www.starlette.io/lifespan/.",
+-                DeprecationWarning,
+-            )
+-            if lifespan:
+-                warnings.warn(
+-                    "The `lifespan` parameter cannot be used with `on_startup` or "
+-                    "`on_shutdown`. Both `on_startup` and `on_shutdown` will be "
+-                    "ignored."
+-                )
+-
+-        if lifespan is None:
+-            self.lifespan_context: Lifespan[typing.Any] = _DefaultLifespan(self)
+-
+-        elif inspect.isasyncgenfunction(lifespan):
+-            warnings.warn(
+-                "async generator function lifespans are deprecated, "
+-                "use an @contextlib.asynccontextmanager function instead",
+-                DeprecationWarning,
+-            )
+-            self.lifespan_context = asynccontextmanager(
+-                lifespan,
+-            )
+-        elif inspect.isgeneratorfunction(lifespan):
+-            warnings.warn(
+-                "generator function lifespans are deprecated, "
+-                "use an @contextlib.asynccontextmanager function instead",
+-                DeprecationWarning,
+-            )
+-            self.lifespan_context = _wrap_gen_lifespan_context(
+-                lifespan,
+-            )
+-        else:
+-            self.lifespan_context = lifespan
+-
+-        self.middleware_stack = self.app
+-        if middleware:
+-            for cls, args, kwargs in reversed(middleware):
+-                self.middleware_stack = cls(self.middleware_stack, *args, **kwargs)
++    def __init__(self, routes: (typing.Sequence[BaseRoute] | None)=None,
++        redirect_slashes: bool=True, default: (ASGIApp | None)=None, on_startup:
++        (typing.Sequence[typing.Callable[[], typing.Any]] | None)=None,
++        on_shutdown: (typing.Sequence[typing.Callable[[], typing.Any]] | None)=
++        None, lifespan: (Lifespan[typing.Any] | None)=None, *, middleware: (
++        typing.Sequence[Middleware] | None)=None) ->None:
++        pass
+ 
+     async def not_found(self, scope: Scope, receive: Receive, send: Send) -> None:
+         if scope["type"] == "websocket":

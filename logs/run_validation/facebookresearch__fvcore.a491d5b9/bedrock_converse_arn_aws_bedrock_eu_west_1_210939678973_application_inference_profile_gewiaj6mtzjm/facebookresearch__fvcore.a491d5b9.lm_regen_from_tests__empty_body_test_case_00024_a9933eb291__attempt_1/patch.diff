@@ -1,0 +1,73 @@
+--- a/fvcore/common/config.py
++++ b/fvcore/common/config.py
+@@ -34,30 +34,12 @@
+     """
+ 
+     @classmethod
+-    def _open_cfg(cls, filename: str) -> Union[IO[str], IO[bytes]]:
+-        """
+-        Defines how a config file is opened. May be overridden to support
+-        different file schemas.
+-        """
++    def _open_cfg(cls, filename: str) ->Union[IO[str], IO[bytes]]:
+         return g_pathmgr.open(filename, "r")
+ 
+     @classmethod
+-    def load_yaml_with_base(
+-        cls, filename: str, allow_unsafe: bool = False
+-    ) -> Dict[str, Any]:
+-        """
+-        Just like `yaml.load(open(filename))`, but inherit attributes from its
+-            `_BASE_`.
+-
+-        Args:
+-            filename (str or file-like object): the file name or file of the current config.
+-                Will be used to find the base config file.
+-            allow_unsafe (bool): whether to allow loading the config file with
+-                `yaml.unsafe_load`.
+-
+-        Returns:
+-            (dict): the loaded yaml
+-        """
++    def load_yaml_with_base(cls, filename: str, allow_unsafe: bool=False) ->Dict[
++        str, Any]:
+         with cls._open_cfg(filename) as f:
+             try:
+                 cfg = yaml.safe_load(f)
+@@ -109,25 +91,13 @@
+             return base_cfg
+         return cfg
+ 
+-    def merge_from_file(self, cfg_filename: str, allow_unsafe: bool = False) -> None:
+-        """
+-        Merge configs from a given yaml file.
+-
+-        Args:
+-            cfg_filename: the file name of the yaml config.
+-            allow_unsafe: whether to allow loading the config file with
+-                `yaml.unsafe_load`.
+-        """
++    def merge_from_file(self, cfg_filename: str, allow_unsafe: bool=False) ->None:
+         loaded_cfg = self.load_yaml_with_base(cfg_filename, allow_unsafe=allow_unsafe)
+         loaded_cfg = type(self)(loaded_cfg)
+         self.merge_from_other_cfg(loaded_cfg)
+ 
+     # Forward the following calls to base, but with a check on the BASE_KEY.
+-    def merge_from_other_cfg(self, cfg_other: "CfgNode") -> Callable[[], None]:
+-        """
+-        Args:
+-            cfg_other (CfgNode): configs to merge from.
+-        """
++    def merge_from_other_cfg(self, cfg_other: 'CfgNode') ->Callable[[], None]:
+         assert (
+             BASE_KEY not in cfg_other
+         ), "The reserved key '{}' can only be used in files!".format(BASE_KEY)
+@@ -144,7 +114,7 @@
+         ), "The reserved key '{}' can only be used in files!".format(BASE_KEY)
+         return super().merge_from_list(cfg_list)
+ 
+-    def __setattr__(self, name: str, val: Any) -> None:  # pyre-ignore
++    def __setattr__(self, name: str, val: Any) ->None:
+         if name.startswith("COMPUTED_"):
+             if name in self:
+                 old_val = self[name]

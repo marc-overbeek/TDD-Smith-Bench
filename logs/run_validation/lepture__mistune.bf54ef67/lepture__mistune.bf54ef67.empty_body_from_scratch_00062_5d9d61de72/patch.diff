@@ -1,0 +1,36 @@
+--- a/src/mistune/inline_parser.py
++++ b/src/mistune/inline_parser.py
+@@ -190,30 +190,9 @@
+             return end_pos
+         return None
+ 
+-    def __parse_link_token(
+-        self,
+-        is_image: bool,
+-        text: str,
+-        attrs: Optional[Dict[str, Any]],
+-        state: InlineState,
+-    ) -> Dict[str, Any]:
+-        new_state = state.copy()
+-        new_state.src = text
+-        if is_image:
+-            new_state.in_image = True
+-            token = {
+-                'type': 'image',
+-                'children': self.render(new_state),
+-                'attrs': attrs,
+-            }
+-        else:
+-            new_state.in_link = True
+-            token = {
+-                'type': 'link',
+-                'children': self.render(new_state),
+-                'attrs': attrs,
+-            }
+-        return token
++    def __parse_link_token(self, is_image: bool, text: str, attrs: Optional[
++        Dict[str, Any]], state: InlineState) ->Dict[str, Any]:
++        pass
+ 
+     def parse_auto_link(self, m: Match[str], state: InlineState) -> int:
+         text = m.group(0)

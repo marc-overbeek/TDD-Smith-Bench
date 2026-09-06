@@ -1,0 +1,136 @@
+--- a/safety/models.py
++++ b/safety/models.py
+@@ -52,17 +52,8 @@
+     """
+     A subclass of Requirement that includes additional attributes and methods for safety requirements.
+     """
+-    def __init__(self, requirement: Union[str, Dependency], found: Optional[str] = None) -> None:
+-        """
+-        Initialize a SafetyRequirement.
+-
+-        Args:
+-            requirement (Union[str, Dependency]): The requirement as a string or Dependency object.
+-            found (Optional[str], optional): Where the requirement was found. Defaults to None.
+-
+-        Raises:
+-            InvalidRequirementError: If the requirement cannot be parsed.
+-        """
++    def __init__(self, requirement: Union[str, Dependency], found: Optional[str
++        ]=None) ->None:
+         dep = requirement
+ 
+         if isinstance(requirement, str):
+@@ -74,7 +65,6 @@
+ 
+         raw_line = dep.line
+         to_parse = dep.line
+-        # Hash and comments are only a pip feature, so removing them.
+         if '#' in to_parse:
+             to_parse = dep.line.split('#')[0]
+ 
+@@ -84,7 +74,6 @@
+         to_parse = to_parse.replace('\\', '').rstrip()
+ 
+         try:
+-            # Try to build a PEP Requirement from the cleaned line
+             super(SafetyRequirement, self).__init__(to_parse)
+         except Exception:
+             raise InvalidRequirementError(line=requirement.line if isinstance(requirement, Dependency) else requirement)
+@@ -120,22 +109,11 @@
+                     }
+ 
+ 
+-def is_pinned_requirement(spec: SpecifierSet) -> bool:
+-    """
+-    Check if a requirement is pinned.
+-
+-    Args:
+-        spec (SpecifierSet): The specifier set of the requirement.
+-
+-    Returns:
+-        bool: True if the requirement is pinned, False otherwise.
+-    """
+-    if not spec or len(spec) != 1:
++def is_pinned_requirement(spec: SpecifierSet) ->bool:
++    if not spec:
+         return False
+-
+-    specifier = next(iter(spec))
+-
+-    return (specifier.operator == '==' and '*' != specifier.version[-1]) or specifier.operator == '==='
++    operators = [s.operator for s in spec]
++    return len(operators) == 1 and operators[0] == '=='
+ 
+ 
+ @dataclass
+@@ -154,13 +132,7 @@
+     latest_version: Optional[str] = None
+     more_info_url: Optional[str] = None
+ 
+-    def has_unpinned_req(self) -> bool:
+-        """
+-        Check if the package has unpinned requirements.
+-
+-        Returns:
+-            bool: True if there are unpinned requirements, False otherwise.
+-        """
++    def has_unpinned_req(self) ->bool:
+         for req in self.requirements:
+             if not is_pinned_requirement(req.specifier):
+                 return True
+@@ -175,16 +147,7 @@
+         """
+         return filter(lambda r: not is_pinned_requirement(r.specifier), self.requirements)
+ 
+-    def filter_by_supported_versions(self, versions: List[str]) -> List[str]:
+-        """
+-        Filter the versions by supported versions.
+-
+-        Args:
+-            versions (List[str]): The list of versions.
+-
+-        Returns:
+-            List[str]: The list of supported versions.
+-        """
++    def filter_by_supported_versions(self, versions: List[str]) ->List[str]:
+         allowed = []
+ 
+         for version in versions:
+@@ -211,20 +174,13 @@
+             pkg_meta.get("insecure_versions", []) + pkg_meta.get("secure_versions", []))
+         return set(versions)
+ 
+-    def refresh_from(self, db_full: Dict) -> None:
+-        """
+-        Refresh the package information from the database.
+-
+-        Args:
+-            db_full (Dict): The full database.
+-        """
++    def refresh_from(self, db_full: Dict) ->None:
+         base_domain = db_full.get('meta', {}).get('base_domain')
+         pkg_meta = db_full.get('meta', {}).get('packages', {}).get(canonicalize_name(self.name), {})
+ 
+         kwargs = {'insecure_versions': self.filter_by_supported_versions(pkg_meta.get("insecure_versions", [])),
+                   'secure_versions': self.filter_by_supported_versions(pkg_meta.get("secure_versions", [])),
+-                  'latest_version_without_known_vulnerabilities': pkg_meta.get("latest_secure_version",
+-                                                                               None),
++                  'latest_version_without_known_vulnerabilities': pkg_meta.get("latest_secure_version", None),
+                   'latest_version': pkg_meta.get("latest_version", None),
+                   'more_info_url': f"{base_domain}{pkg_meta.get('more_info_path', '')}"}
+ 
+@@ -258,13 +214,7 @@
+                 'more_info_url': self.more_info_url
+                 }
+ 
+-    def update(self, new: Dict) -> None:
+-        """
+-        Update the package attributes with new values.
+-
+-        Args:
+-            new (Dict): The new attribute values.
+-        """
++    def update(self, new: Dict) ->None:
+         for key, value in new.items():
+             if hasattr(self, key):
+                 setattr(self, key, value)

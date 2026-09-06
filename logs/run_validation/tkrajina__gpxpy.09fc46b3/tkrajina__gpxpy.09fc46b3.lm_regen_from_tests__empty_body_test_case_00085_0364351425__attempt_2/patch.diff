@@ -1,0 +1,174 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -752,29 +752,21 @@
+         for track_point in self.points:
+             track_point.remove_elevation()
+ 
+-    def length_2d(self) -> Optional[float]:
+-        """
+-        Computes 2-dimensional length (meters) of segment (only latitude and
+-        longitude, no elevation).
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
+-        return mod_geo.length_2d(self.points) # type: ignore
+-
+-    def length_3d(self) -> float:
+-        """
+-        Computes 3-dimensional length of segment (latitude, longitude, and
+-        elevation).
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
+-        return mod_geo.length_3d(self.points) # type: ignore
++    def length_2d(self) ->float:
++        length: float = 0
++        for track_segment in self.segments:
++            d = track_segment.length_2d()
++            if d is not None:
++                length += d
++        return length
++
++    def length_3d(self) ->float:
++        length: float = 0
++        for track_segment in self.segments:
++            d = track_segment.length_3d()
++            if d is not None:
++                length += d
++        return length
+ 
+     def move(self, location_delta: mod_geo.LocationDelta) -> None:
+         """
+@@ -1483,23 +1475,13 @@
+ 
+         self.segments = result
+ 
+-    def length_2d(self) -> float:
+-        """
+-        Computes 2-dimensional length (meters) of track (only latitude and
+-        longitude, no elevation). This is the sum of the 2D length of all
+-        segments.
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
+-        length: float = 0
+-        for track_segment in self.segments:
+-            d = track_segment.length_2d()
+-            if d:
+-                length += d
+-        return length
++    def length_2d(self) ->float:
++        result: float = 0
++        for track in self.tracks:
++            length = track.length_2d()
++            if length is not None:
++                result += length
++        return result
+ 
+     def get_time_bounds(self) -> TimeBounds:
+         """
+@@ -1593,22 +1575,13 @@
+ 
+         return result
+ 
+-    def length_3d(self) -> float:
+-        """
+-        Computes 3-dimensional length of track (latitude, longitude, and
+-        elevation). This is the sum of the 3D length of all segments.
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
+-        length: float = 0
+-        for track_segment in self.segments:
+-            d = track_segment.length_3d()
+-            if d:
+-                length += d
+-        return length
++    def length_3d(self) ->float:
++        result: float = 0
++        for track in self.tracks:
++            length = track.length_3d()
++            if length is not None:
++                result += length
++        return result
+ 
+     def split(self, track_segment_no: int, track_point_no: int) -> None:
+         """
+@@ -2263,38 +2236,19 @@
+ 
+         track.split(track_segment_no=track_segment_no, track_point_no=track_point_no)
+ 
+-    def length_2d(self) -> float:
+-        """
+-        Computes 2-dimensional length of the GPX file (only latitude and
+-        longitude, no elevation). This is the sum of 2D length of all segments
+-        in all tracks.
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
++    def length_2d(self) ->float:
+         result: float = 0
+         for track in self.tracks:
+             length = track.length_2d()
+-            if length:
++            if length is not None:
+                 result += length
+         return result
+ 
+-    def length_3d(self) -> float:
+-        """
+-        Computes 3-dimensional length of the GPX file (latitude, longitude, and
+-        elevation). This is the sum of 3D length of all segments in all tracks.
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
++    def length_3d(self) ->float:
+         result: float = 0
+         for track in self.tracks:
+             length = track.length_3d()
+-            if length:
++            if length is not None:
+                 result += length
+         return result
+ 
+@@ -2431,11 +2385,7 @@
+ 
+         return MinimumMaximum(min(elevations), max(elevations))
+ 
+-    def get_points_data(self, distance_2d: bool=False) -> List[PointData]:
+-        """
+-        Returns a list of tuples containing the actual point, its distance from the start,
+-        track_no, segment_no, and segment_point_no
+-        """
++    def get_points_data(self, distance_2d: bool=False) ->List[PointData]:
+         distance_from_start = 0
+         previous_point = None
+ 
+@@ -2451,7 +2401,8 @@
+                         else:
+                             distance = point.distance_3d(previous_point)
+ 
+-                        distance_from_start += distance
++                        if distance is not None:
++                            distance_from_start += distance
+ 
+                     points.append(PointData(point, distance_from_start, track_no, segment_no, point_no))
+ 

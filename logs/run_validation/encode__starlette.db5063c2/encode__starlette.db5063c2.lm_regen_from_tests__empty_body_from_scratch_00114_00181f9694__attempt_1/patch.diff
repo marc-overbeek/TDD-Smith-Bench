@@ -1,0 +1,16 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -29,6 +29,13 @@
+     Raised by `.url_for(name, **path_params)` and `.url_path_for(name, **path_params)`
+     if no matching route exists.
+     """
++
++    with pytest.raises(NoMatchFound, match=
++        'No route exists for name "broken" and params "".'):
++        assert app.url_path_for('broken')
++    with pytest.raises(NoMatchFound, match=
++        'No route exists for name "broken" and params "key, key2".'):
++        assert app.url_path_for('broken', key='value', key2='value2')
+ 
+     def __init__(self, name: str, path_params: dict[str, typing.Any]) -> None:
+         params = ", ".join(list(path_params.keys()))

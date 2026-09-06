@@ -1,0 +1,29 @@
+--- a/xsd/pretty_print_schemas.py
++++ b/xsd/pretty_print_schemas.py
+@@ -61,24 +61,8 @@
+     root_node = dom.getElementsByTagName('xsd:element')[0]
+     return parse_1_0_elements(root_node)
+ 
+-def parse_1_0_elements(element: Any, depth: int=0) -> Any:
+-    result = ''
+-    result += get_indented(depth, element.attributes['name'].value)
+-    complex_types = get_children_by_tag_name(element, 'xsd:complexType')
+-    if len(complex_types) > 0:
+-        print(complex_types)
+-        complex_type = complex_types[0]
+-        for attribute_node in get_children_by_tag_name(complex_type, 'xsd:attribute'):
+-            attribute_node_name = attribute_node.attributes['name'].value
+-            attribute_node_type = attribute_node.attributes['type'].value
+-            attribute_node_use = attribute_node.attributes['use'].value if attribute_node.attributes.has_key('use') else None
+-            result += get_indented(depth + 1, f'- attr: {attribute_node_name} ({attribute_node_type}) {attribute_node_use}')
+-        sequences = get_children_by_tag_name(complex_type, 'xsd:sequence')
+-        if len(sequences) > 0:
+-            sequence = sequences[0]
+-            for sub_element in get_children_by_tag_name(sequence, 'xsd:element'):
+-                result += parse_1_0_elements(sub_element, depth=depth+1)
+-    return result
++def parse_1_0_elements(element: Any, depth: int=0) ->Any:
++    pass
+ 
+ dom = mod_minidom.parseString(open('gpx1.0.xsd').read())
+ prety_print_1_0 = parse_1_0(dom)

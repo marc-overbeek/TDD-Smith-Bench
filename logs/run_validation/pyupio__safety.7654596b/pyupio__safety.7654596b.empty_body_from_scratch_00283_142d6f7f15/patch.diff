@@ -1,0 +1,63 @@
+--- a/safety/scan/finder/file_finder.py
++++ b/safety/scan/finder/file_finder.py
+@@ -47,55 +47,11 @@
+     find depending on the language type.
+     """
+ 
+-    def __init__(
+-        self,
+-        max_level: int,
+-        ecosystems: List[Ecosystem],
+-        target: Path,
+-        console,
+-        live_status=None,
+-        exclude: Optional[List[str]] = None,
+-        include_files: Optional[Dict[FileType, List[Path]]] = None,
+-        handlers: Optional[Set[FileHandler]] = None
+-    ) -> None:
+-        """
+-        Initializes the FileFinder with the specified parameters.
+-
+-        Args:
+-            max_level (int): Maximum directory depth to search.
+-            ecosystems (List[Ecosystem]): List of ecosystems to consider.
+-            target (Path): Target directory to search.
+-            console: Console object for output.
+-            live_status: Live status object for updates.
+-            exclude (Optional[List[str]]): List of patterns to exclude from the search.
+-            include_files (Optional[Dict[FileType, List[Path]]]): Dictionary of files to include in the search.
+-            handlers (Optional[Set[FileHandler]]): Set of file handlers.
+-        """
+-        self.max_level = max_level
+-        self.target = target
+-        self.include_files = include_files
+-
+-        # If no handlers are provided, initialize them from the ecosystem mapping
+-        if not handlers:
+-            handlers = set(ECOSYSTEM_HANDLER_MAPPING[ecosystem]()
+-                                              for ecosystem in ecosystems)
+-
+-        self.handlers = handlers
+-        self.file_count = 0
+-        self.exclude_dirs: Set[Path] = set()
+-        self.exclude_files: Set[Path] = set()
+-        exclude = [] if not exclude else exclude
+-
+-        # Populate the exclude_dirs and exclude_files sets based on the provided patterns
+-        for pattern in exclude:
+-            for path in Path(target).glob(pattern):
+-                if path.is_dir():
+-                    self.exclude_dirs.add(path)
+-                else:
+-                    self.exclude_files.add(path)
+-
+-        self.console = console
+-        self.live_status = live_status
++    def __init__(self, max_level: int, ecosystems: List[Ecosystem], target:
++        Path, console, live_status=None, exclude: Optional[List[str]]=None,
++        include_files: Optional[Dict[FileType, List[Path]]]=None, handlers:
++        Optional[Set[FileHandler]]=None) ->None:
++        pass
+ 
+     def process_directory(self, dir_path: str, max_deep: Optional[int] = None) -> Tuple[str, Dict[str, Set[Path]]]:
+         """

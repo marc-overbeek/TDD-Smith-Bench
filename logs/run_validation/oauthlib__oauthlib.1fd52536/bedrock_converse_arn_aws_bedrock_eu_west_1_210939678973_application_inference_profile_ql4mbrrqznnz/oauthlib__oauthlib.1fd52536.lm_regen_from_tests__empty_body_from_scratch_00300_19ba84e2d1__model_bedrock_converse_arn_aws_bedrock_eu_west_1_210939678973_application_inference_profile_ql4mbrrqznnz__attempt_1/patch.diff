@@ -1,0 +1,75 @@
+--- a/oauthlib/oauth2/rfc6749/clients/base.py
++++ b/oauthlib/oauth2/rfc6749/clients/base.py
+@@ -165,40 +165,40 @@
+         raise NotImplementedError("Must be implemented by inheriting classes.")
+ 
+     def add_token(self, uri, http_method='GET', body=None, headers=None,
+-                  token_placement=None, **kwargs):
++        token_placement=None, **kwargs):
+         """Add token to the request uri, body or authorization header.
+ 
+-        The access token type provides the client with the information
+-        required to successfully utilize the access token to make a protected
+-        resource request (along with type-specific attributes).  The client
+-        MUST NOT use an access token if it does not understand the token
+-        type.
+-
+-        For example, the "bearer" token type defined in
+-        [`I-D.ietf-oauth-v2-bearer`_] is utilized by simply including the access
+-        token string in the request:
+-
+-        .. code-block:: http
+-
+-            GET /resource/1 HTTP/1.1
+-            Host: example.com
+-            Authorization: Bearer mF_9.B5f-4.1JqM
+-
+-        while the "mac" token type defined in [`I-D.ietf-oauth-v2-http-mac`_] is
+-        utilized by issuing a MAC key together with the access token which is
+-        used to sign certain components of the HTTP requests:
+-
+-        .. code-block:: http
+-
+-            GET /resource/1 HTTP/1.1
+-            Host: example.com
+-            Authorization: MAC id="h480djs93hd8",
+-                                nonce="274312:dj83hs9s",
+-                                mac="kDZvddkndxvhGRXZhvuDjEWhGeE="
+-
+-        .. _`I-D.ietf-oauth-v2-bearer`: https://tools.ietf.org/html/rfc6749#section-12.2
+-        .. _`I-D.ietf-oauth-v2-http-mac`: https://tools.ietf.org/html/rfc6749#section-12.2
+-        """
++            The access token type provides the client with the information
++            required to successfully utilize the access token to make a protected
++            resource request (along with type-specific attributes).  The client
++            MUST NOT use an access token if it does not understand the token
++            type.
++
++            For example, the "bearer" token type defined in
++            [`I-D.ietf-oauth-v2-bearer`_] is utilized by simply including the access
++            token string in the request:
++
++            .. code-block:: http
++
++                GET /resource/1 HTTP/1.1
++                Host: example.com
++                Authorization: Bearer mF_9.B5f-4.1JqM
++
++            while the "mac" token type defined in [`I-D.ietf-oauth-v2-http-mac`_] is
++            utilized by issuing a MAC key together with the access token which is
++            used to sign certain components of the HTTP requests:
++
++            .. code-block:: http
++
++                GET /resource/1 HTTP/1.1
++                Host: example.com
++                Authorization: MAC id="h480djs93hd8",
++                                    nonce="274312:dj83hs9s",
++                                    mac="kDZvddkndxvhGRXZhvuDjEWhGeE="
++
++            .. _`I-D.ietf-oauth-v2-bearer`: https://tools.ietf.org/html/rfc6749#section-12.2
++            .. _`I-D.ietf-oauth-v2-http-mac`: https://tools.ietf.org/html/rfc6749#section-12.2
++            """
+         if not is_secure_transport(uri):
+             raise InsecureTransportError()
+ 

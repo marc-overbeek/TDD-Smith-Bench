@@ -1,0 +1,110 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -213,28 +213,6 @@
+         return dict(self._get_view_results(view))
+ 
+     def _to_delta_dict(self, directed=True, report_repetition_required=True, always_include_values=False):
+-        """
+-        Dump to a dictionary suitable for delta usage.
+-        Unlike to_dict, this is not dependent on the original view that the user chose to create the diff.
+-
+-        **Parameters**
+-
+-        directed : Boolean, default=True, whether to create a directional delta dictionary or a symmetrical
+-
+-        Note that in the current implementation the symmetrical delta (non-directional) is ONLY used for verifying that
+-        the delta is being applied to the exact same values as what was used to generate the delta and has
+-        no other usages.
+-
+-        If this option is set as True, then the dictionary will not have the "old_value" in the output.
+-        Otherwise it will have the "old_value". "old_value" is the value of the item in t1.
+-
+-        If delta = Delta(DeepDiff(t1, t2)) then
+-        t1 + delta == t2
+-
+-        Note that it the items in t1 + delta might have slightly different order of items than t2 if ignore_order
+-        was set to be True in the diff object.
+-
+-        """
+         if self.group_by is not None:
+             raise ValueError(DELTA_ERROR_WHEN_GROUP_BY)
+ 
+@@ -271,8 +249,6 @@
+                         if isinstance(value, Mapping) and 'old_value' in value:
+                             del value['old_value']
+         if self._numpy_paths:
+-            # Note that keys that start with '_' are considered internal to DeepDiff
+-            # and will be omitted when counting distance. (Look inside the distance module.)
+             result['_numpy_paths'] = self._numpy_paths
+ 
+         if self.iterable_compare_func:
+@@ -608,22 +584,13 @@
+ 
+ 
+ def json_convertor_default(default_mapping=None):
+-    if default_mapping:
+-        _convertor_mapping = JSON_CONVERTOR.copy()
+-        _convertor_mapping.update(default_mapping)
+-    else:
+-        _convertor_mapping = JSON_CONVERTOR
+-
+-    def _convertor(obj):
+-        for original_type, convert_to in _convertor_mapping.items():
+-            if isinstance(obj, original_type):
+-                return convert_to(obj)
+-        # This is to handle reverse() which creates a generator of type list_reverseiterator
+-        if obj.__class__.__name__ == 'list_reverseiterator':
+-            return list(copy(obj))
+-        raise TypeError('We do not know how to convert {} of type {} for json serialization. Please pass the default_mapping parameter with proper mapping of the object to a basic python type.'.format(obj, type(obj)))
+-
+-    return _convertor
++    def convertor(obj):
++        if default_mapping and type(obj) in default_mapping:
++            return default_mapping[type(obj)](obj)
++        if type(obj) in JSON_CONVERTOR:
++            return JSON_CONVERTOR[type(obj)](obj)
++        raise TypeError(f'We do not know how to convert {obj} of type {type(obj)} for json serialization. Please pass the default_mapping parameter with proper mapping of the object to a basic python type.')
++    return convertor
+ 
+ 
+ class JSONDecoder(json.JSONDecoder):
+@@ -641,34 +608,12 @@
+ 
+ 
+ def json_dumps(item, default_mapping=None, force_use_builtin_json: bool=False, **kwargs):
+-    """
+-    Dump json with extra details that are not normally json serializable
+-
+-    parameters
+-    ----------
+-
+-    force_use_builtin_json: Boolean, default = False
+-        When True, we use Python's builtin Json library for serialization,
+-        even if Orjson is installed.
+-    """
+-    if orjson and not force_use_builtin_json:
+-        indent = kwargs.pop('indent', None)
+-        if indent:
+-            kwargs['option'] = orjson.OPT_INDENT_2
+-        if 'sort_keys' in kwargs:
+-            raise TypeError(
+-                "orjson does not accept the sort_keys parameter. "
+-                "If you need to pass sort_keys, set force_use_builtin_json=True "
+-                "to use Python's built-in json library instead of orjson.")
+-        return orjson.dumps(
+-            item,
+-            default=json_convertor_default(default_mapping=default_mapping),
+-            **kwargs).decode(encoding='utf-8')
++    if orjson is None or force_use_builtin_json:
++        return json.dumps(item, default=json_convertor_default(default_mapping), **kwargs)
+     else:
+-        return json.dumps(
+-            item,
+-            default=json_convertor_default(default_mapping=default_mapping),
+-            **kwargs)
++        if kwargs:
++            raise TypeError('orjson does not accept the {} parameter.'.format(', '.join(kwargs.keys())))
++        return orjson.dumps(item, default=json_convertor_default(default_mapping)).decode('utf-8')
+ 
+ 
+ json_loads = partial(json.loads, cls=JSONDecoder)

@@ -1,0 +1,31 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -310,19 +310,16 @@
+ 
+ class _RestrictedUnpickler(pickle.Unpickler):
+ 
++    class JSONDecoder(json.JSONDecoder):
++
++        def __init__(self, *args, **kwargs):
++            json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
++
+     def __init__(self, *args, **kwargs):
+-        self.safe_to_import = kwargs.pop('safe_to_import', None)
+-        if self.safe_to_import:
+-            if isinstance(self.safe_to_import, strings):
+-                self.safe_to_import = set([self.safe_to_import])
+-            elif isinstance(self.safe_to_import, (set, frozenset)):
+-                pass
+-            else:
+-                self.safe_to_import = set(self.safe_to_import)
+-            self.safe_to_import = self.safe_to_import | SAFE_TO_IMPORT
+-        else:
+-            self.safe_to_import = SAFE_TO_IMPORT
+-        super().__init__(*args, **kwargs)
++        json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
++
++    def __init__(self, *args, **kwargs):
++        json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
+ 
+     def find_class(self, module, name):
+         # Only allow safe classes from self.safe_to_import.

@@ -1,0 +1,55 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -55,40 +55,13 @@
+     day-to-day use.
+     """
+     def __init__(self, subspec, init, op=operator.iadd):
+-        self.subspec = subspec
+-        self.init = init
+-        self.op = op
+-        if not callable(op):
+-            raise TypeError('expected callable for %s op param, not: %r' %
+-                            (self.__class__.__name__, op))
+-        if not callable(init):
+-            raise TypeError('expected callable for %s init param, not: %r' %
+-                            (self.__class__.__name__, init))
++        pass
+ 
+     def glomit(self, target, scope):
+-        is_agg = False
+-        if scope[MODE] is GROUP and scope.get(CUR_AGG) is None:
+-            scope[CUR_AGG] = self
+-            is_agg = True
+-
+-        if self.subspec is not T:
+-            target = scope[glom](target, self.subspec, scope)
+-
+-        if is_agg:
+-            return self._agg(target, scope[ACC_TREE])
+-        try:
+-            return self._fold(target_iter(target, scope))
+-        except UnregisteredTarget as ut:
+-            raise FoldError('can only %s on iterable targets, not %s type (%s)'
+-                            % (self.__class__.__name__, type(target).__name__, ut))
++        pass
+ 
+     def _fold(self, iterator):
+-        ret, op = self.init(), self.op
+-
+-        for v in iterator:
+-            ret = op(ret, v)
+-
+-        return ret
++        pass
+ 
+     def _agg(self, target, tree):
+         if self not in tree:
+@@ -123,7 +96,7 @@
+ 
+     """
+     def __init__(self, subspec=T, init=int):
+-        super().__init__(subspec=subspec, init=init, op=operator.iadd)
++        pass
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

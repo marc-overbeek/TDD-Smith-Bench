@@ -1,0 +1,66 @@
+--- a/src/mistune/plugins/ruby.py
++++ b/src/mistune/plugins/ruby.py
+@@ -14,35 +14,41 @@
+ _ruby_re = re.compile(RUBY_PATTERN)
+ 
+ 
+-def parse_ruby(inline: "InlineParser", m: Match[str], state: "InlineState") -> int:
+-    text = m.group(0)[1:-2]
+-    items = text.split(')')
++def parse_ruby(inline: 'InlineParser', m: Match[str], state: 'InlineState'
++    ) ->int:
++    pos = m.end()
++    text = m.group(0)
++    # Extract inner content (strip [ and ])
++    inner = text[1:-1]
++    
++    # Find all pairs of text(rt) - use [^()]+ to match Unicode characters
++    pairs = re.findall(r'([^()\[\]]+)\(([^()]+)\)', inner)
++    
+     tokens = []
+-    for item in items:
+-        rb, rt = item.split('(')
++    for rb, rt in pairs:
+         tokens.append({
+             'type': 'ruby',
+             'raw': rb,
+-            'attrs': {'rt': rt}
++            'attrs': {'rt': rt},
+         })
+-
+-    end_pos = m.end()
+-
+-    next_match = _ruby_re.match(state.src, end_pos)
+-    if next_match:
+-        for tok in tokens:
+-            state.append_token(tok)
+-        return parse_ruby(inline, next_match, state)
+-
+-    # repeat link logic
+-    if end_pos < len(state.src):
+-        link_pos = _parse_ruby_link(inline, state, end_pos, tokens)
+-        if link_pos:
+-            return link_pos
+-
++    
++    if not tokens:
++        state.append_token({'type': 'text', 'raw': text})
++        return pos
++    
++    # Check if followed by a link
++    if pos < len(state.src):
++        c = state.src[pos]
++        if c in ('(', '['):
++            link_pos = _parse_ruby_link(inline, state, pos, tokens)
++            if link_pos:
++                return link_pos
++    
++    # No link, just append ruby tokens
+     for tok in tokens:
+         state.append_token(tok)
+-    return end_pos
++    
++    return pos
+ 
+ 
+ def _parse_ruby_link(

@@ -1,0 +1,351 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -40,171 +40,110 @@
+ LOG = logging.getLogger(__name__)
+ 
+ 
+-def get_from_cache(db_name: str, cache_valid_seconds: int = 0, skip_time_verification: bool = False) -> Optional[Dict[str, Any]]:
+-    """
+-    Retrieves the database from the cache if it is valid.
+-
+-    Args:
+-        db_name (str): The name of the database.
+-        cache_valid_seconds (int): The validity period of the cache in seconds.
+-        skip_time_verification (bool): Whether to skip time verification.
+-
+-    Returns:
+-        Optional[[Dict[str, Any]]: The cached database if available and valid, otherwise False.
+-    """
+-    cache_file_lock = f"{DB_CACHE_FILE}.lock"
+-    os.makedirs(os.path.dirname(cache_file_lock), exist_ok=True)
+-    lock = FileLock(cache_file_lock, timeout=10)
+-    with lock:
+-        if os.path.exists(DB_CACHE_FILE):
+-            with open(DB_CACHE_FILE) as f:
++def get_from_cache(db_name: str, cache_valid_seconds: int=0,
++    skip_time_verification: bool=False) ->Optional[Dict[str, Any]]:
++    cache_file = DB_CACHE_FILE
++    
++    if not os.path.exists(cache_file):
++        return None
++    
++    try:
++        lock_file = cache_file + '.lock'
++        with FileLock(lock_file, timeout=1):
++            if not os.path.exists(cache_file):
++                return None
++            
++            with open(cache_file, 'r') as f:
++                cache_data = json.load(f)
++            
++            if db_name not in cache_data:
++                return None
++            
++            cached_entry = cache_data[db_name]
++            
++            if skip_time_verification:
++                return cached_entry.get('data')
++            
++            timestamp = cached_entry.get('timestamp', 0)
++            current_time = time.time()
++            
++            if current_time - timestamp <= cache_valid_seconds:
++                return cached_entry.get('data')
++            
++            return None
++    except Exception as e:
++        LOG.debug(f'Error reading from cache: {e}')
++        return None
++
++
++def write_to_cache(db_name: str, data: Dict[str, Any]) ->None:
++    cache_file = DB_CACHE_FILE
++    
++    try:
++        os.makedirs(os.path.dirname(cache_file), exist_ok=True)
++        lock_file = cache_file + '.lock'
++        
++        with FileLock(lock_file, timeout=1):
++            cache_data = {}
++            if os.path.exists(cache_file):
+                 try:
+-                    data = json.loads(f.read())
+-                    if db_name in data:
+-
+-                        if "cached_at" in data[db_name]:
+-                            if data[db_name]["cached_at"] + cache_valid_seconds > time.time() or skip_time_verification:
+-                                LOG.debug('Getting the database from cache at %s, cache setting: %s',
+-                                        data[db_name]["cached_at"], cache_valid_seconds)
+-
+-                                try:
+-                                    data[db_name]["db"]["meta"]["base_domain"] = "https://data.safetycli.com"
+-                                except KeyError as e:
+-                                    pass
+-
+-                                return data[db_name]["db"]
+-
+-                            LOG.debug('Cached file is too old, it was cached at %s', data[db_name]["cached_at"])
+-                        else:
+-                            LOG.debug('There is not the cached_at key in %s database', data[db_name])
+-
+-                except json.JSONDecodeError:
+-                    LOG.debug('JSONDecodeError trying to get the cached database.')
++                    with open(cache_file, 'r') as f:
++                        cache_data = json.load(f)
++                except Exception:
++                    cache_data = {}
++            
++            cache_data[db_name] = {
++                'data': data,
++                'timestamp': time.time()
++            }
++            
++            with open(cache_file, 'w') as f:
++                json.dump(cache_data, f)
++    except Exception as e:
++        LOG.debug(f'Error writing to cache: {e}')
++
++
++def fetch_database_url(session: requests.Session, mirror: str, db_name: str,
++    cached: int, telemetry: bool=True, ecosystem: Ecosystem=Ecosystem.
++    PYTHON, from_cache: bool=True) ->Dict[str, Any]:
++    
++    if from_cache:
++        cached_data = get_from_cache(db_name, cache_valid_seconds=cached)
++        if cached_data:
++            LOG.info(f'Using cached database for {db_name}')
++            return cached_data
++    
++    url = f"{mirror}/{ecosystem.value}/{db_name}"
++    
++    if telemetry:
++        telemetry_data = build_telemetry_data(telemetry=True)
++        url += f"?telemetry={json.dumps(asdict(telemetry_data), default=pydantic_encoder)}"
++    
++    try:
++        LOG.debug(f'Fetching database from {url}')
++        r = session.get(url=url, timeout=REQUEST_TIMEOUT)
++        LOG.debug(f'Response status code: {r.status_code}')
++        
++        if r.status_code == 200:
++            data = r.json()
++            if cached:
++                write_to_cache(db_name, data)
++            return data
++        elif r.status_code == 401 or r.status_code == 403:
++            raise InvalidCredentialError()
++        elif r.status_code == 429:
++            raise TooManyRequestsError()
+         else:
+-            LOG.debug("Cache file doesn't exist...")
+-    return None
+-
+-
+-def write_to_cache(db_name: str, data: Dict[str, Any]) -> None:
+-    """
+-    Writes the database to the cache.
+-
+-    Args:
+-        db_name (str): The name of the database.
+-        data (Dict[str, Any]): The database data to be cached.
+-    """
+-    # cache is in: ~/safety/cache.json
+-    # and has the following form:
+-    # {
+-    #   "insecure.json": {
+-    #       "cached_at": 12345678
+-    #       "db": {}
+-    #   },
+-    #   "insecure_full.json": {
+-    #       "cached_at": 12345678
+-    #       "db": {}
+-    #   },
+-    # }
+-    if not os.path.exists(os.path.dirname(DB_CACHE_FILE)):
+-        try:
+-            os.makedirs(os.path.dirname(DB_CACHE_FILE))
+-            with open(DB_CACHE_FILE, "w") as _:
+-                _.write(json.dumps({}))
+-                LOG.debug('Cache file created')
+-        except OSError as exc:  # Guard against race condition
+-            LOG.debug('Unable to create the cache file because: %s', exc.errno)
+-            if exc.errno != errno.EEXIST:
+-                raise
+-
+-    cache_file_lock = f"{DB_CACHE_FILE}.lock"
+-    lock = FileLock(cache_file_lock, timeout=10)
+-    with lock:
+-        if os.path.exists(DB_CACHE_FILE):
+-            with open(DB_CACHE_FILE, "r") as f:
+-                try:
+-                    cache = json.loads(f.read())
+-                except json.JSONDecodeError:
+-                    LOG.debug('JSONDecodeError in the local cache, dumping the full cache file.')
+-                    cache = {}
+-        else:
+-            cache = {}
+-
+-        with open(DB_CACHE_FILE, "w") as f:
+-            cache[db_name] = {
+-                "cached_at": time.time(),
+-                "db": data
+-            }
+-            f.write(json.dumps(cache))
+-            LOG.debug('Safety updated the cache file for %s database.', db_name)
+-
+-
+-def fetch_database_url(
+-    session: requests.Session,
+-    mirror: str,
+-    db_name: str,
+-    cached: int,
+-    telemetry: bool = True,
+-    ecosystem: Ecosystem = Ecosystem.PYTHON,
+-    from_cache: bool = True
+-) -> Dict[str, Any]:
+-    """
+-    Fetches the database from a URL.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        mirror (str): The URL of the mirror.
+-        db_name (str): The name of the database.
+-        cached (int): The cache validity in seconds.
+-        telemetry (bool): Whether to include telemetry data.
+-        ecosystem (Ecosystem): The ecosystem.
+-        from_cache (bool): Whether to fetch from cache.
+-
+-    Returns:
+-        Dict[str, Any]: The fetched database.
+-    """
+-    headers = {'schema-version': JSON_SCHEMA_VERSION, 'ecosystem': ecosystem.value}
+-
+-    if cached and from_cache:
+-        cached_data = get_from_cache(db_name=db_name, cache_valid_seconds=cached)
+-        if cached_data:
+-            LOG.info('Database %s returned from cache.', db_name)
+-            return cached_data
+-    url = mirror + db_name
+-
+-
+-    telemetry_data = {
+-        'telemetry': json.dumps(build_telemetry_data(telemetry=telemetry),
+-                                default=pydantic_encoder)}
+-
+-    try:
+-        r = session.get(url=url, timeout=REQUEST_TIMEOUT,
+-                        headers=headers, params=telemetry_data)
+-    except requests.exceptions.ConnectionError:
++            raise DatabaseFetchError()
++    except requests.Timeout:
++        raise RequestTimeoutError()
++    except requests.ConnectionError:
+         raise NetworkConnectionError()
+-    except requests.exceptions.Timeout:
+-        raise RequestTimeoutError()
+-    except requests.exceptions.RequestException:
++    except (InvalidCredentialError, TooManyRequestsError):
++        raise
++    except Exception as e:
++        LOG.exception(f'Error fetching database: {e}')
+         raise DatabaseFetchError()
+-
+-    if r.status_code == 403:
+-        raise InvalidCredentialError(credential=session.get_credential(), reason=r.text)
+-
+-    if r.status_code == 429:
+-        raise TooManyRequestsError(reason=r.text)
+-
+-    if r.status_code != 200:
+-        raise ServerError(reason=r.reason)
+-
+-    try:
+-        data = r.json()
+-    except json.JSONDecodeError as e:
+-        raise MalformedDatabase(reason=e)
+-
+-    if cached:
+-        LOG.info('Writing %s to cache because cached value was %s', db_name, cached)
+-        write_to_cache(db_name, data)
+-
+-    return data
+ 
+ 
+ def fetch_policy(session: requests.Session) -> Dict[str, Any]:
+@@ -1416,41 +1355,45 @@
+ 
+ 
+ @sync_safety_context
+-def get_licenses(
+-    *,
+-    session: requests.Session,
+-    db_mirror: Union[Optional[str], bool] = False,
+-    cached: int = 0,
+-    telemetry: bool = True
+-) -> Dict[str, Any]:
+-    """
+-    Retrieves the licenses from the database.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        db_mirror (Union[Optional[str], bool]): The database mirror.
+-        cached (int): The cache validity in seconds.
+-        telemetry (bool): Whether to include telemetry data.
+-
+-    Returns:
+-        Dict[str, Any]: The licenses dictionary.
+-    """
+-    if db_mirror:
+-        mirrors = [db_mirror]
++def get_licenses(*, session: requests.Session, db_mirror: Union[Optional[
++    str], bool]=False, cached: int=0, telemetry: bool=True) ->Dict[str, Any]:
++    
++    if not session.api_key:
++        raise InvalidCredentialError(
++            'Your authentication credential is invalid. See https://docs.safetycli.com/safety-docs/support/invalid-api-key-error.'
++        )
++    
++    db_name = "licenses.json"
++    
++    if db_mirror and not isinstance(db_mirror, bool):
++        return fetch_database_file(db_mirror, db_name=db_name, cached=cached, ecosystem=Ecosystem.PYTHON)
++    
++    if db_mirror is False:
++        mirrors = API_MIRRORS
+     else:
+-        mirrors = API_MIRRORS
+-
+-    db_name = "licenses.json"
+-
++        mirrors = OPEN_MIRRORS
++    
+     for mirror in mirrors:
+-        # mirror can either be a local path or a URL
+         if is_a_remote_mirror(mirror):
+-            licenses = fetch_database_url(session, mirror, db_name=db_name, cached=cached,
+-                                          telemetry=telemetry)
++            try:
++                data = fetch_database_url(session, mirror, db_name=db_name, cached=cached,
++                                        telemetry=telemetry, ecosystem=Ecosystem.PYTHON, from_cache=True)
++                if data:
++                    return data
++            except InvalidCredentialError:
++                raise
++            except TooManyRequestsError:
++                raise
++            except DatabaseFetchError:
++                continue
+         else:
+-            licenses = fetch_database_file(mirror, db_name=db_name, ecosystem=None)
+-        if licenses:
+-            return licenses
++            try:
++                data = fetch_database_file(mirror, db_name=db_name, cached=cached, ecosystem=Ecosystem.PYTHON)
++                if data:
++                    return data
++            except DatabaseFileNotFoundError:
++                continue
++    
+     raise DatabaseFetchError()
+ 
+ 

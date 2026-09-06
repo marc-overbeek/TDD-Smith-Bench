@@ -1,0 +1,62 @@
+--- a/safety/scan/command.py
++++ b/safety/scan/command.py
+@@ -799,27 +799,35 @@
+ 
+     process_report(ctx.obj, console, report, **{**ctx.params})
+ 
+-def get_vulnerability_summary(report: Dict[str, Any]) -> Tuple[int, int]:
+-    """
+-    Summarize vulnerabilities from the given report.
+-
+-    Args:
+-        report (ReportModel): The report containing vulnerability data.
+-
+-    Returns:
+-        Tuple[int, int]: A tuple containing:
+-            - Total number of issues (including duplicates)
+-            - Total number of ignored issues
+-    """
+-    total_issues = 0
+-    ignored_issues = 0
+-
+-    for project in report.scan_results.projects:
+-        for file in project.files:
+-            for dependency in file.results.dependencies:
+-                for specification in dependency.specifications:
+-                    known_vulnerabilities = specification.vulnerabilities.known_vulnerabilities
+-                    total_issues += len(known_vulnerabilities)
+-                    ignored_issues += sum(1 for v in known_vulnerabilities if v.ignored)
+-
+-    return total_issues, ignored_issues
++total_issues_with_duplicates, total_ignored_issues = get_vulnerability_summary(report.as_v30())
++
++def get_vulnerability_summary(report: Dict[str, Any]) ->Tuple[int, int]:
++    total_issues_with_duplicates = 0
++    total_ignored_issues = 0
++
++    projects = report.get("projects", [])
++    files = report.get("files", [])
++
++    def process_file_results(file_data):
++        nonlocal total_issues_with_duplicates, total_ignored_issues
++        results = file_data.get("results", {})
++        dependencies = results.get("dependencies", [])
++        for dep in dependencies:
++            specifications = dep.get("specifications", [])
++            for spec in specifications:
++                vulnerabilities = spec.get("vulnerabilities", [])
++                for vuln in vulnerabilities:
++                    if vuln.get("ignored", False):
++                        total_ignored_issues += 1
++                    else:
++                        total_issues_with_duplicates += 1
++
++    for project in projects:
++        project_files = project.get("files", [])
++        for file_data in project_files:
++            process_file_results(file_data)
++
++    for file_data in files:
++        process_file_results(file_data)
++
++    return total_issues_with_duplicates, total_ignored_issues

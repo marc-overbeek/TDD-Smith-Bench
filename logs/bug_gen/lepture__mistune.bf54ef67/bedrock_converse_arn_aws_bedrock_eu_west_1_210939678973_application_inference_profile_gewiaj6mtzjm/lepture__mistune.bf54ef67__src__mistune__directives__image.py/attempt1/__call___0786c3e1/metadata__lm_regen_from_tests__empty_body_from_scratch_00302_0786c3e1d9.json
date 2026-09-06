@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests and the code structure, I need to implement the `__call__` method for the `Image` class. The method should register the directive and set up the HTML renderer properly.\n\nBased on the pattern in the code and the failing tests, the `__call__` method needs to:\n1. Register the directive with the given name and parse method\n2. Check if the renderer is HTML and register the appropriate render function",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "Looking at the failing tests and the code structure, I need to implement the `__call__` method for the `Image` class. The method should register the directive and set up the HTML renderer properly.\n\nBased on the pattern in the code and the failing tests, the `__call__` method needs to:\n1. Register the directive with the given name and parse method\n2. Check if the renderer is HTML and register the appropriate render function\n\n```\ndef __call__(self, directive: \"BaseDirective\", md: \"Markdown\") -> None:\n    directive.register(self.NAME, self.parse)\n    assert md.renderer is not None\n    if md.renderer.NAME == 'html':\n        md.renderer.register('block_image', render_block_image)\n```",
+  "rewrite": "def __call__(self, directive: \"BaseDirective\", md: \"Markdown\") -> None:\n    directive.register(self.NAME, self.parse)\n    assert md.renderer is not None\n    if md.renderer.NAME == 'html':\n        md.renderer.register('block_image', render_block_image)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

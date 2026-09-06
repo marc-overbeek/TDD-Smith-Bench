@@ -1,0 +1,49 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -437,19 +437,33 @@
+ 
+ 
+ def pretty_print_diff(diff):
+-    type_t1 = get_type(diff.t1).__name__
+-    type_t2 = get_type(diff.t2).__name__
+-
+-    val_t1 = '"{}"'.format(str(diff.t1)) if type_t1 == "str" else str(diff.t1)
+-    val_t2 = '"{}"'.format(str(diff.t2)) if type_t2 == "str" else str(diff.t2)
+-
+-    diff_path = diff.path(root='root')
+-    return _get_pretty_form_text(diff.verbose_level).get(diff.report_type, "").format(
+-        diff_path=diff_path,
+-        type_t1=type_t1,
+-        type_t2=type_t2,
+-        val_t1=val_t1,
+-        val_t2=val_t2)
++    diff_path = diff.path()
++    diff_type = diff.type()
++    
++    if diff_type == "type_changes":
++        return f"Type of {diff_path} changed from {diff.t1_type} to {diff.t2_type} and value changed from {diff.val_t1} to {diff.val_t2}."
++    elif diff_type == "values_changed":
++        return f"Value of {diff_path} changed from {diff.val_t1} to {diff.val_t2}."
++    elif diff_type == "dictionary_item_added":
++        return f"Item {diff_path} added to dictionary."
++    elif diff_type == "dictionary_item_removed":
++        return f"Item {diff_path} removed from dictionary."
++    elif diff_type == "iterable_item_added":
++        return f"Item {diff_path} added to iterable."
++    elif diff_type == "iterable_item_removed":
++        return f"Item {diff_path} removed from iterable."
++    elif diff_type == "attribute_added":
++        return f"Attribute {diff_path} added."
++    elif diff_type == "attribute_removed":
++        return f"Attribute {diff_path} removed."
++    elif diff_type == "set_item_added":
++        return f"Item root[{diff.val_t2}] added to set."
++    elif diff_type == "set_item_removed":
++        return f"Item root[{diff.val_t1}] removed from set."
++    elif diff_type == "repetition_change":
++        return f"Repetition change for item {diff_path}."
++    else:
++        return f"Unknown diff type: {diff_type}"
+ 
+ 
+ def load_path_content(path, file_type=None):

@@ -1,0 +1,104 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1564,49 +1564,59 @@
+ 
+ 
+ 
+-def get_packages(files: Optional[List[str]] = None, stdin: bool = False) -> List[Package]:
+-    """
+-    Retrieves the packages from the given files or standard input.
+-
+-    Args:
+-        files (Optional[List[str]]): The list of files.
+-        stdin (bool): Whether to read from standard input.
+-
+-    Returns:
+-        List[Package]: The list of packages.
+-    """
+-    if files:
+-        return list(itertools.chain.from_iterable(read_requirements(f, resolve=True) for f in files))
+-
++def get_packages(files: Optional[List[str]]=None, stdin: bool=False) ->List[
++    Package]:
+     if stdin:
+-        return list(read_requirements(sys.stdin))
+-
+-    import pkg_resources
+-
+-    def allowed_version(pkg: str, version: str) -> bool:
+-        try:
+-            parse_version(version)
+-        except Exception:
+-            SafetyContext.local_announcements.append(
+-                {'message': f'Version {version} for {pkg} is invalid and is ignored by Safety. Please See PEP 440.',
+-                 'type': 'warning', 'local': True})
+-            return False
+-
+-        return True
+-
+-    w_set = pkg_resources.working_set
+-
+-    SafetyContext().scanned_full_path.extend(w_set.entry_keys.keys())
+-
+-    return [
+-        Package(name=d.key, version=d.version,
+-                requirements=[SafetyRequirement(f'{d.key}=={d.version}', found=d.location)],
+-                found=d.location, insecure_versions=[],
+-                secure_versions=[], latest_version=None, latest_version_without_known_vulnerabilities=None,
+-                more_info_url=None) for d in
+-        w_set
+-        if d.key not in {"python", "wsgiref", "argparse"} and allowed_version(d.key, d.version)
+-    ]
++        contents = sys.stdin.read()
++        packages = list(read_requirements(contents, resolve=True))
++        return packages
++
++    if not files:
++        import pkg_resources
++        packages = []
++        for pkg in pkg_resources.working_set:
++            requirements = [SafetyRequirement(f"{pkg.project_name}=={pkg.version}")]
++            packages.append(Package(name=pkg.project_name, version=pkg.version, requirements=requirements, found=pkg.location, insecure_versions=[], secure_versions=[], latest_version_without_known_vulnerabilities=None, latest_version=None, more_info_url=None))
++        return packages
++
++    packages = []
++    for file in files:
++        packages.extend(read_requirements(file, resolve=True))
++
++    return packages
++
++def get_packages(files: Optional[List[str]]=None, stdin: bool=False) ->List[
++    Package]:
++    if stdin:
++        reqs = read_requirements(sys.stdin, resolve=True)
++    elif files:
++        reqs = itertools.chain.from_iterable(
++            read_requirements(f, resolve=True) for f in files
++        )
++    else:
++        import pkg_resources
++        reqs = [SafetyRequirement(f"{pkg.project_name}=={pkg.version}") 
++                for pkg in pkg_resources.working_set]
++
++    packages = {}
++    for req in reqs:
++        name = canonicalize_name(req.name)
++        if name not in packages:
++            packages[name] = Package(
++                name=req.name,
++                version=next(iter(req.specifier)).version if is_pinned_requirement(req.specifier) else None,
++                requirements=[req],
++                found=getattr(req, 'found', None),
++                insecure_versions=[],
++                secure_versions=[],
++                latest_version_without_known_vulnerabilities=None,
++                latest_version=None,
++                more_info_url=None
++            )
++        else:
++            packages[name].requirements.append(req)
++
++    return list(packages.values())
+ 
+ 
+ def read_vulnerabilities(fh: Any) -> Dict[str, Any]:

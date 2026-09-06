@@ -1,0 +1,27 @@
+--- a/oauthlib/oauth2/rfc6749/errors.py
++++ b/oauthlib/oauth2/rfc6749/errors.py
+@@ -94,7 +94,13 @@
+         return json.dumps(dict(self.twotuples))
+ 
+     @property
++    @property
+     def headers(self):
++        headers = {
++            'Content-Type': 'application/json',
++            'Cache-Control': 'no-store',
++            'Pragma': 'no-cache',
++        }
+         if self.status_code == 401:
+             """
+             https://tools.ietf.org/html/rfc6750#section-3
+@@ -108,8 +114,8 @@
+                 authvalues.append('error_description="{}"'.format(self.description))
+             if self.uri:
+                 authvalues.append('error_uri="{}"'.format(self.uri))
+-            return {"WWW-Authenticate": "Bearer " + ", ".join(authvalues)}
+-        return {}
++            headers["WWW-Authenticate"] = "Bearer " + ", ".join(authvalues)
++        return headers
+ 
+ 
+ class TokenExpiredError(OAuth2Error):

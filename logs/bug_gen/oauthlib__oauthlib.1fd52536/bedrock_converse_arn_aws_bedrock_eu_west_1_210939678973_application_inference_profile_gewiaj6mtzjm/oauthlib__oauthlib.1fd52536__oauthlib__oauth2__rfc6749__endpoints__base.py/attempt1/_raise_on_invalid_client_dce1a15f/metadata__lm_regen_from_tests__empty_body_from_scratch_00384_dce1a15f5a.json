@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef _raise_on_invalid_client(self, request):\n    \"\"\"Raise on failed client authentication.\"\"\"\n    if self.request_validator.client_authentication_required(request):\n        if not self.request_validator.authenticate_client(request):\n            log.debug('Client authentication failed, %r.', request)\n            raise InvalidClientError(request=request)\n    elif not self.request_validator.authenticate_client_id(request.client_id, request):\n        log.debug('Client authentication failed, %r.', request)\n        raise InvalidClientError(request=request)\n```",
+  "rewrite": "def _raise_on_invalid_client(self, request):\n    \"\"\"Raise on failed client authentication.\"\"\"\n    if self.request_validator.client_authentication_required(request):\n        if not self.request_validator.authenticate_client(request):\n            log.debug('Client authentication failed, %r.', request)\n            raise InvalidClientError(request=request)\n    elif not self.request_validator.authenticate_client_id(request.client_id, request):\n        log.debug('Client authentication failed, %r.', request)\n        raise InvalidClientError(request=request)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

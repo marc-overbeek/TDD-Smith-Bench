@@ -1,0 +1,24 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1931,18 +1931,10 @@
+ 
+ 
+ def _handle_list(target, spec, scope):
+-    subspec = spec[0]
+-    iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
+-    try:
+-        iterator = iterate(target)
+-    except Exception as e:
+-        raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+-                        % (target.__class__.__name__, Path(*scope[Path]), e))
+     ret = []
+-    base_path = scope[Path]
+-    for i, t in enumerate(iterator):
+-        scope[Path] = base_path + [i]
+-        val = scope[glom](t, subspec, scope)
++    for subspec in spec:
++        scope = chain_child(scope)
++        val = scope[glom](target, subspec, scope)
+         if val is SKIP:
+             continue
+         if val is STOP:

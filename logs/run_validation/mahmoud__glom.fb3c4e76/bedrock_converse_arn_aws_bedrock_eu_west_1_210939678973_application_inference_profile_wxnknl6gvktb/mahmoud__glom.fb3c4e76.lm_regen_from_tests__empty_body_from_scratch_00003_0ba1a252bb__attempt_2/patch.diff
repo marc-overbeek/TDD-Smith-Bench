@@ -1,0 +1,95 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -239,44 +239,56 @@
+     return s
+ 
+ 
+-def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0, prev_target=_MISSING, last_branch=True):
+-    """
+-    unpack a scope into a multi-line but short summary
+-    """
+-    segments = []
+-    indent = " " + "|" * depth
+-    tick = "| " if depth else "- "
+-    def mk_fmt(label, t=None):
+-        pre = indent + (t or tick) + label + ": "
+-        fmt_width = width - len(pre)
+-        return lambda v: pre + _format_trace_value(v, fmt_width)
+-    fmt_t = mk_fmt("Target")
+-    fmt_s = mk_fmt("Spec")
+-    fmt_b = mk_fmt("Spec", "+ ")
+-    recurse = lambda s, last=False: format_target_spec_trace(s, root_error, width, depth + 1, prev_target, last)
+-    tb_exc_line = lambda e: "".join(traceback.format_exception_only(type(e), e))[:-1]
+-    fmt_e = lambda e: indent + tick + tb_exc_line(e)
+-    for scope, spec, target, error, branches in _unpack_stack(scope):
+-        if target is not prev_target:
+-            segments.append(fmt_t(target))
+-        prev_target = target
++def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0,
++    prev_target=_MISSING, last_branch=True):
++    """Format a target-spec trace for error reporting."""
++    stack = _unpack_stack(scope, only_errors=True)
++    
++    lines = []
++    prefix = ' ' * depth
++    
++    for i, (scope_item, spec, target, error, branches) in enumerate(stack):
++        is_last = (i == len(stack) - 1)
++        
++        # Format target if it changed
++        if target != prev_target:
++            lines.append(f'{prefix} - Target: {_format_trace_value(target, width - len(prefix) - 10)}')
++            prev_target = target
++        
++        # Format spec
++        spec_str = _format_trace_value(spec, width - len(prefix) - 10)
++        
+         if branches:
+-            segments.append(fmt_b(spec))
+-            segments.extend([recurse(s) for s in branches[:-1]])
+-            segments.append(recurse(branches[-1], last_branch))
++            # This spec has branches
++            lines.append(f'{prefix} + Spec: {spec_str}')
++            
++            # Format each branch
++            for j, branch_scope in enumerate(branches):
++                branch_error = branch_scope.maps[0].get(CUR_ERROR)
++                
++                # Recursively format branch
++                branch_trace = format_target_spec_trace(
++                    branch_scope, root_error, width, depth + 1,
++                    prev_target=prev_target, last_branch=(j == len(branches) - 1)
++                )
++                
++                branch_lines = branch_trace.split('\n')
++                for k, line in enumerate(branch_lines):
++                    if k == 0:
++                        lines.append(f'{prefix} |\\ Spec: {line.lstrip()}')
++                    elif branch_error and k == len(branch_lines) - 1:
++                        lines.append(f'{prefix} |X {line.lstrip()}')
++                    else:
++                        lines.append(f'{prefix} || {line.lstrip()}')
+         else:
+-            segments.append(fmt_s(spec))
+-        if error is not None and error is not root_error:
+-            last_line_error = True
+-            segments.append(fmt_e(error))
+-        else:
+-            last_line_error = False
+-    if depth:  # \ on first line, X on last line
+-        remark = lambda s, m: s[:depth + 1] + m + s[depth + 2:]
+-        segments[0] = remark(segments[0], "\\")
+-        if not last_branch or last_line_error:
+-            segments[-1] = remark(segments[-1], "X")
+-    return "\n".join(segments)
++            # No branches
++            lines.append(f'{prefix} - Spec: {spec_str}')
++        
++        # Format error if present and is last
++        if error and is_last:
++            lines.append(str(error))
++    
++    return '\n'.join(lines)
+ 
+ 
+ # TODO: not used (yet)

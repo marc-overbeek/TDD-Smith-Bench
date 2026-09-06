@@ -1,0 +1,30 @@
+--- a/glom/cli.py
++++ b/glom/cli.py
+@@ -100,7 +100,26 @@
+ 
+ def main(argv):
+     cmd = get_command()
+-    return cmd.run(argv) or 0
++    return cmd.invoke(argv) or 0
++
++def main(argv):
++    cmd = get_command()
++    result = cmd.invoke(argv)
++    return result if result is not None else 0
++
++def main(argv):
++    cmd = get_command()
++    result = cmd.invoke(argv)
++    return result if isinstance(result, int) else 0
++
++def main(argv):
++    cmd = get_command()
++    return cmd.invoke(argv) or 0
++
++def main(argv):
++    cmd = get_command()
++    ret = cmd.invoke(argv)
++    return ret if ret is not None else 0
+ 
+ 
+ def console_main():

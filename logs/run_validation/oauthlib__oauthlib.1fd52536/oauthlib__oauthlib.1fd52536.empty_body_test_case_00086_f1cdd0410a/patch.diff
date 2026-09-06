@@ -1,0 +1,27 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/base.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/base.py
+@@ -51,10 +51,7 @@
+         self._catch_errors = catch_errors
+ 
+     def _raise_on_missing_token(self, request):
+-        """Raise error on missing token."""
+-        if not request.token:
+-            raise InvalidRequestError(request=request,
+-                                      description='Missing token parameter.')
++        pass
+     def _raise_on_invalid_client(self, request):
+         """Raise on failed client authentication."""
+         if self.request_validator.client_authentication_required(request):
+@@ -66,11 +63,7 @@
+             raise InvalidClientError(request=request)
+ 
+     def _raise_on_unsupported_token(self, request):
+-        """Raise on unsupported tokens."""
+-        if (request.token_type_hint and
+-            request.token_type_hint in self.valid_token_types and
+-            request.token_type_hint not in self.supported_token_types):
+-            raise UnsupportedTokenTypeError(request=request)
++        pass
+ 
+     def _raise_on_bad_method(self, request):
+         if self.valid_request_methods is None:

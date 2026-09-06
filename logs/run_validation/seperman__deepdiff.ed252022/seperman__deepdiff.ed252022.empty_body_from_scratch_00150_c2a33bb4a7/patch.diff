@@ -1,0 +1,129 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -1093,123 +1093,9 @@
+             i._asdict() for i in self.to_flat_rows(include_action_in_path=False, report_type_changes=True)
+         ]
+ 
+-    def to_flat_rows(self, include_action_in_path=False, report_type_changes=True) -> List[FlatDeltaRow]:
+-        """
+-        Just like to_flat_dicts but returns FlatDeltaRow Named Tuples
+-        """
+-        result = []
+-        if include_action_in_path:
+-            _parse_path = partial(parse_path, include_actions=True)
+-        else:
+-            _parse_path = parse_path
+-        if report_type_changes:
+-            keys_and_funcs = [
+-                ('value', 'value', None),
+-                ('new_value', 'value', None),
+-                ('old_value', 'old_value', None),
+-                ('new_type', 'type', None),
+-                ('old_type', 'old_type', None),
+-                ('new_path', 'new_path', _parse_path),
+-            ]
+-        else:
+-            if not self.always_include_values:
+-                raise ValueError(
+-                    "When converting to flat dictionaries, if report_type_changes=False and there are type changes, "
+-                    "you must set the always_include_values=True at the delta object creation. Otherwise there is nothing to include."
+-                )
+-            keys_and_funcs = [
+-                ('value', 'value', None),
+-                ('new_value', 'value', None),
+-                ('old_value', 'old_value', None),
+-                ('new_path', 'new_path', _parse_path),
+-            ]
+-
+-        FLATTENING_NEW_ACTION_MAP = {
+-            'iterable_items_added_at_indexes': 'unordered_iterable_item_added',
+-            'iterable_items_removed_at_indexes': 'unordered_iterable_item_removed',
+-        }
+-        for action, info in self.diff.items():
+-            if action == '_iterable_opcodes':
+-                result.extend(self._flatten_iterable_opcodes(_parse_path=_parse_path))
+-                continue
+-            if action.startswith('_'):
+-                continue
+-            if action in FLATTENING_NEW_ACTION_MAP:
+-                new_action = FLATTENING_NEW_ACTION_MAP[action]
+-                for path, index_to_value in info.items():
+-                    path = _parse_path(path)
+-                    for index, value in index_to_value.items():
+-                        path2 = path.copy()
+-                        if include_action_in_path:
+-                            path2.append((index, 'GET'))
+-                        else:
+-                            path2.append(index)
+-                        if report_type_changes:
+-                            row = FlatDeltaRow(path=path2, value=value, action=new_action, type=type(value))
+-                        else:
+-                            row = FlatDeltaRow(path=path2, value=value, action=new_action)
+-                        result.append(row)
+-            elif action in {'set_item_added', 'set_item_removed'}:
+-                for path, values in info.items():
+-                    path = _parse_path(path)
+-                    for value in values:
+-                        if report_type_changes:
+-                            row = FlatDeltaRow(path=path, value=value, action=action, type=type(value))
+-                        else:
+-                            row = FlatDeltaRow(path=path, value=value, action=action)
+-                        result.append(row)
+-            elif action == 'dictionary_item_added':
+-                for path, value in info.items():
+-                    path = _parse_path(path)
+-                    if isinstance(value, dict) and len(value) == 1:
+-                        new_key = next(iter(value))
+-                        path.append(new_key)
+-                        value = value[new_key]
+-                    elif isinstance(value, (list, tuple)) and len(value) == 1:
+-                        value = value[0]
+-                        path.append(0)
+-                        action = 'iterable_item_added'
+-                    elif isinstance(value, set) and len(value) == 1:
+-                        value = value.pop()
+-                        action = 'set_item_added'
+-                    if report_type_changes:
+-                        row = FlatDeltaRow(path=path, value=value, action=action, type=type(value))
+-                    else:
+-                        row = FlatDeltaRow(path=path, value=value, action=action)
+-                    result.append(row)
+-            elif action in {
+-                'dictionary_item_removed', 'iterable_item_added',
+-                'iterable_item_removed', 'attribute_removed', 'attribute_added'
+-            }:
+-                for path, value in info.items():
+-                    path = _parse_path(path)
+-                    if report_type_changes:
+-                        row = FlatDeltaRow(path=path, value=value, action=action, type=type(value))
+-                    else:
+-                        row = FlatDeltaRow(path=path, value=value, action=action)
+-                    result.append(row)
+-            elif action == 'type_changes':
+-                if not report_type_changes:
+-                    action = 'values_changed'
+-
+-                for row in self._get_flat_row(
+-                    action=action,
+-                    info=info,
+-                    _parse_path=_parse_path,
+-                    keys_and_funcs=keys_and_funcs,
+-                    report_type_changes=report_type_changes,
+-                ):
+-                    result.append(row)
+-            else:
+-                for row in self._get_flat_row(
+-                    action=action,
+-                    info=info,
+-                    _parse_path=_parse_path,
+-                    keys_and_funcs=keys_and_funcs,
+-                    report_type_changes=report_type_changes,
+-                ):
+-                    result.append(row)
+-        return result
++    def to_flat_rows(self, include_action_in_path=False, report_type_changes=True
++        ) ->List[FlatDeltaRow]:
++        pass
+ 
+ 
+ if __name__ == "__main__":  # pragma: no cover

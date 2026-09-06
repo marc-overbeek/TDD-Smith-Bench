@@ -1,0 +1,184 @@
+--- a/src/mistune/plugins/table.py
++++ b/src/mistune/plugins/table.py
+@@ -67,11 +67,11 @@
+     return pos
+ 
+ 
+-def parse_nptable(
+-    block: "BlockParser", m: Match[str], state: "BlockState"
+-) -> Optional[int]:
+-    header = m.group("nptable_head")
+-    align = m.group("nptable_align")
++def parse_nptable(block: 'BlockParser', m: Match[str], state: 'BlockState'
++    ) ->Optional[int]:
++    pos = m.end()
++    header = m.group('nptable_head')
++    align = m.group('nptable_align')
+     thead, aligns = _process_thead(header, align)
+     if not thead:
+         return None
+@@ -80,6 +80,8 @@
+     rows = []
+     body = m.group('nptable_body')
+     for text in body.splitlines():
++        if not text.strip():
++            continue
+         row = _process_row(text, aligns)
+         if not row:
+             return None
+@@ -87,53 +89,53 @@
+ 
+     children = [thead, {'type': 'table_body', 'children': rows}]
+     state.append_token({'type': 'table', 'children': children})
+-    return m.end()
++    return pos
+ 
+ 
+-def _process_thead(
+-    header: str, align: str
+-) -> Union[Tuple[None, None], Tuple[Dict[str, Any], List[str]]]:
+-    headers = CELL_SPLIT.split(header)
+-    aligns = CELL_SPLIT.split(align)
+-    if len(headers) != len(aligns):
+-      return None, None
++def _process_thead(header: str, align: str) ->Union[Tuple[None, None],
++    Tuple[Dict[str, Any], List[str]]]:
++    headers = CELL_SPLIT.split(header)[1:-1]
++    aligns = CELL_SPLIT.split(align)[1:-1]
++    if not headers:
++        return None, None
+ 
+-    for i, v in enumerate(aligns):
+-        if ALIGN_CENTER.match(v):
+-            aligns[i] = 'center'
+-        elif ALIGN_LEFT.match(v):
+-            aligns[i] = 'left'
+-        elif ALIGN_RIGHT.match(v):
+-            aligns[i] = 'right'
++    head = []
++    for i, (text, align) in enumerate(zip(headers, aligns)):
++        align = align.strip()
++        if ALIGN_CENTER.match(align):
++            align = 'center'
++        elif ALIGN_LEFT.match(align):
++            align = 'left'
++        elif ALIGN_RIGHT.match(align):
++            align = 'right'
+         else:
+-            aligns[i] = None
+-
+-    children = [
+-        {
++            align = None
++        head.append({
+             'type': 'table_cell',
+             'text': text.strip(),
+-            'attrs': {'align': aligns[i], 'head': True}
+-        }
+-        for i, text in enumerate(headers)
+-    ]
+-    thead = {'type': 'table_head', 'children': children}
+-    return thead, aligns
++            'align': align,
++            'head': True,
++            'index': i
++        })
++
++    return {'type': 'table_head', 'children': head}, aligns
+ 
+ 
+-def _process_row(text: str, aligns: List[str]) -> Optional[Dict[str, Any]]:
+-    cells = CELL_SPLIT.split(text)
++def _process_row(text: str, aligns: List[str]) ->Optional[Dict[str, Any]]:
++    cells = CELL_SPLIT.split(text)[1:-1]
+     if len(cells) != len(aligns):
+         return None
+ 
+-    children = [
+-        {
++    row = []
++    for i, (text, align) in enumerate(zip(cells, aligns)):
++        row.append({
+             'type': 'table_cell',
+             'text': text.strip(),
+-            'attrs': {'align': aligns[i], 'head': False}
+-        }
+-        for i, text in enumerate(cells)
+-    ]
+-    return {'type': 'table_row', 'children': children}
++            'align': align.strip() if align else None,
++            'head': False,
++            'index': i
++        })
++    return {'type': 'table_row', 'children': row}
+ 
+ 
+ def render_table(renderer: "BaseRenderer", text: str) -> str:
+@@ -152,45 +154,22 @@
+     return "<tr>\n" + text + "</tr>\n"
+ 
+ 
+-def render_table_cell(
+-    renderer: "BaseRenderer", text: str, align: Optional[str] = None, head: bool = False
+-) -> str:
+-    if head:
+-        tag = 'th'
+-    else:
+-        tag = 'td'
+-
+-    html = '  <' + tag
++def render_table_cell(renderer: 'BaseRenderer', text: str, align: Optional[
++    str]=None, head: bool=False) ->str:
++    tag = 'th' if head else 'td'
+     if align:
+-        html += ' style="text-align:' + align + '"'
+-
+-    return html + '>' + text + '</' + tag + '>\n'
++        return '<{} style="text-align:{}">{}</{}>\n'.format(tag, align, text, tag)
++    return '<{}>{}</{}>\n'.format(tag, text, tag)
+ 
+ 
+-def table(md: "Markdown") -> None:
+-    """A mistune plugin to support table, spec defined at
+-    https://michelf.ca/projects/php-markdown/extra/#table
+-
+-    Here is an example:
+-
+-    .. code-block:: text
+-
+-        First Header  | Second Header
+-        ------------- | -------------
+-        Content Cell  | Content Cell
+-        Content Cell  | Content Cell
+-
+-    :param md: Markdown instance
+-    """
+-    md.block.register('table', TABLE_PATTERN, parse_table, before='paragraph')
+-    md.block.register('nptable', NP_TABLE_PATTERN, parse_nptable, before='paragraph')
+-
+-    if md.renderer and md.renderer.NAME == 'html':
+-        md.renderer.register('table', render_table)
+-        md.renderer.register('table_head', render_table_head)
+-        md.renderer.register('table_body', render_table_body)
+-        md.renderer.register('table_row', render_table_row)
+-        md.renderer.register('table_cell', render_table_cell)
++def table(md: 'Markdown') ->None:
++    md.block.register_rule('table', TABLE_PATTERN, parse_table)
++    md.block.register_rule('nptable', NP_TABLE_PATTERN, parse_nptable)
++    md.renderer.register_rule('table', render_table)
++    md.renderer.register_rule('table_head', render_table_head)
++    md.renderer.register_rule('table_body', render_table_body)
++    md.renderer.register_rule('table_row', render_table_row)
++    md.renderer.register_rule('table_cell', render_table_cell)
+ 
+ 
+ def table_in_quote(md: "Markdown") -> None:
+@@ -199,7 +178,6 @@
+     md.block.insert_rule(md.block.block_quote_rules, 'nptable', before='paragraph')
+ 
+ 
+-def table_in_list(md: "Markdown") -> None:
+-    """Enable table plugin in list."""
++def table_in_list(md: 'Markdown') ->None:
+     md.block.insert_rule(md.block.list_rules, 'table', before='paragraph')
+     md.block.insert_rule(md.block.list_rules, 'nptable', before='paragraph')

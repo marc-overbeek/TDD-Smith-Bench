@@ -1,0 +1,15 @@
+--- a/fvcore/nn/distributed.py
++++ b/fvcore/nn/distributed.py
+@@ -45,10 +45,8 @@
+         return tuple(output)
+ 
+     @staticmethod
+-    def backward(ctx, *grads: torch.Tensor) -> torch.Tensor:
+-        all_gradients = torch.stack(grads)
+-        dist.all_reduce(all_gradients)
+-        return all_gradients[dist.get_rank()]
++    def backward(ctx, *grads: torch.Tensor) ->torch.Tensor:
++        pass
+ 
+ 
+ def differentiable_all_gather(input: torch.Tensor) -> List[torch.Tensor]:

@@ -1,0 +1,23 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -831,18 +831,8 @@
+         self._set_attributes(locals())
+ 
+     def apply_image(self, img: np.ndarray, interp: str = None) -> np.ndarray:
+-        """
+-        Apply blend transform on the image(s).
+-
+-        Args:
+-            img (ndarray): of shape NxHxWxC, or HxWxC or HxW. The array can be
+-                of type uint8 in range [0, 255], or floating point in range
+-                [0, 1] or [0, 255].
+-            interp (str): keep this option for consistency, perform blend would not
+-                require interpolation.
+-        Returns:
+-            ndarray: blended image(s).
+-        """
++
++    def apply_image(self, img: np.ndarray, interp: str = None) -> np.ndarray:
+         if img.dtype == np.uint8:
+             img = img.astype(np.float32)
+             img = self.src_weight * self.src_image + self.dst_weight * img

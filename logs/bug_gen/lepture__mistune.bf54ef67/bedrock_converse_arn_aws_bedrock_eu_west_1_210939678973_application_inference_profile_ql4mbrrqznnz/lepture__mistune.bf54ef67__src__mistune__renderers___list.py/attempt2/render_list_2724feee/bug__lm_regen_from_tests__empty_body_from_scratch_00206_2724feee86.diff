@@ -1,0 +1,36 @@
+--- a/src/mistune/renderers/_list.py
++++ b/src/mistune/renderers/_list.py
+@@ -6,22 +6,21 @@
+     from ..core import BaseRenderer, BlockState
+ 
+ 
+-def render_list(
+-    renderer: "BaseRenderer", token: Dict[str, Any], state: "BlockState"
+-) -> str:
+-    attrs = token["attrs"]
+-    if attrs["ordered"]:
++def render_list(renderer: 'BaseRenderer', token: Dict[str, Any], state: 'BlockState') -> str:
++    attrs = token.get("attrs", {})
++    if attrs.get("ordered"):
+         children = _render_ordered_list(renderer, token, state)
+     else:
+         children = _render_unordered_list(renderer, token, state)
+-
+-    text = ''.join(children)
+-    parent = token.get('parent')
++    
++    text = "".join(children)
++    
++    parent = token.get("parent")
+     if parent:
+-        if parent['tight']:
+-            return text
+-        return text + '\n'
+-    return strip_end(text) + '\n'
++        # nested list - return with leading newline, indentation handled by _render_list_item
++        return "\n" + strip_end(text) + "\n"
++    
++    return strip_end(text) + "\n"
+ 
+ 
+ def _render_list_item(

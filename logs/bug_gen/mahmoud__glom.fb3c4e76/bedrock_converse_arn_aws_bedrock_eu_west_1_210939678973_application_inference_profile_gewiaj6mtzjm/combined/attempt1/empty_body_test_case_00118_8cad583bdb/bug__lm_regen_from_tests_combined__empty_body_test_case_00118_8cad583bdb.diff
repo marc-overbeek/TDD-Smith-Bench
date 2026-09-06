@@ -1,0 +1,34 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -696,15 +696,7 @@
+         return cur_t_path[2::2]
+ 
+     def items(self):
+-        """
+-        Returns a tuple of (operation, value) pairs.
+-
+-        >>> Path(T.a.b, 'c', T['d']).items()
+-        (('.', 'a'), ('.', 'b'), ('P', 'c'), ('[', 'd'))
+-
+-        """
+-        cur_t_path = self.path_t.__ops__
+-        return tuple(zip(cur_t_path[1::2], cur_t_path[2::2]))
++        return self.path_t.__ops__[1:]
+ 
+     def startswith(self, other):
+         if isinstance(other, basestring):
+@@ -1437,13 +1429,7 @@
+         return _t_child(self, '[', item)
+ 
+     def __call__(self, *args, **kwargs):
+-        if self is S:
+-            if args:
+-                raise TypeError(f'S() takes no positional arguments, got: {args!r}')
+-            if not kwargs:
+-                raise TypeError('S() expected at least one kwarg, got none')
+-            # TODO: typecheck kwarg vals?
+-        return _t_child(self, '(', (args, kwargs))
++        return self.func(*args, **kwargs)
+ 
+     def __star__(self):
+         return _t_child(self, 'x', None)

@@ -1,0 +1,70 @@
+--- a/src/mistune/plugins/formatting.py
++++ b/src/mistune/plugins/formatting.py
+@@ -66,24 +66,30 @@
+     return "<sub>" + text + "</sub>"
+ 
+ 
+-def _parse_to_end(
+-    inline: "InlineParser",
+-    m: Match[str],
+-    state: "InlineState",
+-    tok_type: str,
+-    end_pattern: Pattern[str],
+-) -> Optional[int]:
+-    pos = m.end()
+-    m1 = end_pattern.search(state.src, pos)
+-    if not m1:
++def _parse_to_end(inline: 'InlineParser', m: Match[str], state:
++    'InlineState', tok_type: str, end_pattern: Pattern[str]) ->Optional[int]:
++    text = m.group(0)
++    start = m.end()
++    end = -1
++    while True:
++        match = end_pattern.search(state.src, start)
++        if not match:
++            break
++        end = match.end()
++        if match.group(0) == match.group(0).rstrip('\\') + '\\':
++            start = end
++            continue
++        break
++    if end < 0:
+         return None
+-    end_pos = m1.end()
+-    text = state.src[pos:end_pos-2]
+     new_state = state.copy()
+-    new_state.src = text
++    new_state.src = text[2:-2]
+     children = inline.render(new_state)
+-    state.append_token({'type': tok_type, 'children': children})
+-    return end_pos
++    state.append_token({
++        'type': tok_type,
++        'children': children
++    })
++    return end
+ 
+ 
+ def _parse_script(
+@@ -146,19 +152,10 @@
+         md.renderer.register('mark', render_mark)
+ 
+ 
+-def insert(md: "Markdown") -> None:
+-    """A mistune plugin to add ``<ins>`` tag. Spec defined at
+-    https://facelessuser.github.io/pymdown-extensions/extensions/caret/#insert:
+-
+-    .. code-block:: text
+-
+-        ^^insert me^^
+-
+-    :param md: Markdown instance
+-    """
++def insert(md: 'Markdown') ->None:
+     md.inline.register(
+         'insert',
+-        r'\^\^(?=[^\s\^])',
++        r'\^\^(?=[^\s^])',
+         parse_insert,
+         before='link',
+     )

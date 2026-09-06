@@ -1,0 +1,29 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -112,17 +112,16 @@
+     return flops
+ 
+ 
+-def bmm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-    """
+-    Count flops for the bmm operation.
+-    """
+-    # Inputs should be a list of length 2.
+-    # Inputs contains the shapes of two tensor.
+-    assert len(inputs) == 2, len(inputs)
++def bmm_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:
++    """
++    Count flops for batch matrix multiplication.
++    """
++    # Inputs is a list of length 2.
++    # Inputs contains the shapes of two matrices.
+     input_shapes = [get_shape(v) for v in inputs]
+-    n, c, t = input_shapes[0]
+-    d = input_shapes[-1][-1]
+-    flop = n * c * t * d
++    assert len(input_shapes) == 2, input_shapes
++    assert input_shapes[0][-1] == input_shapes[1][-2], input_shapes
++    flop = prod(input_shapes[0]) * input_shapes[-1][-1]
+     return flop
+ 
+ 

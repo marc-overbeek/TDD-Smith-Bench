@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef __init__(self, pattern, flags=0, func=None):\n    if func not in _RE_VALID_FUNCS:\n        raise _RE_FUNC_ERROR\n    regex = re.compile(pattern, flags)\n    if func is re.match:\n        match_func = regex.match\n    elif func is re.search:\n        match_func = regex.search\n    else:\n        if _RE_FULLMATCH:\n            match_func = regex.fullmatch\n        else:\n            regex = re.compile(fr\"(?:{pattern})\\Z\", flags)\n            match_func = regex.match\n    self.flags, self.func = flags, func\n    self.match_func, self.pattern = match_func, pattern\n```",
+  "rewrite": "def __init__(self, pattern, flags=0, func=None):\n    if func not in _RE_VALID_FUNCS:\n        raise _RE_FUNC_ERROR\n    regex = re.compile(pattern, flags)\n    if func is re.match:\n        match_func = regex.match\n    elif func is re.search:\n        match_func = regex.search\n    else:\n        if _RE_FULLMATCH:\n            match_func = regex.fullmatch\n        else:\n            regex = re.compile(fr\"(?:{pattern})\\Z\", flags)\n            match_func = regex.match\n    self.flags, self.func = flags, func\n    self.match_func, self.pattern = match_func, pattern\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

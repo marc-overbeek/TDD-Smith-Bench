@@ -1,0 +1,68 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1116,36 +1116,43 @@
+         return [(distance / from_start_to_end) if from_start_to_end else 0
+                 for distance in distances]
+ 
++    def test_get_duration(self) ->None:
++        gpx = mod_gpx.GPX()
++        gpx.tracks.append(mod_gpx.GPXTrack())
++        gpx.tracks[0].segments.append(mod_gpx.GPXTrackSegment())
++        gpx.tracks[0].segments[0].points.append(mod_gpx.GPXTrackPoint(latitude=
++            12, longitude=13, time=mod_datetime.datetime(2013, 1, 1, 12, 30)))
++        self.assertEqual(gpx.get_duration(), 0)  # Single point, no duration
++        gpx.tracks[0].segments.append(mod_gpx.GPXTrackSegment())
++        gpx.tracks[0].segments[1].points.append(mod_gpx.GPXTrackPoint(latitude=
++            12, longitude=13))  # No time
++        self.assertEqual(gpx.get_duration(), 0)  # Still 0 because segment 1 has no time
++        gpx.tracks[0].segments.append(mod_gpx.GPXTrackSegment())
++        gpx.tracks[0].segments[2].points.append(mod_gpx.GPXTrackPoint(latitude=
++            12, longitude=13, time=mod_datetime.datetime(2013, 1, 1, 12, 30)))
++        gpx.tracks[0].segments[2].points.append(mod_gpx.GPXTrackPoint(latitude=
++            12, longitude=13, time=mod_datetime.datetime(2013, 1, 1, 12, 31)))
++        self.assertEqual(gpx.get_duration(), 60)  # Only segment 2 has valid duration
++
+     def get_duration(self) -> Optional[float]:
+         """
+-        Calculates duration or track segment
++        Calculates duration of GPX file
+ 
+         Returns
+         -------
+         duration: float
+-            Duration in seconds
+-        """
+-        if not self.points or len(self.points) < 2:
++            Duration in seconds or None if time data is not fully populated.
++        """
++        if not self.tracks:
+             return 0.0
+ 
+-        # Search for start:
+-        first = self.points[0]
+-        if not first.time:
+-            first = self.points[1]
+-
+-        last = self.points[-1]
+-        if not last.time:
+-            last = self.points[-2]
+-
+-        if not last.time or not first.time:
+-            log.debug('Can\'t find time')
+-            return None
+-
+-        if last.time < first.time:
+-            log.debug('Not enough time data')
+-            return None
+-
+-        return mod_utils.total_seconds(last.time - first.time)
++        result: float = 0.0
++        for track in self.tracks:
++            duration = track.get_duration()
++            if duration is not None:
++                result += duration
++
++        return result
+ 
+     def get_uphill_downhill(self) -> UphillDownhill:
+         """

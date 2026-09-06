@@ -1,0 +1,64 @@
+--- a/safety/auth/cli.py
++++ b/safety/auth/cli.py
+@@ -47,20 +47,47 @@
+                    context_settings={"allow_extra_args": True,
+                                      "ignore_unknown_options": True})
+ @pass_safety_cli_obj
+-def auth(ctx: typer.Context) -> None:
+-    """
+-    Authenticate Safety CLI with your account.
+-
+-    Args:
+-        ctx (typer.Context): The Typer context object.
+-    """
+-    LOG.info('auth started')
+-
+-    # If no subcommand is invoked, forward to the default command
+-    if not ctx.invoked_subcommand:
+-        default_command = get_command_for(name=DEFAULT_CMD,
+-                                          typer_instance=auth_app)
+-        return ctx.forward(default_command)
++def auth(ctx: typer.Context) ->None:
++    """Main entry point for the auth command."""
++    # Check if the user is already authenticated
++    fail_if_authenticated(ctx, with_msg=MSG_FAIL_LOGIN_AUTHED)
++    
++    # Get authorization data and generate the authorization URL
++    uri, initial_state = get_authorization_data(
++        client=ctx.obj.auth.client,
++        code_verifier=ctx.obj.auth.code_verifier,
++        organization=ctx.obj.auth.org,
++        headless=False
++    )
++    
++    console.print("Redirecting your browser to log in; once authenticated, return here to start using Safety")
++    console.print()
++    
++    # Process the browser callback to complete the authentication
++    info = process_browser_callback(
++        uri, 
++        initial_state=initial_state, 
++        ctx=ctx, 
++        headless=False
++    )
++    
++    if info:
++        if info.get("email", None):
++            organization = None
++            if ctx.obj.auth.org and ctx.obj.auth.org.name:
++                organization = ctx.obj.auth.org.name
++            ctx.obj.auth.refresh_from(info)
++            render_successful_login(ctx.obj.auth, organization=organization)
++            
++            console.print()
++            if not ctx.obj.auth.email_verified:
++                console.print(MSG_FINISH_REGISTRATION_TPL.format(email=ctx.obj.auth.email))
++                console.print()
++                console.print(MSG_VERIFICATION_HINT)
++        else:
++            console.print("Safety is now authenticated but your email is missing.")
++    else:
++        console.print(":stop_sign: [red]Error logging into Safety. Please try again, or use [bold]`safety auth --help`[/bold] for more information[/red]", emoji=True)
+ 
+ 
+ def fail_if_authenticated(ctx: typer.Context, with_msg: str) -> None:

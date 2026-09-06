@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, I need to implement the `__init__` method of `RemoveImportsTransformer`. The current implementation just has `pass`, but it needs to:\n\n1. Call `super().__init__()`\n2. Store the `import_items_to_be_removed` parameter as an instance variable\n\nThis is clear from how the class is used in `_remove_imports`:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing tests, I need to implement the `__init__` method of `RemoveImportsTransformer`. The current implementation just has `pass`, but it needs to:\n\n1. Call `super().__init__()`\n2. Store the `import_items_to_be_removed` parameter as an instance variable\n\nThis is clear from how the class is used in `_remove_imports`:\n```python\ntransformer = RemoveImportsTransformer(self.import_items_to_be_moved)\n```\n\nAnd how the instance variable is referenced in `leave_Import` and `leave_ImportFrom`:\n```python\nfor import_item in self.import_items_to_be_removed:\n```\n\n```python\ndef __init__(self, import_items_to_be_removed: List[ImportItem]) -> None:\n    super().__init__()\n    self.import_items_to_be_removed = import_items_to_be_removed\n```",
+  "rewrite": "transformer = RemoveImportsTransformer(self.import_items_to_be_moved)\n\nfor import_item in self.import_items_to_be_removed:\n\ndef __init__(self, import_items_to_be_removed: List[ImportItem]) -> None:\n    super().__init__()\n    self.import_items_to_be_removed = import_items_to_be_removed",
+  "strategy": "lm_regen_from_tests"
+}

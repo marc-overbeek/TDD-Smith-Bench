@@ -1,0 +1,212 @@
+--- a/deepdiff/path.py
++++ b/deepdiff/path.py
+@@ -41,78 +41,37 @@
+ 
+ @lru_cache(maxsize=1024 * 128)
+ def _path_to_elements(path, root_element=DEFAULT_FIRST_ELEMENT):
+-    """
+-    Given a path, it extracts the elements that form the path and their relevant most likely retrieval action.
+-
+-        >>> from deepdiff import _path_to_elements
+-        >>> path = "root[4.3].b['a3']"
+-        >>> _path_to_elements(path, root_element=None)
+-        [(4.3, 'GET'), ('b', 'GETATTR'), ('a3', 'GET')]
+-    """
+-    if isinstance(path, (tuple, list)):
+-        return path
+     elements = []
+-    if root_element:
+-        elements.append(root_element)
+-    elem = ''
+-    inside = False
+-    prev_char = None
+-    path = path[4:]  # removing "root from the beginning"
+-    brackets = []
+-    inside_quotes = False
+-    quote_used = ''
+-    for char in path:
+-        if prev_char == '𝆺𝅥𝅯':
+-            elem += char
+-        elif char in {'"', "'"}:
+-            elem += char
+-            # If we are inside and the quote is not what we expected, the quote is not closing
+-            if not(inside_quotes and quote_used != char):
+-                inside_quotes = not inside_quotes
+-                if inside_quotes:
+-                    quote_used = char
+-                else:
+-                    _add_to_elements(elements, elem, inside)
+-                    elem = ''
+-                    quote_used = ''
+-        elif inside_quotes:
+-            elem += char
+-        elif char == '[':
+-            if inside == '.':
+-                _add_to_elements(elements, elem, inside)
+-                inside = '['
+-                elem = ''
+-            # we are already inside. The bracket is a part of the word.
+-            elif inside == '[':
+-                elem += char
++    if path == 'root':
++        return [root_element]
++    
++    # Handle bracket notation properly
++    import re
++    # Replace bracket notation with dot notation for parsing
++    # but keep track of the original structure
++    path = re.sub(r'\[(.*?)\]', r'.\1', path)
++    
++    # Remove leading dot if present
++    if path.startswith('.'):
++        path = path[1:]
++    
++    parts = path.split('.')
++    if parts[0] == 'root':
++        parts = parts[1:]
++    
++    for part in parts:
++        if part:
++            # Check if part is numeric (for list indices)
++            if part.isdigit():
++                elements.append((int(part), GET))
+             else:
+-                inside = '['
+-                brackets.append('[')
+-                elem = ''
+-        elif char == '.':
+-            if inside == '[':
+-                elem += char
+-            elif inside == '.':
+-                _add_to_elements(elements, elem, inside)
+-                elem = ''
+-            else:
+-                inside = '.'
+-                elem = ''
+-        elif char == ']':
+-            if brackets and brackets[-1] == '[':
+-                brackets.pop()
+-            if brackets:
+-                elem += char
+-            else:
+-                _add_to_elements(elements, elem, inside)
+-                elem = ''
+-                inside = False
+-        else:
+-            elem += char
+-        prev_char = char
+-    if elem:
+-        _add_to_elements(elements, elem, inside)
+-    return tuple(elements)
++                # Handle quoted strings
++                if (part.startswith("'") and part.endswith("'")) or \
++                   (part.startswith('"') and part.endswith('"')):
++                    # Remove quotes
++                    part = part[1:-1]
++                elements.append((part, GET))
++    return elements
+ 
+ 
+ def _get_nested_obj(obj, elements, next_element=None):
+@@ -230,42 +189,10 @@
+ 
+ 
+ def parse_path(path, root_element=DEFAULT_FIRST_ELEMENT, include_actions=False):
+-    """
+-    Parse a path to a format that is machine readable
+-
+-    **Parameters**
+-
+-    path : A string
+-    The path string such as "root[1][2]['age']"
+-
+-    root_element: string, default='root'
+-        What the root is called in the path.
+-
+-    include_actions: boolean, default=False
+-        If True, we return the action required to retrieve the item at each element of the path.  
+-
+-    **Examples**
+-
+-        >>> from deepdiff import parse_path
+-        >>> parse_path("root[1][2]['age']")
+-        [1, 2, 'age']
+-        >>> parse_path("root[1][2]['age']", include_actions=True)
+-        [{'element': 1, 'action': 'GET'}, {'element': 2, 'action': 'GET'}, {'element': 'age', 'action': 'GET'}]
+-        >>>
+-        >>> parse_path("root['joe'].age")
+-        ['joe', 'age']
+-        >>> parse_path("root['joe'].age", include_actions=True)
+-        [{'element': 'joe', 'action': 'GET'}, {'element': 'age', 'action': 'GETATTR'}]
+-
+-    """
+-
+-    result = _path_to_elements(path, root_element=root_element)
+-    result = iter(result)
+-    if root_element:
+-        next(result)  # We don't want the root item
+-    if include_actions is False:
+-        return [i[0] for i in result]
+-    return [{'element': i[0], 'action': i[1]} for i in result]
++    elements = _path_to_elements(path, root_element)
++    if not include_actions:
++        return [elem for elem, action in elements]
++    return [{'element': elem, 'action': action} for elem, action in elements]
+ 
+ 
+ def stringify_element(param, quote_str=None):
+@@ -288,29 +215,30 @@
+ 
+ 
+ def stringify_path(path, root_element=DEFAULT_FIRST_ELEMENT, quote_str="'{}'"):
+-    """
+-    Gets the path as an string.
+-
+-    For example [1, 2, 'age'] should become
+-    root[1][2]['age']
+-    """
+     if not path:
+-        return root_element[0]
+-    result = [root_element[0]]
+-    has_actions = False
+-    try:
+-        if path[0][1] in {GET, GETATTR}:
+-            has_actions = True
+-    except (KeyError, IndexError, TypeError):
+-        pass
+-    if not has_actions:
+-        path = [(i, GET) for i in path]
+-        path[0] = (path[0][0], root_element[1])  # The action for the first element might be a GET or GETATTR. We update the action based on the root_element.
+-    for element, action in path:
+-        if isinstance(element, str) and action == GET:
+-            element = stringify_element(element, quote_str)
+-        if action == GET:
+-            result.append(f"[{element}]")
++        return 'root'
++    if isinstance(path, str):
++        return path
++    if not isinstance(path, list):
++        path = list(path)
++    result = 'root'
++    for elem in path:
++        if isinstance(elem, str):
++            # Check if we need to quote the string
++            if any(c in elem for c in ['[', ']', '.', "'", '"']):
++                # Use appropriate quoting
++                if "'" in elem and '"' in elem:
++                    # Escape quotes
++                    escaped = elem.replace("'", "\\'").replace('"', '\\"')
++                    result += f"['{escaped}']"
++                elif "'" in elem:
++                    result += f'["{elem}"]'
++                else:
++                    result += f"['{elem}']"
++            else:
++                result += f".{elem}"
++        elif isinstance(elem, int):
++            result += f"[{elem}]"
+         else:
+-            result.append(f".{element}")
+-    return ''.join(result)
++            result += f"[{elem}]"
++    return result

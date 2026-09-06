@@ -1,0 +1,38 @@
+--- a/src/mistune/inline_parser.py
++++ b/src/mistune/inline_parser.py
+@@ -296,8 +296,6 @@
+ 
+     def parse_codespan(self, m: Match[str], state: InlineState) -> int:
+         marker = m.group(0)
+-        # require same marker with same length at end
+-
+         pattern = re.compile(r'(.*?[^`])' + marker + r'(?!`)', re.S)
+ 
+         pos = m.end()
+@@ -305,11 +303,16 @@
+         if m2:
+             end_pos = m2.end()
+             code = m2.group(1)
+-            # Line endings are treated like spaces
+             code = code.replace('\n', ' ')
+             if len(code.strip()):
+                 if code.startswith(' ') and code.endswith(' '):
+                     code = code[1:-1]
++        
++            rules = ['link', 'prec_auto_link', 'prec_inline_html']
++            prec_pos = self.precedence_scan(m, state, end_pos, rules)
++            if prec_pos:
++                return prec_pos
++        
+             state.append_token({'type': 'codespan', 'raw': code})
+             return end_pos
+         else:
+@@ -395,7 +398,7 @@
+         new_state = state.copy()
+         new_state.src = state.src
+         m2_pos = func(m2, new_state)
+-        if not m2_pos or m2_pos < end_pos:
++        if not m2_pos or m2_pos <= end_pos:
+             return None
+ 
+         raw_text = state.src[m.start():m2.start()]

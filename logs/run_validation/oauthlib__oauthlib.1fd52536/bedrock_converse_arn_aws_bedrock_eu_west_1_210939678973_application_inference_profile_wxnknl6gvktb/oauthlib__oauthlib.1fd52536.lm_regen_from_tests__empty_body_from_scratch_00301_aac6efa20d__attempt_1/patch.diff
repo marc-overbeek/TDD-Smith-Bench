@@ -1,0 +1,15 @@
+--- a/oauthlib/oauth2/rfc6749/clients/base.py
++++ b/oauthlib/oauth2/rfc6749/clients/base.py
+@@ -218,6 +218,12 @@
+         return case_insensitive_token_types[self.token_type.lower()](uri, http_method, body,
+                                                                      headers, token_placement, **kwargs)
+ 
++    def test_prepare_authorization_request(self):
++        ...
++        self.assertRaises(NotImplementedError, client.prepare_authorization_request, auth_url)
++
++    def prepare_authorization_request(self, authorization_url, state, redirect_url, scope)
++
+     def prepare_authorization_request(self, authorization_url, state=None,
+                                       redirect_url=None, scope=None, **kwargs):
+         """Prepare the authorization request.

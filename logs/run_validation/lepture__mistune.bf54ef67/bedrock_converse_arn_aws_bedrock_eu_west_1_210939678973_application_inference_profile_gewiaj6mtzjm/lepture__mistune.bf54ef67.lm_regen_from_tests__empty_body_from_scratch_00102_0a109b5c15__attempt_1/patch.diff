@@ -1,0 +1,38 @@
+--- a/src/mistune/helpers.py
++++ b/src/mistune/helpers.py
+@@ -53,29 +53,12 @@
+     return _ESCAPE_CHAR_RE.sub(r'\1', text)
+ 
+ 
+-def parse_link_text(src: str, pos: int) -> Union[Tuple[str, int], Tuple[None, None]]:
+-    level = 1
+-    found = False
+-    start_pos = pos
+-
+-    while pos < len(src):
+-        m = _INLINE_SQUARE_BRACKET_RE.search(src, pos)
+-        if not m:
+-            break
+-
+-        pos = m.end()
+-        marker = m.group(0)
+-        if marker == ']':
+-            level -= 1
+-            if level == 0:
+-                found = True
+-                break
+-        else:
+-            level += 1
+-
+-    if found:
+-        text = src[start_pos:pos-1]
+-        return text, pos
++def parse_link_text(src: str, pos: int) ->Union[Tuple[str, int], Tuple[None,
++    None]]:
++    m = _INLINE_LINK_LABEL_RE.match(src, pos)
++    if m:
++        label = m.group(0)[:-1]
++        return label, m.end()
+     return None, None
+ 
+ 

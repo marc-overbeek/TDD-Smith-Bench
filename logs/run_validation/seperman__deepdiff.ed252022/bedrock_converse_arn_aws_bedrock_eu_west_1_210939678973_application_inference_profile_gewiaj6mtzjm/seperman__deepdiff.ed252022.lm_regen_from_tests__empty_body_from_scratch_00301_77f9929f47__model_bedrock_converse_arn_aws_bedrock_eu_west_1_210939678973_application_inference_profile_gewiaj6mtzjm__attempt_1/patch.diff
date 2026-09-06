@@ -1,0 +1,100 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -454,62 +454,59 @@
+ 
+ def load_path_content(path, file_type=None):
+     """
+-    Loads and deserializes the content of the path.
+-    """
+-
++    Load content from a file path with optional file type specification.
++    
++    **Parameters**
++    
++    path : str, path to the file
++    file_type : str, optional, the type of the file (json, yaml, toml, csv, tsv, pickle)
++    
++    **Returns**
++    
++    The loaded content from the file
++    
++    **Raises**
++    
++    UnsupportedFormatErr: If the file type is not supported
++    """
+     if file_type is None:
+-        file_type = path.split('.')[-1]
++        # Try to infer file type from extension
++        _, ext = os.path.splitext(path)
++        file_type = ext.lstrip('.').lower()
++        
+     if file_type == 'json':
+-        with open(path, 'r') as the_file:
+-            content = json_loads(the_file.read())
++        with open(path, 'r') as file:
++            return json.load(file)
+     elif file_type in {'yaml', 'yml'}:
+         try:
+             import yaml
+         except ImportError:  # pragma: no cover.
+             raise ImportError('Pyyaml needs to be installed.') from None  # pragma: no cover.
+-        with open(path, 'r') as the_file:
+-            content = yaml.safe_load(the_file)
++        with open(path, 'r') as file:
++            return yaml.safe_load(file)
+     elif file_type == 'toml':
+         try:
+-            if sys.version_info >= (3, 11):
+-                import tomllib as tomli
+-            else:
+-                import tomli
++            import tomli
+         except ImportError:  # pragma: no cover.
+-            raise ImportError('On python<=3.10 tomli needs to be installed.') from None  # pragma: no cover.
+-        with open(path, 'rb') as the_file:
+-            content = tomli.load(the_file)
++            raise ImportError('Tomli needs to be installed.') from None  # pragma: no cover.
++        with open(path, 'rb') as file:
++            return tomli.load(file)
+     elif file_type == 'pickle':
+-        with open(path, 'rb') as the_file:
+-            content = the_file.read()
+-            content = pickle_load(content)
++        with open(path, 'rb') as file:
++            return pickle_load(file_obj=file)
+     elif file_type in {'csv', 'tsv'}:
+         try:
+             import clevercsv
+-            content = clevercsv.read_dicts(path)
++            dict_reader = clevercsv.DictReader
+         except ImportError:  # pragma: no cover.
+             import csv
+-            with open(path, 'r') as the_file:
+-                content = list(csv.DictReader(the_file))
+-
+-        logger.info(f"NOTE: CSV content was empty in {path}")
+-
+-        # Everything in csv is string but we try to automatically convert any numbers we find
+-        for row in content:
+-            for key, value in row.items():
+-                value = value.strip()
+-                for type_ in [int, float, complex]:
+-                    try:
+-                        value = type_(value)
+-                    except Exception:
+-                        pass
+-                    else:
+-                        row[key] = value
+-                        break
++            dict_reader = csv.DictReader
++        with open(path, 'r') as file:
++            reader = dict_reader(file)
++            return list(reader)
+     else:
+-        raise UnsupportedFormatErr(f'Only json, yaml, toml, csv, tsv and pickle are supported.\n'
++        raise UnsupportedFormatErr('Only json, yaml, toml, csv, tsv and pickle are supported.\n'
+                                    f' The {file_type} extension is not known.')
+-    return content
+ 
+ 
+ def save_content_to_path(content, path, file_type=None, keep_backup=True):

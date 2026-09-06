@@ -1,0 +1,53 @@
+--- a/fvcore/common/config.py
++++ b/fvcore/common/config.py
+@@ -133,27 +133,27 @@
+         ), "The reserved key '{}' can only be used in files!".format(BASE_KEY)
+         return super().merge_from_other_cfg(cfg_other)
+ 
+-    def merge_from_list(self, cfg_list: List[str]) -> Callable[[], None]:
+-        """
+-        Args:
+-            cfg_list (list): list of configs to merge from.
+-        """
+-        keys = set(cfg_list[0::2])
+-        assert (
+-            BASE_KEY not in keys
+-        ), "The reserved key '{}' can only be used in files!".format(BASE_KEY)
+-        return super().merge_from_list(cfg_list)
++    def merge_from_list(self, cfg_list: List[str]) ->Callable[[], None]:
++            """
++            Args:
++                cfg_list (list): list of configs to merge from.
++            """
++            keys = set(cfg_list[0::2])
++            assert (
++                BASE_KEY not in keys
++            ), "The reserved key '{}' can only be used in files!".format(BASE_KEY)
++            return super().merge_from_list(cfg_list)
+ 
+-    def __setattr__(self, name: str, val: Any) -> None:  # pyre-ignore
+-        if name.startswith("COMPUTED_"):
+-            if name in self:
+-                old_val = self[name]
+-                if old_val == val:
+-                    return
+-                raise KeyError(
+-                    "Computed attributed '{}' already exists "
+-                    "with a different value! old={}, new={}.".format(name, old_val, val)
+-                )
+-            self[name] = val
+-        else:
+-            super().__setattr__(name, val)
++    def __setattr__(self, name: str, val: Any) ->None:
++            if name.startswith("COMPUTED_"):
++                if name in self:
++                    old_val = self[name]
++                    if old_val == val:
++                        return
++                    raise KeyError(
++                        "Computed attributed '{}' already exists "
++                        "with a different value! old={}, new={}.".format(name, old_val, val)
++                    )
++                self[name] = val
++            else:
++                super().__setattr__(name, val)

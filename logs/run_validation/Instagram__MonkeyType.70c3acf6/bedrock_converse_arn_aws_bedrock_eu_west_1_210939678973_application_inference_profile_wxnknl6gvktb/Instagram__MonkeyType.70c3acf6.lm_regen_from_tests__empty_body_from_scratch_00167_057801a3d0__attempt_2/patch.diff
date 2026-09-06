@@ -1,0 +1,75 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -134,33 +134,46 @@
+ 
+ 
+ def shrink_types(types, max_typed_dict_size):
+-    """Return the smallest type equivalent to Union[types].
+-    If all the types are anonymous TypedDicts, shrink them ourselves.
+-    Otherwise, recursively turn the anonymous TypedDicts into Dicts.
+-    Union will handle deduplicating types (both by equality and subtype relationships).
+-    """
+-    types = tuple(types)
+-    if len(types) == 0:
++    # Convert to list if needed
++    if not isinstance(types, list):
++        types = list(types)
++    
++    # Handle empty case
++    if not types:
+         return Any
+-    if all(is_anonymous_typed_dict(typ) for typ in types):
+-        return shrink_typed_dict_types(types, max_typed_dict_size)
+-    # Don't rewrite anonymous TypedDict to Dict if the types are all the same,
+-    # such as [Tuple[TypedDict(...)], Tuple[TypedDict(...)]].
+-    if all(types_equal(typ, types[0]) for typ in types[1:]):
+-        return types[0]
+-
+-    # If they are all lists, shrink their argument types. This way, we avoid
+-    # rewriting heterogeneous anonymous TypedDicts to Dict.
+-    if all(is_list(typ) for typ in types):
+-        annotation = shrink_types(
+-            (getattr(typ, "__args__")[0] for typ in types), max_typed_dict_size
+-        )
+-        return List[annotation]
+-
+-    all_dict_types = tuple(
+-        RewriteAnonymousTypedDictToDict().rewrite(typ) for typ in types
+-    )
+-    return Union[all_dict_types]
++    
++    # Remove duplicates while preserving order
++    unique_types = []
++    for t in types:
++        if not any(types_equal(t, seen_t) for seen_t in unique_types):
++            unique_types.append(t)
++    
++    # Handle single type case
++    if len(unique_types) == 1:
++        return DEFAULT_REWRITER.rewrite(unique_types[0])
++    
++    # Check if all types are anonymous TypedDicts
++    if all(is_anonymous_typed_dict(t) for t in unique_types):
++        result = shrink_typed_dict_types(unique_types, max_typed_dict_size)
++    else:
++        # Check if we have NoneType mixed with other types
++        has_none = any(t is NoneType for t in unique_types)
++        non_none_types = [t for t in unique_types if t is not NoneType]
++        
++        if has_none and non_none_types:
++            # Create Optional for the non-None types
++            if len(non_none_types) == 1:
++                result = Union[non_none_types[0], NoneType]
++            else:
++                result = Union[tuple(non_none_types + [NoneType])]
++        else:
++            # No NoneType or only NoneType
++            if len(unique_types) == 1:
++                result = unique_types[0]
++            else:
++                result = Union[tuple(unique_types)]
++    
++    return DEFAULT_REWRITER.rewrite(result)
+ 
+ 
+ def make_iterator(typ):

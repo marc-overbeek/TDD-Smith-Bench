@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef _parse_html_to_end(state: BlockState, end_marker: str, start_pos: int\n    ) ->int:\n    marker_pos = state.src.find(end_marker, start_pos)\n    if marker_pos == -1:\n        text = state.src[state.cursor:]\n        end_pos = state.cursor_max\n    else:\n        end_of_marker = marker_pos + len(end_marker)\n        # find the end of the line containing the end marker\n        newline_pos = state.src.find('\\n', end_of_marker)\n        if newline_pos == -1:\n            end_pos = state.cursor_max\n        else:\n            end_pos = newline_pos + 1\n        text = state.src[state.cursor:end_pos]\n\n    state.append_token({'type': 'block_html', 'raw': text})\n    return end_pos\n```",
+  "rewrite": "def _parse_html_to_end(state: BlockState, end_marker: str, start_pos: int\n    ) ->int:\n    marker_pos = state.src.find(end_marker, start_pos)\n    if marker_pos == -1:\n        text = state.src[state.cursor:]\n        end_pos = state.cursor_max\n    else:\n        end_of_marker = marker_pos + len(end_marker)\n        # find the end of the line containing the end marker\n        newline_pos = state.src.find('\\n', end_of_marker)\n        if newline_pos == -1:\n            end_pos = state.cursor_max\n        else:\n            end_pos = newline_pos + 1\n        text = state.src[state.cursor:end_pos]\n\n    state.append_token({'type': 'block_html', 'raw': text})\n    return end_pos",
+  "strategy": "lm_regen_from_tests"
+}

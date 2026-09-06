@@ -1,0 +1,19 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -341,6 +341,16 @@
+             except GlomError:
+                 pass
+         return scope[glom](target, self.children[-1], scope)
++
++    def test_and_or_reduction():
++        and_spec = And(T['a'], T['b']) & T['c']
++        assert repr(and_spec) == "And(T['a'], T['b'], T['c'])"
++        or_spec = Or(T['a'], T['b']) | T['c']
++        assert repr(or_spec) == "Or(T['a'], T['b'], T['c'])"
++
++    def __or__(self, other):
++        # reduce number of layers of spec
++        return Or(*(self.children + (other,)))
+ 
+     def __or__(self, other):
+         # reduce number of layers of spec

@@ -1,0 +1,35 @@
+--- a/demo/inbox.py
++++ b/demo/inbox.py
+@@ -27,9 +27,7 @@
+     type = EventType.COMMENTED
+ 
+     def __init__(self, repo: RepoInterface) -> None:
+-        self.events: List[CommentedEvent] = []
+-        self.user_ids: Set[UserId] = set()
+-        super().__init__(repo)
++        self.repo = repo
+ 
+     def add(self, event):
+         self.events.append(event)
+@@ -52,9 +50,7 @@
+     type = EventType.LIKED
+ 
+     def __init__(self, repo: RepoInterface) -> None:
+-        self.events_by_feedentry_id: Dict[FeedEntryId, List[LikedEvent]] = {}
+-        self.user_ids: Set[UserId] = set()
+-        super().__init__(repo)
++        self.repo = repo
+ 
+     def add(self, event):
+         self.events_by_feedentry_id.setdefault(event.feedentry_id, []).append(event)
+@@ -95,9 +91,7 @@
+     type = EventType.FOLLOWED
+ 
+     def __init__(self, repo: RepoInterface) -> None:
+-        self.events: List[FollowedEvent] = []
+-        self.user_ids: Set[UserId] = set()
+-        super().__init__(repo)
++        self.repo = repo
+ 
+     def add(self, event):
+         self.events.append(event)

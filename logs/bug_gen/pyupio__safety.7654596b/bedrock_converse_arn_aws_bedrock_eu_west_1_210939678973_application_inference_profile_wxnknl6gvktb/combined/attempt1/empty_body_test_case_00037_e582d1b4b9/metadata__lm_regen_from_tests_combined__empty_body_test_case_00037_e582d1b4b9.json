@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef cli(ctx, debug, disable_optional_telemetry):\n    ctx.ensure_object(dict)\n    if ctx.obj is None or not isinstance(ctx.obj, dict):\n        ctx.obj = {}\n    if not hasattr(ctx.obj, 'auth'):\n        from safety.auth.models import AuthSession\n        ctx.obj = SafetyCLI(auth=AuthSession(), config=SafetyCLI.config)\n    if ctx.obj.auth is None:\n        from safety.auth.models import AuthSession\n        ctx.obj.auth = AuthSession()\n```\n\n```python\ndef clean_check_command(f):\n    @wraps(f)\n    def inner(ctx, *args, **kwargs):\n        kwargs.pop(\"key\", None)\n        kwargs.pop('proxy_protocol', None)\n        kwargs.pop('proxy_host', None)\n        kwargs.pop('proxy_port', None)\n        return f(ctx, *args, **kwargs)\n    return inner\n```",
+  "rewrite": "def cli(ctx, debug, disable_optional_telemetry):\n    ctx.ensure_object(dict)\n    if ctx.obj is None or not isinstance(ctx.obj, dict):\n        ctx.obj = {}\n    if not hasattr(ctx.obj, 'auth'):\n        from safety.auth.models import AuthSession\n        ctx.obj = SafetyCLI(auth=AuthSession(), config=SafetyCLI.config)\n    if ctx.obj.auth is None:\n        from safety.auth.models import AuthSession\n        ctx.obj.auth = AuthSession()\n\ndef clean_check_command(f):\n    @wraps(f)\n    def inner(ctx, *args, **kwargs):\n        kwargs.pop(\"key\", None)\n        kwargs.pop('proxy_protocol', None)\n        kwargs.pop('proxy_host', None)\n        kwargs.pop('proxy_port', None)\n        return f(ctx, *args, **kwargs)\n    return inner",
+  "strategy": "lm_regen_from_tests_combined"
+}

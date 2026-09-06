@@ -1,0 +1,19 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -101,9 +101,13 @@
+             self[module].update(names)
+ 
+ 
+-def _get_import_for_qualname(qualname: str) -> str:
+-    # Nested classes are annotated using the path from the root class
+-    # (e.g. Parent.Child, where Child is defined inside Parent)
++def _get_import_for_qualname(qualname: str) ->str:
++    """Return the top-level name to import for a given qualified name.
++    
++    For nested classes like 'Parent.Child', returns 'Parent' since that's
++    what needs to be imported. For simple names like 'Dummy' or 'List',
++    returns the name as-is.
++    """
+     return qualname.split(".")[0]
+ 
+ 

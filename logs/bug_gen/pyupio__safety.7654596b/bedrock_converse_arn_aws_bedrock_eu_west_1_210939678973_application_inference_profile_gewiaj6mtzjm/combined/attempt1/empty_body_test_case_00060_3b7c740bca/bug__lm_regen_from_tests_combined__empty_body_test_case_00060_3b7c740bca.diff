@@ -1,0 +1,135 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -553,42 +553,30 @@
+     A click option that depends on other options.
+     """
+     def __init__(self, *args, **kwargs):
+-        self.required_options = set(kwargs.pop('required_options', []))
+-        help = kwargs.get('help', '')
+-        if self.required_options:
+-            ex_str = ', '.join(self.required_options)
+-            kwargs['help'] = help + (
+-                f" Requires: [ {ex_str} ]"
++        super().__init__(*args, **kwargs)
++
++    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any],
++        args: List[str]) ->Tuple[Any, List[str]]:
++        m_exclusive_used = self.mutually_exclusive.intersection(opts)
++        option_used = m_exclusive_used and self.name in opts
++
++        exclusive_value_used = False
++        for used in m_exclusive_used:
++            value_used = opts.get(used, None)
++            if not isinstance(value_used, List):
++                value_used = [value_used]
++            if value_used and set(self.with_values.get(used, [])).intersection(value_used):
++                exclusive_value_used = True
++
++        if option_used and (not self.with_values or exclusive_value_used):
++            options = ', '.join(self.opts)
++            prohibited = ''.join(["\n * --{0} with {1}".format(item, self.with_values.get(
++                        item)) if item in self.with_values else f"\n * {item}" for item in self.mutually_exclusive])
++            raise click.UsageError(
++                f"Illegal usage: `{options}` is mutually exclusive with: {prohibited}"
+             )
+-        super(DependentOption, self).__init__(*args, **kwargs)
+-
+-    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+-        """
+-        Handle the parse result for dependent options.
+-
+-        Args:
+-            ctx (click.Context): The click context.
+-            opts (Dict[str, Any]): The options dictionary.
+-            args (List[str]): The arguments list.
+-
+-        Returns:
+-            Tuple[Any, List[str]]: The result and remaining arguments.
+-        """
+-        missing_required_arguments = None
+-
+-        if self.name in opts:
+-            missing_required_arguments = self.required_options.difference(opts)
+-
+-        if missing_required_arguments:
+-            raise click.UsageError(
+-                "Illegal usage: `{}` needs the "
+-                "arguments `{}`.".format(
+-                    self.name,
+-                    ', '.join(missing_required_arguments)
+-                )
+-            )
+-
+-        return super(DependentOption, self).handle_parse_result(
++
++        return super(MutuallyExclusiveOption, self).handle_parse_result(
+             ctx,
+             opts,
+             args
+@@ -765,13 +753,9 @@
+     name = "filename"
+     envvar_list_splitter = os.path.pathsep
+ 
+-    def __init__(
+-        self,
+-        mode: str = "r",
+-        encoding: Optional[str] = None,
+-        errors: str = "strict",
+-        pure: bool = os.environ.get('SAFETY_PURE_YAML', 'false').lower() == 'true'
+-    ) -> None:
++    def __init__(self, mode: str='r', encoding: Optional[str]=None, errors: str
++        ='strict', pure: bool=os.environ.get('SAFETY_PURE_YAML', 'false').lower
++        () == 'true') ->None:
+         self.mode = mode
+         self.encoding = encoding
+         self.errors = errors
+@@ -789,22 +773,9 @@
+         info_dict.update(mode=self.mode, encoding=self.encoding)
+         return info_dict
+ 
+-    def fail_if_unrecognized_keys(self, used_keys: List[str], valid_keys: List[str], param: Optional[click.Parameter] = None,
+-        ctx: Optional[click.Context] = None, msg: str = '{hint}', context_hint: str = '') -> None:
+-        """
+-        Fail if unrecognized keys are found in the policy file.
+-
+-        Args:
+-            used_keys (List[str]): The used keys.
+-            valid_keys (List[str]): The valid keys.
+-            param (Optional[click.Parameter]): The click parameter.
+-            ctx (Optional[click.Context]): The click context.
+-            msg (str): The error message template.
+-            context_hint (str): The context hint for the error message.
+-
+-        Raises:
+-            click.UsageError: If unrecognized keys are found.
+-        """
++    def fail_if_unrecognized_keys(self, used_keys: List[str], valid_keys: List[
++        str], param: Optional[click.Parameter]=None, ctx: Optional[click.
++        Context]=None, msg: str='{hint}', context_hint: str='') ->None:
+         for keyword in used_keys:
+             if keyword not in valid_keys:
+                 match = None
+@@ -837,21 +808,8 @@
+             self.fail(msg.format(hint=f"'{keyword}' value needs to be a boolean. "
+                                       "You can use True, False, TRUE, FALSE, true or false"))
+ 
+-    def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> Any:
+-        """
+-        Convert the parameter value to a Safety policy file.
+-
+-        Args:
+-            value (Any): The parameter value.
+-            param (Optional[click.Parameter]): The click parameter.
+-            ctx (Optional[click.Context]): The click context.
+-
+-        Returns:
+-            Any: The converted policy file.
+-
+-        Raises:
+-            click.UsageError: If the policy file is invalid.
+-        """
++    def convert(self, value: Any, param: Optional[click.Parameter], ctx:
++        Optional[click.Context]) ->Any:
+         try:
+             # Check if the value is already a file-like object
+             if hasattr(value, "read") or hasattr(value, "write"):

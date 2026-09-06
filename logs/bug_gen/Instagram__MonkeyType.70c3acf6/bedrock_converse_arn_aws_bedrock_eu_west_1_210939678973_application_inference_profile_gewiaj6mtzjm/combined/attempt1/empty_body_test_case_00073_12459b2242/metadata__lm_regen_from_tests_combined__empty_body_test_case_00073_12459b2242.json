@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef rewrite_TypedDict(self, typed_dict):\n        if is_anonymous_typed_dict(typed_dict):\n            return self.rewrite_anonymous_TypedDict(typed_dict)\n        return self.make_builtin_typed_dict(\n            typed_dict.__name__,\n            {\n                name: self.rewrite(typ)\n                for name, typ in typed_dict.__annotations__.items()\n            },\n            total=typed_dict.__total__,\n        )\n\ndef make_builtin_typed_dict(self, name, annotations, total):\n        return TypedDict(name, annotations, total=total)\n```",
+  "rewrite": "def rewrite_TypedDict(self, typed_dict):\n        if is_anonymous_typed_dict(typed_dict):\n            return self.rewrite_anonymous_TypedDict(typed_dict)\n        return self.make_builtin_typed_dict(\n            typed_dict.__name__,\n            {\n                name: self.rewrite(typ)\n                for name, typ in typed_dict.__annotations__.items()\n            },\n            total=typed_dict.__total__,\n        )\n\ndef make_builtin_typed_dict(self, name, annotations, total):\n        return TypedDict(name, annotations, total=total)",
+  "strategy": "lm_regen_from_tests_combined"
+}

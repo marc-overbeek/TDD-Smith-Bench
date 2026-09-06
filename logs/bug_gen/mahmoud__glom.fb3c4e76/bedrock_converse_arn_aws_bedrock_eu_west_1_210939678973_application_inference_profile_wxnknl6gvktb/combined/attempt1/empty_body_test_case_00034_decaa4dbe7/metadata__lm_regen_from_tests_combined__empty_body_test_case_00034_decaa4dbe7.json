@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef target_iter(target, scope):\n    try:\n        return iter(target)\n    except TypeError:\n        raise scope[glom].UnregisteredTarget(\n            f\"target {target!r} is not iterable\", target, scope\n        )\n```\n\n```python\ndef GROUP(target, spec, scope):\n    return scope[glom](target, spec, scope)\n```\n\n```python\ndef glomit(self, target, scope):\n    if scope[MODE] is not GROUP:\n        raise BadSpec(\"Limit() only valid in Group mode\")\n    tree = scope[ACC_TREE]\n    if self not in tree:\n        tree[self] = [0, {}]\n    scope[ACC_TREE] = tree[self][1]\n    tree[self][0] += 1\n    if tree[self][0] > self.n:\n        return STOP\n    return scope[glom](target, self.subspec, scope)\n```",
+  "rewrite": "def target_iter(target, scope):\n    try:\n        return iter(target)\n    except TypeError:\n        raise scope[glom].UnregisteredTarget(\n            f\"target {target!r} is not iterable\", target, scope\n        )\n\ndef GROUP(target, spec, scope):\n    return scope[glom](target, spec, scope)\n\ndef glomit(self, target, scope):\n    if scope[MODE] is not GROUP:\n        raise BadSpec(\"Limit() only valid in Group mode\")\n    tree = scope[ACC_TREE]\n    if self not in tree:\n        tree[self] = [0, {}]\n    scope[ACC_TREE] = tree[self][1]\n    tree[self][0] += 1\n    if tree[self][0] > self.n:\n        return STOP\n    return scope[glom](target, self.subspec, scope)",
+  "strategy": "lm_regen_from_tests_combined"
+}

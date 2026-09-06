@@ -1,0 +1,18 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -2524,6 +2524,15 @@
+     (Sidenote for Lisp fans: Fill is like glom's quasi-quoting.)
+ 
+     """
++    def glomit(self, target, scope):
++        scope[MODE] = FILL
++        return scope[glom](target, self.spec, scope)
++
++    def __repr__(self):
++        cn = self.__class__.__name__
++        rpr = '' if self.spec is None else bbrepr(self.spec)
++        return f'{cn}({rpr})'
++
+     def __init__(self, spec=None):
+         self.spec = spec
+ 

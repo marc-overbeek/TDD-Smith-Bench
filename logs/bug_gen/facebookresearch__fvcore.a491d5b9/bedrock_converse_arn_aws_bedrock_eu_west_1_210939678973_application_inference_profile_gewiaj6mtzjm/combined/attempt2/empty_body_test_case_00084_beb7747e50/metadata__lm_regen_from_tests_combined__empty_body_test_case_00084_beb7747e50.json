@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef c2_xavier_fill(module: nn.Module) ->None:\n    if isinstance(module, (nn.Conv1d, nn.Conv2d, nn.Conv3d, nn.Linear)):\n        nn.init.xavier_uniform_(module.weight, gain=1.0)\n        if module.bias is not None:\n            nn.init.constant_(module.bias, 0)\n\n\ndef c2_msra_fill(module: nn.Module) ->None:\n    if isinstance(module, (nn.Conv1d, nn.Conv2d, nn.Conv3d, nn.Linear)):\n        nn.init.kaiming_normal_(module.weight, mode=\"fan_out\", nonlinearity=\"relu\", a=0)\n        if module.bias is not None:\n            nn.init.constant_(module.bias, 0)\n```",
+  "rewrite": "def c2_xavier_fill(module: nn.Module) ->None:\n    if isinstance(module, (nn.Conv1d, nn.Conv2d, nn.Conv3d, nn.Linear)):\n        nn.init.xavier_uniform_(module.weight, gain=1.0)\n        if module.bias is not None:\n            nn.init.constant_(module.bias, 0)\n\n\ndef c2_msra_fill(module: nn.Module) ->None:\n    if isinstance(module, (nn.Conv1d, nn.Conv2d, nn.Conv3d, nn.Linear)):\n        nn.init.kaiming_normal_(module.weight, mode=\"fan_out\", nonlinearity=\"relu\", a=0)\n        if module.bias is not None:\n            nn.init.constant_(module.bias, 0)",
+  "strategy": "lm_regen_from_tests_combined"
+}

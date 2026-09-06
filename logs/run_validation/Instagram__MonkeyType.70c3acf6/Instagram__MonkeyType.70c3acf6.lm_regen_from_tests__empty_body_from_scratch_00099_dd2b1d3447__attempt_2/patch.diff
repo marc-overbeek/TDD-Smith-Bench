@@ -1,0 +1,54 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -382,34 +382,24 @@
+     return RenderAnnotation().rewrite(anno)
+ 
+ 
+-def render_parameter(param: inspect.Parameter) -> str:
+-    """Convert a parameter into its stub representation.
+-
+-    NB: This is copied almost entirely from https://github.com/python/cpython/blob/3.6/Lib/inspect.py
+-    with the modification that it calls our own rendering functions for annotations.
+-
+-    TODO: push a patch upstream so we don't have to do this on Python 3.x.
+-    """
+-    kind = param.kind
+-    formatted = param.name
+-
+-    # Add annotation and default value
++def render_parameter(param: inspect.Parameter) ->str:
+     if param.annotation is not inspect.Parameter.empty:
+-        anno = param.annotation
+-        if not _is_optional(anno) and param.default is None:
+-            anno = Optional[anno]
+-        rendered = render_annotation(anno)
+-        formatted = "{}: {}".format(formatted, rendered)
+-
+-    if param.default is not inspect.Parameter.empty:
+-        formatted = "{} = ...".format(formatted)
+-
+-    if kind == inspect.Parameter.VAR_POSITIONAL:
+-        formatted = "*" + formatted
+-    elif kind == inspect.Parameter.VAR_KEYWORD:
+-        formatted = "**" + formatted
+-
+-    return formatted
++        annotation = render_annotation(param.annotation)
++        if param.default is not inspect.Parameter.empty:
++            if param.default is None:
++                return f"{param.name}: {annotation} = ..."
++            else:
++                return f"{param.name}: {annotation} = ..."
++        else:
++            return f"{param.name}: {annotation}"
++    else:
++        if param.default is not inspect.Parameter.empty:
++            if param.default is None:
++                return f"{param.name} = None"
++            else:
++                return f"{param.name} = ..."
++        else:
++            return param.name
+ 
+ 
+ def render_signature(

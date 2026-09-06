@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef render_referrences(self, state: BlockState) -> Iterable[str]:\n    ref_links = state.env['ref_links']\n    for key in ref_links:\n        attrs = ref_links[key]\n        text = '[' + attrs['label'] + ']: ' + attrs['url']\n        title = attrs.get('title')\n        if title:\n            text += ' \"' + title + '\"'\n        yield text\n\ndef softbreak(self, token: Dict[str, Any], state: BlockState) -> str:\n    return '\\n'\n\ndef block_text(self, token: Dict[str, Any], state: BlockState) -> str:\n    return self.render_children(token, state) + '\\n'\n\ndef list(self, token: Dict[str, Any], state: BlockState) -> str:\n    return render_list(self, token, state)\n```",
+  "rewrite": "def render_referrences(self, state: BlockState) -> Iterable[str]:\n    ref_links = state.env['ref_links']\n    for key in ref_links:\n        attrs = ref_links[key]\n        text = '[' + attrs['label'] + ']: ' + attrs['url']\n        title = attrs.get('title')\n        if title:\n            text += ' \"' + title + '\"'\n        yield text\n\ndef softbreak(self, token: Dict[str, Any], state: BlockState) -> str:\n    return '\\n'\n\ndef block_text(self, token: Dict[str, Any], state: BlockState) -> str:\n    return self.render_children(token, state) + '\\n'\n\ndef list(self, token: Dict[str, Any], state: BlockState) -> str:\n    return render_list(self, token, state)",
+  "strategy": "lm_regen_from_tests_combined"
+}

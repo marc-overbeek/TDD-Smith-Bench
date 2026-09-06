@@ -1,0 +1,28 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -259,24 +259,7 @@
+ 
+ 
+     def slice(self, *args):
+-        """Returns a new :class:`Iter()` spec which trims iterables in the
+-        same manner as :func:`itertools.islice`.
+-
+-        >>> target = [0, 1, 2, 3, 4, 5]
+-        >>> glom(target, Iter().slice(3).all())
+-        [0, 1, 2]
+-        >>> glom(target, Iter().slice(2, 4).all())
+-        [2, 3]
+-
+-        This method accepts only positional arguments.
+-        """
+-        # TODO: make a kwarg-compatible version of this (islice takes no kwargs)
+-        # TODO: also support slice syntax Iter()[::]
+-        try:
+-            islice([], *args)
+-        except TypeError:
+-            raise TypeError(f'invalid slice arguments: {args!r}')
+-        return self._add_op('slice', args, lambda it, scope: islice(it, *args))
++        pass
+ 
+     def limit(self, count):
+         """A convenient alias for :meth:`~Iter.slice`, which takes a single

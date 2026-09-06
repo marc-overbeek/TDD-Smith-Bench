@@ -1,0 +1,19 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -533,6 +533,16 @@
+     allow format strings to be evaluated where {!r} will use bbrepr
+     instead of repr
+     """
++    class _BBReprFormatter(string.Formatter):
++        """
++        allow format strings to be evaluated where {!r} will use bbrepr
++        instead of repr
++        """
++        def convert_field(self, value, conversion):
++            if conversion == 'r':
++                return bbrepr(value).replace("\\'", "'")
++            return super().convert_field(value, conversion)
++
+     def convert_field(self, value, conversion):
+         if conversion == 'r':
+             return bbrepr(value).replace("\\'", "'")

@@ -1,0 +1,24 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -420,9 +420,20 @@
+         self.skipped = skipped
+         self.path = path
+ 
++    def test_all_public_errors():
++        # ... test code that creates various exceptions and then:
++        for target, spec, exc in results:
++            assert copy.copy(exc) is not exc
++            exc_str = str(exc)
++            exc_type_name = exc.__class__.__name__
++            assert exc_type_name in exc_str
++            assert bbrepr(exc).startswith(exc_type_name)  # <-- This line checks __repr__
++            assert bbrepr(target)[:80] in exc_str
++            assert bbrepr(spec)[:80] in exc_str
++
+     def __repr__(self):
+         cn = self.__class__.__name__
+-        return f'{cn}({self.coal_obj!r}, {self.skipped!r}, {self.path!r})'
++        return f'{cn}()'
+ 
+     def get_message(self):
+         missed_specs = tuple(self.coal_obj.subspecs)

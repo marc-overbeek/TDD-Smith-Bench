@@ -1,0 +1,32 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -286,27 +286,8 @@
+     return repr_with_statistics(model, "")
+ 
+ 
+-def _get_input_sizes(iterable: Iterable[Any]) -> List[Any]:  # pyre-ignore[2,3]
+-    """
+-    Gets the sizes of all torch tensors in an iterable. If an element
+-    of the iterable is a non-torch tensor iterable, it recurses into
+-    that iterable to continue calculating sizes. Any non-iterable is
+-    given a size of None. The output consists of nested lists with the
+-    same nesting structure as the input iterables.
+-    """
+-    out_list = []
+-    for i in iterable:
+-        if isinstance(i, torch.Tensor):
+-            out_list.append(list(i.size()))
+-        elif isinstance(i, Iterable):
+-            sublist_sizes = _get_input_sizes(i)
+-            if all(j is None for j in sublist_sizes):
+-                out_list.append(None)
+-            else:
+-                out_list.append(sublist_sizes)
+-        else:
+-            out_list.append(None)
+-    return out_list
++def _get_input_sizes(iterable: Iterable[Any]) ->List[Any]:
++    pass
+ 
+ 
+ def flop_count_str(

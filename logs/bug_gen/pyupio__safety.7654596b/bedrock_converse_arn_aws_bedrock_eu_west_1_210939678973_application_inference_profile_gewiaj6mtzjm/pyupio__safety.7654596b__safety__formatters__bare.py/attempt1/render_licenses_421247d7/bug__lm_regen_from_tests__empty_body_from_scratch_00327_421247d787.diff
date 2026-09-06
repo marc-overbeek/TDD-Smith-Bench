@@ -1,0 +1,32 @@
+--- a/safety/formatters/bare.py
++++ b/safety/formatters/bare.py
+@@ -49,17 +49,18 @@
+         Returns:
+             str: Rendered licenses.
+         """
+-        parsed_announcements = []
+-
+-        for announcement in get_basic_announcements(announcements):
+-            normalized_message = "-".join(announcement.get('message', 'none').lower().split())
+-            parsed_announcements.append({'license': normalized_message})
+-
+-        announcements_to_render = [announcement.get('license') for announcement in parsed_announcements]
+-
+-        licenses = list(set([pkg_li.get('license') for pkg_li in packages_licenses]))
+-        sorted_licenses = sorted(licenses)
+-        return " ".join(announcements_to_render + sorted_licenses)
++        licenses = []
++    
++        for pkg_license in packages_licenses:
++            license_name = pkg_license.get('license')
++            if license_name:
++                licenses.append(license_name)
++    
++        # Remove duplicates and sort
++        unique_licenses = sorted(list(set(licenses)))
++    
++        # Join with spaces
++        return " ".join(unique_licenses)
+ 
+     def render_announcements(self, announcements: List[Dict[str, Any]]) -> None:
+         """

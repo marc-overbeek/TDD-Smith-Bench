@@ -1,0 +1,26 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -512,6 +512,23 @@
+             self._list = scope["headers"] = list(scope["headers"])
+ 
+     @property
++    def test_headers() ->None:
++        h = Headers(raw=[(b'a', b'123'), (b'a', b'456'), (b'b', b'789')])
++        # ...
++        assert h.raw == [(b'a', b'123'), (b'a', b'456'), (b'b', b'789')]
++
++    def __repr__(self) -> str:
++        class_name = self.__class__.__name__
++        as_dict = dict(self.items())
++        if len(as_dict) == len(self):
++            return f"{class_name}({as_dict!r})"
++        return f"{class_name}(raw={self.raw!r})"
++
++    @property
++    def raw(self) -> list[tuple[bytes, bytes]]:
++        return self._list
++
++    @property
+     def raw(self) -> list[tuple[bytes, bytes]]:
+         return list(self._list)
+ 

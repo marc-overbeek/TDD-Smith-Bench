@@ -1,0 +1,23 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -244,6 +244,20 @@
+             if field_node is None:
+                 return None
+             return gpx_fields_from_xml(self.classs, field_node, version)
++
++    def to_xml(self, value: Any, version: str, nsmap: Dict[str, str]={}, prettyprint: bool=True, indent: str='') -> str:
++        if not prettyprint:
++            indent = ''
++        if self.is_list:
++            result = []
++            for obj in value:
++                result.append(gpx_fields_to_xml(obj, self.tag, version,
++                                                nsmap=nsmap,
++                                                prettyprint=prettyprint,
++                                                indent=indent))
++            return ''.join(result)
++        else:
++            return gpx_fields_to_xml(value, self.tag, version, prettyprint=prettyprint, indent=indent, empty_body=self.empty_body)
+ 
+     def to_xml(self, value: Any, version: str, nsmap: Dict[str, str]={}, prettyprint: bool=True, indent: str='') -> str:
+         if not prettyprint:

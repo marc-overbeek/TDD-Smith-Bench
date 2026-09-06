@@ -1,0 +1,37 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -411,14 +411,8 @@
+     An uploaded file included as part of the request data.
+     """
+ 
+-    def __init__(
+-        self,
+-        file: typing.BinaryIO,
+-        *,
+-        size: int | None = None,
+-        filename: str | None = None,
+-        headers: Headers | None = None,
+-    ) -> None:
++    def __init__(self, file: typing.BinaryIO, *, size: (int | None)=None,
++        filename: (str | None)=None, headers: (Headers | None)=None) ->None:
+         self.filename = filename
+         self.file = file
+         self.size = size
+@@ -460,7 +454,7 @@
+         else:
+             await run_in_threadpool(self.file.close)
+ 
+-    def __repr__(self) -> str:
++    def __repr__(self) ->str:
+         return (
+             f"{self.__class__.__name__}("
+             f"filename={self.filename!r}, "
+@@ -556,7 +550,7 @@
+             return False
+         return sorted(self._list) == sorted(other._list)
+ 
+-    def __repr__(self) -> str:
++    def __repr__(self) ->str:
+         class_name = self.__class__.__name__
+         as_dict = dict(self.items())
+         if len(as_dict) == len(self):

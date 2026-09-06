@@ -1,0 +1,61 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -947,19 +947,14 @@
+     return 'patch'
+ 
+ 
+-def process_fixes(
+-    files: List[str],
+-    remediations: Dict[str, Dict[str, Any]],
+-    auto_remediation_limit: List[str],
+-    output: str,
+-    no_output: bool = True,
+-    prompt: bool = False
+-) -> List[Fix]:
++def process_fixes(files: List[str], remediations: Dict[str, Dict[str, Any]],
++    auto_remediation_limit: List[str], output: str, no_output: bool=True,
++    prompt: bool=False) ->List[Fix]:
+     """
+     Processes the fixes for the given files and remediations.
+ 
+     Args:
+-        files (List[str]): The list of files.
++        files (List[str]): The list of files to fix.
+         remediations (Dict[str, Dict[str, Any]]): The remediations dictionary.
+         auto_remediation_limit (List[str]): The automatic remediation limits.
+         output (str): The output format.
+@@ -969,9 +964,31 @@
+     Returns:
+         List[Fix]: The list of applied fixes.
+     """
+-    req_remediations = itertools.chain.from_iterable(rem.values() for pkg_name, rem in remediations.items())
+-    requirements = compute_fixes_per_requirements(files, req_remediations, auto_remediation_limit, prompt=prompt)
+-    fixes = apply_fixes(requirements, output, no_output, prompt)
++    # Convert remediations to the format expected by compute_fixes_per_requirements
++    req_remediations = []
++    
++    for pkg_name, pkg_remediations in remediations.items():
++        for spec_str, remediation_data in pkg_remediations.items():
++            req_remediations.append(remediation_data)
++    
++    # Compute fixes per requirements
++    requirements = compute_fixes_per_requirements(
++        files,
++        iter(req_remediations),
++        auto_remediation_limit,
++        prompt=prompt
++    )
++    
++    # Apply the fixes
++    fixes = apply_fixes(
++        requirements,
++        output,
++        no_output,
++        prompt,
++        scan_flow=False,
++        auto_remediation_limit=auto_remediation_limit
++    )
++    
+     return fixes
+ 
+ 

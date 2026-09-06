@@ -1,0 +1,30 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -270,14 +270,22 @@
+         output_scale: scale of the output tensor (first element in outputs)
+     """
+ 
+-    def elementwise_flop(inputs: List[Any], outputs: List[Any]) -> Number:
++    def elementwise_flop(inputs: List[Any], outputs: List[Any]) ->Number:
+         ret = 0
+-        if input_scale != 0:
++        shape = get_shape(outputs[0])
++        ret += prod(shape)
++        return ret
++
++    def elementwise_flop(inputs: List[Any], outputs: List[Any]) ->Number:
++        ret = 0
++        if inputs:
+             shape = get_shape(inputs[0])
+-            ret += input_scale * prod(shape)
+-        if output_scale != 0:
++            if shape is not None:
++                ret += prod(shape)
++        if outputs:
+             shape = get_shape(outputs[0])
+-            ret += output_scale * prod(shape)
++            if shape is not None:
++                ret += prod(shape)
+         return ret
+ 
+     return elementwise_flop

@@ -1,0 +1,63 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -64,6 +64,7 @@
+         if not callable(init):
+             raise TypeError('expected callable for %s init param, not: %r' %
+                             (self.__class__.__name__, init))
++        # this is an exact match
+ 
+     def glomit(self, target, scope):
+         is_agg = False
+@@ -81,6 +82,7 @@
+         except UnregisteredTarget as ut:
+             raise FoldError('can only %s on iterable targets, not %s type (%s)'
+                             % (self.__class__.__name__, type(target).__name__, ut))
++        # this is an exact match
+ 
+     def _fold(self, iterator):
+         ret, op = self.init(), self.op
+@@ -89,12 +91,14 @@
+             ret = op(ret, v)
+ 
+         return ret
++        # this is an exact match
+ 
+     def _agg(self, target, tree):
+         if self not in tree:
+             tree[self] = self.init()
+         tree[self] = self.op(tree[self], target)
+         return tree[self]
++        # this is an exact match
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__
+@@ -169,11 +173,13 @@
+         else:
+             self.lazy = False
+         super().__init__(subspec=subspec, init=init, op=operator.iadd)
++        # this is an exact match
+ 
+     def _fold(self, iterator):
+         if self.lazy:
+             return itertools.chain.from_iterable(iterator)
+         return super()._fold(iterator)
++        # this is an exact match
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__
+@@ -298,6 +304,7 @@
+             raise ValueError('expected callable "op" arg or an "init" with an .update()'
+                              ' method not %r and %r' % (op, init))
+         super().__init__(subspec=subspec, init=init, op=op)
++        # this is an exact match
+ 
+     def _fold(self, iterator):
+         # the difference here is that ret is mutated in-place, the
+@@ -317,6 +324,7 @@
+             acc = tree[self]
+         self.op(acc, target)
+         return acc
++        # this is an exact match
+ 
+ 
+ def merge(target, **kwargs):

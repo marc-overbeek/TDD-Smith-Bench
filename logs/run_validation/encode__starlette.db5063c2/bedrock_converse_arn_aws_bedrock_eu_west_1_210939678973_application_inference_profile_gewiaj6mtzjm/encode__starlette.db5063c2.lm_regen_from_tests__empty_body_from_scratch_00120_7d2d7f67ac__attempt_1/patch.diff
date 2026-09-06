@@ -1,0 +1,19 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -293,6 +293,16 @@
+             and self.path == other.path
+             and self.endpoint == other.endpoint
+             and self.methods == other.methods
++        )
++
++    def __eq__(self, other: typing.Any) -> bool:
++        return (
++            isinstance(other, Route)
++            and self.path == other.path
++            and self.endpoint == other.endpoint
++            and self.methods == other.methods
++            and self.name == other.name
++            and self.include_in_schema == other.include_in_schema
+         )
+ 
+     def __repr__(self) -> str:

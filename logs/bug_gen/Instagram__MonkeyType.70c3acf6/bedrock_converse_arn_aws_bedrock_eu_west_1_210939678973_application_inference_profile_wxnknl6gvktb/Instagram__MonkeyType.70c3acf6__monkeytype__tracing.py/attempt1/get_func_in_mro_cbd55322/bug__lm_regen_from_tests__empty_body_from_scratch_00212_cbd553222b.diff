@@ -1,0 +1,59 @@
+--- a/monkeytype/tracing.py
++++ b/monkeytype/tracing.py
+@@ -97,25 +97,39 @@
+         pass
+ 
+ 
+-def get_func_in_mro(obj: Any, code: CodeType) -> Optional[Callable[..., Any]]:
+-    """Attempt to find a function in a side-effect free way.
+-
+-    This looks in obj's mro manually and does not invoke any descriptors.
++def get_func_in_mro(obj: Any, code: CodeType) ->Optional[Callable[..., Any]]:
++    """Find a function in the MRO of a class that matches the given code object.
++    
++    Args:
++        obj: Either a class or an instance
++        code: The code object to match
++        
++    Returns:
++        The function matching the code object, or None if not found
+     """
+-    # FunctionType is incompatible with Callable
+-    # https://github.com/python/typeshed/issues/1378
+-    val = inspect.getattr_static(obj, code.co_name, None)
+-    if val is None:
+-        return None
+-    if isinstance(val, (classmethod, staticmethod)):
+-        cand = val.__func__
+-    elif isinstance(val, property) and (val.fset is None) and (val.fdel is None):
+-        cand = cast(Callable[..., Any], val.fget)
+-    elif cached_property and isinstance(val, cached_property):
+-        cand = val.func
++    # Get the class to search in
++    if isinstance(obj, type):
++        cls = obj
+     else:
+-        cand = cast(Callable[..., Any], val)
+-    return _has_code(cand, code)
++        cls = type(obj)
++    
++    # Search through the MRO
++    for klass in inspect.getmro(cls):
++        for name, value in klass.__dict__.items():
++            # Check if it's a property
++            if isinstance(value, property):
++                # Check fget, fset, fdel
++                for prop_func in (value.fget, value.fset, value.fdel):
++                    func = _has_code(prop_func, code)
++                    if func is not None:
++                        return func
++            else:
++                # Regular function/method
++                func = _has_code(value, code)
++                if func is not None:
++                    return func
++    
++    return None
+ 
+ 
+ def _has_code(

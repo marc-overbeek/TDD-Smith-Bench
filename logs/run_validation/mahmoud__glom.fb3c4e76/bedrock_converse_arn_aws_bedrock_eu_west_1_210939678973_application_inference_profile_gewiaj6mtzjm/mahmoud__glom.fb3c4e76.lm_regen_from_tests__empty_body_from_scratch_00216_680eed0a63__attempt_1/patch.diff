@@ -1,0 +1,26 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -319,6 +319,23 @@
+         for child in self.children:
+             result = scope[glom](target, child, scope)
+         return result
++
++    class And(_Bool):
++        # ...
++        def __and__(self, other):
++            # reduce number of layers of spec
++            return And(*(self.children + (other,)))
++
++    class _Bool:
++        def __and__(self, other):
++            return And(self, other)
++
++    def __and__(self, other):
++        # reduce number of layers of spec
++        return And(*(self.children + (other,)))
++
++    def __and__(self, other):
++        return And(self, other)
+ 
+     def __and__(self, other):
+         # reduce number of layers of spec

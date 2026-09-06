@@ -1,0 +1,21 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -875,6 +875,18 @@
+         Return the serialized representation of the object as a bytes object, instead of writing it to a file.
+         """
+         return self.serializer(self.diff)
++
++    def test_delta_to_dict(self):
++        t1 = [1, 2, 'B']
++        t2 = [1, 2]
++        diff = DeepDiff(t1, t2, ignore_order=True, report_repetition=True)
++        delta = Delta(diff, raise_errors=False, bidirectional=False)
++        result = delta.to_dict()
++        expected = {'iterable_items_removed_at_indexes': {'root': {(2): 'B'}}}
++        assert expected == result
++
++    def to_dict(self):
++        return dict(self.diff)
+ 
+     def to_dict(self):
+         return dict(self.diff)

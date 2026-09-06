@@ -1,0 +1,33 @@
+--- a/safety/auth/cli.py
++++ b/safety/auth/cli.py
+@@ -82,17 +82,19 @@
+         console.print(with_msg.format(email=email))
+         sys.exit(0)
+ 
+-def render_email_note(auth: Auth) -> str:
+-    """
+-    Renders a note indicating whether email verification is required.
+-
+-    Args:
+-        auth (Auth): The Auth object.
+-
+-    Returns:
+-        str: The rendered email note.
+-    """
+-    return "" if auth.email_verified else "[red](email verification required)[/red]"
++"You're authenticated"
++' Account: Safety User, user@safetycli.com (email verification required)'
++
++email_note = render_email_note(auth)
++details = [f"[green][bold]Account:[/bold] {name}, {email}[/green] {email_note}"]
++
++if not ctx.obj.auth.email_verified:
++    email = f"{email} {render_email_note(ctx.obj.auth)}"
++
++def render_email_note(auth: Auth) ->str:
++    if not auth.email_verified:
++        return "(email verification required)"
++    return ""
+ 
+ def render_successful_login(auth: Auth,
+                             organization: Optional[str] = None) -> None:

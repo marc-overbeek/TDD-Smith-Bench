@@ -1,0 +1,18 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -354,6 +354,15 @@
+             existing_items = [(k, v) for (k, v) in self._list if k != key]
+             self._list = existing_items + [(key, value) for value in values]
+             self._dict[key] = values[-1]
++
++    q = MultiDict([('a', '123')])
++    q.append('a', '456')
++    assert q.getlist('a') == ['123', '456']
++    assert repr(q) == "MultiDict([('a', '123'), ('a', '456')])"
++
++    def append(self, key: typing.Any, value: typing.Any) -> None:
++        self._list.append((key, value))
++        self._dict[key] = value
+ 
+     def append(self, key: typing.Any, value: typing.Any) -> None:
+         self._list.append((key, value))

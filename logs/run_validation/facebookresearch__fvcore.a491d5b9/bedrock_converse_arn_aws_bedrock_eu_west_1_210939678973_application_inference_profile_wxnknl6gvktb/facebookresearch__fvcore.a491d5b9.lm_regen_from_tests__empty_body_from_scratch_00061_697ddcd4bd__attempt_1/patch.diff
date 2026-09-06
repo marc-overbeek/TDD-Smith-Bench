@@ -1,0 +1,15 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -346,6 +346,12 @@
+             num_updates=num_updates, values=values
+         )
+ 
++    ind = int((where + self.WHERE_EPSILON) * len(self._param_schedule))
++    return self._param_schedule[ind]
++
++    def __call__(self, where: float) -> float:
++        return self._step_param_scheduler(where)
++
+     def __call__(self, where: float) -> float:
+         return self._step_param_scheduler(where)
+ 

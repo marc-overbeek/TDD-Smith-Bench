@@ -1,0 +1,16 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -106,6 +106,13 @@
+     @property
+     def is_secure(self) -> bool:
+         return self.scheme in ("https", "wss")
++
++    new = u.replace(scheme='http')
++    new = u.replace(port=None)
++    new = u.replace(hostname='example.com')
++
++    u = u.include_query_params(page=4)
++    # which calls: self.replace(query=query)
+ 
+     def replace(self, **kwargs: typing.Any) -> URL:
+         if "username" in kwargs or "password" in kwargs or "hostname" in kwargs or "port" in kwargs:

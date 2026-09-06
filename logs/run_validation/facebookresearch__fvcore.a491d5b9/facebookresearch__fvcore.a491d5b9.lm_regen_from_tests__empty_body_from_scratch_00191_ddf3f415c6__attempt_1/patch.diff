@@ -1,0 +1,34 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -297,6 +297,31 @@
+             return lambda x: self._apply(x, name)
+         return super().__getattribute__(name)
+ 
++    def __getattribute__(self, name: str):
++        if name.startswith("apply_"):
++            # Try to get the method from the class
++            try:
++                return super().__getattribute__(name)
++            except AttributeError:
++                raise AttributeError(f"{type(self).__name__} object has no attribute {name}")
++        return super().__getattribute__(name)
++
++    def __getattribute__(self, name: str):
++        if name.startswith("apply_"):
++            try:
++                return super().__getattribute__(name)
++            except AttributeError:
++                raise AttributeError(f"{type(self).__name__} object has no attribute {name}")
++        return super().__getattribute__(name)
++
++    def __getattribute__(self, name: str):
++        if name.startswith("apply_"):
++            try:
++                return super().__getattribute__(name)
++            except AttributeError:
++                raise AttributeError(f"{type(self).__name__} object has no attribute {name}")
++        return super().__getattribute__(name)
++
+     def __add__(self, other: "TransformList") -> "TransformList":
+         """
+         Args:

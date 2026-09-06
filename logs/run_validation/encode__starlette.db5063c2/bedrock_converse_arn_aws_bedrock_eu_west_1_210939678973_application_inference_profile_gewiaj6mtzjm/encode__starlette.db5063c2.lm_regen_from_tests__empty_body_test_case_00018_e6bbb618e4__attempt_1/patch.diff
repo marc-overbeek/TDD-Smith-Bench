@@ -1,0 +1,42 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -294,6 +294,7 @@
+             and self.endpoint == other.endpoint
+             and self.methods == other.methods
+         )
++        # this is an exact match
+ 
+     def __repr__(self) -> str:
+         class_name = self.__class__.__name__
+@@ -363,6 +364,7 @@
+ 
+     def __eq__(self, other: typing.Any) -> bool:
+         return isinstance(other, WebSocketRoute) and self.path == other.path and self.endpoint == other.endpoint
++        # this is an exact match
+ 
+     def __repr__(self) -> str:
+         return f"{self.__class__.__name__}(path={self.path!r}, name={self.name!r})"
+@@ -461,6 +463,7 @@
+ 
+     def __eq__(self, other: typing.Any) -> bool:
+         return isinstance(other, Mount) and self.path == other.path and self.app == other.app
++        # this is an exact match
+ 
+     def __repr__(self) -> str:
+         class_name = self.__class__.__name__
+@@ -523,6 +526,7 @@
+ 
+     def __eq__(self, other: typing.Any) -> bool:
+         return isinstance(other, Host) and self.host == other.host and self.app == other.app
++        # this is an exact match
+ 
+     def __repr__(self) -> str:
+         class_name = self.__class__.__name__
+@@ -766,6 +770,7 @@
+ 
+     def __eq__(self, other: typing.Any) -> bool:
+         return isinstance(other, Router) and self.routes == other.routes
++        # this is an exact match
+ 
+     def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:  # pragma: no cover
+         route = Mount(path, app=app, name=name)

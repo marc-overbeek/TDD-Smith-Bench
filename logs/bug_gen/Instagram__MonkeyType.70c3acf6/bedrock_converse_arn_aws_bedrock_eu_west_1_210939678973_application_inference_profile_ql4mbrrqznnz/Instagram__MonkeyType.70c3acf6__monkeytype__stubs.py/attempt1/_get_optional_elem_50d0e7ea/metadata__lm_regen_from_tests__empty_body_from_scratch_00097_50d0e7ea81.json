@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the code, `_get_optional_elem` needs to extract the non-None type from an `Optional[T]` (which is `Union[T, NoneType]`).",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the code, `_get_optional_elem` needs to extract the non-None type from an `Optional[T]` (which is `Union[T, NoneType]`).\n\n```python\ndef _get_optional_elem(anno: Any) ->Any:\n    \"\"\"Get the element type from an Optional[T] annotation (i.e., Union[T, NoneType]).\"\"\"\n    args = [a for a in anno.__args__ if a is not NoneType]\n    if len(args) == 1:\n        return args[0]\n    # Multiple non-None args: return Union of them\n    return Union[tuple(args)]\n```",
+  "rewrite": "def _get_optional_elem(anno: Any) ->Any:\n    \"\"\"Get the element type from an Optional[T] annotation (i.e., Union[T, NoneType]).\"\"\"\n    args = [a for a in anno.__args__ if a is not NoneType]\n    if len(args) == 1:\n        return args[0]\n    # Multiple non-None args: return Union of them\n    return Union[tuple(args)]",
+  "strategy": "lm_regen_from_tests"
+}

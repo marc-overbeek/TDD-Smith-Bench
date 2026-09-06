@@ -1,0 +1,371 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -118,61 +118,37 @@
+ 
+     CACHE_AUTO_ADJUST_THRESHOLD = 0.25
+ 
+-    def __init__(self,
+-                 t1: Any,
+-                 t2: Any,
+-                 _original_type=None,
+-                 cache_purge_level: int=1,
+-                 cache_size: int=0,
+-                 cache_tuning_sample_size: int=0,
+-                 custom_operators: Optional[List[Any]] =None,
+-                 cutoff_distance_for_pairs: float=CUTOFF_DISTANCE_FOR_PAIRS_DEFAULT,
+-                 cutoff_intersection_for_pairs: float=CUTOFF_INTERSECTION_FOR_PAIRS_DEFAULT,
+-                 encodings: Optional[List[str]]=None,
+-                 exclude_obj_callback: Optional[Callable]=None,
+-                 exclude_obj_callback_strict: Optional[Callable]=None,
+-                 exclude_paths: Union[str, List[str]]=None,
+-                 exclude_regex_paths: Union[str, List[str], Pattern[str], List[Pattern[str]], None]=None,
+-                 exclude_types: Optional[List[Any]]=None,
+-                 get_deep_distance: bool=False,
+-                 group_by: Union[str, Tuple[str, str], None]=None,
+-                 group_by_sort_key: Union[str, Callable, None]=None,
+-                 hasher: Optional[Callable]=None,
+-                 hashes: Optional[Dict]=None,
+-                 ignore_encoding_errors: bool=False,
+-                 ignore_nan_inequality: bool=False,
+-                 ignore_numeric_type_changes: bool=False,
+-                 ignore_order: bool=False,
+-                 ignore_order_func: Optional[Callable]=None,
+-                 ignore_private_variables: bool=True,
+-                 ignore_string_case: bool=False,
+-                 ignore_string_type_changes: bool=False,
+-                 ignore_type_in_groups: Optional[List[Tuple]]=None,
+-                 ignore_type_subclasses: bool=False,
+-                 include_obj_callback: Optional[Callable]=None,
+-                 include_obj_callback_strict: Optional[Callable]=None,
+-                 include_paths: Union[str, List[str]]=None,
+-                 iterable_compare_func: Optional[Callable]=None,
+-                 log_frequency_in_sec: int=0,
+-                 math_epsilon: Optional[float]=None,
+-                 max_diffs: Optional[int]=None,
+-                 max_passes: int=10000000,
+-                 number_format_notation: str="f",
+-                 number_to_string_func: Optional[Callable]=None,
+-                 progress_logger: Callable=logger.info,
+-                 report_repetition: bool=False,
+-                 significant_digits: Optional[int]=None,
+-                 use_log_scale: bool=False,
+-                 log_scale_similarity_threshold: float=0.1,
+-                 threshold_to_diff_deeper: float = 0.33,
+-                 truncate_datetime: Optional[str]=None,
+-                 use_enum_value: bool=False,
+-                 verbose_level: int=1,
+-                 view: str=TEXT_VIEW,
+-                 zip_ordered_iterables: bool=False,
+-                 _parameters=None,
+-                 _shared_parameters=None,
+-                 **kwargs):
++    def __init__(self, t1: Any, t2: Any, _original_type=None, cache_purge_level:
++        int=1, cache_size: int=0, cache_tuning_sample_size: int=0,
++        custom_operators: Optional[List[Any]]=None, cutoff_distance_for_pairs:
++        float=CUTOFF_DISTANCE_FOR_PAIRS_DEFAULT, cutoff_intersection_for_pairs:
++        float=CUTOFF_INTERSECTION_FOR_PAIRS_DEFAULT, encodings: Optional[List[
++        str]]=None, exclude_obj_callback: Optional[Callable]=None,
++        exclude_obj_callback_strict: Optional[Callable]=None, exclude_paths:
++        Union[str, List[str]]=None, exclude_regex_paths: Union[str, List[str],
++        Pattern[str], List[Pattern[str]], None]=None, exclude_types: Optional[
++        List[Any]]=None, get_deep_distance: bool=False, group_by: Union[str,
++        Tuple[str, str], None]=None, group_by_sort_key: Union[str, Callable,
++        None]=None, hasher: Optional[Callable]=None, hashes: Optional[Dict]=
++        None, ignore_encoding_errors: bool=False, ignore_nan_inequality: bool=
++        False, ignore_numeric_type_changes: bool=False, ignore_order: bool=
++        False, ignore_order_func: Optional[Callable]=None,
++        ignore_private_variables: bool=True, ignore_string_case: bool=False,
++        ignore_string_type_changes: bool=False, ignore_type_in_groups: Optional
++        [List[Tuple]]=None, ignore_type_subclasses: bool=False,
++        include_obj_callback: Optional[Callable]=None,
++        include_obj_callback_strict: Optional[Callable]=None, include_paths:
++        Union[str, List[str]]=None, iterable_compare_func: Optional[Callable]=
++        None, log_frequency_in_sec: int=0, math_epsilon: Optional[float]=None,
++        max_diffs: Optional[int]=None, max_passes: int=10000000,
++        number_format_notation: str='f', number_to_string_func: Optional[
++        Callable]=None, progress_logger: Callable=logger.info,
++        report_repetition: bool=False, significant_digits: Optional[int]=None,
++        use_log_scale: bool=False, log_scale_similarity_threshold: float=0.1,
++        threshold_to_diff_deeper: float=0.33, truncate_datetime: Optional[str]=
++        None, use_enum_value: bool=False, verbose_level: int=1, view: str=
++        TEXT_VIEW, zip_ordered_iterables: bool=False, _parameters=None,
++        _shared_parameters=None, **kwargs):
+         super().__init__()
+         if kwargs:
+             raise ValueError((
+@@ -217,7 +193,7 @@
+             self.include_paths = add_root_to_paths(convert_item_or_items_into_set_else_none(include_paths))
+             self.exclude_regex_paths = convert_item_or_items_into_compiled_regexes_else_none(exclude_regex_paths)
+             self.exclude_types = set(exclude_types) if exclude_types else None
+-            self.exclude_types_tuple = tuple(exclude_types) if exclude_types else None  # we need tuple for checking isinstance
++            self.exclude_types_tuple = tuple(exclude_types) if exclude_types else None
+             self.ignore_type_subclasses = ignore_type_subclasses
+             self.type_check_func = type_in_type_group if ignore_type_subclasses else type_is_subclass_of_type_group
+             self.ignore_string_case = ignore_string_case
+@@ -257,33 +233,24 @@
+             if cache_purge_level not in {0, 1, 2}:
+                 raise ValueError(PURGE_LEVEL_RANGE_MSG)
+             self.view = view
+-            # Setting up the cache for dynamic programming. One dictionary per instance of root of DeepDiff running.
+             self.max_passes = max_passes
+             self.max_diffs = max_diffs
+             self.cutoff_distance_for_pairs = float(cutoff_distance_for_pairs)
+             self.cutoff_intersection_for_pairs = float(cutoff_intersection_for_pairs)
+             if self.cutoff_distance_for_pairs < 0 or self.cutoff_distance_for_pairs > 1:
+                 raise ValueError(CUTOFF_RANGE_ERROR_MSG)
+-            # _Parameters are the clean _parameters to initialize DeepDiff with so we avoid all the above
+-            # cleaning functionalities when running DeepDiff recursively.
+-            # However DeepHash has its own set of _parameters that are slightly different than DeepDIff.
+-            # DeepDiff _parameters are transformed to DeepHash _parameters via _get_deephash_params method.
+             self.progress_logger = progress_logger
+             self.cache_size = cache_size
+             _parameters = self.__dict__.copy()
+-            _parameters['group_by'] = None  # overwriting since these parameters will be passed on to other passes.
+-
+-        # Non-Root
++            _parameters['group_by'] = None
++
+         if _shared_parameters:
+             self.is_root = False
+             self._shared_parameters = _shared_parameters
+             self.__dict__.update(_shared_parameters)
+-            # We are in some pass other than root
+             progress_timer = None
+-        # Root
+         else:
+             self.is_root = True
+-            # Caching the DeepDiff results for dynamic programming
+             self._distance_cache = LFUCache(cache_size) if cache_size else DummyLFU()
+             self._stats = {
+                 PASSES_COUNT: 0,
+@@ -296,7 +263,7 @@
+                 DISTANCE_CACHE_ENABLED: bool(cache_size),
+             }
+             self.hashes = dict_() if hashes is None else hashes
+-            self._numpy_paths = dict_()  # if _numpy_paths is None else _numpy_paths
++            self._numpy_paths = dict_()
+             self._shared_parameters = {
+                 'hashes': self.hashes,
+                 '_stats': self._stats,
+@@ -305,7 +272,6 @@
+                 _ENABLE_CACHE_EVERY_X_DIFF: self.cache_tuning_sample_size * 10,
+             }
+             if log_frequency_in_sec:
+-                # Creating a progress log reporter that runs in a separate thread every log_frequency_in_sec seconds.
+                 progress_timer = RepeatedTimer(log_frequency_in_sec, _report_progress, self._stats, progress_logger)
+             else:
+                 progress_timer = None
+@@ -331,9 +297,6 @@
+ 
+         try:
+             root = DiffLevel(t1, t2, verbose_level=self.verbose_level)
+-            # _original_type is only used to pass the original type of the data. Currently only used for numpy arrays.
+-            # The reason is that we convert the numpy array to python list and then later for distance calculations
+-            # we convert only the the last dimension of it into numpy arrays.
+             self._diff(root, parents_ids=frozenset({id(t1)}), _original_type=_original_type)
+ 
+             if get_deep_distance and view in {TEXT_VIEW, TREE_VIEW}:
+@@ -574,20 +537,10 @@
+                 result[clean_key] = key
+         return result
+ 
+-    def _diff_dict(
+-        self,
+-        level,
+-        parents_ids=frozenset([]),
+-        print_as_attribute=False,
+-        override=False,
+-        override_t1=None,
+-        override_t2=None,
+-        local_tree=None,
+-    ):
+-        """Difference of 2 dictionaries"""
++    def _diff_dict(self, level, parents_ids=frozenset([]), print_as_attribute=
++        False, override=False, override_t1=None, override_t2=None, local_tree=None
++        ):
+         if override:
+-            # for special stuff like custom objects and named tuples we receive preprocessed t1 and t2
+-            # but must not spoil the chain (=level) with it
+             t1 = override_t1
+             t2 = override_t2
+         else:
+@@ -648,7 +601,7 @@
+ 
+         for key in t_keys_removed:
+             if self._count_diff() is StopIteration:
+-                return  # pragma: no cover. This is already covered for addition.
++                return
+ 
+             key = t1_clean_to_keys[key] if t1_clean_to_keys else key
+             change_level = level.branch_deeper(
+@@ -660,9 +613,9 @@
+             )
+             self._report_result(item_removed_key, change_level, local_tree=local_tree)
+ 
+-        for key in t_keys_intersect:  # key present in both dicts - need to compare values
++        for key in t_keys_intersect:
+             if self._count_diff() is StopIteration:
+-                return  # pragma: no cover. This is already covered for addition.
++                return
+ 
+             key1 = t1_clean_to_keys[key] if t1_clean_to_keys else key
+             key2 = t2_clean_to_keys[key] if t2_clean_to_keys else key
+@@ -671,7 +624,6 @@
+                 continue
+             parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+ 
+-            # Go one level deeper
+             next_level = level.branch_deeper(
+                 t1[key1],
+                 t2[key2],
+@@ -748,23 +700,9 @@
+                 zip_longest(
+                     t1_chunk, t2_chunk, fillvalue=ListItemRemovedOrAdded))]
+ 
+-    def _get_matching_pairs(
+-        self, level,
+-        t1_from_index=None, t1_to_index=None,
+-        t2_from_index=None, t2_to_index=None
+-    ):
+-        """
+-        Given a level get matching pairs. This returns list of two tuples in the form:
+-        [
+-          (t1 index, t2 index), (t1 item, t2 item)
+-        ]
+-
+-        This will compare using the passed in `iterable_compare_func` if available.
+-        Default it to compare in order
+-        """
+-
++    def _get_matching_pairs(self, level, t1_from_index=None, t1_to_index=None,
++        t2_from_index=None, t2_to_index=None):
+         if self.iterable_compare_func is None:
+-            # Match in order if there is no compare function provided
+             return self._compare_in_order(
+                 level,
+                 t1_from_index=t1_from_index, t1_to_index=t1_to_index,
+@@ -779,9 +717,6 @@
+                 for j, y in enumerate(level.t2):
+ 
+                     if(j in y_index_matched):
+-                        # This ensures a one-to-one relationship of matches from t1 to t2.
+-                        # If y this index in t2 has already been matched to another x
+-                        # it cannot have another match, so just continue.
+                         continue
+ 
+                     if(self.iterable_compare_func(x, y, level)):
+@@ -815,8 +750,8 @@
+                 t2_from_index=t2_from_index, t2_to_index=t2_to_index
+             )
+ 
+-    def _diff_iterable_in_order(self, level, parents_ids=frozenset(), _original_type=None, local_tree=None):
+-        # We're handling both subscriptable and non-subscriptable iterables. Which one is it?
++    def _diff_iterable_in_order(self, level, parents_ids=frozenset(),
++        _original_type=None, local_tree=None):
+         subscriptable = self._iterables_subscriptable(level.t1, level.t2)
+         if subscriptable:
+             child_relationship_class = SubscriptableIterableRelationship
+@@ -839,7 +774,6 @@
+                 child_relationship_class=child_relationship_class,
+                 local_tree=local_tree_pass,
+             )
+-            # Sometimes DeepDiff's old iterable diff does a better job than DeepDiff
+             if len(local_tree_pass) > 1:
+                 local_tree_pass2 = TreeResult()
+                 self._diff_by_forming_pairs_and_comparing_one_by_one(
+@@ -879,23 +813,21 @@
+                 return False
+         return True
+ 
+-    def _diff_by_forming_pairs_and_comparing_one_by_one(
+-        self, level, local_tree, parents_ids=frozenset(),
+-        _original_type=None, child_relationship_class=None,
+-        t1_from_index=None, t1_to_index=None,
+-        t2_from_index=None, t2_to_index=None,
+-    ):
++    def _diff_by_forming_pairs_and_comparing_one_by_one(self, level, local_tree,
++        parents_ids=frozenset(), _original_type=None, child_relationship_class=
++        None, t1_from_index=None, t1_to_index=None, t2_from_index=None,
++        t2_to_index=None):
+         for (i, j), (x, y) in self._get_matching_pairs(
+-            level, 
++            level,
+             t1_from_index=t1_from_index, t1_to_index=t1_to_index,
+             t2_from_index=t2_from_index, t2_to_index=t2_to_index
+         ):
+             if self._count_diff() is StopIteration:
+-                return  # pragma: no cover. This is already covered for addition.
++                return
+ 
+             reference_param1 = i
+             reference_param2 = j
+-            if y is ListItemRemovedOrAdded:  # item removed completely
++            if y is ListItemRemovedOrAdded:
+                 change_level = level.branch_deeper(
+                     x,
+                     notpresent,
+@@ -905,7 +837,7 @@
+                     )
+                 self._report_result('iterable_item_removed', change_level, local_tree=local_tree)
+ 
+-            elif x is ListItemRemovedOrAdded:  # new item added
++            elif x is ListItemRemovedOrAdded:
+                 change_level = level.branch_deeper(
+                     notpresent,
+                     y,
+@@ -915,9 +847,8 @@
+                     )
+                 self._report_result('iterable_item_added', change_level, local_tree=local_tree)
+ 
+-            else:  # check if item value has changed
++            else:
+                 if (i != j and ((x == y) or self.iterable_compare_func)):
+-                    # Item moved
+                     change_level = level.branch_deeper(
+                         x,
+                         y,
+@@ -928,9 +859,6 @@
+                     self._report_result('iterable_item_moved', change_level, local_tree=local_tree)
+ 
+                     if self.iterable_compare_func:
+-                        # Intentionally setting j as the first child relationship param in cases of a moved item.
+-                        # If the item was moved using an iterable_compare_func then we want to make sure that the index
+-                        # is relative to t2.
+                         reference_param1 = j
+                         reference_param2 = i
+                     else:
+@@ -941,7 +869,6 @@
+                     continue
+                 parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+ 
+-                # Go one level deeper
+                 next_level = level.branch_deeper(
+                     x,
+                     y,
+@@ -1009,7 +936,6 @@
+ 
+ 
+     def _diff_str(self, level, local_tree=None):
+-        """Compare strings"""
+         if self.ignore_string_case:
+             level.t1 = level.t1.lower()
+             level.t2 = level.t2.lower()
+@@ -1017,7 +943,6 @@
+         if type(level.t1) == type(level.t2) and level.t1 == level.t2:  # NOQA
+             return
+ 
+-        # do we add a diff for convenience?
+         do_diff = True
+         t1_str = level.t1
+         t2_str = level.t2
+@@ -1742,10 +1667,6 @@
+             raise
+ 
+     def _group_iterable_to_dict(self, item, group_by, item_name):
+-        """
+-        Convert a list of dictionaries into a dictionary of dictionaries
+-        where the key is the value of the group_by key in each dictionary.
+-        """
+         group_by_level2 = None
+         if isinstance(group_by, (list, tuple)):
+             group_by_level1 = group_by[0]

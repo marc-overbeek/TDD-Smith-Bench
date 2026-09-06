@@ -1,0 +1,27 @@
+--- a/fvcore/common/checkpoint.py
++++ b/fvcore/common/checkpoint.py
+@@ -86,22 +86,8 @@
+         self.path_manager: PathManager = PathManager()
+         self.path_manager.register_handler(HTTPURLHandler())
+ 
+-    def add_checkpointable(self, key: str, checkpointable: Any) -> None:
+-        """
+-        Add checkpointable object for this checkpointer to track.
+-
+-        Args:
+-            key (str): the key used to save the object
+-            checkpointable: any object with ``state_dict()`` and
+-                ``load_state_dict()`` method
+-        """
+-        if key in self.checkpointables:
+-            raise KeyError(f"Key {key} already used in the Checkpointer")
+-        if not hasattr(checkpointable, "state_dict"):
+-            raise TypeError(
+-                "add_checkpointable needs an object with 'state_dict()' method."
+-            )
+-        self.checkpointables[key] = checkpointable
++    def add_checkpointable(self, key: str, checkpointable: Any) ->None:
++        pass
+ 
+     def save(self, name: str, **kwargs: Any) -> None:
+         """

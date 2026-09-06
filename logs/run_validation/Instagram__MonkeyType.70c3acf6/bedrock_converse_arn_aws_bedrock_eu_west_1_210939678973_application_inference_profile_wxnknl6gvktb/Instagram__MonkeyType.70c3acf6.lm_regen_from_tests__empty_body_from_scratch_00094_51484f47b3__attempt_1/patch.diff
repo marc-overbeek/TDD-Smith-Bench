@@ -1,0 +1,70 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -219,29 +219,44 @@
+     return sig.replace(return_annotation=anno)
+ 
+ 
+-def shrink_traced_types(
+-    traces: Iterable[CallTrace],
+-    max_typed_dict_size: int,
+-) -> Tuple[Dict[str, type], Optional[type], Optional[type]]:
+-    """Merges the traced types and returns the minimally equivalent types"""
+-    arg_types: DefaultDict[str, Set[type]] = collections.defaultdict(set)
+-    return_types: Set[type] = set()
+-    yield_types: Set[type] = set()
+-    for t in traces:
+-        for arg, typ in t.arg_types.items():
+-            arg_types[arg].add(typ)
+-        if t.return_type is not None:
+-            return_types.add(t.return_type)
+-        if t.yield_type is not None:
+-            yield_types.add(t.yield_type)
+-    shrunken_arg_types = {
+-        name: shrink_types(ts, max_typed_dict_size) for name, ts in arg_types.items()
+-    }
+-    return_type = (
+-        shrink_types(return_types, max_typed_dict_size) if return_types else None
+-    )
+-    yield_type = shrink_types(yield_types, max_typed_dict_size) if yield_types else None
+-    return (shrunken_arg_types, return_type, yield_type)
++def shrink_traced_types(traces: Iterable[CallTrace], max_typed_dict_size: int
++    ) ->Tuple[Dict[str, type], Optional[type], Optional[type]]:
++    traces_list = list(traces)
++    
++    # Collect all argument types by parameter name
++    arg_types_by_name: DefaultDict[str, List[type]] = collections.defaultdict(list)
++    return_types: List[type] = []
++    yield_types: List[type] = []
++    
++    for trace in traces_list:
++        # Collect argument types
++        for arg_name, arg_type in trace.arg_types.items():
++            arg_types_by_name[arg_name].append(arg_type)
++        
++        # Collect return types
++        if trace.return_type is not None:
++            return_types.append(trace.return_type)
++        
++        # Collect yield types
++        if trace.yield_type is not None:
++            yield_types.append(trace.yield_type)
++    
++    # Shrink argument types
++    shrunk_arg_types: Dict[str, type] = {}
++    for arg_name, types in arg_types_by_name.items():
++        shrunk_arg_types[arg_name] = shrink_types(types)
++    
++    # Shrink return types
++    shrunk_return_type: Optional[type] = None
++    if return_types:
++        shrunk_return_type = shrink_types(return_types)
++    
++    # Shrink yield types
++    shrunk_yield_type: Optional[type] = None
++    if yield_types:
++        shrunk_yield_type = shrink_types(yield_types)
++    
++    return shrunk_arg_types, shrunk_return_type, shrunk_yield_type
+ 
+ 
+ def get_typed_dict_class_name(parameter_name: str) -> str:

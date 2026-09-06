@@ -1,0 +1,47 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -525,41 +525,9 @@
+                 return None
+             return elements, parent, parent_to_obj_elem, parent_to_obj_action, obj, elem, action
+ 
+-    def _do_values_or_type_changed(self, changes, is_type_change=False, verify_changes=True):
+-        for path, value in changes.items():
+-            elem_and_details = self._get_elements_and_details(path)
+-            if elem_and_details:
+-                elements, parent, parent_to_obj_elem, parent_to_obj_action, obj, elem, action = elem_and_details
+-            else:
+-                continue  # pragma: no cover. Due to cPython peephole optimizer, this line doesn't get covered. https://github.com/nedbat/coveragepy/issues/198
+-            expected_old_value = value.get('old_value', not_found)
+-
+-            current_old_value = self._get_elem_and_compare_to_old_value(
+-                obj=obj, path_for_err_reporting=path, expected_old_value=expected_old_value, elem=elem, action=action)
+-            if current_old_value is not_found:
+-                continue  # pragma: no cover. I have not been able to write a test for this case. But we should still check for it.
+-            # With type change if we could have originally converted the type from old_value
+-            # to new_value just by applying the class of the new_value, then we might not include the new_value
+-            # in the delta dictionary. That is defined in Model.DeltaResult._from_tree_type_changes
+-            if is_type_change and 'new_value' not in value:
+-                try:
+-                    new_type = value['new_type']
+-                    # in case of Numpy we pass the ndarray plus the dtype in a tuple
+-                    if new_type in numpy_dtypes:
+-                        new_value = np_array_factory(current_old_value, new_type)
+-                    else:
+-                        new_value = new_type(current_old_value)
+-                except Exception as e:
+-                    self._raise_or_log(TYPE_CHANGE_FAIL_MSG.format(obj[elem], value.get('new_type', 'unknown'), e))
+-                    continue
+-            else:
+-                new_value = value['new_value']
+-
+-            self._set_new_value(parent, parent_to_obj_elem, parent_to_obj_action,
+-                                obj, elements, path, elem, action, new_value)
+-
+-            if verify_changes:
+-                self._do_verify_changes(path, expected_old_value, current_old_value)
++    def _do_values_or_type_changed(self, changes, is_type_change=False,
++        verify_changes=True):
++        pass
+ 
+     def _do_item_removed(self, items):
+         """

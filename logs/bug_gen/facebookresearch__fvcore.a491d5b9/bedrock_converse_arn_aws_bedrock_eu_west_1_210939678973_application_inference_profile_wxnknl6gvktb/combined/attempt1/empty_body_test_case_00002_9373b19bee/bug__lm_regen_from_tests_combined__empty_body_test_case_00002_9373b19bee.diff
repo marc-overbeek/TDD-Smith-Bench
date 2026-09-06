@@ -1,0 +1,33 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -395,18 +395,19 @@
+             )
+         if abs(sum(lengths) - 1.0) >= 1e-3:
+             raise ValueError("The sum of all values in lengths must be 1")
+-        if sum(lengths) != 1.0:
+-            lengths[-1] = 1.0 - sum(lengths[:-1])
++        if len(interval_scaling) != len(schedulers):
++            raise ValueError("interval_scaling and schedulers must be same length")
+         for s in interval_scaling:
+             if s not in ["rescaled", "fixed"]:
+                 raise ValueError(f"Unsupported interval_scaling: {s}")
++        if sum(lengths) != 1.0:
++            lengths[-1] = 1.0 - sum(lengths[:-1])
+ 
+         self._lengths = lengths
+         self._schedulers = schedulers
+         self._interval_scaling = interval_scaling
+ 
+     def __call__(self, where: float) -> float:
+-        # Find scheduler corresponding to where
+         i = 0
+         running_total = self._lengths[i]
+         while (where + self.WHERE_EPSILON) > running_total and i < len(
+@@ -418,7 +419,6 @@
+         scheduler_where = where
+         interval_scale = self._interval_scaling[i]
+         if interval_scale == "rescaled":
+-            # Calculate corresponding where % for scheduler
+             scheduler_start = running_total - self._lengths[i]
+             scheduler_where = (where - scheduler_start) / self._lengths[i]
+         return scheduler(scheduler_where)

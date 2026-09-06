@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef parse_url_link(inline: 'InlineParser', m: Match[str], state: 'InlineState'\n    ) ->int:\n    text = m.group(0)\n    url = escape_url(text)\n    attrs = {'url': url, 'children': [{'type': 'codespan', 'raw': text}]}\n    state.append_token({'type': 'link', 'children': [{'type': 'codespan', 'raw': text}], 'attrs': {'url': url}})\n    return m.end()\n```\n\nWait, let me look at this more carefully. The token structure should match what other link parsers do.\n\n```\ndef parse_url_link(inline: 'InlineParser', m: Match[str], state: 'InlineState'\n    ) ->int:\n    text = m.group(0)\n    url = escape_url(text)\n    state.append_token({'type': 'link', 'children': [{'type': 'codespan', 'raw': text}], 'attrs': {'url': url}})\n    return m.end()\n```",
+  "rewrite": "def parse_url_link(inline: 'InlineParser', m: Match[str], state: 'InlineState'\n    ) ->int:\n    text = m.group(0)\n    url = escape_url(text)\n    attrs = {'url': url, 'children': [{'type': 'codespan', 'raw': text}]}\n    state.append_token({'type': 'link', 'children': [{'type': 'codespan', 'raw': text}], 'attrs': {'url': url}})\n    return m.end()\n\ndef parse_url_link(inline: 'InlineParser', m: Match[str], state: 'InlineState'\n    ) ->int:\n    text = m.group(0)\n    url = escape_url(text)\n    state.append_token({'type': 'link', 'children': [{'type': 'codespan', 'raw': text}], 'attrs': {'url': url}})\n    return m.end()",
+  "strategy": "lm_regen_from_tests"
+}

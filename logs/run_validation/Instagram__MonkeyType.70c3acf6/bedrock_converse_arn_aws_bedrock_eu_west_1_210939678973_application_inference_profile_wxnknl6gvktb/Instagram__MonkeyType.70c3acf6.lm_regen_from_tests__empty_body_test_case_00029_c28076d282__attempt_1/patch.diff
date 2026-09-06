@@ -1,0 +1,62 @@
+--- a/monkeytype/db/sqlite.py
++++ b/monkeytype/db/sqlite.py
+@@ -18,29 +18,20 @@
+ DEFAULT_TABLE = "monkeytype_call_traces"
+ 
+ 
+-def create_call_trace_table(
+-    conn: sqlite3.Connection, table: str = DEFAULT_TABLE
+-) -> None:
+-    queries = [
++def create_call_trace_table(conn: sqlite3.Connection, table: str=DEFAULT_TABLE
++    ) ->None:
++    conn.execute(
+         """
+         CREATE TABLE IF NOT EXISTS {table} (
+-          created_at  TEXT,
+-          module      TEXT,
+-          qualname    TEXT,
+-          arg_types   TEXT,
+-          return_type TEXT,
+-          yield_type  TEXT);
+-        """,
+-        """
+-        -- This index speeds up lookups of call traces of a single module
+-        -- (see `make_query()`).
+-        CREATE INDEX IF NOT EXISTS {table}_module ON {table} (module);
+-        """,
+-    ]
+-
+-    with conn:
+-        for query in queries:
+-            conn.execute(query.format(table=table))
++            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
++            module TEXT NOT NULL,
++            qualname TEXT NOT NULL,
++            arg_types TEXT NOT NULL,
++            return_type TEXT,
++            yield_type TEXT
++        )
++        """.format(table=table)
++    )
+ 
+ 
+ QueryValue = Union[str, int]
+@@ -114,14 +105,13 @@
+             cur.execute(sql_query, values)
+             return [CallTraceRow(*row) for row in cur.fetchall()]
+ 
+-    def list_modules(self) -> List[str]:
++    def list_modules(self) ->List[str]:
+         with self.conn:
+             cur = self.conn.cursor()
+             cur.execute(
+                 """
+-                        SELECT module FROM {table}
+-                        GROUP BY module
+-                        ORDER BY date(created_at) DESC
++                        SELECT DISTINCT module FROM {table}
++                        ORDER BY module
+                         """.format(
+                     table=self.table
+                 )

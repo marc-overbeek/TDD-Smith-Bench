@@ -1,0 +1,41 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/pre_configured.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/pre_configured.py
+@@ -23,8 +23,7 @@
+     """An all-in-one endpoint featuring all four major grant types."""
+ 
+     def __init__(self, request_validator, token_expires_in=None,
+-                 token_generator=None, refresh_token_generator=None,
+-                 *args, **kwargs):
++        token_generator=None, refresh_token_generator=None, *args, **kwargs):
+         """Construct a new all-grants-in-one server.
+ 
+         :param request_validator: An implementation of
+@@ -54,7 +53,8 @@
+                                            'token': self.implicit_grant,
+                                            'none': self.auth_grant
+                                        },
+-                                       default_token_type=self.bearer)
++                                       default_token_type=self.bearer,
++                                       *args, **kwargs)
+ 
+         TokenEndpoint.__init__(self, default_grant_type='authorization_code',
+                                grant_types={
+@@ -63,11 +63,13 @@
+                                    'client_credentials': self.credentials_grant,
+                                    'refresh_token': self.refresh_grant,
+                                },
+-                               default_token_type=self.bearer)
+-        ResourceEndpoint.__init__(self, default_token='Bearer',
+-                                  token_types={'Bearer': self.bearer})
+-        RevocationEndpoint.__init__(self, request_validator)
+-        IntrospectEndpoint.__init__(self, request_validator)
++                               default_token_type=self.bearer,
++                               *args, **kwargs)
++        ResourceEndpoint.__init__(self, default_token='Bearer',
++                                  token_types={'Bearer': self.bearer},
++                                  *args, **kwargs)
++        RevocationEndpoint.__init__(self, request_validator, *args, **kwargs)
++        IntrospectEndpoint.__init__(self, request_validator, *args, **kwargs)
+ 
+ 
+ class WebApplicationServer(AuthorizationEndpoint, IntrospectEndpoint, TokenEndpoint,

@@ -1,0 +1,29 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -1181,18 +1181,14 @@
+     return requirements_files
+ 
+ 
+-def is_ignore_unpinned_mode(version: str) -> bool:
+-    """
+-    Check if unpinned mode is enabled based on the version.
+-
+-    Args:
+-        version (str): The version string.
+-
+-    Returns:
+-        bool: True if unpinned mode is enabled, False otherwise.
+-    """
+-    ignore = SafetyContext().params.get('ignore_unpinned_requirements')
+-    return (ignore is None or ignore) and not version
++result = self.runner.invoke(cli.cli, ['check', '-r', reqs_unpinned,
++    '--db', db, '--json', '-i', 'some id', '--check-unpinned-requirements']
++)
++
++def is_ignore_unpinned_mode(version: str) ->bool:
++    if version and 'ignore-unpinned-requirements' in str(version):
++        return True
++    return False
+ 
+ 
+ def get_remediations_count(remediations: Dict[str, Any]) -> int:

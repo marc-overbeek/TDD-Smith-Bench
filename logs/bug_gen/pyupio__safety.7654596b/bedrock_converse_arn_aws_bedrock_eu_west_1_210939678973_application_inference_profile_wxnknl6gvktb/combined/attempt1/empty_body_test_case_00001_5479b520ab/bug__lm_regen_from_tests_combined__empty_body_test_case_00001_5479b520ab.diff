@@ -1,0 +1,70 @@
+--- a/safety/models.py
++++ b/safety/models.py
+@@ -334,18 +334,12 @@
+     A class representing the severity of a vulnerability.
+     """
+     def to_dict(self) -> Dict:
+-        """
+-        Convert the severity to a dictionary.
+-
+-        Returns:
+-            Dict: The dictionary representation of the severity.
+-        """
+-        result = {'severity': {'source': self.source}}
+-
+-        result['severity']['cvssv2'] = self.cvssv2
+-        result['severity']['cvssv3'] = self.cvssv3
+-
+-        return result
++        return {
++            'package': self.Package.name,
++            'closest_secure_version': self.closest_secure_version,
++            'secure_versions': self.secure_versions,
++            'latest_package_version': self.latest_package_version
++        }
+ 
+ 
+ class SafetyEncoder(json.JSONEncoder):
+@@ -376,39 +370,9 @@
+     """
+ 
+     def to_dict(self) -> Dict:
+-        """
+-        Convert the vulnerability to a dictionary.
+-
+-        Returns:
+-            Dict: The dictionary representation of the vulnerability.
+-        """
+-        empty_list_if_none = ['fixed_versions', 'closest_versions_without_known_vulnerabilities', 'resources']
+-        result = {
+-        }
+-
+-        ignore = ['pkg']
+-
+-        for field, value in zip(self._fields, self):
+-            if field in ignore:
+-                continue
+-
+-            if value is None and field in empty_list_if_none:
+-                value = []
+-
+-            if isinstance(value, set):
+-                result[field] = list(value)
+-            elif isinstance(value, CVE):
+-                val = None
+-                if value.name.startswith("CVE"):
+-                    val = value.name
+-                result[field] = val
+-            elif isinstance(value, DictConverter):
+-                result.update(value.to_dict())
+-            elif isinstance(value, SpecifierSet) or isinstance(value, datetime):
+-                result[field] = str(value)
+-            else:
+-                result[field] = value
+-
++        result = {'severity': {'source': self.source}}
++        result['severity']['cvssv2'] = self.cvssv2
++        result['severity']['cvssv3'] = self.cvssv3
+         return result
+ 
+     def get_advisory(self) -> str:

@@ -1,0 +1,25 @@
+--- a/src/mistune/renderers/markdown.py
++++ b/src/mistune/renderers/markdown.py
+@@ -101,6 +101,22 @@
+         return self.render_children(token, state) + '\n'
+ 
+     def block_code(self, token: Dict[str, Any], state: BlockState) -> str:
++        pass
++
++    def block_code(self, token: Dict[str, Any], state: BlockState) -> str:
++        attrs = token.get("attrs", {})
++        info = cast(str, attrs.get("info", ""))
++        code = cast(str, token["raw"])
++        if code and code[-1] != "\n":
++            code += "\n"
++
++        marker = token.get('marker')
++        if not marker:
++            marker = _get_fenced_marker(code)
++        marker2 = cast(str, marker)
++        return marker2 + info + "\n" + code + marker2 + "\n\n"
++
++    def block_code(self, token: Dict[str, Any], state: BlockState) -> str:
+         attrs = token.get("attrs", {})
+         info = cast(str, attrs.get("info", ""))
+         code = cast(str, token["raw"])

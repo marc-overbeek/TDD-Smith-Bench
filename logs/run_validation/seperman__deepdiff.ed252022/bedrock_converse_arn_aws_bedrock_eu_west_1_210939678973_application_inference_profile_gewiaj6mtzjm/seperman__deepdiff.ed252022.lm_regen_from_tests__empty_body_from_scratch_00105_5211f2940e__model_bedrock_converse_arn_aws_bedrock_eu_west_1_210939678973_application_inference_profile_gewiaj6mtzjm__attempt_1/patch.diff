@@ -1,0 +1,40 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -67,9 +67,7 @@
+ 
+     __doc__ = doc
+ 
+-    def __init__(
+-        self,
+-        diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
++    def __init__(self, diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
+         delta_path: Optional[str]=None,
+         delta_file: Optional[IO]=None,
+         delta_diff: Optional[dict]=None,
+@@ -86,7 +84,7 @@
+         always_include_values: bool=False,
+         iterable_compare_func_was_used: Optional[bool]=None,
+         force: bool=False,
+-    ):
++        ):
+         # for pickle deserializer:
+         if hasattr(deserializer, '__code__') and 'safe_to_import' in set(deserializer.__code__.co_varnames):
+             _deserializer = deserializer
+@@ -123,11 +121,17 @@
+ 
+         if diff is not None:
+             if isinstance(diff, DeepDiff):
++                if diff.group_by:
++                    raise ValueError(DELTA_ERROR_WHEN_GROUP_BY)
++                if diff.ignore_order and not diff.report_repetition:
++                    raise ValueError(DELTA_IGNORE_ORDER_NEEDS_REPETITION_REPORT)
+                 self.diff = diff._to_delta_dict(directed=not bidirectional, always_include_values=self.always_include_values)
+             elif isinstance(diff, Mapping):
+                 self.diff = diff
+             elif isinstance(diff, strings):
+                 self.diff = _deserializer(diff, safe_to_import=safe_to_import)
++            else:
++                raise ValueError(DELTA_AT_LEAST_ONE_ARG_NEEDED)
+         elif delta_path:
+             with open(delta_path, 'rb') as the_file:
+                 content = the_file.read()

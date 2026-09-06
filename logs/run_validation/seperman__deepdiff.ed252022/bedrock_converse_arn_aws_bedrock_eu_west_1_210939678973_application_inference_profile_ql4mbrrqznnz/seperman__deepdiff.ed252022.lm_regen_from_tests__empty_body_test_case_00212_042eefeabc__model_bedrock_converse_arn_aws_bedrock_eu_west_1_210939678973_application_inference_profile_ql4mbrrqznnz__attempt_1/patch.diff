@@ -1,0 +1,131 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -180,7 +180,7 @@
+         else:
+             self.hashes = dict_()
+         exclude_types = set() if exclude_types is None else set(exclude_types)
+-        self.exclude_types_tuple = tuple(exclude_types)  # we need tuple for checking isinstance
++        self.exclude_types_tuple = tuple(exclude_types)
+         self.ignore_repetition = ignore_repetition
+         self.exclude_paths = add_root_to_paths(convert_item_or_items_into_set_else_none(exclude_paths))
+         self.include_paths = add_root_to_paths(convert_item_or_items_into_set_else_none(include_paths))
+@@ -201,12 +201,8 @@
+         self.ignore_numeric_type_changes = ignore_numeric_type_changes
+         self.ignore_string_case = ignore_string_case
+         self.exclude_obj_callback = exclude_obj_callback
+-        # makes the hash return constant size result if true
+-        # the only time it should be set to False is when
+-        # testing the individual hash functions for different types of objects.
+         self.apply_hash = apply_hash
+         self.type_check_func = type_in_type_group if ignore_type_subclasses else type_is_subclass_of_type_group
+-        # self.type_check_func = type_is_subclass_of_type_group if ignore_type_subclasses else type_in_type_group
+         self.number_to_string = number_to_string_func or number_to_string
+         self.ignore_private_variables = ignore_private_variables
+         self.encodings = encodings
+@@ -268,11 +264,6 @@
+         return result
+ 
+     def get(self, key, default=None, extract_index=0):
+-        """
+-        Get method for the hashes dictionary.
+-        It can extract the hash for a given key that is already calculated when extract_index=0
+-        or the count of items that went to building the object whenextract_index=1.
+-        """
+         return self.get_key(self.hashes, key, default=default, extract_index=extract_index)
+ 
+     @staticmethod
+@@ -332,14 +323,13 @@
+         return ((i, v[0]) for i, v in self.hashes.items())
+ 
+     def _prep_obj(self, obj, parent, parents_ids=EMPTY_FROZENSET, is_namedtuple=False, is_pydantic_object=False):
+-        """prepping objects"""
+         original_type = type(obj) if not isinstance(obj, type) else obj
+ 
+         obj_to_dict_strategies = []
+         if is_namedtuple:
+             obj_to_dict_strategies.append(lambda o: o._asdict())
+         elif is_pydantic_object:
+-            obj_to_dict_strategies.append(lambda o: {k: v for (k, v) in o.__dict__.items() if v !="model_fields_set"})
++            obj_to_dict_strategies.append(lambda o: {k: v for (k, v) in o.__dict__.items() if v != "model_fields_set"})
+         else:
+             obj_to_dict_strategies.append(lambda o: o.__dict__)
+ 
+@@ -385,14 +375,12 @@
+         return skip
+ 
+     def _prep_dict(self, obj, parent, parents_ids=EMPTY_FROZENSET, print_as_attribute=False, original_type=None):
+-
+         result = []
+         counts = 1
+ 
+         key_text = "%s{}".format(INDEX_VS_ATTRIBUTE[print_as_attribute])
+         for key, item in obj.items():
+             counts += 1
+-            # ignore private variables
+             if self.ignore_private_variables and isinstance(key, str) and key.startswith('__'):
+                 continue
+             key_formatted = "'%s'" % key if not print_as_attribute and isinstance(key, strings) else key
+@@ -424,7 +412,6 @@
+         return "{}:{{{}}}".format(type_str, result), counts
+ 
+     def _prep_iterable(self, obj, parent, parents_ids=EMPTY_FROZENSET):
+-
+         counts = 1
+         result = defaultdict(int)
+ 
+@@ -439,7 +426,6 @@
+ 
+             parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+             hashed, count = self._hash(item, parent=new_parent, parents_ids=parents_ids_added)
+-            # counting repetitions
+             result[hashed] += 1
+             counts += count
+ 
+@@ -450,9 +436,9 @@
+                 '{}|{}'.format(i, v) for i, v in result.items()
+             ]
+ 
+-        result = map(str, result) # making sure the result items are string so join command works.
++        result = map(str, result)
+         if self.ignore_iterable_order:
+-            result = sorted(result)  
++            result = sorted(result)
+         result = ','.join(result)
+         result = KEY_TO_VAL_STR.format(type(obj).__name__, result)
+ 
+@@ -496,7 +482,6 @@
+         return result, counts
+ 
+     def _hash(self, obj, parent, parents_ids=EMPTY_FROZENSET):
+-        """The main hash method"""
+         counts = 1
+ 
+         if isinstance(obj, booleanTypes):
+@@ -550,7 +535,7 @@
+             def gen():
+                 yield ('dtype', obj.dtypes)
+                 yield ('index', obj.index)
+-                yield from obj.items()  # which contains (column name, series tuples)
++                yield from obj.items()
+             result, counts = self._prep_iterable(obj=gen(), parent=parent, parents_ids=parents_ids)
+         elif (polars and isinstance(obj, polars.DataFrame)):
+             def gen():
+@@ -569,7 +554,7 @@
+         else:
+             result, counts = self._prep_obj(obj=obj, parent=parent, parents_ids=parents_ids)
+ 
+-        if result is not_hashed:  # pragma: no cover
++        if result is not_hashed:
+             self.hashes[UNPROCESSED_KEY].append(obj)
+ 
+         elif result is unprocessed:
+@@ -584,9 +569,6 @@
+                     ignore_string_case=self.ignore_string_case)
+             result = self.hasher(result_cleaned)
+ 
+-        # It is important to keep the hash of all objects.
+-        # The hashes will be later used for comparing the objects.
+-        # Object to hash when possible otherwise ObjectID to hash
+         try:
+             self.hashes[obj] = (result, counts)
+         except TypeError:

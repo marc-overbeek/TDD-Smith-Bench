@@ -1,0 +1,29 @@
+--- a/safety/models.py
++++ b/safety/models.py
+@@ -211,24 +211,8 @@
+             pkg_meta.get("insecure_versions", []) + pkg_meta.get("secure_versions", []))
+         return set(versions)
+ 
+-    def refresh_from(self, db_full: Dict) -> None:
+-        """
+-        Refresh the package information from the database.
+-
+-        Args:
+-            db_full (Dict): The full database.
+-        """
+-        base_domain = db_full.get('meta', {}).get('base_domain')
+-        pkg_meta = db_full.get('meta', {}).get('packages', {}).get(canonicalize_name(self.name), {})
+-
+-        kwargs = {'insecure_versions': self.filter_by_supported_versions(pkg_meta.get("insecure_versions", [])),
+-                  'secure_versions': self.filter_by_supported_versions(pkg_meta.get("secure_versions", [])),
+-                  'latest_version_without_known_vulnerabilities': pkg_meta.get("latest_secure_version",
+-                                                                               None),
+-                  'latest_version': pkg_meta.get("latest_version", None),
+-                  'more_info_url': f"{base_domain}{pkg_meta.get('more_info_path', '')}"}
+-
+-        self.update(kwargs)
++    def refresh_from(self, db_full: Dict) ->None:
++        pass
+ 
+     def to_dict(self, **kwargs: Any) -> Dict:
+         """

@@ -1,0 +1,25 @@
+--- a/starlette/authentication.py
++++ b/starlette/authentication.py
+@@ -20,11 +20,17 @@
+ _P = ParamSpec("_P")
+ 
+ 
+-def has_required_scope(conn: HTTPConnection, scopes: typing.Sequence[str]) -> bool:
+-    for scope in scopes:
+-        if scope not in conn.auth.scopes:
+-            return False
+-    return True
++def has_required_scope(conn: HTTPConnection, scopes: typing.Sequence[str]
++    ) ->bool:
++    if not hasattr(conn, 'auth') or conn.auth is None:
++        return False
++    
++    if isinstance(conn.auth, AuthCredentials):
++        existing_scopes = set(conn.auth.scopes)
++        required_scopes = set(scopes)
++        return required_scopes.issubset(existing_scopes)
++    
++    return False
+ 
+ 
+ def requires(

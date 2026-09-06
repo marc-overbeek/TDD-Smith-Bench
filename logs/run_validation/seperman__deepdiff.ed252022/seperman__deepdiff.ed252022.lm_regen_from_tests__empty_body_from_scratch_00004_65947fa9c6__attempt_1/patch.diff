@@ -1,0 +1,16 @@
+--- a/deepdiff/lfucache.py
++++ b/deepdiff/lfucache.py
+@@ -54,7 +54,12 @@
+         elif self.cache_head == self.cache_tail:
+             return 1
+         else:
+-            return '2+'
++            count = 0
++            current = self.cache_head
++            while current is not None:
++                count += 1
++                current = current.nxt
++            return count
+ 
+     def remove(self):
+         if self.pre is not None:

@@ -1,0 +1,36 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1268,32 +1268,7 @@
+         return ret
+ 
+     def __repr__(self):
+-        base_fname = self.__class__.__name__
+-        fname_map = {'C': 'constants', 'S': 'specs', '*': 'star'}
+-        if type(self.func) is Spec:
+-            base_fname += '.specfunc'
+-            args = (self.func.spec,)
+-        else:
+-            args = (self.func,)
+-        chunks = [format_invocation(base_fname, args, repr=bbrepr)]
+-
+-        for i in range(len(self._args) // 3):
+-            op, args, _kwargs = self._args[i * 3: i * 3 + 3]
+-            fname = fname_map[op]
+-            if op in ('C', 'S'):
+-                kwargs = [(k, v) for k, v in _kwargs.items()
+-                          if self._cur_kwargs[k] is _kwargs]
+-            else:
+-                kwargs = {}
+-                if args:
+-                    kwargs['args'] = args
+-                if _kwargs:
+-                    kwargs['kwargs'] = _kwargs
+-                args = ()
+-
+-            chunks.append('.' + format_invocation(fname, args, kwargs, repr=bbrepr))
+-
+-        return ''.join(chunks)
++        pass
+ 
+     def glomit(self, target, scope):
+         all_args = []

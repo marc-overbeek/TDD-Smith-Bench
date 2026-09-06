@@ -1,0 +1,90 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -608,22 +608,72 @@
+ 
+ 
+ def json_convertor_default(default_mapping=None):
+-    if default_mapping:
+-        _convertor_mapping = JSON_CONVERTOR.copy()
+-        _convertor_mapping.update(default_mapping)
+-    else:
+-        _convertor_mapping = JSON_CONVERTOR
+-
+-    def _convertor(obj):
+-        for original_type, convert_to in _convertor_mapping.items():
+-            if isinstance(obj, original_type):
+-                return convert_to(obj)
+-        # This is to handle reverse() which creates a generator of type list_reverseiterator
+-        if obj.__class__.__name__ == 'list_reverseiterator':
++    def default_func(obj):
++        # Build the combined mapping
++        mapping = dict(JSON_CONVERTOR)
++        if default_mapping:
++            mapping.update(default_mapping)
++        
++        # Check exact type match first
++        obj_type = type(obj)
++        if obj_type in mapping:
++            return mapping[obj_type](obj)
++        
++        # Check isinstance for each type in mapping
++        for type_, converter in mapping.items():
++            if isinstance(obj, type_):
++                return converter(obj)
++        
++        # Handle iterators/generators (like reversed)
++        try:
++            # Try to convert to list if it's an iterator
++            items = list(obj)
++            # But we need to be careful not to exhaust it - copy it
++            return items
++        except TypeError:
++            pass
++        
++        raise TypeError(
++            f"We do not know how to convert {obj!r} of type {obj_type} for json serialization. "
++            "Please pass the default_mapping parameter with proper mapping of the object to a basic python type."
++        )
++    
++    return default_func
++
++def json_convertor_default(default_mapping=None):
++    def default_func(obj):
++        # Build the combined mapping
++        mapping = dict(JSON_CONVERTOR)
++        if default_mapping:
++            mapping.update(default_mapping)
++        
++        # Check exact type match first
++        obj_type = type(obj)
++        if obj_type in mapping:
++            return mapping[obj_type](obj)
++        
++        # Check isinstance for each type in mapping
++        for type_, converter in mapping.items():
++            if isinstance(obj, type_):
++                return converter(obj)
++        
++        # Handle iterators/generators (like reversed)
++        try:
+             return list(copy(obj))
+-        raise TypeError('We do not know how to convert {} of type {} for json serialization. Please pass the default_mapping parameter with proper mapping of the object to a basic python type.'.format(obj, type(obj)))
+-
+-    return _convertor
++        except Exception:
++            pass
++        
++        try:
++            return list(obj)
++        except TypeError:
++            pass
++        
++        raise TypeError(
++            f"We do not know how to convert {obj!r} of type {obj_type} for json serialization. "
++            "Please pass the default_mapping parameter with proper mapping of the object to a basic python type."
++        )
++    
++    return default_func
+ 
+ 
+ class JSONDecoder(json.JSONDecoder):

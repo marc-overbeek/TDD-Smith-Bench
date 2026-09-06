@@ -1,0 +1,142 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -288,33 +288,114 @@
+         email_domain = email_node.get('domain')
+         return f'{email_id}@{email_domain}'
+ 
+-    def to_xml(self, value: Any, version: str, nsmap: Optional[Dict[str, str]]=None, prettyprint: bool=True, indent: str='') -> str:
+-        """
+-        Write email address to XML
+-
++    def to_xml(self, value: Any, version: str, nsmap: Optional[Dict[str, str]]=
++        None, prettyprint: bool=True, indent: str='') ->str:
++        """
++        Serialize GPX object to XML string.
++    
+         Args:
+-            value: str representing an email address
+-            version: str of the gpx output version "1.0" or "1.1"
+-
++            value: The GPX object to serialize
++            version: GPX version ("1.0" or "1.1")
++            nsmap: Namespace map for XML namespaces
++            prettyprint: Whether to format output with indentation
++            indent: Base indentation string
++    
+         Returns:
+-            None if value is empty or str of XML representation of the
+-            address. Representation starts with a \n.
+-        """
+-        if not value:
+-            return ''
+-
+-        if not prettyprint:
+-            indent = ''
+-
+-        if '@' in value:
+-            pos = value.find('@')
+-            email_id = value[:pos]
+-            email_domain = value[pos+1:]
+-        else:
+-            email_id = value
+-            email_domain = 'unknown'
+-
+-        return f'\n{indent}<{self.tag} id="{email_id}" domain="{email_domain}" />'
++            XML string representation of the GPX object
++        """
++        # Set default namespace map if none provided
++        if nsmap is None:
++            nsmap = {
++                'defaultns': 'http://www.topografix.com/GPX/1/1',
++                'gpxtpx': 'http://www.garmin.com/xmlschemas/TrackPointExtension/v1'
++            }
++    
++        # Determine which fields to use based on version
++        if version == '1.0':
++            fields = self.gpx_10_fields
++        else:  # Default to 1.1
++            fields = self.gpx_11_fields
++    
++        # Build the XML
++        result = []
++    
++        # Start with the root gpx element
++        result.append('<?xml version="1.0" encoding="UTF-8"?>')
++    
++        # Add gpx element with proper namespace
++        if version == '1.0':
++            result.append('<gpx version="1.0" creator="GPXPy">')
++        else:
++            result.append('<gpx version="1.1" creator="GPXPy">')
++    
++        # Add metadata for 1.1
++        if version == '1.1':
++            result.append('<metadata>')
++            # Add basic metadata fields
++            if hasattr(self, 'name') and self.name:
++                result.append(f'<name>{self.name}</name>')
++            if hasattr(self, 'description') and self.description:
++                result.append(f'<desc>{self.description}</desc>')
++            if hasattr(self, 'author_name') and self.author_name:
++                result.append(f'<author><name>{self.author_name}</name></author>')
++            if hasattr(self, 'keywords') and self.keywords:
++                result.append(f'<keywords>{self.keywords}</keywords>')
++            if hasattr(self, 'time') and self.time:
++                result.append(f'<time>{format_time(self.time)}</time>')
++            if hasattr(self, 'bounds') and self.bounds:
++                result.append(f'<bounds minlat="{self.bounds.min_latitude}" minlon="{self.bounds.min_longitude}" maxlat="{self.bounds.max_latitude}" maxlon="{self.bounds.max_longitude}" />')
++            result.append('</metadata>')
++    
++        # Add waypoints
++        if hasattr(self, 'waypoints') and self.waypoints:
++            for waypoint in self.waypoints:
++                result.append(waypoint.to_xml(version, nsmap, prettyprint, indent))
++    
++        # Add routes
++        if hasattr(self, 'routes') and self.routes:
++            for route in self.routes:
++                result.append(route.to_xml(version, nsmap, prettyprint, indent))
++    
++        # Add tracks
++        if hasattr(self, 'tracks') and self.tracks:
++            for track in self.tracks:
++                result.append(track.to_xml(version, nsmap, prettyprint, indent))
++    
++        # Add extensions
++        if hasattr(self, 'extensions') and self.extensions:
++            result.append('<extensions>')
++            for ext in self.extensions:
++                result.append(ext.to_xml(version, nsmap, prettyprint, indent))
++            result.append('</extensions>')
++    
++        result.append('</gpx>')
++    
++        return ''.join(result)
++
++    def to_xml(self, value: Any, version: str, nsmap: Optional[Dict[str, str]]=
++        None, prettyprint: bool=True, indent: str='') ->str:
++        """
++        Serialize GPX object to XML string.
++    
++        Args:
++            value: The GPX object to serialize (ignored, uses self)
++            version: GPX version ("1.0" or "1.1")
++            nsmap: Namespace map for XML namespaces
++            prettyprint: Whether to format output with indentation
++            indent: Base indentation string
++    
++        Returns:
++            XML string representation of the GPX object
++        """
++        # Set default namespace map if none provided
++        if nsmap is None:
++            nsmap = {
++                'defaultns': 'http://www.topografix.com/GPX/1/1',
++                'gpxtpx': 'http://www.garmin.com/xmlschemas/TrackPointExtension/v1'
++            }
++    
++        # Use the existing gpx_fields_to_xml function to do the heavy lifting
++        return gpx_fields_to_xml(self, 'gpx', version, {}, nsmap, prettyprint, indent)
+ 
+ 
+ class GPXExtensionsField(AbstractGPXField):

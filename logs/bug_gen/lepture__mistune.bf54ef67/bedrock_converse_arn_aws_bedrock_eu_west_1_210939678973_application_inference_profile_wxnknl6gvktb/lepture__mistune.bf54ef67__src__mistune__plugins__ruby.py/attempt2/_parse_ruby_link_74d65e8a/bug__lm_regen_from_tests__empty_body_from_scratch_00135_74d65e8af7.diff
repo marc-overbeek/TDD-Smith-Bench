@@ -1,0 +1,79 @@
+--- a/src/mistune/plugins/ruby.py
++++ b/src/mistune/plugins/ruby.py
+@@ -45,43 +45,44 @@
+     return end_pos
+ 
+ 
+-def _parse_ruby_link(
+-    inline: "InlineParser", state: "InlineState", pos: int, tokens: List[Dict[str, Any]]
+-) -> Optional[int]:
+-    c = state.src[pos]
+-    if c == '(':
+-        # standard link [text](<url> "title")
+-        attrs, link_pos = parse_link(state.src, pos + 1)
+-        if link_pos:
++def _parse_ruby_link(inline: 'InlineParser', state: 'InlineState', pos: int,
++    tokens: List[Dict[str, Any]]) ->Optional[int]:
++    """Parse link after ruby text, e.g., [ruby(text)][ref] or [ruby(text)](/url)"""
++    if pos >= len(state.src):
++        return None
++    
++    if state.src[pos] == '[':
++        # Reference link [label]
++        label_match = parse_link_label(state.src, pos)
++        if label_match:
++            label_pos = label_match[0]
++            label = label_match[1]
++            
++            for tok in tokens:
++                state.append_token(tok)
++            
++            key = unikey(label)
++            state.append_token({
++                'type': 'link',
++                'children': [],
++                'attrs': {'key': key, 'label': label}
++            })
++            return label_pos
++    elif state.src[pos] == '(':
++        # Inline link (url "title")
++        link_match = parse_link(state.src, pos)
++        if link_match:
++            link_pos = link_match[0]
++            url = link_match[1]
++            title = link_match[2]
++            
+             state.append_token({
+                 'type': 'link',
+                 'children': tokens,
+-                'attrs': attrs,
++                'attrs': {'url': url, 'title': title}
+             })
+             return link_pos
+-
+-    elif c == '[':
+-        # standard ref link [text][label]
+-        label, link_pos = parse_link_label(state.src, pos + 1)
+-        if label and link_pos:
+-            ref_links = state.env['ref_links']
+-            key = unikey(label)
+-            env = ref_links.get(key)
+-            if env:
+-                attrs = {'url': env['url'], 'title': env.get('title')}
+-                state.append_token({
+-                    'type': 'link',
+-                    'children': tokens,
+-                    'attrs': attrs,
+-                })
+-            else:
+-                for tok in tokens:
+-                    state.append_token(tok)
+-                state.append_token({
+-                    'type': 'text',
+-                    'raw': '[' + label + ']',
+-                })
+-            return link_pos
++    
+     return None
+ 
+ 

@@ -1,0 +1,96 @@
+--- a/fvcore/common/checkpoint.py
++++ b/fvcore/common/checkpoint.py
+@@ -53,25 +53,8 @@
+     objects.
+     """
+ 
+-    def __init__(
+-        self,
+-        model: nn.Module,
+-        save_dir: str = "",
+-        *,
+-        save_to_disk: bool = True,
+-        **checkpointables: Any,
+-    ) -> None:
+-        """
+-        Args:
+-            model (nn.Module): model.
+-            save_dir (str): a directory to save and find checkpoints.
+-            save_to_disk (bool): if True, save checkpoint to disk, otherwise
+-                disable saving for this checkpointer.
+-            checkpointables (object): any checkpointable objects, i.e., objects
+-                that have the ``state_dict()`` and ``load_state_dict()`` method. For
+-                example, it can be used like
+-                `Checkpointer(model, "dir", optimizer=optimizer)`.
+-        """
++    def __init__(self, model: nn.Module, save_dir: str='', *, save_to_disk:
++        bool=True, **checkpointables: Any) ->None:
+         if isinstance(model, (DistributedDataParallel, DataParallel)):
+             model = model.module
+         self.model = model
+@@ -86,7 +69,7 @@
+         self.path_manager: PathManager = PathManager()
+         self.path_manager.register_handler(HTTPURLHandler())
+ 
+-    def add_checkpointable(self, key: str, checkpointable: Any) -> None:
++    def add_checkpointable(self, key: str, checkpointable: Any) ->None:
+         """
+         Add checkpointable object for this checkpointer to track.
+ 
+@@ -103,7 +86,7 @@
+             )
+         self.checkpointables[key] = checkpointable
+ 
+-    def save(self, name: str, **kwargs: Any) -> None:
++    def save(self, name: str, **kwargs: Any) ->None:
+         """
+         Dump model and checkpointables to a file.
+ 
+@@ -129,9 +112,8 @@
+             torch.save(data, cast(IO[bytes], f))
+         self.tag_last_checkpoint(basename)
+ 
+-    def load(
+-        self, path: str, checkpointables: Optional[List[str]] = None
+-    ) -> Dict[str, Any]:
++    def load(self, path: str, checkpointables: Optional[List[str]]=None) ->Dict[
++        str, Any]:
+         """
+         Load from the given checkpoint.
+ 
+@@ -168,7 +150,7 @@
+         # return any further checkpoint data
+         return checkpoint
+ 
+-    def has_checkpoint(self) -> bool:
++    def has_checkpoint(self) ->bool:
+         """
+         Returns:
+             bool: whether a checkpoint exists in the target directory.
+@@ -176,7 +158,7 @@
+         save_file = os.path.join(self.save_dir, "last_checkpoint")
+         return self.path_manager.exists(save_file)
+ 
+-    def get_checkpoint_file(self) -> str:
++    def get_checkpoint_file(self) ->str:
+         """
+         Returns:
+             str: The latest checkpoint file in target directory.
+@@ -226,7 +208,7 @@
+         else:
+             return self.load(path, checkpointables=[])
+ 
+-    def tag_last_checkpoint(self, last_filename_basename: str) -> None:
++    def tag_last_checkpoint(self, last_filename_basename: str) ->None:
+         """
+         Tag the last checkpoint.
+ 
+@@ -237,7 +219,7 @@
+         with self.path_manager.open(save_file, "w") as f:
+             f.write(last_filename_basename)
+ 
+-    def _load_file(self, f: str) -> Dict[str, Any]:
++    def _load_file(self, f: str) ->Dict[str, Any]:
+         """
+         Load a checkpoint file. Can be overwritten by subclasses to support
+         different formats.

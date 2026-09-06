@@ -1,0 +1,27 @@
+--- a/starlette/middleware/wsgi.py
++++ b/starlette/middleware/wsgi.py
+@@ -139,14 +139,14 @@
+             )
+ 
+     def wsgi(
+-        self,
+-        environ: dict[str, typing.Any],
+-        start_response: typing.Callable[..., typing.Any],
+-    ) -> None:
+-        for chunk in self.app(environ, start_response):
+-            anyio.from_thread.run(
+-                self.stream_send.send,
+-                {"type": "http.response.body", "body": chunk, "more_body": True},
+-            )
++            self,
++            environ: dict[str, typing.Any],
++            start_response: typing.Callable[..., typing.Any],
++        ) -> None:
++            for chunk in self.app(environ, start_response):
++                anyio.from_thread.run(
++                    self.stream_send.send,
++                    {"type": "http.response.body", "body": chunk, "more_body": True},
++                )
+ 
+-        anyio.from_thread.run(self.stream_send.send, {"type": "http.response.body", "body": b""})
++            anyio.from_thread.run(self.stream_send.send, {"type": "http.response.body", "body": b""})

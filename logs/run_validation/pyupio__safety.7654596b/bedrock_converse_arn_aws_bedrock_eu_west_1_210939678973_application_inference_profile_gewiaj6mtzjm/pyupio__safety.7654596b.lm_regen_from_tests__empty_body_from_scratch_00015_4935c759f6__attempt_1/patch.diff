@@ -1,0 +1,28 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -230,15 +230,16 @@
+     return used_options
+ 
+ 
+-def get_safety_version() -> str:
+-    """
+-    Get the version of Safety.
+-
+-    Returns:
+-        str: The Safety version.
+-    """
+-    from safety import VERSION
+-    return VERSION
++def get_safety_version() ->str:
++    try:
++        from safety.__version__ import __version__
++        return __version__
++    except ImportError:
++        try:
++            from safety.version import __version__
++            return __version__
++        except ImportError:
++            return "unknown"
+ 
+ 
+ def get_primary_announcement(announcements: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:

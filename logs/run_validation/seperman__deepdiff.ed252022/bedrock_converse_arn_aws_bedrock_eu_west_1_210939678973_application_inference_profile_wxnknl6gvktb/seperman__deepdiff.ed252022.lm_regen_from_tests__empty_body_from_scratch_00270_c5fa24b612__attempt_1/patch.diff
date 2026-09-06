@@ -1,0 +1,52 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -486,16 +486,40 @@
+ 
+ 
+ def cartesian_product_of_shape(dimentions, result=None):
+-    """
+-    Cartesian product of a dimentions iterable.
+-    This is mainly used to traverse Numpy ndarrays.
+-
+-    Each array has dimentions that are defines in ndarray.shape
+-    """
+     if result is None:
+-        result = ((),)  # a tuple with an empty tuple
+-    for dimension in dimentions:
+-        result = cartesian_product(result, range(dimension))
++        result = [()]
++    
++    if not dimentions:
++        return result
++    
++    # Get the first dimension
++    first_dim = dimentions[0]
++    remaining_dims = dimentions[1:]
++    
++    # Generate cartesian product with the first dimension
++    result = list(cartesian_product(result, range(first_dim)))
++    
++    # Recursively process remaining dimensions
++    if remaining_dims:
++        result = cartesian_product_of_shape(remaining_dims, result)
++    
++    return result
++
++def cartesian_product_of_shape(dimentions, result=None):
++    if result is None:
++        result = [()]
++    
++    if not dimentions:
++        return result
++    
++    first_dim = dimentions[0]
++    remaining_dims = dimentions[1:]
++    
++    result = list(cartesian_product(result, range(first_dim)))
++    
++    if remaining_dims:
++        result = cartesian_product_of_shape(remaining_dims, result)
++    
+     return result
+ 
+ 

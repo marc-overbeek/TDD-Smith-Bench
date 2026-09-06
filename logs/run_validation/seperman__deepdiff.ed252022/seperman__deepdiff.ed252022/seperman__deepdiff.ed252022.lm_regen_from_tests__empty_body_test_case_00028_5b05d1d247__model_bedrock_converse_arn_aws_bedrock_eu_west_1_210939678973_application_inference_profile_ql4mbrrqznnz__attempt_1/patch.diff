@@ -1,0 +1,116 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -14,28 +14,14 @@
+ class DistanceMixin:
+ 
+     def _get_rough_distance(self):
+-        """
+-        Gives a numeric value for the distance of t1 and t2 based on how many operations are needed to convert
+-        one to the other.
+-
+-        This is a similar concept to the Levenshtein Edit Distance but for the structured data and is it is designed
+-        to be between 0 and 1.
+-
+-        A distance of zero means the objects are equal and a distance of 1 is very far.
+-
+-        Note: The distance calculation formula is subject to change in future. Use the distance results only as a
+-        way of comparing the distances of pairs of items with other pairs rather than an absolute distance
+-        such as the one provided by Levenshtein edit distance.
+-
+-        Info: The current algorithm is based on the number of operations that are needed to convert t1 to t2 divided
+-        by the number of items that make up t1 and t2.
+-        """
+-
+         _distance = get_numeric_types_distance(
+             self.t1, self.t2, max_=self.cutoff_distance_for_pairs, use_log_scale=self.use_log_scale, log_scale_similarity_threshold=self.log_scale_similarity_threshold)
+ 
+         if _distance is not not_found:
+             return _distance
++
++        if not hasattr(self, 'hashes'):
++            raise RuntimeError(DISTANCE_CALCS_NEEDS_CACHE)
+ 
+         item = self if self.view == DELTA_VIEW else self._to_delta_dict(report_repetition_required=False)
+         diff_length = _get_item_length(item)
+@@ -137,56 +123,35 @@
+ 
+ 
+ def _get_item_length(item, parents_ids=frozenset([])):
+-    """
+-    Get the number of operations in a diff object.
+-    It is designed mainly for the delta view output
+-    but can be used with other dictionary types of view outputs too.
+-    """
+     length = 0
++    if item is None:
++        return 0
++    
++    item_id = id(item)
++    if item_id in parents_ids:
++        return 0
++    
++    parents_ids = add_to_frozen_set(parents_ids, item_id)
++    
+     if isinstance(item, Mapping):
+-        for key, subitem in item.items():
+-            # dedupe the repetition report so the number of times items have shown up does not affect the distance.
+-            if key in {'iterable_items_added_at_indexes', 'iterable_items_removed_at_indexes'}:
+-                new_subitem = dict_()
+-                for path_, indexes_to_items in subitem.items():
+-                    used_value_ids = set()
+-                    new_indexes_to_items = dict_()
+-                    for k, v in indexes_to_items.items():
+-                        v_id = id(v)
+-                        if v_id not in used_value_ids:
+-                            used_value_ids.add(v_id)
+-                            new_indexes_to_items[k] = v
+-                    new_subitem[path_] = new_indexes_to_items
+-                subitem = new_subitem
+-
+-            # internal keys such as _numpy_paths should not count towards the distance
+-            if isinstance(key, strings) and (key.startswith('_') or key == 'deep_distance' or key == 'new_path'):
+-                continue
+-
+-            item_id = id(subitem)
+-            if parents_ids and item_id in parents_ids:
+-                continue
+-            parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+-            length += _get_item_length(subitem, parents_ids_added)
++        for k, v in item.items():
++            length += 1
++            length += _get_item_length(v, parents_ids)
++    elif isinstance(item, strings):
++        length += 1
++    elif isinstance(item, Iterable):
++        for v in item:
++            length += 1
++            length += _get_item_length(v, parents_ids)
+     elif isinstance(item, numbers):
+-        length = 1
+-    elif isinstance(item, strings):
+-        length = 1
+-    elif isinstance(item, Iterable):
+-        for subitem in item:
+-            item_id = id(subitem)
+-            if parents_ids and item_id in parents_ids:
+-                continue
+-            parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+-            length += _get_item_length(subitem, parents_ids_added)
+-    elif isinstance(item, type):  # it is a class
+-        length = 1
++        length += 1
+     else:
+-        if hasattr(item, '__dict__'):
+-            for subitem in item.__dict__:
+-                item_id = id(subitem)
+-                parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+-                length += _get_item_length(subitem, parents_ids_added)
++        try:
++            obj_dict = item.__dict__
++            length += _get_item_length(obj_dict, parents_ids)
++        except AttributeError:
++            length += 1
++    
+     return length
+ 
+ 

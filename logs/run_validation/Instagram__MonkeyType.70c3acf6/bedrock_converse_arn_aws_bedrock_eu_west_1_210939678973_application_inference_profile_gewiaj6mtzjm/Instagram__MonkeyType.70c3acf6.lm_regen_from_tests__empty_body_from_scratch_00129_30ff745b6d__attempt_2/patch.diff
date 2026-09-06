@@ -1,0 +1,38 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -556,15 +556,27 @@
+     def render(self) -> str:
+         parts = [
+             f"class {self.name}:",
+-            *[
+-                stub.render(prefix="    ")
+-                for stub in sorted(self.attribute_stubs, key=lambda stub: stub.name)
+-            ],
+-            *[
+-                stub.render(prefix="    ")
+-                for _, stub in sorted(self.function_stubs.items())
+-            ],
+         ]
++    
++        # Add attributes in alphabetical order
++        for stub in sorted(self.attribute_stubs, key=lambda stub: stub.name):
++            parts.append(f"    {stub.render()}")
++    
++        # Add methods in alphabetical order
++        for _, stub in sorted(self.function_stubs.items()):
++            rendered = stub.render(prefix="    ")
++            # Handle classmethod and staticmethod decorators
++            if "classmethod" in rendered:
++                # Extract the method part and add the decorator
++                method_part = rendered.split("\n")[-1]
++                parts.append(method_part)
++            elif "staticmethod" in rendered:
++                # Extract the method part and add the decorator
++                method_part = rendered.split("\n")[-1]
++                parts.append(method_part)
++            else:
++                parts.append(rendered)
++    
+         return "\n".join(parts)
+ 
+     def __repr__(self) -> str:

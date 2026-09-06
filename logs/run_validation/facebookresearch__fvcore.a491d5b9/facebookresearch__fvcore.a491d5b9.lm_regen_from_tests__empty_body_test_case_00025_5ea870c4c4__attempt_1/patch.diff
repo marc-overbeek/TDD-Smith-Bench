@@ -1,0 +1,21 @@
+--- a/fvcore/common/config.py
++++ b/fvcore/common/config.py
+@@ -134,17 +134,13 @@
+         return super().merge_from_other_cfg(cfg_other)
+ 
+     def merge_from_list(self, cfg_list: List[str]) -> Callable[[], None]:
+-        """
+-        Args:
+-            cfg_list (list): list of configs to merge from.
+-        """
+         keys = set(cfg_list[0::2])
+         assert (
+             BASE_KEY not in keys
+         ), "The reserved key '{}' can only be used in files!".format(BASE_KEY)
+         return super().merge_from_list(cfg_list)
+ 
+-    def __setattr__(self, name: str, val: Any) -> None:  # pyre-ignore
++    def __setattr__(self, name: str, val: Any) -> None:
+         if name.startswith("COMPUTED_"):
+             if name in self:
+                 old_val = self[name]

@@ -1,0 +1,179 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -309,125 +309,67 @@
+     return out_list
+ 
+ 
+-def flop_count_str(
+-    # pyre-fixme[11]: Annotation `FlopCountAnalysis` is not defined as a type.
+-    # pyre-fixme[11]: Annotation `ActivationCountAnalysis` is not defined as a type.
+-    flops: FlopCountAnalysis,
+-    # pyre-fixme[11]: Annotation `ActivationCountAnalysis` is not defined as a type.
+-    activations: Optional[ActivationCountAnalysis] = None,
+-) -> str:
+-    """
+-    Calculates the parameters and flops of the model with the given inputs
+-    and returns a string representation of the model that includes the
+-    parameters and flops of every submodule. The string is structured
+-    to be similar that given by str(model), though it is not guaranteed to
+-    be identical in form if the default string representation of a module has
+-    been overridden. If a module has zero parameters and flops, statistics
+-    will not be reported for succinctness.
+-
+-    The trace can only register the scope of a module if it is called
+-    directly, which means flops (and activations) arising from explicit
+-    calls to .forward() or to other python functions of the module will
+-    not be attributed to that module. Modules that are never called will
+-    have 'N/A' listed for their flops; this means they are either unused
+-    or their statistics are missing for this reason. Any such flops are still
+-    counted towards the parent
+-
+-    Example:
+-
+-    >>> import torch
+-    >>> import torch.nn as nn
+-
+-    >>> class InnerNet(nn.Module):
+-    ...     def __init__(self):
+-    ...         super().__init__()
+-    ...         self.fc1 = nn.Linear(10,10)
+-    ...         self.fc2 = nn.Linear(10,10)
+-    ...     def forward(self, x):
+-    ...         return self.fc1(self.fc2(x))
+-
+-    >>> class TestNet(nn.Module):
+-    ...     def __init__(self):
+-    ...         super().__init__()
+-    ...         self.fc1 = nn.Linear(10,10)
+-    ...         self.fc2 = nn.Linear(10,10)
+-    ...         self.inner = InnerNet()
+-    ...     def forward(self, x):
+-    ...         return self.fc1(self.fc2(self.inner(x)))
+-
+-    >>> inputs = torch.randn((1,10))
+-    >>> print(flop_count_str(FlopCountAnalysis(model, inputs)))
+-    TestNet(
+-      #params: 0.44K, #flops: 0.4K
+-      (fc1): Linear(
+-        in_features=10, out_features=10, bias=True
+-        #params: 0.11K, #flops: 100
+-      )
+-      (fc2): Linear(
+-        in_features=10, out_features=10, bias=True
+-        #params: 0.11K, #flops: 100
+-      )
+-      (inner): InnerNet(
+-        #params: 0.22K, #flops: 0.2K
+-        (fc1): Linear(
+-          in_features=10, out_features=10, bias=True
+-          #params: 0.11K, #flops: 100
+-        )
+-        (fc2): Linear(
+-          in_features=10, out_features=10, bias=True
+-          #params: 0.11K, #flops: 100
+-        )
+-      )
+-    )
+-
+-
+-    Args:
+-        flops (FlopCountAnalysis): the flop counting object
+-        activations (bool) : If given, the activations of each layer will
+-            also be calculated and included in the representation.
+-
+-    Returns:
+-        str:
+-            a string representation of the model with the number of
+-            parameters and flops included.
+-    """
+-    # cast to dict since pyre doesn't like the implicit defaultdict->dict
+-    model = flops._model
+-    params = dict(parameter_count(model))
+-
++def flop_count_str(flops: FlopCountAnalysis, activations: Optional[
++    ActivationCountAnalysis]=None) ->str:
+     flops.unsupported_ops_warnings(False)
+     flops.uncalled_modules_warnings(False)
+     flops.tracer_warnings("none")
+-    stats = {"#params": params, "#flops": flops.by_module()}
+-
++    
++    stats = {"#flops": flops.by_module()}
++    stat_columns = ["#flops"]
++    
+     if activations is not None:
+         activations.unsupported_ops_warnings(False)
+         activations.uncalled_modules_warnings(False)
+         activations.tracer_warnings("none")
+         stats["#acts"] = activations.by_module()
+-
+-    all_uncalled = flops.uncalled_modules() | (
+-        activations.uncalled_modules() if activations is not None else set()
++        stat_columns += ["#acts"]
++    
++    stats = _group_by_module(stats)
++    stats = _remove_zero_statistics(stats, require_trivial_children=True)
++    stats = _pretty_statistics(stats, hide_zero=False)
++    stats = _indicate_uncalled_modules(
++        stats,
++        "#flops",
++        flops.uncalled_modules() & stats.keys(),
++        uncalled_indicator="N/A",
+     )
+-    stats = _fill_missing_statistics(model, stats)
++    if activations:
++        stats = _indicate_uncalled_modules(
++            stats,
++            "#acts",
++            activations.uncalled_modules() & stats.keys(),
++            uncalled_indicator="N/A",
++        )
++    
++    # Add parameter counts
++    params = dict(parameter_count(flops._model))
++    stats["#params"] = params
++    stat_columns = ["#params"] + stat_columns
++    
+     stats = _group_by_module(stats)
+-    stats = _remove_zero_statistics(stats, force_keep=all_uncalled)
+-    stats = _pretty_statistics(stats, sig_figs=2)
+-    stats = _indicate_uncalled_modules(stats, "#flops", flops.uncalled_modules())
+-    if activations is not None:
+-        stats = _indicate_uncalled_modules(
+-            stats, "#acts", activations.uncalled_modules()
+-        )
+-
+-    model_string = ""
+-    if all_uncalled:
+-        model_string += (
+-            "N/A indicates a possibly missing statistic due to how "
+-            "the module was called. Missing values are still included "
+-            "in the parent's total.\n"
+-        )
+-    model_string += _model_stats_str(model, stats)
+-    return model_string
++    stats = _remove_zero_statistics(stats, require_trivial_children=True)
++    stats = _pretty_statistics(stats, hide_zero=False)
++    
++    # Create a unified statistics dict for model representation
++    unified_stats = {}
++    for mod_name in stats:
++        unified_stats[mod_name] = {}
++        for col in stat_columns:
++            if col in stats[mod_name]:
++                unified_stats[mod_name][col] = stats[mod_name][col]
++            else:
++                unified_stats[mod_name][col] = "0"
++    
++    # Fill missing statistics with zeros
++    unified_stats = _fill_missing_statistics(flops._model, unified_stats)
++    
++    # Remove zero statistics for cleaner output - but keep at least the root
++    # This ensures we always have at least the root module shown
++    unified_stats = _remove_zero_statistics(unified_stats, require_trivial_children=True)
++    
++    # Convert to model string representation
++    return _model_stats_str(flops._model, unified_stats)
+ 
+ 
+ ### Table Printing ###

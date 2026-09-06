@@ -1,0 +1,61 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -153,7 +153,8 @@
+         except ImportError:  # pragma: no cover. Json pickle is getting deprecated.
+             logger.error('jsonpickle library needs to be installed in order to run from_json_pickle')  # pragma: no cover. Json pickle is getting deprecated.
+ 
+-    def to_json(self, default_mapping: Optional[dict]=None, force_use_builtin_json=False, **kwargs):
++    def to_json(self, default_mapping: Optional[dict]=None,
++        force_use_builtin_json=False, **kwargs):
+         """
+         Dump json of the text view.
+         **Parameters**
+@@ -615,7 +616,7 @@
+         _convertor_mapping = JSON_CONVERTOR
+ 
+     def _convertor(obj):
+-        for original_type, convert_to in _convertor_mapping.items():
++        for original_type, convert_to in JSON_CONVERTOR.items():
+             if isinstance(obj, original_type):
+                 return convert_to(obj)
+         # This is to handle reverse() which creates a generator of type list_reverseiterator
+@@ -640,35 +641,12 @@
+         return obj
+ 
+ 
+-def json_dumps(item, default_mapping=None, force_use_builtin_json: bool=False, **kwargs):
+-    """
+-    Dump json with extra details that are not normally json serializable
+-
+-    parameters
+-    ----------
+-
+-    force_use_builtin_json: Boolean, default = False
+-        When True, we use Python's builtin Json library for serialization,
+-        even if Orjson is installed.
+-    """
++def json_dumps(item, default_mapping=None, force_use_builtin_json: bool=
++    False, **kwargs):
+     if orjson and not force_use_builtin_json:
+-        indent = kwargs.pop('indent', None)
+-        if indent:
+-            kwargs['option'] = orjson.OPT_INDENT_2
+-        if 'sort_keys' in kwargs:
+-            raise TypeError(
+-                "orjson does not accept the sort_keys parameter. "
+-                "If you need to pass sort_keys, set force_use_builtin_json=True "
+-                "to use Python's built-in json library instead of orjson.")
+-        return orjson.dumps(
+-            item,
+-            default=json_convertor_default(default_mapping=default_mapping),
+-            **kwargs).decode(encoding='utf-8')
++        return orjson.dumps(item, default=json_convertor_default(default_mapping), option=orjson.OPT_NON_STR_KEYS)
+     else:
+-        return json.dumps(
+-            item,
+-            default=json_convertor_default(default_mapping=default_mapping),
+-            **kwargs)
++        return json.dumps(item, default=json_convertor_default(default_mapping), **kwargs)
+ 
+ 
+ json_loads = partial(json.loads, cls=JSONDecoder)

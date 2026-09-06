@@ -1,0 +1,19 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -67,6 +67,16 @@
+         # __init__ args = (actual, expected)
+         # self.args = (fmt_str, expected, actual)
+         return TypeMatchError(self.args[2], self.args[1])
++
++    def __init__(self, fmt, *args):
++        super().__init__(fmt, *args)
++
++    def get_message(self):
++        fmt, args = self.args[0], self.args[1:]
++        return bbformat(fmt, *args)
++
++    def __copy__(self):
++        return MatchError(*self.args)
+ 
+ 
+ class Match:

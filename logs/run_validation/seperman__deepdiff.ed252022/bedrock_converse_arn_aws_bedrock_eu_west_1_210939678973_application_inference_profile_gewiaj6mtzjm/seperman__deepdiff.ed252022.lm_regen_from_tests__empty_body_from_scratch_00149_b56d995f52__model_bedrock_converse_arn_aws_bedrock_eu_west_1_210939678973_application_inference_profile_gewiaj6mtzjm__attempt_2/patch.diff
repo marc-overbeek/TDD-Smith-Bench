@@ -1,0 +1,156 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -1048,7 +1048,7 @@
+                 {'path': [2], 'value': 3, 'action': 'iterable_item_added'},
+             ]
+ 
+-        
++    
+         **Parameters**
+ 
+         include_action_in_path : Boolean, default=False
+@@ -1089,9 +1089,141 @@
+             attribute_added
+             attribute_removed
+         """
+-        return [
+-            i._asdict() for i in self.to_flat_rows(include_action_in_path=False, report_type_changes=True)
+-        ]
++        result = []
++        if include_action_in_path:
++            _parse_path = partial(parse_path, include_actions=True)
++        else:
++            _parse_path = parse_path
++        if report_type_changes:
++            keys_and_funcs = [
++                ('value', 'value', None),
++                ('new_value', 'value', None),
++                ('old_value', 'old_value', None),
++                ('new_type', 'type', None),
++                ('old_type', 'old_type', None),
++                ('new_path', 'new_path', _parse_path),
++            ]
++        else:
++            if not self.always_include_values:
++                raise ValueError(
++                    "When converting to flat dictionaries, if report_type_changes=False and there are type changes, "
++                    "you must set the always_include_values=True at the delta object creation. Otherwise there is nothing to include."
++                )
++            keys_and_funcs = [
++                ('value', 'value', None),
++                ('new_value', 'value', None),
++                ('old_value', 'old_value', None),
++                ('new_path', 'new_path', _parse_path),
++            ]
++
++        FLATTENING_NEW_ACTION_MAP = {
++            'iterable_items_added_at_indexes': 'unordered_iterable_item_added',
++            'iterable_items_removed_at_indexes': 'unordered_iterable_item_removed',
++        }
++        for action, info in self.diff.items():
++            if action == '_iterable_opcodes':
++                # Convert opcodes to flat dicts
++                for path, op_codes in self.diff['_iterable_opcodes'].items():
++                    for op_code in op_codes:
++                        result.append({
++                            'path': _parse_path(path),
++                            'action': OPCODE_TAG_TO_FLAT_DATA_ACTION[op_code.tag],
++                            'value': op_code.new_values,
++                            'old_value': op_code.old_values,
++                            'type': type(op_code.new_values),
++                            'old_type': type(op_code.old_values),
++                            't1_from_index': op_code.t1_from_index,
++                            't1_to_index': op_code.t1_to_index,
++                            't2_from_index': op_code.t2_from_index,
++                            't2_to_index': op_code.t2_to_index,
++                        })
++                continue
++            if action.startswith('_'):
++                continue
++            if action in FLATTENING_NEW_ACTION_MAP:
++                new_action = FLATTENING_NEW_ACTION_MAP[action]
++                for path, index_to_value in info.items():
++                    path = _parse_path(path)
++                    for index, value in index_to_value.items():
++                        path2 = path.copy()
++                        if include_action_in_path:
++                            path2.append((index, 'GET'))
++                        else:
++                            path2.append(index)
++                        row_dict = {'path': path2, 'value': value, 'action': new_action}
++                        if report_type_changes:
++                            row_dict['type'] = type(value)
++                        result.append(row_dict)
++            elif action in {'set_item_added', 'set_item_removed'}:
++                for path, values in info.items():
++                    path = _parse_path(path)
++                    for value in values:
++                        row_dict = {'path': path, 'value': value, 'action': action}
++                        if report_type_changes:
++                            row_dict['type'] = type(value)
++                        result.append(row_dict)
++            elif action == 'dictionary_item_added':
++                for path, value in info.items():
++                    path = _parse_path(path)
++                    if isinstance(value, dict) and len(value) == 1:
++                        new_key = next(iter(value))
++                        path.append(new_key)
++                        value = value[new_key]
++                    elif isinstance(value, (list, tuple)) and len(value) == 1:
++                        value = value[0]
++                        path.append(0)
++                        action = 'iterable_item_added'
++                    elif isinstance(value, set) and len(value) == 1:
++                        value = value.pop()
++                        action = 'set_item_added'
++                    row_dict = {'path': path, 'value': value, 'action': action}
++                    if report_type_changes:
++                        row_dict['type'] = type(value)
++                    result.append(row_dict)
++            elif action in {
++                'dictionary_item_removed', 'iterable_item_added',
++                'iterable_item_removed', 'attribute_removed', 'attribute_added'
++            }:
++                for path, value in info.items():
++                    path = _parse_path(path)
++                    row_dict = {'path': path, 'value': value, 'action': action}
++                    if report_type_changes:
++                        row_dict['type'] = type(value)
++                    result.append(row_dict)
++            elif action == 'type_changes':
++                if not report_type_changes:
++                    action = 'values_changed'
++
++                for path, path_info in info.items():
++                    row_dict = {'path': _parse_path(path), 'action': action}
++                    for key, new_key, func in keys_and_funcs:
++                        if key in path_info:
++                            if func:
++                                row_dict[new_key] = func(path_info[key])
++                            else:
++                                row_dict[new_key] = path_info[key]
++                    if report_type_changes:
++                        if 'value' in row_dict and 'type' not in row_dict:
++                            row_dict['type'] = type(row_dict['value'])
++                        if 'old_value' in row_dict and 'old_type' not in row_dict:
++                            row_dict['old_type'] = type(row_dict['old_value'])
++                    result.append(row_dict)
++            else:
++                for path, path_info in info.items():
++                    row_dict = {'path': _parse_path(path), 'action': action}
++                    for key, new_key, func in keys_and_funcs:
++                        if key in path_info:
++                            if func:
++                                row_dict[new_key] = func(path_info[key])
++                            else:
++                                row_dict[new_key] = path_info[key]
++                    if report_type_changes:
++                        if 'value' in row_dict and 'type' not in row_dict:
++                            row_dict['type'] = type(row_dict['value'])
++                        if 'old_value' in row_dict and 'old_type' not in row_dict:
++                            row_dict['old_type'] = type(row_dict['old_value'])
++                    result.append(row_dict)
++        return result
+ 
+     def to_flat_rows(self, include_action_in_path=False, report_type_changes=True) -> List[FlatDeltaRow]:
+         """

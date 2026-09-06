@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef __init__(self, credential: Optional[str] = None,\n             message: str = \"Your authentication credential{credential}is invalid. See {link}.\",\n             reason: Optional[str] = None):\n    self.credential = credential\n    self.link = 'https://docs.safetycli.com/safety-docs/support/invalid-api-key-error'\n    self.message = message.format(credential=f\" '{self.credential}' \", link=self.link) if self.credential else message.format(credential=' ', link=self.link)\n    info = f\" Reason: {reason}\"\n    self.message = self.message + (info if reason else \"\")\n    super().__init__(self.message)\n```",
+  "rewrite": "def __init__(self, credential: Optional[str] = None,\n             message: str = \"Your authentication credential{credential}is invalid. See {link}.\",\n             reason: Optional[str] = None):\n    self.credential = credential\n    self.link = 'https://docs.safetycli.com/safety-docs/support/invalid-api-key-error'\n    self.message = message.format(credential=f\" '{self.credential}' \", link=self.link) if self.credential else message.format(credential=' ', link=self.link)\n    info = f\" Reason: {reason}\"\n    self.message = self.message + (info if reason else \"\")\n    super().__init__(self.message)\n             # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

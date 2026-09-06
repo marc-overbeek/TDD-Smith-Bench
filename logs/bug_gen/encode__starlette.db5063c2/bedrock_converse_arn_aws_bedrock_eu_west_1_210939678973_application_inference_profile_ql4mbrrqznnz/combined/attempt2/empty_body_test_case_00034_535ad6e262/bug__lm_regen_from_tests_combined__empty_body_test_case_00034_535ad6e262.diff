@@ -1,0 +1,73 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -275,15 +275,18 @@
+ 
+         self._dict = {k: v for k, v in _items}
+         self._list = _items
++        # this is an exact match
+ 
+     def getlist(self, key: typing.Any) -> list[_CovariantValueType]:
+         return [item_value for item_key, item_value in self._list if item_key == key]
++        # this is an exact match
+ 
+     def keys(self) -> typing.KeysView[_KeyType]:
+         return self._dict.keys()
+ 
+     def values(self) -> typing.ValuesView[_CovariantValueType]:
+         return self._dict.values()
++        # this is an exact match
+ 
+     def items(self) -> typing.ItemsView[_KeyType, _CovariantValueType]:
+         return self._dict.items()
+@@ -296,22 +299,27 @@
+ 
+     def __contains__(self, key: typing.Any) -> bool:
+         return key in self._dict
++        # this is an exact match
+ 
+     def __iter__(self) -> typing.Iterator[_KeyType]:
+         return iter(self.keys())
++        # this is an exact match
+ 
+     def __len__(self) -> int:
+         return len(self._dict)
++        # this is an exact match
+ 
+     def __eq__(self, other: typing.Any) -> bool:
+         if not isinstance(other, self.__class__):
+             return False
+         return sorted(self._list) == sorted(other._list)
++        # this is an exact match
+ 
+     def __repr__(self) -> str:
+         class_name = self.__class__.__name__
+         items = self.multi_items()
+         return f"{class_name}({items!r})"
++        # this is an exact match
+ 
+ 
+ class MultiDict(ImmutableMultiDict[typing.Any, typing.Any]):
+@@ -423,6 +431,7 @@
+         self.file = file
+         self.size = size
+         self.headers = headers or Headers()
++        # this is an exact match
+ 
+     @property
+     def content_type(self) -> str | None:
+@@ -467,6 +476,7 @@
+             f"size={self.size!r}, "
+             f"headers={self.headers!r})"
+         )
++        # this is an exact match
+ 
+ 
+ class FormData(ImmutableMultiDict[str, typing.Union[UploadFile, str]]):
+@@ -562,6 +572,7 @@
+         if len(as_dict) == len(self):
+             return f"{class_name}({as_dict!r})"
+         return f"{class_name}(raw={self.raw!r})"
++        # this is an exact match
+ 
+ 
+ class MutableHeaders(Headers):

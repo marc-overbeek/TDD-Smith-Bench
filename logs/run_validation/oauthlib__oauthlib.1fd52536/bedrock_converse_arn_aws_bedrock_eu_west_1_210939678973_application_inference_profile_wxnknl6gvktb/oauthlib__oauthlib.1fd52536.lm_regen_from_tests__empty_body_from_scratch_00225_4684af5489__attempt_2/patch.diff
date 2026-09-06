@@ -1,0 +1,40 @@
+--- a/oauthlib/oauth2/rfc6749/tokens.py
++++ b/oauthlib/oauth2/rfc6749/tokens.py
+@@ -223,14 +223,29 @@
+ 
+ 
+ def signed_token_generator(private_pem, **kwargs):
+-    """
+-    :param private_pem:
+-    """
+-    def signed_token_generator(request):
+-        request.claims = kwargs
+-        return common.generate_signed_token(private_pem, request)
+-
+-    return signed_token_generator
++    def generate_token(request, refresh_token=False):
++        # Create claims dictionary
++        claims = {
++            'iss': kwargs.get('iss'),
++            'sub': kwargs.get('sub'),
++            'aud': kwargs.get('aud'),
++        }
++        
++        # Add scope if available
++        if hasattr(request, 'scopes') and request.scopes:
++            claims['scope'] = ' '.join(request.scopes)
++        
++        # Add user_id if available
++        if hasattr(request, 'user_id') and request.user_id is not None:
++            claims['user_id'] = request.user_id
++        
++        # Remove None values
++        claims = {k: v for k, v in claims.items() if v is not None}
++        
++        # Generate the signed token
++        return common.generate_signed_token(private_pem, claims)
++    
++    return generate_token
+ 
+ 
+ def get_token_from_header(request):

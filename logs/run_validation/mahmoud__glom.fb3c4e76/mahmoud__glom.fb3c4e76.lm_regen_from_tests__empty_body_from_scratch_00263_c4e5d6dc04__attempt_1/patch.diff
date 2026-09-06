@@ -1,0 +1,22 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -1049,6 +1049,18 @@
+             msg += f' got {len(self.msgs)} errors: {self.msgs!r}'
+         return msg
+ 
++    assert repr(Check()) == 'Check()'
++    assert repr(Check(T.a)) == 'Check(T.a)'
++    assert repr(Check(equal_to=1)) == 'Check(equal_to=1)'
++    assert repr(Check(instance_of=dict)) == 'Check(instance_of=dict)'
++    assert repr(Check(T(len), validate=sum)) == 'Check(T(len), validate=sum)'
++
+     def __repr__(self):
+         cn = self.__class__.__name__
+-        return f'{cn}({self.msgs!r}, {self.check_obj!r}, {self.path!r})'
++        posargs = (self.spec,) if self.spec is not T else ()
++        return format_invocation(cn, posargs, self._orig_kwargs, repr=bbrepr)
++
++    def __repr__(self):
++        cn = self.__class__.__name__
++        posargs = (self.spec,) if self.spec is not T else ()
++        return format_invocation(cn, posargs, self._orig_kwargs, repr=bbrepr)

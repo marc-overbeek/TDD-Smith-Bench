@@ -1,0 +1,28 @@
+--- a/monkeytype/encoding.py
++++ b/monkeytype/encoding.py
+@@ -92,10 +92,21 @@
+ }
+ 
+ 
+-def typed_dict_from_dict(d: TypeDict) -> type:
+-    return TypedDict(
+-        d["qualname"], {k: type_from_dict(v) for k, v in d["elem_types"].items()}
+-    )
++def typed_dict_from_dict(d: TypeDict) ->type:
++    module = d["module"]
++    qualname = d["qualname"]
++    elem_types_dict = d.get("elem_types", {})
++    
++    # Convert elem_types from dict of type dicts to dict of types
++    fields = {}
++    for field_name, type_dict in elem_types_dict.items():
++        fields[field_name] = type_from_dict(type_dict)
++    
++    # Create the TypedDict
++    typed_dict_type = TypedDict(qualname, fields)
++    typed_dict_type.__module__ = module
++    
++    return typed_dict_type
+ 
+ 
+ def type_from_dict(d: TypeDict) -> type:

@@ -1,0 +1,72 @@
+--- a/safety/formatters/json.py
++++ b/safety/formatters/json.py
+@@ -180,7 +180,7 @@
+             remediation_mode = 'INTERACTIVE'
+ 
+         scan_template['report_meta'].update(
+-            {'remediations_attempted': len(fixes),
++            {'remediations_attempted': len(fixes) if not hasattr(fixes, '__len__') else len(list(fixes)) if not isinstance(fixes, list) else len(fixes),
+              'remediations_completed': total_applied,
+              'remediation_mode': remediation_mode}
+         )
+@@ -192,3 +192,60 @@
+         }
+ 
+         return scan_template
++
++    def __render_fixes(self, scan_template: Dict[str, Any], fixes: Iterable) -> Dict[str, Any]:
++        """
++        Render fixes and update the scan template with remediations information.
++
++        Args:
++            scan_template (Dict[str, Any]): Initial scan template.
++            fixes (Iterable): Iterable of fixes.
++
++        Returns:
++            Dict[str, Any]: Updated scan template with remediations.
++        """
++
++        applied = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
++        skipped = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
++
++        fixes_applied = []
++        total_applied = 0
++        fixes_list = list(fixes)
++
++        for fix in fixes_list:
++            if fix.status == 'APPLIED':
++                total_applied += 1
++                applied[fix.applied_at][fix.package][fix.previous_spec] = {
++                    "previous_version": str(fix.previous_version),
++                    "previous_spec": str(fix.previous_spec),
++                    "updated_version": str(fix.updated_version),
++                    "update_type": str(fix.update_type),
++                    "fix_type": fix.fix_type
++                }
++                fixes_applied.append(fix)
++            else:
++                skipped[fix.applied_at][fix.package][fix.previous_spec] = {
++                    "scanned_version": str(fix.previous_version) if fix.previous_version else None,
++                    "scanned_spec": str(fix.previous_spec) if fix.previous_spec else None,
++                    "skipped_reason": fix.status
++                }
++
++        vulnerabilities = scan_template.get("vulnerabilities", {})
++        remediation_mode = 'NON_INTERACTIVE'
++
++        if SafetyContext().params.get('prompt_mode', False):
++            remediation_mode = 'INTERACTIVE'
++
++        scan_template['report_meta'].update(
++            {'remediations_attempted': len(fixes_list),
++             'remediations_completed': total_applied,
++             'remediation_mode': remediation_mode}
++        )
++
++        scan_template['remediations_results'] = {
++            "vulnerabilities_fixed": find_vulnerabilities_fixed(vulnerabilities, fixes_applied),
++            "remediations_applied": applied,
++            "remediations_skipped": skipped
++        }
++
++        return scan_template

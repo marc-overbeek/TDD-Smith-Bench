@@ -1,0 +1,166 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -35,7 +35,7 @@
+ 
+     """
+     def __init__(self, fmt, *args):
+-        super().__init__(fmt, *args)
++        self.args = (fmt,) + args
+ 
+     def get_message(self):
+         fmt, args = self.args[0], self.args[1:]
+@@ -64,8 +64,6 @@
+             "expected type {0.__name__}, not {1.__name__}", expected, actual)
+ 
+     def __copy__(self):
+-        # __init__ args = (actual, expected)
+-        # self.args = (fmt_str, expected, actual)
+         return TypeMatchError(self.args[2], self.args[1])
+ 
+ 
+@@ -146,14 +144,12 @@
+         self.default = default
+ 
+     def glomit(self, target, scope):
+-        scope[MODE] = _glom_match
+         try:
+-            ret = scope[glom](target, self.spec, scope)
++            return self._glomit(target, scope)
+         except GlomError:
+-            if self.default is _MISSING:
+-                raise
+-            ret = arg_val(target, self.default, scope)
+-        return ret
++            if self.default is not _MISSING:
++                return arg_val(target, self.default, scope)
++            raise
+ 
+     def verify(self, target):
+         """A convenience function a :class:`Match` instance which returns the
+@@ -280,12 +276,12 @@
+         return Not(self)
+ 
+     def glomit(self, target, scope):
+-        try:
+-            return self._glomit(target, scope)
+-        except GlomError:
+-            if self.default is not _MISSING:
+-                return arg_val(target, self.default, scope)
+-            raise
++        for child in self.children[:-1]:
++            try:
++                return scope[glom](target, child, scope)
++            except GlomError:
++                pass
++        return scope[glom](target, self.children[-1], scope)
+ 
+     def _m_repr(self):
+         """should this Or() repr as M |?"""
+@@ -314,8 +310,7 @@
+     __slots__ = ('children',)
+ 
+     def _glomit(self, target, scope):
+-        # all children must match without exception
+-        result = target  # so that And() == True, similar to all([]) == True
++        result = target
+         for child in self.children:
+             result = scope[glom](target, child, scope)
+         return result
+@@ -336,7 +331,7 @@
+ 
+     def _glomit(self, target, scope):
+         for child in self.children[:-1]:
+-            try:  # one child must match without exception
++            try:
+                 return scope[glom](target, child, scope)
+             except GlomError:
+                 pass
+@@ -715,48 +710,54 @@
+     if isinstance(spec, type):
+         if not isinstance(target, spec):
+             raise TypeMatchError(type(target), spec)
+-    elif isinstance(spec, dict):
++        return target
++    
++    if type(spec) is dict:
+         return _handle_dict(target, spec, scope)
+-    elif isinstance(spec, (list, set, frozenset)):
+-        if not isinstance(target, type(spec)):
+-            raise TypeMatchError(type(target), type(spec))
++    
++    if type(spec) is list:
++        if not isinstance(target, list):
++            raise TypeMatchError(type(target), list)
++        if len(spec) != 1:
++            raise MatchError("list spec must have exactly one element, got {0}", len(spec))
+         result = []
+         for item in target:
+-            for child in spec:
+-                try:
+-                    result.append(scope[glom](item, child, scope))
+-                    break
+-                except GlomError as e:
+-                    last_error = e
+-            else:  # did not break, something went wrong
+-                if target and not spec:
+-                    raise MatchError(
+-                        "{0!r} does not match empty {1}", target, type(spec).__name__)
+-                # NOTE: unless error happens above, break will skip else branch
+-                # so last_error will have been assigned
+-                raise last_error
+-        if type(spec) is not list:
+-            return type(spec)(result)
++            result.append(scope[glom](item, spec[0], scope))
+         return result
+-    elif isinstance(spec, tuple):
++    
++    if type(spec) is tuple:
+         if not isinstance(target, tuple):
+             raise TypeMatchError(type(target), tuple)
+-        if len(target) != len(spec):
+-            raise MatchError("{0!r} does not match {1!r}", target, spec)
++        if len(spec) != len(target):
++            raise MatchError("tuple length mismatch: expected {0}, got {1}", len(spec), len(target))
+         result = []
+-        for sub_target, sub_spec in zip(target, spec):
+-            result.append(scope[glom](sub_target, sub_spec, scope))
++        for t_item, s_item in zip(target, spec):
++            result.append(scope[glom](t_item, s_item, scope))
+         return tuple(result)
+-    elif callable(spec):
+-        try:
+-            if spec(target):
+-                return target
+-        except Exception as e:
+-            raise MatchError(
+-                "{0}({1!r}) did not validate (got exception {2!r})", spec.__name__, target, e)
+-        raise MatchError(
+-            "{0}({1!r}) did not validate (non truthy return)", spec.__name__, target)
+-    elif target != spec:
++    
++    if type(spec) is set:
++        if not isinstance(target, set):
++            raise TypeMatchError(type(target), set)
++        if len(spec) != 1:
++            raise MatchError("set spec must have exactly one element, got {0}", len(spec))
++        spec_item = next(iter(spec))
++        result = set()
++        for item in target:
++            result.add(scope[glom](item, spec_item, scope))
++        return result
++    
++    if type(spec) is frozenset:
++        if not isinstance(target, frozenset):
++            raise TypeMatchError(type(target), frozenset)
++        if len(spec) != 1:
++            raise MatchError("frozenset spec must have exactly one element, got {0}", len(spec))
++        spec_item = next(iter(spec))
++        result = frozenset()
++        for item in target:
++            result = result | frozenset([scope[glom](item, spec_item, scope)])
++        return result
++    
++    if target != spec:
+         raise MatchError("{0!r} does not match {1!r}", target, spec)
+     return target
+ 

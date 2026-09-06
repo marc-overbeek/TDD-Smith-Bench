@@ -1,0 +1,71 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1050,29 +1050,15 @@
+             if track_point.elevation is not None:
+                 track_point.elevation += delta
+ 
+-    def add_missing_data(self,
+-                         get_data_function: Callable[[GPXTrackPoint], Any],
+-                         add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint, GPXTrackPoint, List[float]], None]) -> None:
+-        """
+-        Calculate missing data.
+-
+-        Parameters
+-        ----------
+-        get_data_function : object
+-            Returns the data from point
+-        add_missing_function : void
+-            Function with the following arguments: array with points with missing data, the point before them (with data),
+-            the point after them (with data), and distance ratios between points in the interval (the sum of distances ratios
+-            will be 1)
+-        """
++    def add_missing_data(self, get_data_function: Callable[[GPXTrackPoint], Any
++        ], add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint,
++        GPXTrackPoint, List[float]], None]) ->None:
+         if not get_data_function:
+             raise GPXException(f'Invalid get_data_function: {get_data_function}')
+         if not add_missing_function:
+             raise GPXException(f'Invalid add_missing_function: {add_missing_function}')
+ 
+-        # Points (*without* data) between two points (*with* data):
+         interval: List[GPXTrackPoint] = []
+-        # Point (*with* data) before and after the interval:
+         start_point = None
+ 
+         previous_point = None
+@@ -1090,7 +1076,8 @@
+                     interval = []
+             previous_point = track_point
+ 
+-    def _get_interval_distances_ratios(self, interval: List[GPXTrackPoint], start: GPXTrackPoint, end: GPXTrackPoint) -> List[float]:
++    def _get_interval_distances_ratios(self, interval: List[GPXTrackPoint],
++        start: GPXTrackPoint, end: GPXTrackPoint) ->List[float]:
+         assert start, start
+         assert end, end
+         assert interval, interval
+@@ -1732,9 +1719,9 @@
+         for track_segment in self.segments:
+             track_segment.add_elevation(delta)
+ 
+-    def add_missing_data(self,
+-                         get_data_function: Callable[[GPXTrackPoint], Any],
+-                         add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint, GPXTrackPoint, List[float]], None]) -> None:
++    def add_missing_data(self, get_data_function: Callable[[GPXTrackPoint], Any
++        ], add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint,
++        GPXTrackPoint, List[float]], None]) ->None:
+         for track_segment in self.segments:
+             track_segment.add_missing_data(get_data_function, add_missing_function)
+ 
+@@ -2532,9 +2519,9 @@
+         for track in self.tracks:
+             track.add_elevation(delta)
+ 
+-    def add_missing_data(self,
+-                         get_data_function: Callable[[GPXTrackPoint], Any],
+-                         add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint, GPXTrackPoint, List[float]], None]) -> None:
++    def add_missing_data(self, get_data_function: Callable[[GPXTrackPoint], Any
++        ], add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint,
++        GPXTrackPoint, List[float]], None]) ->None:
+         for track in self.tracks:
+             track.add_missing_data(get_data_function, add_missing_function)
+ 

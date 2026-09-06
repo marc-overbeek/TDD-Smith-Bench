@@ -1,0 +1,42 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -30,14 +30,7 @@
+ 
+ 
+ def target_iter(target, scope):
+-    iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
+-
+-    try:
+-        iterator = iterate(target)
+-    except Exception as e:
+-        raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+-                        % (target.__class__.__name__, Path(*scope[Path]), e))
+-    return iterator
++    pass
+ 
+ 
+ class Group:
+@@ -73,22 +66,7 @@
+         self.spec = spec
+ 
+     def glomit(self, target, scope):
+-        scope[MODE] = GROUP
+-        scope[CUR_AGG] = None  # reset aggregation tripwire for sub-specs
+-        scope[ACC_TREE] = {}
+-
+-        # handle the basecase where the spec stops immediately
+-        # TODO: something smarter
+-        if type(self.spec) in (dict, list):
+-            ret = type(self.spec)()
+-        else:
+-            ret = None
+-
+-        for t in target_iter(target, scope):
+-            last, ret = ret, scope[glom](t, self.spec, scope)
+-            if ret is STOP:
+-                return last
+-        return ret
++        pass
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

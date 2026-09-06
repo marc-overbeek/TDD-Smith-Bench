@@ -1,0 +1,35 @@
+--- a/starlette/staticfiles.py
++++ b/starlette/staticfiles.py
+@@ -204,8 +204,31 @@
+         try:
+             if_none_match = request_headers["if-none-match"]
+             etag = response_headers["etag"]
+-            if etag in [tag.strip(" W/") for tag in if_none_match.split(",")]:
++        
++            # Handle weak ETags (W/"...") and strong ETags
++            if if_none_match == "*":
+                 return True
++            
++            # Parse the If-None-Match header
++            requested_etags = [tag.strip() for tag in if_none_match.split(",")]
++        
++            # Check for exact match or weak match
++            for requested_etag in requested_etags:
++                # Remove weak prefix if present
++                if requested_etag.startswith('W/'):
++                    requested_etag = requested_etag[2:]
++                # Remove quotes if present
++                if requested_etag.startswith('"') and requested_etag.endswith('"'):
++                    requested_etag = requested_etag[1:-1]
++            
++                # Remove quotes from response ETag if present
++                if etag.startswith('"') and etag.endswith('"'):
++                    etag_stripped = etag[1:-1]
++                else:
++                    etag_stripped = etag
++                
++                if requested_etag == etag_stripped:
++                    return True
+         except KeyError:
+             pass
+ 

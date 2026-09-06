@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef batchnorm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:\n    training = inputs[5].toIValue()\n    assert isinstance(training, bool), \"Signature of aten::batch_norm has changed!\"\n    input_shape = get_shape(inputs[0])\n    has_affine = get_shape(inputs[1]) is not None\n    input_size = prod(input_shape)\n    \n    if training:\n        # For training mode with affine: 4 flops per element\n        # (subtract mean, divide by std, scale, shift)\n        flop = input_size * 4\n    else:\n        # For inference mode with affine: 2 flops per element\n        # (subtract mean, divide by std)\n        flop = input_size * (2 if has_affine else 1)\n    \n    return flop\n```",
+  "rewrite": "def batchnorm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:\n    training = inputs[5].toIValue()\n    assert isinstance(training, bool), \"Signature of aten::batch_norm has changed!\"\n    input_shape = get_shape(inputs[0])\n    has_affine = get_shape(inputs[1]) is not None\n    input_size = prod(input_shape)\n    \n    if training:\n        # For training mode with affine: 4 flops per element\n        # (subtract mean, divide by std, scale, shift)\n        flop = input_size * 4\n    else:\n        # For inference mode with affine: 2 flops per element\n        # (subtract mean, divide by std)\n        flop = input_size * (2 if has_affine else 1)\n    \n    return flop",
+  "strategy": "lm_regen_from_tests"
+}

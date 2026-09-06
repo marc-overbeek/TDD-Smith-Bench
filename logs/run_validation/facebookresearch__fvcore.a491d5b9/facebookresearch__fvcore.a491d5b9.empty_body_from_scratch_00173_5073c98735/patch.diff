@@ -1,0 +1,26 @@
+--- a/fvcore/nn/squeeze_excitation.py
++++ b/fvcore/nn/squeeze_excitation.py
+@@ -67,21 +67,8 @@
+             nn.Sigmoid(),
+         )
+ 
+-    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
+-        """
+-        Args:
+-            input_tensor: X, shape = (batch_size, num_channels, H, W).
+-                For 3d X, shape = (batch_size, num_channels, T, H, W).
+-            output tensor
+-        """
+-        mean_tensor = (
+-            input_tensor.mean(dim=[2, 3, 4], keepdim=True)
+-            if self.is_3d
+-            else input_tensor.mean(dim=[2, 3], keepdim=True)
+-        )
+-        output_tensor = torch.mul(input_tensor, self.block(mean_tensor))
+-
+-        return output_tensor
++    def forward(self, input_tensor: torch.Tensor) ->torch.Tensor:
++        pass
+ 
+ 
+ class SpatialSqueezeExcitation(nn.Module):

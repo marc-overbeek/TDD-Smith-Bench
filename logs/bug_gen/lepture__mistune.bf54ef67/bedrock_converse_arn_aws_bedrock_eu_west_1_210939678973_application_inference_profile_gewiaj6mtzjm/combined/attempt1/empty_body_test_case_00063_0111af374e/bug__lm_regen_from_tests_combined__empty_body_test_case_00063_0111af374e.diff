@@ -1,0 +1,32 @@
+--- a/src/mistune/plugins/url.py
++++ b/src/mistune/plugins/url.py
+@@ -12,19 +12,15 @@
+ URL_LINK_PATTERN = r'''https?:\/\/[^\s<]+[^<.,:;"')\]\s]'''
+ 
+ 
+-def parse_url_link(inline: "InlineParser", m: Match[str], state: "InlineState") -> int:
+-    text = m.group(0)
+-    pos = m.end()
+-    if state.in_link:
+-        inline.process_text(text, state)
+-        return pos
+-    state.append_token({
+-        'type': 'link',
+-        'children': [{'type': 'text', 'raw': text}],
+-        'attrs': {'url': escape_url(text)},
+-    })
+-    return pos
++def parse_url_link(inline: 'InlineParser', m: Match[str], state: 'InlineState'
++    ) ->int:
++    text = m.group()
++    if not text:
++        return 0
++    inline.parse_inline([text], state)
++    return len(text)
+ 
+ 
+-def url(md: "Markdown") -> None:
+-    md.inline.register("url_link", URL_LINK_PATTERN, parse_url_link)
++def url(md: 'Markdown') ->None:
++    md.inline.register_rule('url_link', URL_LINK_PATTERN, parse_url_link)
++    md.inline.rules.append('url_link')

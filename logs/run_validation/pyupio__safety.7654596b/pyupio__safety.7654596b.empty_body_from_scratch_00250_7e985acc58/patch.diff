@@ -1,0 +1,71 @@
+--- a/safety/scan/render.py
++++ b/safety/scan/render.py
+@@ -488,66 +488,8 @@
+         return __render__
+ 
+ 
+-def render_scan_html(report: ReportModel, obj: Any) -> str:
+-    """
+-    Render the scan report to HTML.
+-
+-    Args:
+-        report (ReportModel): The scan report model.
+-        obj (Any): The object containing additional settings.
+-
+-    Returns:
+-        str: The rendered HTML report.
+-    """
+-    from safety.scan.command import ScannableEcosystems
+-
+-    project = report.projects[0] if any(report.projects) else None
+-
+-    scanned_packages = 0
+-    affected_packages = 0
+-    ignored_packages = 0
+-    remediations_recommended = 0
+-    ignored_vulnerabilities = 0
+-    vulnerabilities = 0
+-    vulns_per_file = defaultdict(int)
+-    remed_per_file = defaultdict(int)
+-
+-    for file in project.files:
+-        scanned_packages += len(file.results.dependencies)
+-        affected_packages += len(file.results.get_affected_dependencies())
+-        ignored_vulnerabilities += len(file.results.ignored_vulns)
+-
+-        for spec in file.results.get_affected_specifications():
+-            vulnerabilities += len(spec.vulnerabilities)
+-            vulns_per_file[file.location] += len(spec.vulnerabilities)
+-            if spec.remediation:
+-                remed_per_file[file.location] += 1
+-                remediations_recommended += 1
+-
+-        ignored_packages += len(file.results.ignored_vulns)
+-
+-    # TODO: Get this information for the report model (?)
+-    summary = {"scanned_packages": scanned_packages,
+-               "affected_packages": affected_packages,
+-               "remediations_recommended": remediations_recommended,
+-               "ignored_vulnerabilities": ignored_vulnerabilities, "vulnerabilities": vulnerabilities}
+-
+-    vulnerabilities = []
+-
+-
+-    # TODO: This should be based on the configs per command
+-    ecosystems = [(f"{ecosystem.name.title()}",
+-                  [file_type.human_name(plural=True) for file_type in ecosystem.file_types]) for ecosystem in [Ecosystem(member.value) for member in list(ScannableEcosystems)]]
+-
+-    settings ={"audit_and_monitor": True, "platform_url": SAFETY_PLATFORM_URL, "ecosystems": ecosystems}
+-    template_context = {"report": report, "summary": summary, "announcements": [],
+-                        "project": project,
+-                        "platform_enabled": obj.platform_enabled,
+-                        "settings": settings,
+-                        "vulns_per_file": vulns_per_file,
+-                        "remed_per_file": remed_per_file}
+-
+-    return parse_html(kwargs=template_context, template="scan/index.html")
++def render_scan_html(report: ReportModel, obj: Any) ->str:
++    pass
+ 
+ 
+ def generate_spdx_creation_info(spdx_version: str, project_identifier: str) -> Any:

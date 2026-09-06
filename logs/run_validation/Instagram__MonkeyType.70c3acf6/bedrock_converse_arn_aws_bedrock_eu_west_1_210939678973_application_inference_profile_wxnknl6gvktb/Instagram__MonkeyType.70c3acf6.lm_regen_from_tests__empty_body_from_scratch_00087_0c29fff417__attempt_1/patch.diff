@@ -1,0 +1,296 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -294,172 +294,137 @@
+ 
+ 
+ def main(argv: List[str], stdout: IO[str], stderr: IO[str]) -> int:
+-    parser = argparse.ArgumentParser(
+-        description="Generate and apply stub files from collected type information.",
+-    )
++    parser = argparse.ArgumentParser(description="MonkeyType CLI")
+     parser.add_argument(
++        "-v", "--verbose", action="store_true", help="Verbose output"
++    )
++    parser.add_argument(
++        "-c",
++        "--config",
++        type=get_monkeytype_config,
++        help="Config instance in the form module:qualname or module:qualname()",
++    )
++    
++    subparsers = parser.add_subparsers(dest="command", help="Available commands")
++    
++    # stub command
++    stub_parser = subparsers.add_parser("stub", help="Generate stubs")
++    stub_parser.add_argument("module_path", type=module_path, help="Module path")
++    stub_parser.add_argument(
++        "--ignore-existing-annotations",
++        action="store_true",
++        help="Ignore existing annotations",
++    )
++    stub_parser.add_argument("--diff", action="store_true", help="Show diff")
++    stub_parser.add_argument(
++        "--sample-count", action="store_true", help="Display sample count"
++    )
++    stub_parser.add_argument(
++        "--limit", type=int, default=None, help="Limit number of traces"
++    )
++    stub_parser.add_argument(
+         "--disable-type-rewriting",
+         action="store_true",
+-        default=False,
+-        help="Show types without rewrite rules applied (default: False)",
+-    )
+-    parser.add_argument(
+-        "--limit",
+-        "-l",
+-        type=int,
+-        default=None,
+-        help=(
+-            "How many traces to return from storage"
+-            " (default: 2000, unless changed in your config)"
+-        ),
+-    )
+-    parser.add_argument(
+-        "--verbose",
+-        "-v",
+-        action="store_true",
+-        default=False,
+-        help="Show verbose output (e.g. include trace-decoding-failed errors)",
+-    )
+-    parser.add_argument(
+-        "--config",
+-        "-c",
+-        type=str,
+-        default="monkeytype.config:get_default_config()",
+-        help=(
+-            "The <module>:<qualname> of the config to use"
+-            " (default: monkeytype_config:CONFIG if it exists, "
+-            "else monkeytype.config:DefaultConfig())"
+-        ),
+-    )
+-
+-    subparsers = parser.add_subparsers(title="commands", dest="command")
+-
+-    run_parser = subparsers.add_parser(
+-        "run",
+-        help="Run a Python script under MonkeyType tracing",
+-        description="Run a Python script under MonkeyType tracing",
+-    )
+-    run_parser.add_argument(
+-        "script_path",
+-        type=str,
+-        help="""Filesystem path to a Python script file to run under tracing""",
+-    )
+-    run_parser.add_argument(
+-        "-m", action="store_true", help="Run a library module as a script"
+-    )
+-    run_parser.add_argument(
+-        "script_args",
+-        nargs=argparse.REMAINDER,
+-    )
+-    run_parser.set_defaults(handler=run_handler)
+-
+-    apply_parser = subparsers.add_parser(
+-        "apply",
+-        help="Generate and apply a stub",
+-        description="Generate and apply a stub",
+-    )
+-    apply_parser.add_argument(
+-        "module_path",
+-        type=module_path,
+-        help="""A string of the form <module>[:<qualname>] (e.g.
+-my.module:Class.method). This specifies the set of functions/methods for which
+-we want to generate stubs.  For example, 'foo.bar' will generate stubs for
+-anything in the module 'foo.bar', while 'foo.bar:Baz' will only generate stubs
+-for methods attached to the class 'Baz' in module 'foo.bar'. See
+-https://www.python.org/dev/peps/pep-3155/ for a detailed description of the
+-qualname format.""",
+-    )
+-    apply_parser.add_argument(
+-        "--sample-count",
+-        action="store_true",
+-        default=False,
+-        help="Print to stderr the numbers of traces stubs are based on",
+-    )
++        help="Disable type rewriting",
++    )
++    stub_parser.add_argument(
++        "--pep-563",
++        action="store_true",
++        help="Use PEP 563 style annotations",
++    )
++    
++    # apply command
++    apply_parser = subparsers.add_parser("apply", help="Apply stubs")
++    apply_parser.add_argument("module_path", type=module_path, help="Module path")
+     apply_parser.add_argument(
+         "--ignore-existing-annotations",
+-        action="store_const",
+-        dest="existing_annotation_strategy",
+-        default=ExistingAnnotationStrategy.REPLICATE,
+-        const=ExistingAnnotationStrategy.IGNORE,
+-        help="Ignore existing annotations when applying stubs from traces.",
++        action="store_true",
++        help="Ignore existing annotations",
+     )
+     apply_parser.add_argument(
+-        "--pep_563",
+-        action="store_true",
+-        default=False,
+-        help="""Add the "from __future__ import annotation" import at the top
+-and keep the newly imported modules inside the "if TYPE_CHECKING" block.""",
+-    )
+-    apply_parser.set_defaults(handler=apply_stub_handler)
+-
+-    stub_parser = subparsers.add_parser(
+-        "stub", help="Generate a stub", description="Generate a stub"
+-    )
+-    stub_parser.add_argument(
+-        "module_path",
+-        type=module_path,
+-        help="""A string of the form <module>[:<qualname>] (e.g.
+-my.module:Class.method). This specifies the set of functions/methods for which
+-we want to generate stubs.  For example, 'foo.bar' will generate stubs for
+-anything in the module 'foo.bar', while 'foo.bar:Baz' will only generate stubs
+-for methods attached to the class 'Baz' in module 'foo.bar'. See
+-https://www.python.org/dev/peps/pep-3155/ for a detailed description of the
+-qualname format.""",
+-    )
+-    stub_parser.add_argument(
+-        "--sample-count",
+-        action="store_true",
+-        default=False,
+-        help="Print to stderr the numbers of traces stubs are based on",
+-    )
+-    group = stub_parser.add_mutually_exclusive_group()
+-    group.add_argument(
+-        "--ignore-existing-annotations",
+-        action="store_const",
+-        dest="existing_annotation_strategy",
+-        default=ExistingAnnotationStrategy.REPLICATE,
+-        const=ExistingAnnotationStrategy.IGNORE,
+-        help="Ignore existing annotations and generate stubs only from traces.",
+-    )
+-    group.add_argument(
+-        "--omit-existing-annotations",
+-        action="store_const",
+-        dest="existing_annotation_strategy",
+-        default=ExistingAnnotationStrategy.REPLICATE,
+-        const=ExistingAnnotationStrategy.OMIT,
+-        help="Omit from stub any existing annotations in source. Implied by --apply.",
+-    )
+-    stub_parser.add_argument(
+-        "--diff",
+-        action="store_true",
+-        default=False,
+-        help="Compare stubs generated with and without considering existing annotations.",
+-    )
+-    stub_parser.set_defaults(handler=print_stub_handler)
+-
++        "--limit", type=int, default=None, help="Limit number of traces"
++    )
++    apply_parser.add_argument(
++        "--disable-type-rewriting",
++        action="store_true",
++        help="Disable type rewriting",
++    )
++    apply_parser.add_argument(
++        "--pep-563",
++        action="store_true",
++        help="Use PEP 563 style annotations",
++    )
++    
++    # list-modules command
+     list_modules_parser = subparsers.add_parser(
+-        "list-modules",
+-        help="Listing of the unique set of module traces",
+-        description="Listing of the unique set of module traces",
+-    )
+-    list_modules_parser.set_defaults(handler=list_modules_handler)
+-
++        "list-modules", help="List modules with traces"
++    )
++    
++    # run command
++    run_parser = subparsers.add_parser("run", help="Run with tracing")
++    run_parser.add_argument("script_path", help="Script path")
++    run_parser.add_argument("script_args", nargs=argparse.REMAINDER, help="Script args")
++    run_parser.add_argument("-m", action="store_true", help="Run as module")
++    
+     args = parser.parse_args(argv)
+-    args.config = get_monkeytype_config(args.config)
+-    update_args_from_config(args)
+-
+-    handler = getattr(args, "handler", None)
+-    if handler is None:
+-        parser.print_help(file=stderr)
++    args.verbose = args.verbose if hasattr(args, "verbose") else False
++    
++    # Load config
++    if hasattr(args, "config") and args.config:
++        args.config = args.config
++    else:
++        args.config = Config()
++    
++    # Set default values from config
++    if hasattr(args, "limit"):
++        update_args_from_config(args)
++    
++    # Set existing annotation strategy
++    if hasattr(args, "ignore_existing_annotations"):
++        if args.ignore_existing_annotations:
++            args.existing_annotation_strategy = ExistingAnnotationStrategy.IGNORE
++        else:
++            args.existing_annotation_strategy = ExistingAnnotationStrategy.REPLICATE
++    else:
++        args.existing_annotation_strategy = ExistingAnnotationStrategy.REPLICATE
++    
++    # Get context manager if available
++    context_manager = None
++    try:
++        context_manager = args.config.context_manager(args.command or "")
++    except Exception:
++        pass
++    
++    try:
++        if context_manager:
++            with context_manager:
++                if args.command == "stub":
++                    print_stub_handler(args, stdout, stderr)
++                elif args.command == "apply":
++                    apply_stub_handler(args, stdout, stderr)
++                elif args.command == "list-modules":
++                    list_modules_handler(args, stdout, stderr)
++                elif args.command == "run":
++                    run_handler(args, stdout, stderr)
++                else:
++                    parser.print_help(stderr)
++                    return 1
++        else:
++            if args.command == "stub":
++                print_stub_handler(args, stdout, stderr)
++            elif args.command == "apply":
++                apply_stub_handler(args, stdout, stderr)
++            elif args.command == "list-modules":
++                list_modules_handler(args, stdout, stderr)
++            elif args.command == "run":
++                run_handler(args, stdout, stderr)
++            else:
++                parser.print_help(stderr)
++                return 1
++    except HandlerError as e:
++        print(str(e), file=stderr)
+         return 1
+-
+-    with args.config.cli_context(args.command):
+-        try:
+-            handler(args, stdout, stderr)
+-        except HandlerError as err:
+-            print(f"ERROR: {err}", file=stderr)
+-            return 1
+-
++    
+     return 0
+ 
+ 

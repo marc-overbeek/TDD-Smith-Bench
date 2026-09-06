@@ -1,0 +1,31 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -340,9 +340,25 @@
+         if self.time:
+             self.time += delta
+ 
+-    def remove_time(self) -> None:
+-        """ Will remove time metadata. """
+-        self.time = None
++    def remove_time(self, all: bool=False) -> None:
++            """
++            Removes time data of all points in all of the segments of all tracks.
++
++            If all=True, time date will also be removed from waypoints and routes.
++
++            Parameters
++            ----------
++            all : bool
++                When true, also removes time data for waypoints and routes.
++            """
++            for track in self.tracks:
++                track.remove_time()
++
++            if all:
++                for waypoint in self.waypoints:
++                    waypoint.remove_time()
++                for route in self.routes:
++                    route.remove_time()
+ 
+ 
+ class GPXRoute:

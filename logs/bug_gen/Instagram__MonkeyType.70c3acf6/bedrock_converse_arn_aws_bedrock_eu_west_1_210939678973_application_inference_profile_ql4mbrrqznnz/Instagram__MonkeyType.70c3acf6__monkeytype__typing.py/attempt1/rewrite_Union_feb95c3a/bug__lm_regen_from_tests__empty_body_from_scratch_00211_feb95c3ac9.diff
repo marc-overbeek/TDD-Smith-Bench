@@ -1,0 +1,23 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -547,6 +547,20 @@
+         return merged_bases
+ 
+     def rewrite_Union(self, union):
++        pass
++
++    def rewrite_Union(self, union):
++        klasses = union.__args__
++        all_bases = []
++        for klass in klasses:
++            klass_bases = self._compute_bases(klass)
++            all_bases.append(klass_bases)
++        common_bases = functools.reduce(self._merge_common_bases, all_bases)
++        if common_bases:
++            return common_bases[-1]
++        return union
++
++    def rewrite_Union(self, union):
+         """
+         Rewrite the union if possible, if no meaningful rewrite is possible,
+         return the original union.

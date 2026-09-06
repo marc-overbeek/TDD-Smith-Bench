@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef get_shape(val: Any) ->Optional[List[int]]:\n    if hasattr(val, 'type') and callable(val.type):\n        try:\n            return val.type().sizes()\n        except Exception:\n            return None\n    return None\n```\n\n```\ndef bmm_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:\n    input_shapes = [get_shape(v) for v in inputs]\n    assert len(input_shapes) == 2, input_shapes\n    assert input_shapes[0][-1] == input_shapes[1][-2], input_shapes\n    n, c, t = input_shapes[0]\n    p = input_shapes[1][-1]\n    flop = n * c * t * p\n    return flop\n```",
+  "rewrite": "def get_shape(val: Any) ->Optional[List[int]]:\n    if hasattr(val, 'type') and callable(val.type):\n        try:\n            return val.type().sizes()\n        except Exception:\n            return None\n    return None\n\ndef bmm_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:\n    input_shapes = [get_shape(v) for v in inputs]\n    assert len(input_shapes) == 2, input_shapes\n    assert input_shapes[0][-1] == input_shapes[1][-2], input_shapes\n    n, c, t = input_shapes[0]\n    p = input_shapes[1][-1]\n    flop = n * c * t * p\n    return flop",
+  "strategy": "lm_regen_from_tests_combined"
+}

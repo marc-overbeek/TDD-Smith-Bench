@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef _wrap_gen_lifespan_context(lifespan_context: typing.Callable[[typing.\n    Any], typing.Generator[typing.Any, typing.Any, typing.Any]]\n    ) ->typing.Callable[[typing.Any], typing.AsyncContextManager[typing.Any]]:\n    cmgr = contextlib.contextmanager(lifespan_context)\n\n    def wrapper(app: typing.Any) -> _AsyncLiftContextManager[typing.Any]:\n        return _AsyncLiftContextManager(cmgr(app))\n\n    return wrapper\n```\n\n```\ndef __init__(self, cm: typing.ContextManager[_T]):\n    self._cm = cm\n```\n\n```\ndef wrapper(app: typing.Any) -> _AsyncLiftContextManager[typing.Any]:\n    return _AsyncLiftContextManager(cmgr(app))\n```",
+  "rewrite": "def _wrap_gen_lifespan_context(lifespan_context: typing.Callable[[typing.\n    Any], typing.Generator[typing.Any, typing.Any, typing.Any]]\n    ) ->typing.Callable[[typing.Any], typing.AsyncContextManager[typing.Any]]:\n    cmgr = contextlib.contextmanager(lifespan_context)\n\n    def wrapper(app: typing.Any) -> _AsyncLiftContextManager[typing.Any]:\n        return _AsyncLiftContextManager(cmgr(app))\n\n    return wrapper\n\ndef __init__(self, cm: typing.ContextManager[_T]):\n    self._cm = cm\n\ndef wrapper(app: typing.Any) -> _AsyncLiftContextManager[typing.Any]:\n    return _AsyncLiftContextManager(cmgr(app))",
+  "strategy": "lm_regen_from_tests_combined"
+}

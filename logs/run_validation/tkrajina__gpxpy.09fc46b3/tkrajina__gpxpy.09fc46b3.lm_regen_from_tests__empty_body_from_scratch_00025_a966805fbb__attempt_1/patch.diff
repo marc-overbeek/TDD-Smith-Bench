@@ -1,0 +1,32 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -488,11 +488,24 @@
+             self.longitude_diff = longitude_diff
+             self.move_function = self.move_by_lat_lon_diff
+ 
+-    def move(self, location: Location) -> Tuple[float, float]:
+-        """
+-        Move location by this LocationDelta.
+-        """
+-        return self.move_function(location)
++    def move(self, location_delta: "LocationDelta") -> None:
++
++    def move(self, location_delta: "LocationDelta") -> None:
++        """
++        Move this location with the given LocationDelta.
++
++        Parameters
++        ----------
++        location_delta: LocationDelta
++            Delta (distance/angle or lat/lon) offset to apply to this location.
++        """
++        self.latitude, self.longitude = location_delta.move(self)
++
++    def move(self, location: Location) -> None:
++        self.latitude, self.longitude = location.move(self)
++
++    def move(self, location: Location) -> None:
++        self.latitude, self.longitude = location.move(self)
+ 
+     def move_by_angle_and_distance(self, location: Location) -> Tuple[float, float]:
+         coef = mod_math.cos(mod_math.radians(location.latitude))

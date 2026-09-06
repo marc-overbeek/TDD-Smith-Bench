@@ -1,0 +1,39 @@
+--- a/safety/auth/main.py
++++ b/safety/auth/main.py
+@@ -168,34 +168,8 @@
+ 
+     return None
+ 
+-def get_host_config(key_name: str) -> Optional[Any]:
+-    """
+-    Retrieve a configuration value from the host configuration.
+-
+-    Args:
+-        key_name (str): The name of the configuration key.
+-
+-    Returns:
+-        Optional[Any]: The configuration value, or None if not found.
+-    """
+-    config = configparser.ConfigParser()
+-    config.read(CONFIG)
+-
+-    if not config.has_section("host"):
+-        return None
+-
+-    host_section = dict(config.items("host"))
+-
+-    if key_name in host_section:
+-        if key_name == "stage":
+-            # Support old alias in the config.ini
+-            if host_section[key_name] == "dev":
+-                host_section[key_name] = "development"
+-            if host_section[key_name] not in {env.value for env in Stage}:
+-                return None
+-            return Stage(host_section[key_name])
+-
+-    return None
++def get_host_config(key_name: str) ->Optional[Any]:
++    pass
+ 
+ def str_to_bool(s: str) -> bool:
+     """

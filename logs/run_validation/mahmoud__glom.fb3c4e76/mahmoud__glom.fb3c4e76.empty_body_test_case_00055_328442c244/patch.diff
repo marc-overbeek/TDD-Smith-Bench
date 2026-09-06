@@ -1,0 +1,79 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -55,32 +55,10 @@
+     day-to-day use.
+     """
+     def __init__(self, subspec, init, op=operator.iadd):
+-        self.subspec = subspec
+-        self.init = init
+-        self.op = op
+-        if not callable(op):
+-            raise TypeError('expected callable for %s op param, not: %r' %
+-                            (self.__class__.__name__, op))
+-        if not callable(init):
+-            raise TypeError('expected callable for %s init param, not: %r' %
+-                            (self.__class__.__name__, init))
++        pass
+ 
+     def glomit(self, target, scope):
+-        is_agg = False
+-        if scope[MODE] is GROUP and scope.get(CUR_AGG) is None:
+-            scope[CUR_AGG] = self
+-            is_agg = True
+-
+-        if self.subspec is not T:
+-            target = scope[glom](target, self.subspec, scope)
+-
+-        if is_agg:
+-            return self._agg(target, scope[ACC_TREE])
+-        try:
+-            return self._fold(target_iter(target, scope))
+-        except UnregisteredTarget as ut:
+-            raise FoldError('can only %s on iterable targets, not %s type (%s)'
+-                            % (self.__class__.__name__, type(target).__name__, ut))
++        pass
+ 
+     def _fold(self, iterator):
+         ret, op = self.init(), self.op
+@@ -91,10 +69,7 @@
+         return ret
+ 
+     def _agg(self, target, tree):
+-        if self not in tree:
+-            tree[self] = self.init()
+-        tree[self] = self.op(tree[self], target)
+-        return tree[self]
++        pass
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__
+@@ -123,13 +98,10 @@
+ 
+     """
+     def __init__(self, subspec=T, init=int):
+-        super().__init__(subspec=subspec, init=init, op=operator.iadd)
++        pass
+ 
+     def __repr__(self):
+-        cn = self.__class__.__name__
+-        args = () if self.subspec is T else (self.subspec,)
+-        kwargs = {'init': self.init} if self.init is not int else {}
+-        return format_invocation(cn, args, kwargs, repr=bbrepr)
++        pass
+ 
+ 
+ class Count(Fold):
+@@ -142,11 +114,10 @@
+     __slots__ = ()
+ 
+     def __init__(self):
+-        super().__init__(
+-            subspec=T, init=int, op=lambda cur, val: cur + 1)
++        pass
+ 
+     def __repr__(self):
+-        return '%s()' % self.__class__.__name__
++        pass
+ 
+ 
+ class Flatten(Fold):

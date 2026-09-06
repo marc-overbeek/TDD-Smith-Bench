@@ -1,0 +1,77 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1564,49 +1564,32 @@
+ 
+ 
+ 
+-def get_packages(files: Optional[List[str]] = None, stdin: bool = False) -> List[Package]:
+-    """
+-    Retrieves the packages from the given files or standard input.
+-
+-    Args:
+-        files (Optional[List[str]]): The list of files.
+-        stdin (bool): Whether to read from standard input.
+-
+-    Returns:
+-        List[Package]: The list of packages.
+-    """
++def get_packages(files: Optional[List[str]]=None, stdin: bool=False) ->List[
++    Package]:
++    packages = []
++    
++    if stdin:
++        content = sys.stdin.read()
++        if content.strip():
++            requirements = read_requirements(content, filename='<stdin>')
++            packages.extend(Package(name=req.name, version=req.specifier) for req in requirements)
++    
+     if files:
+-        return list(itertools.chain.from_iterable(read_requirements(f, resolve=True) for f in files))
+-
+-    if stdin:
+-        return list(read_requirements(sys.stdin))
+-
+-    import pkg_resources
+-
+-    def allowed_version(pkg: str, version: str) -> bool:
+-        try:
+-            parse_version(version)
+-        except Exception:
+-            SafetyContext.local_announcements.append(
+-                {'message': f'Version {version} for {pkg} is invalid and is ignored by Safety. Please See PEP 440.',
+-                 'type': 'warning', 'local': True})
+-            return False
+-
+-        return True
+-
+-    w_set = pkg_resources.working_set
+-
+-    SafetyContext().scanned_full_path.extend(w_set.entry_keys.keys())
+-
+-    return [
+-        Package(name=d.key, version=d.version,
+-                requirements=[SafetyRequirement(f'{d.key}=={d.version}', found=d.location)],
+-                found=d.location, insecure_versions=[],
+-                secure_versions=[], latest_version=None, latest_version_without_known_vulnerabilities=None,
+-                more_info_url=None) for d in
+-        w_set
+-        if d.key not in {"python", "wsgiref", "argparse"} and allowed_version(d.key, d.version)
+-    ]
++        for file_path in files:
++            try:
++                with open(file_path, 'r') as f:
++                    content = f.read()
++                    if content.strip():
++                        requirements = read_requirements(content, filename=file_path)
++                        packages.extend(Package(name=req.name, version=req.specifier) for req in requirements)
++            except FileNotFoundError:
++                # Handle file not found gracefully
++                pass
++            except Exception:
++                # Handle other file reading errors
++                pass
++    
++    return packages
+ 
+ 
+ def read_vulnerabilities(fh: Any) -> Dict[str, Any]:

@@ -1,0 +1,13 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -303,6 +303,10 @@
+ 
+ 
+ class WebSocketRoute(BaseRoute):
++    if middleware is not None:
++        for cls, args, kwargs in reversed(middleware):
++            self.app = cls(self.app, *args, **kwargs)
++
+     def __init__(
+         self,
+         path: str,

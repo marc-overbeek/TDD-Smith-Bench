@@ -1,0 +1,88 @@
+--- a/safety/auth/utils.py
++++ b/safety/auth/utils.py
+@@ -164,81 +164,10 @@
+ 
+         return AuthenticationType.none
+ 
+-    def request(self, method: str, url: str, withhold_token: bool = False, auth: Optional[Tuple] = None, bearer: bool = True, **kwargs: Any) -> requests.Response:
+-        """
+-        Make an HTTP request with the appropriate authentication.
+-
+-        Use the right auth parameter for Safety supported auth types.
+-
+-        Args:
+-            method (str): The HTTP method.
+-            url (str): The URL to request.
+-            withhold_token (bool): Whether to withhold the token.
+-            auth (Optional[Tuple]): The authentication tuple.
+-            bearer (bool): Whether to use bearer authentication.
+-            **kwargs (Any): Additional keyword arguments.
+-
+-        Returns:
+-            requests.Response: The HTTP response.
+-
+-        Raises:
+-            Exception: If the request fails.
+-        """
+-        # By default use the token_auth
+-        TIMEOUT_KEYWARD = "timeout"
+-        func_timeout = kwargs[TIMEOUT_KEYWARD] if TIMEOUT_KEYWARD in kwargs else REQUEST_TIMEOUT
+-
+-        if self.api_key:
+-            key_header = {"X-Api-Key": self.api_key}
+-            if not "headers" in kwargs:
+-                kwargs["headers"] = key_header
+-            else:
+-                kwargs["headers"]["X-Api-Key"] = self.api_key
+-
+-        if not self.token or not bearer:
+-            # Fallback to no token auth
+-            auth = ()
+-
+-
+-        # Override proxies
+-        if self.proxies:
+-            kwargs['proxies'] = self.proxies
+-
+-            if self.proxy_timeout:
+-                kwargs['timeout'] = int(self.proxy_timeout) / 1000
+-
+-        if ("proxies" not in kwargs or not self.proxies) and self.proxy_required:
+-            output_exception("Proxy connection is required but there is not a proxy setup.", exit_code_output=True)
+-
+-        request_func = super(SafetyAuthSession, self).request
+-        params = {
+-            'method': method,
+-            'url': url,
+-            'withhold_token': withhold_token,
+-            'auth': auth,
+-        }
+-        params.update(kwargs)
+-
+-        try:
+-            return request_func(**params)
+-        except Exception as e:
+-            LOG.debug('Request failed: %s', e)
+-
+-            if self.proxy_required:
+-                output_exception(f"Proxy is required but the connection failed because: {e}", exit_code_output=True)
+-
+-            if ("proxies" in kwargs or self.proxies):
+-                params["proxies"] = {}
+-                params['timeout'] = func_timeout
+-                self.proxies = {}
+-                message = "The proxy configuration failed to function and was disregarded."
+-                LOG.debug(message)
+-                if message not in [a['message'] for a in SafetyContext.local_announcements]:
+-                    SafetyContext.local_announcements.append({'message': message, 'type': 'warning', 'local': True})
+-
+-                return request_func(**params)
+-
+-            raise e
++    def request(self, method: str, url: str, withhold_token: bool=False, auth:
++        Optional[Tuple]=None, bearer: bool=True, **kwargs: Any
++        ) ->requests.Response:
++        pass
+ 
+     @parse_response
+     def fetch_user_info(self) -> Any:

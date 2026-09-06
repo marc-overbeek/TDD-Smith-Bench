@@ -1,0 +1,19 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -224,6 +224,16 @@
+             splitter.whitespace = ","
+             splitter.whitespace_split = True
+             self._items = [item.strip() for item in splitter]
++            # Remove quotes from items if they're quoted
++            cleaned_items = []
++            for item in self._items:
++                if item.startswith('"') and item.endswith('"'):
++                    cleaned_items.append(item[1:-1])
++                elif item.startswith("'") and item.endswith("'"):
++                    cleaned_items.append(item[1:-1])
++                else:
++                    cleaned_items.append(item)
++            self._items = cleaned_items
+         else:
+             self._items = list(value)
+ 

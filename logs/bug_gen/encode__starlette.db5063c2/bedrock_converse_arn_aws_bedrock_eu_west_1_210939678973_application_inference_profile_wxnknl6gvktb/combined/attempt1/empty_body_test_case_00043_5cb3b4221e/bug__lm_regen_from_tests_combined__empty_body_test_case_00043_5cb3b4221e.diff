@@ -1,0 +1,31 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -411,14 +411,7 @@
+     An uploaded file included as part of the request data.
+     """
+ 
+-    def __init__(
+-        self,
+-        file: typing.BinaryIO,
+-        *,
+-        size: int | None = None,
+-        filename: str | None = None,
+-        headers: Headers | None = None,
+-    ) -> None:
++    def __init__(self, file: typing.BinaryIO, *, size: int | None = None, filename: str | None = None, headers: Headers | None = None) -> None:
+         self.filename = filename
+         self.file = file
+         self.size = size
+@@ -558,10 +551,8 @@
+ 
+     def __repr__(self) -> str:
+         class_name = self.__class__.__name__
+-        as_dict = dict(self.items())
+-        if len(as_dict) == len(self):
+-            return f"{class_name}({as_dict!r})"
+-        return f"{class_name}(raw={self.raw!r})"
++        items = self.multi_items()
++        return f"{class_name}({items!r})"
+ 
+ 
+ class MutableHeaders(Headers):

@@ -1,0 +1,151 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -260,8 +260,7 @@
+             self.time += delta
+ 
+     def remove_time(self) -> None:
+-        """ Will remove time metadata. """
+-        self.time = None
++            self.time = None
+ 
+     def get_max_dilution_of_precision(self) -> Optional[float]:
+         """
+@@ -341,8 +340,7 @@
+             self.time += delta
+ 
+     def remove_time(self) -> None:
+-        """ Will remove time metadata. """
+-        self.time = None
++            self.time = None
+ 
+ 
+ class GPXRoute:
+@@ -404,9 +402,8 @@
+             point.adjust_time(delta)
+ 
+     def remove_time(self) -> None:
+-        """ Removes time meta data from route. """
+-        for point in self.points:
+-            point.remove_time()
++            for track_point in (self.points if self.points else []):
++                track_point.remove_time()
+ 
+     def remove_elevation(self) -> None:
+         """ Removes elevation data from route """
+@@ -456,26 +453,11 @@
+         return mod_geo.Location(latitude=sum_lat / n, longitude=sum_lon / n)
+ 
+     def walk(self, only_points: bool=False) -> Iterator[Any]:
+-        """
+-        Generator for iterating over route points
+-
+-        Parameters
+-        ----------
+-        only_points: boolean
+-            Only yield points (no index yielded)
+-
+-        Yields
+-        ------
+-        point: GPXRoutePoint
+-            A point in the GPXRoute
+-        point_no: int
+-            Not included in yield if only_points is true
+-        """
+-        for point_no, point in enumerate(self.points):
+-            if only_points:
+-                yield point
+-            else:
+-                yield point, point_no
++            for point_no, point in enumerate(self.points):
++                if only_points:
++                    yield point
++                else:
++                    yield point, point_no
+ 
+     def get_points_no(self) -> int:
+         """
+@@ -574,8 +556,8 @@
+             self.time += delta
+ 
+     def remove_time(self) -> None:
+-        """ Will remove time metadata. """
+-        self.time = None
++            for segment in (self.segments if self.segments else []):
++                segment.remove_time()
+ 
+     def time_difference(self, track_point: "GPXTrackPoint") -> Optional[float]:
+         """
+@@ -743,9 +725,8 @@
+             track_point.adjust_time(delta)
+ 
+     def remove_time(self) -> None:
+-        """ Removes time data for all points in the segment. """
+-        for track_point in self.points:
+-            track_point.remove_time()
++            for point in (self.points if self.points else []):
++                point.remove_time()
+ 
+     def remove_elevation(self) -> None:
+         """ Removes elevation data for all points in the segment. """
+@@ -1463,10 +1444,15 @@
+         for segment in self.segments:
+             segment.adjust_time(delta)
+ 
+-    def remove_time(self) -> None:
+-        """ Removes time data for all points in all segments of track. """
+-        for segment in self.segments:
+-            segment.remove_time()
++    def remove_time(self, all: bool=False) -> None:
++            for track in (self.tracks if self.tracks else []):
++                track.remove_time()
++
++            if all:
++                for waypoint in (self.waypoints if self.waypoints else []):
++                    waypoint.remove_time()
++                for route in (self.routes if self.routes else []):
++                    route.remove_time()
+ 
+     def remove_elevation(self) -> None:
+         """ Removes elevation data for all points in all segments of track. """
+@@ -2299,34 +2285,13 @@
+         return result
+ 
+     def walk(self, only_points: bool=False) -> Iterator[Any]:
+-        """
+-        Generator used to iterates through points in GPX file
+-
+-        Parameters
+-        ----------
+-        only_point s: boolean
+-            Only yield points while walking
+-
+-        Yields
+-        ----------
+-        point : GPXTrackPoint
+-            Point in the track
+-        track_no : integer
+-            Index of track containing point. This is suppressed if only_points
+-            is True.
+-        segment_no : integer
+-            Index of segment containing point. This is suppressed if only_points
+-            is True.
+-        point_no : integer
+-            Index of point. This is suppressed if only_points is True.
+-        """
+-        for track_no, track in enumerate(self.tracks if self.tracks else [] ):
+-            for segment_no, segment in enumerate(track.segments if track.segments else []):
+-                for point_no, point in enumerate(segment.points if segment.points else []):
+-                    if only_points:
+-                        yield point
+-                    else:
+-                        yield point, track_no, segment_no, point_no
++            for track_no, track in enumerate(self.tracks if self.tracks else []):
++                for segment_no, segment in enumerate(track.segments if track.segments else []):
++                    for point_no, point in enumerate(segment.points if segment.points else []):
++                        if only_points:
++                            yield point
++                        else:
++                            yield point, track_no, segment_no, point_no
+ 
+     def get_track_points_no(self) -> int:
+         """ Number of track points, *without* route and waypoints """

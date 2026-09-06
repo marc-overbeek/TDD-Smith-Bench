@@ -1,0 +1,87 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -158,82 +158,11 @@
+ @inject_session
+ @preprocess_args
+ def cli(ctx, debug, disable_optional_telemetry):
+-    """
+-    Scan and secure Python projects against package vulnerabilities. To get started navigate to a Python project and run `safety scan`.
+-    """
+-    SafetyContext().safety_source = 'cli'
+-    telemetry = not disable_optional_telemetry
+-    ctx.obj.config = ConfigModel(telemetry_enabled=telemetry)
+-    level = logging.CRITICAL
+-    if debug:
+-        level = logging.DEBUG
+-
+-    logging.basicConfig(format='%(asctime)s %(name)s => %(message)s', level=level)
+-
+-    LOG.info(f'Telemetry enabled: {ctx.obj.config.telemetry_enabled}')
+-
+-    # Before any command make sure that the parent dirs for Safety config are present.
+-    initializate_config_dirs()
++    pass
+ 
+ 
+ def clean_check_command(f):
+-    """
+-    Main entry point for validation.
+-    """
+-    @wraps(f)
+-    def inner(ctx, *args, **kwargs):
+-
+-        save_json = kwargs["save_json"]
+-        output = kwargs["output"]
+-        authenticated: bool = ctx.obj.auth.client.is_using_auth_credentials()
+-        files = kwargs["files"]
+-        policy_file = kwargs["policy_file"]
+-        auto_remediation_limit = kwargs["auto_remediation_limit"]
+-        audit_and_monitor = kwargs["audit_and_monitor"]
+-        exit_code = kwargs["exit_code"]
+-
+-        # This is handled in the custom subgroup Click class
+-        # TODO: Remove this soon, for now it keeps a legacy behavior
+-        kwargs.pop("key", None)
+-        kwargs.pop('proxy_protocol', None)
+-        kwargs.pop('proxy_host', None)
+-        kwargs.pop('proxy_port', None)
+-
+-        if ctx.get_parameter_source("json_version") != click.core.ParameterSource.DEFAULT and not (
+-                save_json or json or output == 'json'):
+-            raise click.UsageError(
+-                "Illegal usage: `--json-version` only works with JSON related outputs."
+-            )
+-
+-        try:
+-
+-            if ctx.get_parameter_source("apply_remediations") != click.core.ParameterSource.DEFAULT:
+-                if not authenticated:
+-                    raise InvalidCredentialError(message="The --apply-security-updates option needs authentication. See {link}.")
+-                if not files:
+-                    raise SafetyError(message='--apply-security-updates only works with files; use the "-r" option to '
+-                                              'specify files to remediate.')
+-
+-            auto_remediation_limit = get_fix_options(policy_file, auto_remediation_limit)
+-            policy_file, server_audit_and_monitor = safety.get_server_policies(ctx.obj.auth.client, policy_file=policy_file,
+-                                                                               proxy_dictionary=None)
+-            audit_and_monitor = (audit_and_monitor and server_audit_and_monitor)
+-
+-            kwargs.update({"auto_remediation_limit": auto_remediation_limit,
+-                           "policy_file":policy_file,
+-                           "audit_and_monitor": audit_and_monitor})
+-
+-        except SafetyError as e:
+-            LOG.exception('Expected SafetyError happened: %s', e)
+-            output_exception(e, exit_code_output=exit_code)
+-        except Exception as e:
+-            LOG.exception('Unexpected Exception happened: %s', e)
+-            exception = e if isinstance(e, SafetyException) else SafetyException(info=e)
+-            output_exception(exception, exit_code_output=exit_code)
+-
+-        return f(ctx, *args, **kwargs)
+-
+-    return inner
++    pass
+ 
+ def print_deprecation_message(
+     old_command: str, 

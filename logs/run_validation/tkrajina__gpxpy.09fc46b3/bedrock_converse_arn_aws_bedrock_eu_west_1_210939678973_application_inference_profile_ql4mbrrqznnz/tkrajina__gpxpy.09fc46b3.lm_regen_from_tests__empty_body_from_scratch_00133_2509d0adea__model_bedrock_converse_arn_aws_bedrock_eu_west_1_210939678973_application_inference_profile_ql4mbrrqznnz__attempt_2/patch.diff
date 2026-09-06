@@ -1,0 +1,39 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1147,11 +1147,10 @@
+ 
+         return mod_utils.total_seconds(last.time - first.time)
+ 
+-    def get_uphill_downhill(self) -> UphillDownhill:
+-        """
+-        Calculates the uphill and downhill elevation climbs for the track
+-        segment. If elevation for some points is not found those are simply
+-        ignored.
++    def get_uphill_downhill(self) ->UphillDownhill:
++        """
++        Calculates the uphill and downhill elevation climbs for the gpx file.
++        If elevation for some points is not found those are simply ignored.
+ 
+         Returns
+         -------
+@@ -1161,11 +1160,17 @@
+             downhill: float
+                 Downhill elevation descent in meters
+         """
+-        if not self.points:
++        if not self.tracks:
+             return UphillDownhill(0, 0)
+ 
+-        elevations = [point.elevation for point in self.points]
+-        uphill, downhill = mod_geo.calculate_uphill_downhill(elevations)
++        uphill: float = 0
++        downhill: float = 0
++
++        for track in self.tracks:
++            current_uphill, current_downhill = track.get_uphill_downhill()
++
++            uphill += current_uphill or 0
++            downhill += current_downhill or 0
+ 
+         return UphillDownhill(uphill, downhill)
+ 

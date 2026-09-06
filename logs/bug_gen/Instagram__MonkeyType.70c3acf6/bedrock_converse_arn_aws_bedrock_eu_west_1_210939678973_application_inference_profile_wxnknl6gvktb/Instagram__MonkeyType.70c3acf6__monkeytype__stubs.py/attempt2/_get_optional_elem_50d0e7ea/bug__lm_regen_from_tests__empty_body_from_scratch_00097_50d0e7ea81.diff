@@ -1,0 +1,31 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -292,13 +292,22 @@
+ 
+ 
+ def _get_optional_elem(anno: Any) -> Any:
+-    """Get the non-null type from an optional."""
++    """Extract the non-None type from an Optional annotation.
++    
++    Optional[X] is Union[X, NoneType], so this extracts X.
++    For Optional[Union[X, Y]], this extracts Union[X, Y].
++    """
+     if not _is_optional(anno):
+-        raise TypeError("Supplied annotation isn't an optional")
+-    elems = tuple(e for e in anno.__args__ if e is not NoneType)
+-    if len(elems) == 1:
+-        return elems[0]
+-    return Union[elems]
++        return None
++    args = anno.__args__
++    # Filter out NoneType to get the actual type(s)
++    non_none_args = tuple(arg for arg in args if arg is not NoneType)
++    
++    if len(non_none_args) == 1:
++        return non_none_args[0]
++    elif len(non_none_args) > 1:
++        return Union[non_none_args]
++    return None
+ 
+ 
+ class RenderAnnotation(GenericTypeRewriter[str]):

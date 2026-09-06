@@ -1,0 +1,31 @@
+--- a/src/mistune/plugins/spoiler.py
++++ b/src/mistune/plugins/spoiler.py
+@@ -48,14 +48,20 @@
+     return state.cursor
+ 
+ 
+-def parse_inline_spoiler(
+-    inline: "InlineParser", m: Match[str], state: "InlineState"
+-) -> int:
+-    text = m.group("spoiler_text")
+-    new_state = state.copy()
+-    new_state.src = text
+-    children = inline.render(new_state)
+-    state.append_token({'type': 'inline_spoiler', 'children': children})
++def parse_inline_spoiler(inline: 'InlineParser', m: Match[str], state:
++    'InlineState') ->int:
++    text = m.group('spoiler_text')
++    children, end_pos = inline.parse(text, state)
++    token = {'type': 'inline_spoiler', 'children': children}
++    state.append_token(token)
++    return m.end()
++
++def parse_inline_spoiler(inline: 'InlineParser', m: Match[str], state:
++    'InlineState') -> int:
++    text = m.group('spoiler_text')
++    children, end_pos = inline.parse(text, state)
++    token = {'type': 'inline_spoiler', 'children': children}
++    state.append_token(token)
+     return m.end()
+ 
+ 

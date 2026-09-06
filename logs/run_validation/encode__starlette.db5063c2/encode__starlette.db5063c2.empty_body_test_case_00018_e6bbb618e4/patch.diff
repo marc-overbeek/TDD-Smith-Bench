@@ -1,0 +1,116 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -287,13 +287,8 @@
+         else:
+             await self.app(scope, receive, send)
+ 
+-    def __eq__(self, other: typing.Any) -> bool:
+-        return (
+-            isinstance(other, Route)
+-            and self.path == other.path
+-            and self.endpoint == other.endpoint
+-            and self.methods == other.methods
+-        )
++    def __eq__(self, other: typing.Any) ->bool:
++        pass
+ 
+     def __repr__(self) -> str:
+         class_name = self.__class__.__name__
+@@ -303,34 +298,10 @@
+ 
+ 
+ class WebSocketRoute(BaseRoute):
+-    def __init__(
+-        self,
+-        path: str,
+-        endpoint: typing.Callable[..., typing.Any],
+-        *,
+-        name: str | None = None,
+-        middleware: typing.Sequence[Middleware] | None = None,
+-    ) -> None:
+-        assert path.startswith("/"), "Routed paths must start with '/'"
+-        self.path = path
+-        self.endpoint = endpoint
+-        self.name = get_name(endpoint) if name is None else name
+-
+-        endpoint_handler = endpoint
+-        while isinstance(endpoint_handler, functools.partial):
+-            endpoint_handler = endpoint_handler.func
+-        if inspect.isfunction(endpoint_handler) or inspect.ismethod(endpoint_handler):
+-            # Endpoint is function or method. Treat it as `func(websocket)`.
+-            self.app = websocket_session(endpoint)
+-        else:
+-            # Endpoint is a class. Treat it as ASGI.
+-            self.app = endpoint
+-
+-        if middleware is not None:
+-            for cls, args, kwargs in reversed(middleware):
+-                self.app = cls(self.app, *args, **kwargs)
+-
+-        self.path_regex, self.path_format, self.param_convertors = compile_path(path)
++    def __init__(self, path: str, endpoint: typing.Callable[..., typing.Any], *,
++        name: (str | None)=None, middleware: (typing.Sequence[Middleware] |
++        None)=None) ->None:
++        pass
+ 
+     def matches(self, scope: Scope) -> tuple[Match, Scope]:
+         path_params: dict[str, typing.Any]
+@@ -361,8 +332,8 @@
+     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+         await self.app(scope, receive, send)
+ 
+-    def __eq__(self, other: typing.Any) -> bool:
+-        return isinstance(other, WebSocketRoute) and self.path == other.path and self.endpoint == other.endpoint
++    def __eq__(self, other: typing.Any) ->bool:
++        pass
+ 
+     def __repr__(self) -> str:
+         return f"{self.__class__.__name__}(path={self.path!r}, name={self.name!r})"
+@@ -459,8 +430,8 @@
+     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+         await self.app(scope, receive, send)
+ 
+-    def __eq__(self, other: typing.Any) -> bool:
+-        return isinstance(other, Mount) and self.path == other.path and self.app == other.app
++    def __eq__(self, other: typing.Any) ->bool:
++        pass
+ 
+     def __repr__(self) -> str:
+         class_name = self.__class__.__name__
+@@ -469,12 +440,8 @@
+ 
+ 
+ class Host(BaseRoute):
+-    def __init__(self, host: str, app: ASGIApp, name: str | None = None) -> None:
+-        assert not host.startswith("/"), "Host must not start with '/'"
+-        self.host = host
+-        self.app = app
+-        self.name = name
+-        self.host_regex, self.host_format, self.param_convertors = compile_path(host)
++    def __init__(self, host: str, app: ASGIApp, name: (str | None)=None) ->None:
++        pass
+ 
+     @property
+     def routes(self) -> list[BaseRoute]:
+@@ -521,8 +488,8 @@
+     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+         await self.app(scope, receive, send)
+ 
+-    def __eq__(self, other: typing.Any) -> bool:
+-        return isinstance(other, Host) and self.host == other.host and self.app == other.app
++    def __eq__(self, other: typing.Any) ->bool:
++        pass
+ 
+     def __repr__(self) -> str:
+         class_name = self.__class__.__name__
+@@ -764,8 +731,8 @@
+ 
+         await self.default(scope, receive, send)
+ 
+-    def __eq__(self, other: typing.Any) -> bool:
+-        return isinstance(other, Router) and self.routes == other.routes
++    def __eq__(self, other: typing.Any) ->bool:
++        pass
+ 
+     def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:  # pragma: no cover
+         route = Mount(path, app=app, name=name)

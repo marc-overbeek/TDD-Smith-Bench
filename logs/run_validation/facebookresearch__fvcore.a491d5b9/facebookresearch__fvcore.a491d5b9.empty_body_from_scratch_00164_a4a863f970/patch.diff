@@ -1,0 +1,22 @@
+--- a/fvcore/nn/distributed.py
++++ b/fvcore/nn/distributed.py
+@@ -24,17 +24,8 @@
+         return grad_output
+ 
+ 
+-def differentiable_all_reduce(input: torch.Tensor) -> torch.Tensor:
+-    """
+-    Differentiable counterpart of `dist.all_reduce`.
+-    """
+-    if (
+-        not dist.is_available()
+-        or not dist.is_initialized()
+-        or dist.get_world_size() == 1
+-    ):
+-        return input
+-    return _AllReduce.apply(input)
++def differentiable_all_reduce(input: torch.Tensor) ->torch.Tensor:
++    pass
+ 
+ 
+ class _AllGather(Function):

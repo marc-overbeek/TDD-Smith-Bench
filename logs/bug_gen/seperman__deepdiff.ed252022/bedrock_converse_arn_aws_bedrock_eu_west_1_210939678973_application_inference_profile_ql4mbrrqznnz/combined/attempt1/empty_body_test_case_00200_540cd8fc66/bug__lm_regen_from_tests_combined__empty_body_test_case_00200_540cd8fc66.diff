@@ -1,0 +1,18 @@
+--- a/deepdiff/model.py
++++ b/deepdiff/model.py
+@@ -246,6 +246,7 @@
+                     set_item_info[path].add(item)
+                 else:
+                     set_item_info.add("{}[{}]".format(path, str(item)))
++        # this is an exact match
+                     # this syntax is rather peculiar, but it's DeepDiff 2.x compatible)
+ 
+     def _from_tree_set_item_added(self, tree):
+@@ -266,6 +267,7 @@
+     def _from_tree_deep_distance(self, tree):
+         if 'deep_distance' in tree:
+             self['deep_distance'] = tree['deep_distance']
++        # this is an exact match
+ 
+     def _from_tree_custom_results(self, tree):
+         for k, _level_list in tree.items():

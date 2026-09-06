@@ -1,0 +1,57 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -383,31 +383,31 @@
+ 
+ 
+ def render_parameter(param: inspect.Parameter) -> str:
+-    """Convert a parameter into its stub representation.
+-
+-    NB: This is copied almost entirely from https://github.com/python/cpython/blob/3.6/Lib/inspect.py
+-    with the modification that it calls our own rendering functions for annotations.
+-
+-    TODO: push a patch upstream so we don't have to do this on Python 3.x.
+-    """
++    """Render a single parameter for use in a stub signature."""
++    # Start with the parameter name, adding prefix for *args and **kwargs
+     kind = param.kind
+-    formatted = param.name
+-
+-    # Add annotation and default value
+-    if param.annotation is not inspect.Parameter.empty:
+-        anno = param.annotation
+-        if not _is_optional(anno) and param.default is None:
+-            anno = Optional[anno]
+-        rendered = render_annotation(anno)
+-        formatted = "{}: {}".format(formatted, rendered)
+-
++    if kind == inspect.Parameter.VAR_POSITIONAL:
++        formatted = '*' + param.name
++    elif kind == inspect.Parameter.VAR_KEYWORD:
++        formatted = '**' + param.name
++    else:
++        formatted = param.name
++
++    # Handle annotation
++    annotation = param.annotation
++    if annotation is not inspect.Parameter.empty:
++        # If the default is None and the annotation is not already Optional,
++        # wrap it in Optional
++        if param.default is None and not _is_optional(annotation):
++            annotation = Optional[annotation]
++        formatted += ': ' + render_annotation(annotation)
++
++    # Handle default value - in stubs, defaults are shown as '...'
+     if param.default is not inspect.Parameter.empty:
+-        formatted = "{} = ...".format(formatted)
+-
+-    if kind == inspect.Parameter.VAR_POSITIONAL:
+-        formatted = "*" + formatted
+-    elif kind == inspect.Parameter.VAR_KEYWORD:
+-        formatted = "**" + formatted
++        if annotation is not inspect.Parameter.empty:
++            formatted += ' = ...'
++        else:
++            formatted += '=...'
+ 
+     return formatted
+ 

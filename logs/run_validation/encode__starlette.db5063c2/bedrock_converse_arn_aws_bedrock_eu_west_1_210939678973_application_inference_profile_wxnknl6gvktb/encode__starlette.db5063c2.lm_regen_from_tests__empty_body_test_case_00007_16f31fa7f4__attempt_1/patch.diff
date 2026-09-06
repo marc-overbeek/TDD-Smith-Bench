@@ -1,0 +1,18 @@
+--- a/starlette/middleware/gzip.py
++++ b/starlette/middleware/gzip.py
+@@ -11,6 +11,7 @@
+         self.app = app
+         self.minimum_size = minimum_size
+         self.compresslevel = compresslevel
++        # this is an exact match
+ 
+     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+         if scope["type"] == "http":
+@@ -32,6 +33,7 @@
+         self.content_encoding_set = False
+         self.gzip_buffer = io.BytesIO()
+         self.gzip_file = gzip.GzipFile(mode="wb", fileobj=self.gzip_buffer, compresslevel=compresslevel)
++        # this is an exact match
+ 
+     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+         self.send = send

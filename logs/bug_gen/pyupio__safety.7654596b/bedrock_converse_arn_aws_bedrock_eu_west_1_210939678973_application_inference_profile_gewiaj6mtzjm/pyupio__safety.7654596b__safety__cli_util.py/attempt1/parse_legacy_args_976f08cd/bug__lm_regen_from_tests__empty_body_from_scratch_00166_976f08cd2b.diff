@@ -1,0 +1,39 @@
+--- a/safety/cli_util.py
++++ b/safety/cli_util.py
+@@ -680,7 +680,7 @@
+     Custom Click Group to handle legacy command-line arguments.
+     """
+ 
+-    def parse_legacy_args(self, args: List[str]) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
++    def parse_legacy_args(self, args: List[str]) ->Tuple[Optional[Dict[str, str]], Optional[str]]:
+         """
+         Parse legacy command-line arguments for proxy settings and keys.
+ 
+@@ -697,15 +697,26 @@
+         }
+         key = None
+ 
+-        for i, arg in enumerate(args):
++        i = 0
++        while i < len(args):
++            arg = args[i]
+             if arg in ['--proxy-protocol', '-pr'] and i + 1 < len(args):
+                 options['proxy_protocol'] = args[i + 1]
++                i += 2
++                continue
+             elif arg in ['--proxy-port', '-pp'] and i + 1 < len(args):
+                 options['proxy_port'] = int(args[i + 1])
++                i += 2
++                continue
+             elif arg in ['--proxy-host', '-ph'] and i + 1 < len(args):
+                 options['proxy_host'] = args[i + 1]
++                i += 2
++                continue
+             elif arg in ['--key'] and i + 1 < len(args):
+                 key = args[i + 1]
++                i += 2
++                continue
++            i += 1
+ 
+         proxy = options if options['proxy_host'] else None
+         return proxy, key

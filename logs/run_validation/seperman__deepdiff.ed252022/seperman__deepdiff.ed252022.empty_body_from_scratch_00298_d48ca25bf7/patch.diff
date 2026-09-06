@@ -1,0 +1,44 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -372,40 +372,7 @@
+ 
+ 
+ def pickle_load(content=None, file_obj=None, safe_to_import=None):
+-    """
+-    **pickle_load**
+-    Load the pickled content. content should be a bytes object.
+-
+-    **Parameters**
+-
+-    content : Bytes of pickled object. 
+-
+-    file_obj : A file object to load the content from
+-
+-    safe_to_import : A set of modules that needs to be explicitly allowed to be loaded.
+-        Example: {'mymodule.MyClass', 'decimal.Decimal'}
+-        Note that this set will be added to the basic set of modules that are already allowed.
+-        The set of what is already allowed can be found in deepdiff.serialization.SAFE_TO_IMPORT
+-
+-    **Returns**
+-
+-        A delta object that can be added to t1 to recreate t2.
+-
+-    **Examples**
+-
+-    Importing
+-        >>> from deepdiff import DeepDiff, Delta
+-        >>> from pprint import pprint
+-
+-
+-    """
+-    if not content and not file_obj:
+-        raise ValueError('Please either pass the content or the file_obj to pickle_load.') 
+-    if isinstance(content, str):
+-        content = content.encode('utf-8')
+-    if content:
+-        file_obj = io.BytesIO(content)
+-    return _RestrictedUnpickler(file_obj, safe_to_import=safe_to_import).load()
++    pass
+ 
+ 
+ def _get_pretty_form_text(verbose_level):

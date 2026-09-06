@@ -1,0 +1,70 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1454,46 +1454,28 @@
+     raise DatabaseFetchError()
+ 
+ 
+-def add_local_notifications(
+-    packages: List[Package],
+-    ignore_unpinned_requirements: Optional[bool]
+-) -> List[Dict[str, str]]:
+-    """
+-    Adds local notifications for unpinned packages.
+-
+-    Args:
+-        packages (List[Package]): The list of packages.
+-        ignore_unpinned_requirements (Optional[bool]): Whether to ignore unpinned requirements.
+-
+-    Returns:
+-        List[Dict[str, str]]: The list of notifications.
+-    """
+-    announcements = []
+-    unpinned_packages: List[str] = [f"{pkg.name}" for pkg in packages if pkg.has_unpinned_req()]
+-
+-    if unpinned_packages and ignore_unpinned_requirements is not False:
+-        found = len(unpinned_packages)
+-        and_msg = ''
+-
+-        if found >= 2:
+-            last = unpinned_packages.pop()
+-            and_msg = f' and {last}'
+-
+-        pkgs: str = f"{', '.join(unpinned_packages)}{and_msg} {'are' if found > 1 else 'is'}"
+-        doc_msg: str = get_specifier_range_info(style=False, pin_hint=True)
+-
+-        if ignore_unpinned_requirements is None:
+-            msg = f'Warning: {pkgs} unpinned. Safety by default does not ' \
+-                  f'report on potential vulnerabilities in unpinned packages. {doc_msg}'
++def add_local_notifications(packages: List[Package],
++    ignore_unpinned_requirements: Optional[bool]) ->List[Dict[str, str]]:
++    notifications = []
++    
++    # Check for unpinned requirements
++    unpinned_packages = []
++    for pkg in packages:
++        for req in pkg.requirements:
++            if not is_pinned_requirement(req.specifier):
++                unpinned_packages.append(pkg.name)
++                break
++    
++    if unpinned_packages:
++        package_names = ", ".join(unpinned_packages)
++        if ignore_unpinned_requirements:
++            message = f'Warning: {package_names} are unpinned and potential vulnerabilities are being ignored given `ignore-unpinned-requirements` is True in your config.'
++            notifications.append({'message': message, 'type': 'warning'})
+         else:
+-            msg = f'Warning: {pkgs} unpinned and potential vulnerabilities are ' \
+-                  f'being ignored given `ignore-unpinned-requirements` is True in your config. {doc_msg}'
+-
+-        announcements.append({'message': msg, 'type': 'warning', 'local': True})
+-
+-    announcements.extend(SafetyContext().local_announcements)
+-
+-    return announcements
++            message = f'Warning: {package_names} are unpinned. Safety by default does not report vulnerabilities for unpinned requirements.'
++            notifications.append({'message': message, 'type': 'warning'})
++    
++    return notifications
+ 
+ 
+ def get_announcements(

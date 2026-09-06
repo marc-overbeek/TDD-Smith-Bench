@@ -1,0 +1,33 @@
+--- a/safety/scan/util.py
++++ b/safety/scan/util.py
+@@ -90,27 +90,9 @@
+         """
+         self.git = ("git", "-C", root.resolve())
+ 
+-    def __run__(self, cmd: Tuple[str, ...], env_var: Optional[str] = None) -> Optional[str]:
+-        """
+-        Run a Git command.
+-
+-        Args:
+-            cmd (Tuple[str, ...]): The Git command to run.
+-            env_var (Optional[str]): An optional environment variable to check for the command result.
+-
+-        Returns:
+-            Optional[str]: The result of the Git command, or None if an error occurred.
+-        """
+-        if env_var and os.environ.get(env_var):
+-            return os.environ.get(env_var)
+-
+-        try:
+-            return subprocess.run(self.git + cmd, stdout=subprocess.PIPE,
+-                                    stderr=subprocess.DEVNULL).stdout.decode('utf-8').strip()
+-        except Exception as e:
+-            LOG.exception(e)
+-
+-        return None
++    def __run__(self, cmd: Tuple[str, ...], env_var: Optional[str]=None
++        ) ->Optional[str]:
++        pass
+ 
+     def origin(self) -> Optional[str]:
+         """

@@ -1,0 +1,44 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -258,6 +258,16 @@
+             lambda it, scope: unique_iter(it, key=lambda t: scope[glom](t, key, scope)))
+ 
+ 
++    def test_slice():
++        cnt = count()
++        spec = Iter().slice(3)
++        out = glom(cnt, spec)
++        assert list(out) == [0, 1, 2]
++        # ... more tests with slice(1, 5), slice(1, 6, 2)
++        # ... tests with limit(3)
++        with pytest.raises(TypeError):
++            Iter().slice(1, 2, 3, 4)  # Should raise TypeError for invalid args
++
+     def slice(self, *args):
+         """Returns a new :class:`Iter()` spec which trims iterables in the
+         same manner as :func:`itertools.islice`.
+@@ -272,6 +282,24 @@
+         """
+         # TODO: make a kwarg-compatible version of this (islice takes no kwargs)
+         # TODO: also support slice syntax Iter()[::]
++        try:
++            islice([], *args)
++        except TypeError:
++            raise TypeError(f'invalid slice arguments: {args!r}')
++        return self._add_op('slice', args, lambda it, scope: islice(it, *args))
++
++    def slice(self, *args):
++        """Returns a new :class:`Iter()` spec which trims iterables in the
++        same manner as :func:`itertools.islice`.
++
++        >>> target = [0, 1, 2, 3, 4, 5]
++        >>> glom(target, Iter().slice(3).all())
++        [0, 1, 2]
++        >>> glom(target, Iter().slice(2, 4).all())
++        [2, 3]
++
++        This method accepts only positional arguments.
++        """
+         try:
+             islice([], *args)
+         except TypeError:

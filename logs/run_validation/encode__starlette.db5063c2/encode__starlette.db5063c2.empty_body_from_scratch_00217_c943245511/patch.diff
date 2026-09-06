@@ -1,0 +1,23 @@
+--- a/starlette/exceptions.py
++++ b/starlette/exceptions.py
+@@ -44,18 +44,8 @@
+ __deprecated__ = "ExceptionMiddleware"
+ 
+ 
+-def __getattr__(name: str) -> typing.Any:  # pragma: no cover
+-    if name == __deprecated__:
+-        from starlette.middleware.exceptions import ExceptionMiddleware
+-
+-        warnings.warn(
+-            f"{__deprecated__} is deprecated on `starlette.exceptions`. "
+-            f"Import it from `starlette.middleware.exceptions` instead.",
+-            category=DeprecationWarning,
+-            stacklevel=3,
+-        )
+-        return ExceptionMiddleware
+-    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
++def __getattr__(name: str) ->typing.Any:
++    pass
+ 
+ 
+ def __dir__() -> list[str]:

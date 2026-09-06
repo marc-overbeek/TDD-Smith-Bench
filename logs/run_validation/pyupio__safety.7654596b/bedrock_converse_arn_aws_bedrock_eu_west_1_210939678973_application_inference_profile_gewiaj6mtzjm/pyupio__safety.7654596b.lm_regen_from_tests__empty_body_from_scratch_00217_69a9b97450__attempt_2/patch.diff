@@ -1,0 +1,46 @@
+--- a/safety/constants.py
++++ b/safety/constants.py
+@@ -77,30 +77,20 @@
+     SAFETY_PLATFORM_URL = f"https://platform.{DEFAULT_DOMAIN}"
+ 
+ 
+-def get_config_setting(name: str) -> Optional[str]:
+-    """
+-    Get the configuration setting from the config file or defaults.
+-
+-    Args:
+-        name (str): The name of the setting to retrieve.
+-
+-    Returns:
+-        Optional[str]: The value of the setting if found, otherwise None.
+-    """
++def get_config_setting(name: str) ->Optional[str]:
++    if not CONFIG or not CONFIG.exists():
++        return None
++    
+     config = configparser.ConfigParser()
+-    config.read(CONFIG)
+-
+-    default = None
+-
+-    if name in [setting.name for setting in URLSettings]:
+-        default = URLSettings[name]
+-
+-    if 'settings' in config.sections() and name in config['settings']:
+-        value = config['settings'][name]
+-        if value:
+-            return value
+-
+-    return default.value if default else default
++    try:
++        config.read(CONFIG)
++    except Exception:
++        return None
++    
++    if 'default' in config and name in config['default']:
++        return config['default'][name]
++    
++    return None
+ 
+ 
+ DATA_API_BASE_URL = get_config_setting("DATA_API_BASE_URL")

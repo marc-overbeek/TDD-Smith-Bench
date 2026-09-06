@@ -1,0 +1,107 @@
+--- a/safety/cli_util.py
++++ b/safety/cli_util.py
+@@ -681,57 +681,55 @@
+     """
+ 
+     def parse_legacy_args(self, args: List[str]) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
+-        """
+-        Parse legacy command-line arguments for proxy settings and keys.
+-
+-        Args:
+-            args (List[str]): List of command-line arguments.
+-
+-        Returns:
+-            Tuple[Optional[Dict[str, str]], Optional[str]]: Parsed proxy options and key.
+-        """
+-        options = {
+-            'proxy_protocol': 'https',
+-            'proxy_port': 80,
+-            'proxy_host': None
+-        }
+-        key = None
+-
+-        for i, arg in enumerate(args):
+-            if arg in ['--proxy-protocol', '-pr'] and i + 1 < len(args):
+-                options['proxy_protocol'] = args[i + 1]
+-            elif arg in ['--proxy-port', '-pp'] and i + 1 < len(args):
+-                options['proxy_port'] = int(args[i + 1])
+-            elif arg in ['--proxy-host', '-ph'] and i + 1 < len(args):
+-                options['proxy_host'] = args[i + 1]
+-            elif arg in ['--key'] and i + 1 < len(args):
+-                key = args[i + 1]
+-
+-        proxy = options if options['proxy_host'] else None
+-        return proxy, key
++            """
++            Parse legacy command-line arguments for proxy settings and keys.
++
++            Args:
++                args (List[str]): List of command-line arguments.
++
++            Returns:
++                Tuple[Optional[Dict[str, str]], Optional[str]]: Parsed proxy options and key.
++            """
++            options = {
++                'proxy_protocol': 'https',
++                'proxy_port': 80,
++                'proxy_host': None
++            }
++            key = None
++
++            for i, arg in enumerate(args):
++                if arg in ['--proxy-protocol', '-pr'] and i + 1 < len(args):
++                    options['proxy_protocol'] = args[i + 1]
++                elif arg in ['--proxy-port', '-pp'] and i + 1 < len(args):
++                    options['proxy_port'] = int(args[i + 1])
++                elif arg in ['--proxy-host', '-ph'] and i + 1 < len(args):
++                    options['proxy_host'] = args[i + 1]
++                elif arg in ['--key'] and i + 1 < len(args):
++                    key = args[i + 1]
++
++            proxy = options if options['proxy_host'] else None
++            return proxy, key
+ 
+     def invoke(self, ctx: click.Context) -> None:
+-        """
+-        Invoke the command, handling legacy arguments.
+-
+-        Args:
+-            ctx (click.Context): Click context.
+-        """
+-        args = ctx.args
+-
+-        # Workaround for legacy check options, that now are global options
+-        subcommand_args = set(args)
+-        PROXY_HOST_OPTIONS = set(["--proxy-host", "-ph"])
+-        if "check" in ctx.protected_args or "license" in ctx.protected_args and (bool(PROXY_HOST_OPTIONS.intersection(subcommand_args) or "--key" in subcommand_args)) :
+-            proxy_options, key = self.parse_legacy_args(args)
+-            if proxy_options:
+-                ctx.params.update(proxy_options)
+-
+-            if key:
+-                ctx.params.update({"key": key})
+-
+-        # Now, invoke the original behavior
+-        super(SafetyCLILegacyGroup, self).invoke(ctx)
++            """
++            Invoke the command, handling legacy arguments.
++
++            Args:
++                ctx (click.Context): Click context.
++            """
++            args = ctx.args
++
++            subcommand_args = set(args)
++            PROXY_HOST_OPTIONS = set(["--proxy-host", "-ph"])
++            if "check" in ctx.protected_args or "license" in ctx.protected_args and (bool(PROXY_HOST_OPTIONS.intersection(subcommand_args) or "--key" in subcommand_args)):
++                proxy_options, key = self.parse_legacy_args(args)
++                if proxy_options:
++                    ctx.params.update(proxy_options)
++
++                if key:
++                    ctx.params.update({"key": key})
++
++            super(SafetyCLILegacyGroup, self).invoke(ctx)
+ 
+ 
+     def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:

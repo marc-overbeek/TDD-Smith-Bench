@@ -1,0 +1,15 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/base.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/base.py
+@@ -49,6 +49,12 @@
+     @catch_errors.setter
+     def catch_errors(self, catch_errors):
+         self._catch_errors = catch_errors
++
++    def _raise_on_missing_token(self, request):
++        """Raise error on missing token."""
++        if not request.token:
++            raise InvalidRequestError(request=request,
++                                      description='Missing token parameter.')
+ 
+     def _raise_on_missing_token(self, request):
+         """Raise error on missing token."""

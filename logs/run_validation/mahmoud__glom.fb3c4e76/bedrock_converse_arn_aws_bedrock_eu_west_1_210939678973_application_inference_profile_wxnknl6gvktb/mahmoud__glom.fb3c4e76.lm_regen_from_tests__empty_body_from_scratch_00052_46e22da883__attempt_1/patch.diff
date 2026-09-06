@@ -1,0 +1,16 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -674,6 +674,13 @@
+ 
+     def __len__(self):
+         return (len(self.path_t.__ops__) - 1) // 2
++
++    def __eq__(self, other):
++        if type(other) is Path:
++            return self.path_t.__ops__ == other.path_t.__ops__
++        elif type(other) is TType:
++            return self.path_t.__ops__ == other.__ops__
++        return False
+ 
+     def __eq__(self, other):
+         if type(other) is Path:

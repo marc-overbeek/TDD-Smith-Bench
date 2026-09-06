@@ -1,0 +1,36 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2576,7 +2576,32 @@
+         For this to work the speed of the first and last track point in a
+         segment needs to be known.
+         """
+-        def _add(interval: List[GPXTrackPoint], start: GPXTrackPoint, end: GPXTrackPoint, distances_ratios: List[float]) -> None:
++        def _add(interval: List[GPXTrackPoint], start: GPXTrackPoint, end: GPXTrackPoint, distances_ratios: List[float]) ->None:
++            if (not start) or (not end) or (not start.time) or (not end.time):
++                return
++            assert interval
++            assert len(interval) == len(distances_ratios)
++
++            time_dist_before = (interval[0].time_difference(start),
++                                interval[0].distance_3d(start))
++            time_dist_after = (interval[-1].time_difference(end),
++                               interval[-1].distance_3d(end))
++
++            # Assemble list of times and distance to neighbour points
++            times_dists: List[Tuple[Optional[float], Optional[float]]] = [
++                (point.time_difference(nextpoint), point.distance_3d(nextpoint))
++                for point, nextpoint in zip(interval, interval[1:])
++            ]
++            times_dists.insert(0, time_dist_before)
++            times_dists.append(time_dist_after)
++
++            for i, point in enumerate(interval):
++                time_left, dist_left = times_dists[i]
++                time_right, dist_right = times_dists[i+1]
++                if time_left and time_right and dist_left and dist_right:
++                    point.speed = (dist_left + dist_right) / (time_left + time_right)
++
++        def _add(interval: List[GPXTrackPoint], start: GPXTrackPoint, end: GPXTrackPoint, distances_ratios: List[float]) ->None:
+             if (not start) or (not end) or (not start.time) or (not end.time):
+                 return
+             assert interval

@@ -1,0 +1,15 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -243,6 +243,12 @@
+             lambda it, scope: chain.from_iterable(it))
+ 
+     def unique(self, key=T):
++        return self._add_op(
++            'unique',
++            (key,),
++            lambda it, scope: unique_iter(it, key=lambda t: scope[glom](t, key, scope)))
++
++    def unique(self, key=T):
+         """Return a new :class:`Iter()` spec which lazily filters out duplicate
+         values, i.e., only the first appearance of a value in a stream will
+         be yielded.

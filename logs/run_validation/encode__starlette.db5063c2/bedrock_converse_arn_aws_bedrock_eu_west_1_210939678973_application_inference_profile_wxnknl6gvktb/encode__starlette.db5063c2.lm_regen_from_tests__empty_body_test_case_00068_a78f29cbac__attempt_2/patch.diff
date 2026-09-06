@@ -1,0 +1,28 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -101,18 +101,15 @@
+     return getattr(endpoint, "__name__", endpoint.__class__.__name__)
+ 
+ 
+-def replace_params(
+-    path: str,
+-    param_convertors: dict[str, Convertor[typing.Any]],
+-    path_params: dict[str, str],
+-) -> tuple[str, dict[str, str]]:
+-    for key, value in list(path_params.items()):
+-        if "{" + key + "}" in path:
++def replace_params(path: str, param_convertors: dict[str, Convertor[typing.
++    Any]], path_params: dict[str, str]) ->tuple[str, dict[str, str]]:
++    for key, value in path_params.items():
++        if key in param_convertors:
+             convertor = param_convertors[key]
+             value = convertor.to_string(value)
+-            path = path.replace("{" + key + "}", value)
+-            path_params.pop(key)
+-    return path, path_params
++            path = path.replace("{%s}" % key, value)
++    remaining_params = {k: v for k, v in path_params.items() if k not in param_convertors}
++    return path, remaining_params
+ 
+ 
+ # Match parameters in URL paths, eg. '{param}', and '{param:int}'

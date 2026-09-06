@@ -1,0 +1,126 @@
+--- a/deepdiff/search.py
++++ b/deepdiff/search.py
+@@ -82,57 +82,11 @@
+ 
+     warning_num = 0
+ 
+-    def __init__(self,
+-                 obj,
+-                 item,
+-                 exclude_paths=SetOrdered(),
+-                 exclude_regex_paths=SetOrdered(),
+-                 exclude_types=SetOrdered(),
+-                 verbose_level=1,
+-                 case_sensitive=False,
+-                 match_string=False,
+-                 use_regexp=False,
+-                 strict_checking=True,
+-                 **kwargs):
+-        if kwargs:
+-            raise ValueError((
+-                "The following parameter(s) are not valid: %s\n"
+-                "The valid parameters are obj, item, exclude_paths, exclude_types,\n"
+-                "case_sensitive, match_string and verbose_level."
+-            ) % ', '.join(kwargs.keys()))
+-
+-        self.obj = obj
+-        self.case_sensitive = case_sensitive if isinstance(item, strings) else True
+-        item = item if self.case_sensitive else item.lower()
+-        self.exclude_paths = SetOrdered(exclude_paths)
+-        self.exclude_regex_paths = [re.compile(exclude_regex_path) for exclude_regex_path in exclude_regex_paths]
+-        self.exclude_types = SetOrdered(exclude_types)
+-        self.exclude_types_tuple = tuple(
+-            exclude_types)  # we need tuple for checking isinstance
+-        self.verbose_level = verbose_level
+-        self.update(
+-            matched_paths=self.__set_or_dict(),
+-            matched_values=self.__set_or_dict(),
+-            unprocessed=[])
+-        self.use_regexp = use_regexp
+-        if not strict_checking and isinstance(item, numbers):
+-            item = str(item)
+-        if self.use_regexp:
+-            try:
+-                item = re.compile(item)
+-            except TypeError as e:
+-                raise TypeError(f"The passed item of {item} is not usable for regex: {e}") from None
+-        self.strict_checking = strict_checking
+-
+-        # Cases where user wants to match exact string item
+-        self.match_string = match_string
+-
+-        self.__search(obj, item, parents_ids=frozenset({id(obj)}))
+-
+-        empty_keys = [k for k, v in self.items() if not v]
+-
+-        for k in empty_keys:
+-            del self[k]
++    def __init__(self, obj, item, exclude_paths=SetOrdered(),
++        exclude_regex_paths=SetOrdered(), exclude_types=SetOrdered(),
++        verbose_level=1, case_sensitive=False, match_string=False, use_regexp=
++        False, strict_checking=True, **kwargs):
++        pass
+ 
+     def __set_or_dict(self):
+         return dict_() if self.verbose_level >= 2 else SetOrdered()
+@@ -265,16 +219,7 @@
+                               (parent, i), parents_ids_added)
+ 
+     def __search_str(self, obj, item, parent):
+-        """Compare strings"""
+-        obj_text = obj if self.case_sensitive else obj.lower()
+-
+-        is_matched = False
+-        if self.use_regexp:
+-            is_matched = item.search(obj_text)
+-        elif (self.match_string and item == obj_text) or (not self.match_string and item in obj_text):
+-            is_matched = True
+-        if is_matched:
+-            self.__report(report_key='matched_values', key=parent, value=obj)
++        pass
+ 
+     def __search_numbers(self, obj, item, parent):
+         if (
+@@ -301,40 +246,8 @@
+             self.__search_obj(
+                 obj, item, parent, parents_ids, is_namedtuple=True)
+ 
+-    def __search(self, obj, item, parent="root", parents_ids=frozenset()):
+-        """The main search method"""
+-        if self.__skip_this(item, parent):
+-            return
+-
+-        elif isinstance(obj, strings) and isinstance(item, (strings, RE_COMPILED_TYPE)):
+-            self.__search_str(obj, item, parent)
+-
+-        elif isinstance(obj, strings) and isinstance(item, numbers):
+-            return
+-
+-        elif isinstance(obj, numbers):
+-            self.__search_numbers(obj, item, parent)
+-
+-        elif isinstance(obj, MutableMapping):
+-            self.__search_dict(obj, item, parent, parents_ids)
+-
+-        elif isinstance(obj, tuple):
+-            self.__search_tuple(obj, item, parent, parents_ids)
+-
+-        elif isinstance(obj, (set, frozenset)):
+-            if self.warning_num < 10:
+-                logger.warning(
+-                    "Set item detected in the path."
+-                    "'set' objects do NOT support indexing. But DeepSearch will still report a path."
+-                )
+-                self.warning_num += 1
+-            self.__search_iterable(obj, item, parent, parents_ids)
+-
+-        elif isinstance(obj, Iterable) and not isinstance(obj, strings):
+-            self.__search_iterable(obj, item, parent, parents_ids)
+-
+-        else:
+-            self.__search_obj(obj, item, parent, parents_ids)
++    def __search(self, obj, item, parent='root', parents_ids=frozenset()):
++        pass
+ 
+ 
+ class grep:

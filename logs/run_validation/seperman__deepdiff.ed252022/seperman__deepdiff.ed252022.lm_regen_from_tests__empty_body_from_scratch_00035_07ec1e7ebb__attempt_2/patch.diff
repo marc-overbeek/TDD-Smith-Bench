@@ -1,0 +1,130 @@
+--- a/deepdiff/path.py
++++ b/deepdiff/path.py
+@@ -40,79 +40,59 @@
+ 
+ 
+ @lru_cache(maxsize=1024 * 128)
++result = parse_path("root[1][2]['age']")
++assert [1, 2, 'age'] == result
++
++@lru_cache(maxsize=1024 * 128)
+ def _path_to_elements(path, root_element=DEFAULT_FIRST_ELEMENT):
+-    """
+-    Given a path, it extracts the elements that form the path and their relevant most likely retrieval action.
+-
+-        >>> from deepdiff import _path_to_elements
+-        >>> path = "root[4.3].b['a3']"
+-        >>> _path_to_elements(path, root_element=None)
+-        [(4.3, 'GET'), ('b', 'GETATTR'), ('a3', 'GET')]
+-    """
+-    if isinstance(path, (tuple, list)):
+-        return path
+     elements = []
+     if root_element:
+         elements.append(root_element)
+-    elem = ''
+-    inside = False
+-    prev_char = None
+-    path = path[4:]  # removing "root from the beginning"
+-    brackets = []
+-    inside_quotes = False
+-    quote_used = ''
+-    for char in path:
+-        if prev_char == '𝆺𝅥𝅯':
+-            elem += char
+-        elif char in {'"', "'"}:
+-            elem += char
+-            # If we are inside and the quote is not what we expected, the quote is not closing
+-            if not(inside_quotes and quote_used != char):
+-                inside_quotes = not inside_quotes
+-                if inside_quotes:
+-                    quote_used = char
+-                else:
+-                    _add_to_elements(elements, elem, inside)
+-                    elem = ''
+-                    quote_used = ''
+-        elif inside_quotes:
+-            elem += char
+-        elif char == '[':
+-            if inside == '.':
+-                _add_to_elements(elements, elem, inside)
+-                inside = '['
+-                elem = ''
+-            # we are already inside. The bracket is a part of the word.
+-            elif inside == '[':
+-                elem += char
+-            else:
+-                inside = '['
+-                brackets.append('[')
+-                elem = ''
+-        elif char == '.':
+-            if inside == '[':
+-                elem += char
+-            elif inside == '.':
+-                _add_to_elements(elements, elem, inside)
+-                elem = ''
+-            else:
+-                inside = '.'
+-                elem = ''
+-        elif char == ']':
+-            if brackets and brackets[-1] == '[':
+-                brackets.pop()
+-            if brackets:
+-                elem += char
+-            else:
+-                _add_to_elements(elements, elem, inside)
+-                elem = ''
+-                inside = False
++    
++    if not path or path == 'root':
++        return elements
++    
++    # Remove 'root' prefix if present
++    if path.startswith('root'):
++        path = path[4:]
++    
++    if not path:
++        return elements
++    
++    i = 0
++    while i < len(path):
++        if path[i] == '[':
++            # Find the closing bracket, handling quoted strings
++            j = i + 1
++            in_quote = False
++            quote_char = None
++            while j < len(path):
++                if path[j] in {'"', "'"} and (j == 0 or path[j-1] != '\\'):
++                    if not in_quote:
++                        in_quote = True
++                        quote_char = path[j]
++                    elif path[j] == quote_char:
++                        in_quote = False
++                        quote_char = None
++                elif path[j] == ']' and not in_quote:
++                    break
++                j += 1
++            
++            elem = path[i+1:j]
++            _add_to_elements(elements, elem, '[')
++            i = j + 1
++        elif path[i] == '.':
++            # Find the next bracket or dot or end
++            j = i + 1
++            while j < len(path) and path[j] not in {'.', '['}:
++                j += 1
++            elem = path[i+1:j]
++            _add_to_elements(elements, elem, '.')
++            i = j
+         else:
+-            elem += char
+-        prev_char = char
+-    if elem:
+-        _add_to_elements(elements, elem, inside)
+-    return tuple(elements)
++            i += 1
++    
++    return elements
+ 
+ 
+ def _get_nested_obj(obj, elements, next_element=None):

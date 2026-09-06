@@ -1,0 +1,117 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -96,63 +96,58 @@
+ 
+ 
+ def GROUP(target, spec, scope):
+-    """
+-    Group mode dispatcher; also sentinel for current mode = group
+-    """
+-    recurse = lambda spec: scope[glom](target, spec, scope)
+-    tree = scope[ACC_TREE]  # current accumulator support structure
+-    if callable(getattr(spec, "agg", None)):
+-        return spec.agg(target, tree)
+-    elif callable(spec):
+-        return spec(target)
+-    _spec_type = type(spec)
+-    if _spec_type not in (dict, list):
+-        raise BadSpec("Group mode expected dict, list, callable, or"
+-                      " aggregator, not: %r" % (spec,))
+-    _spec_id = id(spec)
+-    try:
+-        acc = tree[_spec_id]  # current accumulator
+-    except KeyError:
+-        acc = tree[_spec_id] = _spec_type()
+-    if _spec_type is dict:
+-        done = True
+-        for keyspec, valspec in spec.items():
+-            if tree.get(keyspec, None) is STOP:
++    # Get the accumulator tree from scope
++    acc_tree = scope[ACC_TREE]
++    
++    # Handle the case where we're dealing with a dictionary spec
++    if isinstance(spec, dict):
++        # Process each key-value pair in the spec
++        for key_spec, val_spec in spec.items():
++            # Get the key for this entry
++            key = scope[glom](target, key_spec, scope)
++            
++            # Skip if key is SKIP
++            if key is SKIP:
+                 continue
+-            key = recurse(keyspec)
+-            if key is SKIP:
+-                done = False  # SKIP means we still want more vals
+-                continue
+-            if key is STOP:
+-                tree[keyspec] = STOP
+-                continue
+-            if key not in acc:
+-                # TODO: guard against key == id(spec)
+-                tree[key] = {}
+-            scope[ACC_TREE] = tree[key]
+-            result = recurse(valspec)
+-            if result is STOP:
+-                tree[keyspec] = STOP
+-                continue
+-            done = False  # SKIP or returning a value means we still want more vals
+-            if result is not SKIP:
+-                acc[key] = result
+-        if done:
+-            return STOP
+-        return acc
+-    elif _spec_type is list:
+-        for valspec in spec:
+-            if type(valspec) is dict:
+-                # doesn't make sense due to arity mismatch. did you mean [Auto({...})] ?
+-                raise BadSpec('dicts within lists are not'
+-                              ' allowed while in Group mode: %r' % spec)
+-            result = recurse(valspec)
+-            if result is STOP:
+-                return STOP
+-            if result is not SKIP:
+-                acc.append(result)
+-        return acc
+-    raise ValueError(f"{_spec_type} not a valid spec type for Group mode")  # pragma: no cover
++                
++            # Create accumulator for this key if needed
++            if key not in acc_tree:
++                acc_tree[key] = {}
++            
++            # Set up the accumulator tree for this key
++            old_acc_tree = scope[ACC_TREE]
++            scope[ACC_TREE] = acc_tree[key]
++            
++            # Process the value spec
++            try:
++                result = scope[glom](target, val_spec, scope)
++                if result is not STOP:
++                    acc_tree[key] = result
++            finally:
++                scope[ACC_TREE] = old_acc_tree
++                
++        # Return the accumulated results
++        return acc_tree
++    
++    # Handle list spec
++    elif isinstance(spec, list):
++        # Process each item in the list spec
++        results = []
++        for item_spec in spec:
++            result = scope[glom](target, item_spec, scope)
++            if result is not STOP:
++                results.append(result)
++        return results
++    
++    # Handle regular spec (aggregation)
++    else:
++        # This is for aggregation specs like First, Sum, etc.
++        result = scope[glom](target, spec, scope)
++        if result is not STOP:
++            # For aggregation, we need to call the agg method
++            if hasattr(spec, 'agg'):
++                return spec.agg(target, acc_tree)
++        return result
+ 
+ 
+ class First:

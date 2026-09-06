@@ -1,0 +1,43 @@
+--- a/src/mistune/plugins/footnotes.py
++++ b/src/mistune/plugins/footnotes.py
+@@ -62,34 +62,14 @@
+     return m.end()
+ 
+ 
+-def parse_footnote_item(
+-    block: "BlockParser", key: str, index: int, state: BlockState
+-) -> Dict[str, Any]:
++def parse_footnote_item(block: 'BlockParser', key: str, index: int, state:
++    BlockState) ->Dict[str, Any]:
+     ref = state.env.get("ref_footnotes")
+     if not ref:
+-        raise ValueError("Missing 'ref_footnotes'.")
+-    text = ref[key]
+-
+-    lines = text.splitlines()
+-    second_line = None
+-    for second_line in lines[1:]:
+-        if second_line:
+-            break
+-
+-    if second_line:
+-      spaces = len(second_line) - len(second_line.lstrip())
+-      pattern = re.compile(r'^ {' + str(spaces) + r',}', flags=re.M)
+-      text = pattern.sub('', text).strip()
+-      items = _PARAGRAPH_SPLIT.split(text)
+-      children = [{'type': 'paragraph', 'text': s} for s in items]
+-    else:
+-      text = text.strip()
+-      children = [{'type': 'paragraph', 'text': text}]
+-    return {
+-        'type': 'footnote_item',
+-        'children': children,
+-        'attrs': {'key': key, 'index': index}
+-    }
++        return {'type': 'footnote_item', 'text': '', 'key': key, 'index': index}
++    
++    text = ref.get(key, '')
++    return {'type': 'footnote_item', 'text': text, 'key': key, 'index': index}
+ 
+ 
+ def md_footnotes_hook(

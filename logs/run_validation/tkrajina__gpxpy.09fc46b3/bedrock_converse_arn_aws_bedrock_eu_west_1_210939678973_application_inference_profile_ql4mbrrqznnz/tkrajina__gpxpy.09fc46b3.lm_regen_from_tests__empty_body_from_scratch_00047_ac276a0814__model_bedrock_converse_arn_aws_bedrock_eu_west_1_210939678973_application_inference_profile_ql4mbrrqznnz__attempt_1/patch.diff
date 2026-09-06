@@ -1,0 +1,13 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -69,7 +69,9 @@
+         return self.__deepcopy__()
+ 
+     def __deepcopy__(self, memodict: Optional[Dict[Any, Any]]={}) -> mod_datetime.tzinfo:
+-        return self.__class__(self.tzname(None))
++        result = SimpleTZ.__new__(SimpleTZ)
++        result.offset = self.offset
++        return result
+ 
+     def __repr__(self) -> str:
+         return f'SimpleTZ({self.tzname(None)!r})'

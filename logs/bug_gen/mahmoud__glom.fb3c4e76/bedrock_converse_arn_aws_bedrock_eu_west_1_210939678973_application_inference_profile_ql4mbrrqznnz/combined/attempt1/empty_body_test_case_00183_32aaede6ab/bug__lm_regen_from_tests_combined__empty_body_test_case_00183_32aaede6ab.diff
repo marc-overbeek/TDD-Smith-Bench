@@ -1,0 +1,58 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -58,7 +58,6 @@
+     def __init__(self, subspec=T, **kwargs):
+         self.subspec = subspec
+         self._iter_stack = kwargs.pop('_iter_stack', [])
+-
+         self.sentinel = kwargs.pop('sentinel', STOP)
+         if kwargs:
+             raise TypeError('unexpected keyword arguments: %r' % sorted(kwargs))
+@@ -75,7 +74,6 @@
+             fb = FunctionBuilder.from_func(meth)
+             fb.args = fb.args[1:]  # drop self
+             arg_names = fb.get_arg_names()
+-            # TODO: something fancier with defaults:
+             kwargs = []
+             if len(args) > 1 and arg_names:
+                 args, kwargs = (), zip(arg_names, args)
+@@ -105,9 +103,6 @@
+             if yld is SKIP:
+                 continue
+             elif yld is self.sentinel or yld is STOP:
+-                # NB: sentinel defaults to STOP so I was torn whether
+-                # to also check for STOP, and landed on the side of
+-                # never letting STOP through.
+                 return
+             yield yld
+         return
+@@ -259,19 +254,6 @@
+ 
+ 
+     def slice(self, *args):
+-        """Returns a new :class:`Iter()` spec which trims iterables in the
+-        same manner as :func:`itertools.islice`.
+-
+-        >>> target = [0, 1, 2, 3, 4, 5]
+-        >>> glom(target, Iter().slice(3).all())
+-        [0, 1, 2]
+-        >>> glom(target, Iter().slice(2, 4).all())
+-        [2, 3]
+-
+-        This method accepts only positional arguments.
+-        """
+-        # TODO: make a kwarg-compatible version of this (islice takes no kwargs)
+-        # TODO: also support slice syntax Iter()[::]
+         try:
+             islice([], *args)
+         except TypeError:
+@@ -279,9 +261,6 @@
+         return self._add_op('slice', args, lambda it, scope: islice(it, *args))
+ 
+     def limit(self, count):
+-        """A convenient alias for :meth:`~Iter.slice`, which takes a single
+-        argument, *count*, the max number of items to yield.
+-        """
+         return self._add_op('limit', (count,), lambda it, scope: islice(it, count))
+ 
+     def takewhile(self, key=T):

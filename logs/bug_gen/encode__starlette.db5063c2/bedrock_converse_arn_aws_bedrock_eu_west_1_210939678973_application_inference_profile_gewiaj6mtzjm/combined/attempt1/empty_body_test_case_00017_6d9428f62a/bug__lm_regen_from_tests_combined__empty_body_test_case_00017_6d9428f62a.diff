@@ -1,0 +1,58 @@
+--- a/starlette/applications.py
++++ b/starlette/applications.py
+@@ -111,8 +111,8 @@
+             self.middleware_stack = self.build_middleware_stack()
+         await self.middleware_stack(scope, receive, send)
+ 
+-    def on_event(self, event_type: str) -> typing.Callable:  # type: ignore[type-arg]
+-        return self.router.on_event(event_type)  # pragma: no cover
++    def on_event(self, event_type: str) ->typing.Callable:
++        return self.router.on_event(event_type)
+ 
+     def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:
+         self.router.mount(path, app=app, name=name)  # pragma: no cover
+@@ -162,7 +162,8 @@
+     ) -> None:  # pragma: no cover
+         self.router.add_websocket_route(path, route, name=name)
+ 
+-    def exception_handler(self, exc_class_or_status_code: int | type[Exception]) -> typing.Callable:  # type: ignore[type-arg]
++    def exception_handler(self, exc_class_or_status_code: (int | type[Exception])
++        ) ->typing.Callable:
+         warnings.warn(
+             "The `exception_handler` decorator is deprecated, and will be removed in version 1.0.0. "
+             "Refer to https://www.starlette.io/exceptions/ for the recommended approach.",
+@@ -175,13 +176,8 @@
+ 
+         return decorator
+ 
+-    def route(
+-        self,
+-        path: str,
+-        methods: list[str] | None = None,
+-        name: str | None = None,
+-        include_in_schema: bool = True,
+-    ) -> typing.Callable:  # type: ignore[type-arg]
++    def route(self, path: str, methods: (list[str] | None)=None, name: (str |
++        None)=None, include_in_schema: bool=True) ->typing.Callable:
+         """
+         We no longer document this decorator style API, and its usage is discouraged.
+         Instead you should use the following approach:
+@@ -207,7 +203,8 @@
+ 
+         return decorator
+ 
+-    def websocket_route(self, path: str, name: str | None = None) -> typing.Callable:  # type: ignore[type-arg]
++    def websocket_route(self, path: str, name: (str | None)=None
++        ) ->typing.Callable:
+         """
+         We no longer document this decorator style API, and its usage is discouraged.
+         Instead you should use the following approach:
+@@ -227,7 +224,7 @@
+ 
+         return decorator
+ 
+-    def middleware(self, middleware_type: str) -> typing.Callable:  # type: ignore[type-arg]
++    def middleware(self, middleware_type: str) ->typing.Callable:
+         """
+         We no longer document this decorator style API, and its usage is discouraged.
+         Instead you should use the following approach:

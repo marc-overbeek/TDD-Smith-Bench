@@ -1,0 +1,15 @@
+--- a/deepdiff/lfucache.py
++++ b/deepdiff/lfucache.py
+@@ -137,10 +137,12 @@
+         with self.lock:
+             if key in self.cache:
+                 cache_node = self.cache[key]
++                freq_node = cache_node.freq_node
+                 if report_type:
+                     cache_node.content[report_type].add(value)
+                 else:
+                     cache_node.content = value
++                self.move_forward(cache_node, freq_node)
+             else:
+                 if len(self.cache) >= self.capacity:
+                     self.dump_cache()

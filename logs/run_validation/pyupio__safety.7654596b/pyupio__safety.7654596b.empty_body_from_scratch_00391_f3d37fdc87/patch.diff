@@ -1,0 +1,139 @@
+--- a/safety/alerts/github.py
++++ b/safety/alerts/github.py
+@@ -289,132 +289,7 @@
+ @click.option('--base-url', help='Optional custom Base URL, if you\'re using GitHub enterprise', default=None)
+ @click.pass_obj
+ @utils.require_files_report # TODO: For now, it can be removed in the future to support env scans.
+-def github_issue(obj: Any, repo: str, token: str, base_url: Optional[str]) -> None:
+-    """
+-    Create a GitHub Issue for any vulnerabilities found using PyUp's remediation data.
+-
+-    Normally, this is run by a GitHub action. If you're running this manually, ensure that your local repo is up to date and on HEAD - otherwise you'll see strange results.
+-
+-    Args:
+-        obj (Any): The Click context object containing report data.
+-        repo (str): The GitHub repository path.
+-        token (str): The GitHub Access Token.
+-        base_url (Optional[str]): Custom base URL for GitHub Enterprise, if applicable.
+-    """
+-    LOG.info(f'github_issue')
+-
+-    if pygithub is None:
+-        click.secho("pygithub is not installed. Did you install Safety with GitHub support? Try pip install safety[github]", fg='red')
+-        sys.exit(1)
+-
+-    # Load alert configurations from the policy
+-    alert = obj.policy.get('alert', {}) or {}
+-    security = alert.get('security', {}) or {}
+-    config_issue = security.get('github-issue', {}) or {}
+-
+-    issue_prefix = config_issue.get('issue-prefix', '[PyUp] ')
+-    assignees = config_issue.get('assignees', [])
+-    labels = config_issue.get('labels', ['security'])
+-
+-    label_severity = config_issue.get('label-severity', True)
+-    ignore_cvss_severity_below = config_issue.get('ignore-cvss-severity-below', 0)
+-    ignore_cvss_unknown_severity = config_issue.get('ignore-cvss-unknown-severity', False)
+-
+-    # Authenticate with GitHub
+-    gh = pygithub.Github(token, **({"base_url": base_url} if base_url else {}))
+-    repo_name = repo
+-    repo = gh.get_repo(repo)
+-
+-    # Get all open issues for the repository
+-    issues = list(repo.get_issues(state='open', sort='created'))
+-    ISSUE_TITLE_REGEX = re.escape(issue_prefix) + r"Security Vulnerability in (.+)"
+-    req_remediations = list(itertools.chain.from_iterable(
+-        rem.get('requirements', {}).values() for pkg_name, rem in obj.report['remediations'].items()))
+-
+-    created = 0
+-
+-    # Iterate over all requirements files and process each remediation
+-    for name, contents in obj.requirements_files.items():
+-        raw_contents = contents
+-        contents = contents.decode('utf-8') # TODO - encoding?
+-        parsed_req_file = requirements.RequirementFile(name, contents)
+-
+-        for remediation in req_remediations:
+-            pkg: str = remediation['requirement']['name']
+-            pkg_canonical_name: str = canonicalize_name(pkg)
+-            analyzed_spec: str = remediation['requirement']['specifier']
+-
+-            # Skip remediations without a recommended version
+-            if remediation['recommended_version'] is None:
+-                LOG.debug(f"The GitHub Issue alerter only currently supports remediations that have a recommended_version: {pkg}")
+-                continue
+-
+-            # We have a single remediation that can have multiple vulnerabilities
+-            # Find all vulnerabilities associated with the remediation
+-            vulns = [x for x in obj.report['vulnerabilities'] if x['package_name'] == pkg_canonical_name and x['analyzed_requirement']['specifier'] == analyzed_spec]
+-
+-            # Skip if all vulnerabilities have unknown severity and the ignore flag is set
+-            if ignore_cvss_unknown_severity and all(x['severity'] is None for x in vulns):
+-                LOG.debug("All vulnerabilities have unknown severity, and ignore_cvss_unknown_severity is set.")
+-                continue
+-
+-            highest_base_score = 0
+-            for vuln in vulns:
+-                if vuln['severity'] is not None:
+-                    highest_base_score = max(highest_base_score, (vuln['severity'].get('cvssv3', {}) or {}).get('base_score', 10))
+-
+-            # Skip if none of the vulnerabilities meet the severity threshold
+-            if ignore_cvss_severity_below:
+-                at_least_one_match = False
+-                for vuln in vulns:
+-                    # Consider a None severity as a match, since it's controlled by a different flag
+-                    # If we can't find a base_score but we have severity data, assume it's critical for now.
+-                    if vuln['severity'] is None or (vuln['severity'].get('cvssv3', {}) or {}).get('base_score', 10) >= ignore_cvss_severity_below:
+-                        at_least_one_match = True
+-                        break
+-
+-                if not at_least_one_match:
+-                    LOG.debug(f"None of the vulnerabilities found have a score greater than or equal to the ignore_cvss_severity_below of {ignore_cvss_severity_below}")
+-                    continue
+-
+-            for parsed_req in parsed_req_file.requirements:
+-                specs = SpecifierSet('>=0') if parsed_req.specs == SpecifierSet('') else parsed_req.specs
+-                if canonicalize_name(parsed_req.name) == pkg_canonical_name and str(specs) == analyzed_spec:
+-                    skip = False
+-                    for issue in issues:
+-                        match = re.match(ISSUE_TITLE_REGEX, issue.title)
+-                        if match:
+-                            group = match.group(1)
+-                            if group == f"{pkg}{analyzed_spec}" or group == f"{pkg_canonical_name}{analyzed_spec}":
+-                                skip = True
+-                                break
+-
+-                    # For now, we just skip issues if they already exist - we don't try and update them.
+-                    # Skip if an issue already exists for this remediation
+-                    if skip:
+-                        LOG.debug(
+-                            f"An issue already exists for {pkg}{analyzed_spec} - skipping")
+-                        continue
+-
+-                    # Create a new GitHub issue
+-                    pr = repo.create_issue(title=issue_prefix + utils.generate_issue_title(pkg, remediation), body=utils.generate_issue_body(pkg, remediation, vulns, api_key=obj.key))
+-                    created += 1
+-                    LOG.debug(f"Created issue to update {pkg}")
+-
+-                    # Add assignees and labels to the issue
+-                    for assignee in assignees:
+-                        pr.add_to_assignees(assignee)
+-
+-                    for label in labels:
+-                        pr.add_to_labels(label)
+-
+-                    if label_severity:
+-                        score_as_label = utils.cvss3_score_to_label(highest_base_score)
+-                        if score_as_label:
+-                            pr.add_to_labels(score_as_label)
+-
+-    if created:
+-        click.secho(f'Safety successfully created {created} new GitHub Issue{"s" if created > 1 else ""} for repo {repo_name}')
+-    else:
+-        click.secho('No issues created; please run the command with debug mode for more information.')
+-
++def github_issue(obj: Any, repo: str, token: str, base_url: Optional[str]
++    ) ->None:
++    pass
++

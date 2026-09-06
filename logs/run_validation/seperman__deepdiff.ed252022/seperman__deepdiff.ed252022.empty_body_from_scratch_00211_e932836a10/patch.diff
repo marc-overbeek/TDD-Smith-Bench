@@ -1,0 +1,46 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -442,40 +442,9 @@
+             local_tree=local_tree,
+         )
+ 
+-    def _diff_obj(self, level, parents_ids=frozenset(), is_namedtuple=False, local_tree=None, is_pydantic_object=False):
+-        """Difference of 2 objects"""
+-        processing_error = False
+-        try:
+-            if is_namedtuple:
+-                t1 = level.t1._asdict()
+-                t2 = level.t2._asdict()
+-            elif is_pydantic_object:
+-                t1 = detailed__dict__(level.t1, ignore_private_variables=self.ignore_private_variables, ignore_keys=model_fields_set)
+-                t2 = detailed__dict__(level.t2, ignore_private_variables=self.ignore_private_variables, ignore_keys=model_fields_set)
+-            elif all('__dict__' in dir(t) for t in level):
+-                t1 = detailed__dict__(level.t1, ignore_private_variables=self.ignore_private_variables)
+-                t2 = detailed__dict__(level.t2, ignore_private_variables=self.ignore_private_variables)
+-            elif all('__slots__' in dir(t) for t in level):
+-                t1 = self._dict_from_slots(level.t1)
+-                t2 = self._dict_from_slots(level.t2)
+-            else:
+-                t1 = {k: v for k, v in getmembers(level.t1) if not callable(v)}
+-                t2 = {k: v for k, v in getmembers(level.t2) if not callable(v)}
+-        except AttributeError:
+-            processing_error = True
+-        if processing_error is True:
+-            self._report_result('unprocessed', level, local_tree=local_tree)
+-            return
+-
+-        self._diff_dict(
+-            level,
+-            parents_ids,
+-            print_as_attribute=True,
+-            override=True,
+-            override_t1=t1,
+-            override_t2=t2,
+-            local_tree=local_tree,
+-        )
++    def _diff_obj(self, level, parents_ids=frozenset(), is_namedtuple=False,
++        local_tree=None, is_pydantic_object=False):
++        pass
+ 
+     def _skip_this(self, level):
+         """

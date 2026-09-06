@@ -1,0 +1,44 @@
+--- a/oauthlib/openid/connect/core/grant_types/dispatchers.py
++++ b/oauthlib/openid/connect/core/grant_types/dispatchers.py
+@@ -29,8 +29,39 @@
+         return handler
+ 
+     def create_authorization_response(self, request, token_handler):
+-        """Read scope and route to the designated handler."""
+-        return self._handler_for_request(request).create_authorization_response(request, token_handler)
++        """Create authorization response with claims handling."""
++        from oauthlib.common import urlencode
++        from urllib.parse import parse_qs
++        import json
++    
++        # Check if claims parameter exists and is valid JSON
++        if hasattr(request, 'uri') and request.uri:
++            # Parse the URI to extract query parameters
++            from urllib.parse import urlparse
++            parsed_url = urlparse(request.uri)
++            query_params = parse_qs(parsed_url.query)
++        
++            if 'claims' in query_params:
++                claims_param = query_params['claims'][0]
++                try:
++                    # Decode URL-encoded claims
++                    import urllib.parse
++                    decoded_claims = urllib.parse.unquote(claims_param)
++                    # Parse JSON claims
++                    claims = json.loads(decoded_claims)
++                    # Store claims for later use
++                    self.claims_from_auth_code_request = claims
++                except (ValueError, TypeError):
++                    # Return error for malformed claims
++                    error_response = {
++                        'error': 'invalid_request',
++                        'error_description': 'Malformed claims parameter'
++                    }
++                    return {}, json.dumps(error_response), 400
++    
++        # Call the parent implementation or continue with normal flow
++        # Since this is a base class method, we'll assume it calls the appropriate handler
++        return super().create_authorization_response(request, token_handler)
+ 
+     def validate_authorization_request(self, request):
+         """Read scope and route to the designated handler."""

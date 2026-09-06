@@ -1,0 +1,67 @@
+--- a/oauthlib/oauth1/rfc5849/parameters.py
++++ b/oauthlib/oauth1/rfc5849/parameters.py
+@@ -86,24 +86,24 @@
+ 
+ 
+ def _append_params(oauth_params, params):
+-    """Append OAuth params to an existing set of parameters.
+-
+-    Both params and oauth_params is must be lists of 2-tuples.
+-
+-    Per `section 3.5.2`_ and `3.5.3`_ of the spec.
+-
+-    .. _`section 3.5.2`: https://tools.ietf.org/html/rfc5849#section-3.5.2
+-    .. _`3.5.3`: https://tools.ietf.org/html/rfc5849#section-3.5.3
+-
+-    """
+-    merged = list(params)
+-    merged.extend(oauth_params)
+-    # The request URI / entity-body MAY include other request-specific
+-    # parameters, in which case, the protocol parameters SHOULD be appended
+-    # following the request-specific parameters, properly separated by an "&"
+-    # character (ASCII code 38)
+-    merged.sort(key=lambda i: i[0].startswith('oauth_'))
+-    return merged
++    if isinstance(params, str):
++        params = extract_params(params)
++    
++    non_oauth = []
++    oauth = []
++    
++    for key, value in params:
++        if key.startswith('oauth_'):
++            oauth.append((key, value))
++        else:
++            non_oauth.append((key, value))
++    
++    for key, value in oauth_params:
++        oauth.append((key, value))
++    
++    oauth.sort()
++    
++    return non_oauth + oauth
+ 
+ 
+ def prepare_form_encoded_body(oauth_params, body):
+@@ -119,15 +119,9 @@
+ 
+ 
+ def prepare_request_uri_query(oauth_params, uri):
+-    """Prepare the Request URI Query.
+-
+-    Per `section 3.5.3`_ of the spec.
+-
+-    .. _`section 3.5.3`: https://tools.ietf.org/html/rfc5849#section-3.5.3
+-
+-    """
+-    # append OAuth params to the existing set of query components
+-    sch, net, path, par, query, fra = urlparse(uri)
+-    query = urlencode(
+-        _append_params(oauth_params, extract_params(query) or []))
+-    return urlunparse((sch, net, path, par, query, fra))
++    parsed = urlparse(uri)
++    query_params = extract_params(parsed.query)
++    all_params = _append_params(oauth_params, query_params)
++    new_query = urlencode(all_params)
++    return urlunparse((parsed.scheme, parsed.netloc, parsed.path, 
++                       parsed.params, new_query, parsed.fragment))

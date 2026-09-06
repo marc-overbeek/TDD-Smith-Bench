@@ -1,0 +1,48 @@
+--- a/monkeytype/db/sqlite.py
++++ b/monkeytype/db/sqlite.py
+@@ -47,30 +47,24 @@
+ ParameterizedQuery = Tuple[str, List[QueryValue]]
+ 
+ 
+-def make_query(
+-    table: str, module: str, qualname: Optional[str], limit: int
+-) -> ParameterizedQuery:
+-    raw_query = """
+-    SELECT
+-        module, qualname, arg_types, return_type, yield_type
+-    FROM {table}
+-    WHERE
+-        module == ?
+-    """.format(
+-        table=table
+-    )
++def make_query(table: str, module: str, qualname: Optional[str], limit: int
++    ) ->ParameterizedQuery:
++    sql = (
++        "SELECT module, qualname, arg_types, return_type, yield_type "
++        "FROM {table} "
++        "WHERE module = ? "
++    ).format(table=table)
+     values: List[QueryValue] = [module]
++    
+     if qualname is not None:
+-        raw_query += " AND qualname LIKE ? || '%'"
+-        values.append(qualname)
+-    raw_query += """
+-    GROUP BY
+-        module, qualname, arg_types, return_type, yield_type
+-    ORDER BY date(created_at) DESC
+-    LIMIT ?
+-    """
++        sql += "AND qualname LIKE ? "
++        values.append(qualname + '%')
++    
++    sql += "GROUP BY module, qualname, arg_types, return_type, yield_type "
++    sql += "LIMIT ?"
+     values.append(limit)
+-    return raw_query, values
++    
++    return sql, values
+ 
+ 
+ class SQLiteStore(CallTraceStore):

@@ -1,0 +1,59 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -607,23 +607,40 @@
+     JSON_CONVERTOR[PydanticBaseModel] = lambda x: x.dict()
+ 
+ 
++def test_reversed_list(self):
++    items = reversed([1, 2, 3])
++    serialized = json_dumps(items)
++    serialized2 = json_dumps(items)
++    assert '[3,2,1]' == serialized
++    assert '[3,2,1]' == serialized2, 'We should have copied the original list. If this returns empty, it means we exhausted the original list.'
++
+ def json_convertor_default(default_mapping=None):
+-    if default_mapping:
+-        _convertor_mapping = JSON_CONVERTOR.copy()
+-        _convertor_mapping.update(default_mapping)
+-    else:
+-        _convertor_mapping = JSON_CONVERTOR
+-
+-    def _convertor(obj):
+-        for original_type, convert_to in _convertor_mapping.items():
+-            if isinstance(obj, original_type):
+-                return convert_to(obj)
+-        # This is to handle reverse() which creates a generator of type list_reverseiterator
+-        if obj.__class__.__name__ == 'list_reverseiterator':
+-            return list(copy(obj))
+-        raise TypeError('We do not know how to convert {} of type {} for json serialization. Please pass the default_mapping parameter with proper mapping of the object to a basic python type.'.format(obj, type(obj)))
+-
+-    return _convertor
++    def convertor(obj):
++        # Check for reversed iterables first (before anything else)
++        if isinstance(obj, reversed):
++            return list(obj)
++        
++        # Check custom default_mapping
++        if default_mapping:
++            obj_type = type(obj)
++            if obj_type in default_mapping:
++                return default_mapping[obj_type](obj)
++        
++        # Check JSON_CONVERTOR by exact type
++        obj_type = type(obj)
++        if obj_type in JSON_CONVERTOR:
++            return JSON_CONVERTOR[obj_type](obj)
++        
++        # Check base classes in JSON_CONVERTOR
++        for base_type, converter in JSON_CONVERTOR.items():
++            if isinstance(obj, base_type):
++                return converter(obj)
++        
++        # If nothing works, raise TypeError
++        raise TypeError(f'We do not know how to convert {obj} of type {type(obj)} for json serialization. '
++                       f'Please pass the default_mapping parameter with proper mapping of the object to a basic python type.')
++    
++    return convertor
+ 
+ 
+ class JSONDecoder(json.JSONDecoder):

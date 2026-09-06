@@ -1,0 +1,28 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -584,6 +584,25 @@
+ 
+ 
+ class GridSampleTransform(Transform):
++    grid_2d = np.stack(np.meshgrid(np.linspace(-1, 1, 10), np.linspace(-1, 1, 10)), axis=2).astype(float)
++    grid = np.tile(grid_2d[None, :, :, :], [8, 1, 1, 1])
++    transformer = T.GridSampleTransform(grid, interp)
++
++    def apply_image(self, img: np.ndarray, interp: str = None) -> np.ndarray:
++        interp_method = interp if interp is not None else self.interp
++        float_tensor = torch.nn.functional.grid_sample(
++            to_float_tensor(img),
++            torch.from_numpy(self.grid),
++            mode=interp_method,
++            padding_mode="border",
++            align_corners=False,
++        )
++        return to_numpy(float_tensor, img.shape, img.dtype)
++
++    def __init__(self, ...):
++        super().__init__()
++        self._set_attributes(locals())
++
+     def __init__(self, grid: np.ndarray, interp: str):
+         """
+         Args:

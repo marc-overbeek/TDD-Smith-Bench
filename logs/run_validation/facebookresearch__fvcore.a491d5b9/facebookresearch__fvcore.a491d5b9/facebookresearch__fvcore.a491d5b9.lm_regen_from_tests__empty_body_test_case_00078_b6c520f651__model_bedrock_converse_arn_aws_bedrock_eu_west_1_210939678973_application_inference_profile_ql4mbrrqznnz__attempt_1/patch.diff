@@ -1,0 +1,74 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -151,34 +151,7 @@
+ 
+     @classmethod
+     def register_type(cls, data_type: str, func: Optional[Callable] = None):
+-        """
+-        Register the given function as a handler that this transform will use
+-        for a specific data type.
+-
+-        Args:
+-            data_type (str): the name of the data type (e.g., box)
+-            func (callable): takes a transform and a data, returns the
+-                transformed data.
+-
+-        Examples:
+-
+-        .. code-block:: python
+-
+-            # call it directly
+-            def func(flip_transform, voxel_data):
+-                return transformed_voxel_data
+-            HFlipTransform.register_type("voxel", func)
+-
+-            # or, use it as a decorator
+-            @HFlipTransform.register_type("voxel")
+-            def func(flip_transform, voxel_data):
+-                return transformed_voxel_data
+-
+-            # ...
+-            transform = HFlipTransform(...)
+-            transform.apply_voxel(voxel_data)  # func will be called
+-        """
+-        if func is None:  # the decorator style
++        if func is None:
+ 
+             def wrapper(decorated_func):
+                 assert decorated_func is not None
+@@ -259,14 +232,7 @@
+     """
+ 
+     def __init__(self, transforms: List[Transform]):
+-        """
+-        Args:
+-            transforms (list[Transform]): list of transforms to perform.
+-        """
+         super().__init__()
+-        # "Flatten" the list so that TransformList do not recursively contain TransfomList.
+-        # The additional hierarchy does not change semantic of the class, but cause extra
+-        # complexities in e.g, telling whether a TransformList contains certain Transform
+         tfms_flatten = []
+         for t in transforms:
+             assert isinstance(
+@@ -279,20 +245,11 @@
+         self.transforms = tfms_flatten
+ 
+     def _apply(self, x: _T, meth: str) -> _T:
+-        """
+-        Apply the transforms on the input.
+-        Args:
+-            x: input to apply the transform operations.
+-            meth (str): meth.
+-        Returns:
+-            x: after apply the transformation.
+-        """
+         for t in self.transforms:
+             x = getattr(t, meth)(x)
+         return x
+ 
+     def __getattribute__(self, name: str):
+-        # use __getattribute__ to win priority over any registered dtypes
+         if name.startswith("apply_"):
+             return lambda x: self._apply(x, name)
+         return super().__getattribute__(name)

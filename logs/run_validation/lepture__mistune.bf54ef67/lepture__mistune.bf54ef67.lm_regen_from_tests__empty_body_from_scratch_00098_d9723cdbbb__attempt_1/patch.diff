@@ -1,0 +1,84 @@
+--- a/src/mistune/toc.py
++++ b/src/mistune/toc.py
+@@ -66,59 +66,25 @@
+     return attrs['level'], attrs['id'], text
+ 
+ 
+-def render_toc_ul(toc: Iterable[Tuple[int, str, str]]) -> str:
+-    """Render a <ul> table of content HTML. The param "toc" should
+-    be formatted into this structure::
+-
+-        [
+-          (level, id, text),
+-        ]
+-
+-    For example::
+-
+-        [
+-          (1, 'toc-intro', 'Introduction'),
+-          (2, 'toc-install', 'Install'),
+-          (2, 'toc-upgrade', 'Upgrade'),
+-          (1, 'toc-license', 'License'),
+-        ]
+-    """
+-    if not toc:
+-        return ''
+-
+-    s = '<ul>\n'
+-    levels: List[int] = []
+-    for level, k, text in toc:
+-        item = '<a href="#{}">{}</a>'.format(k, text)
+-        if not levels:
+-            s += '<li>' + item
+-            levels.append(level)
+-        elif level == levels[-1]:
+-            s += '</li>\n<li>' + item
+-        elif level > levels[-1]:
+-            s += '\n<ul>\n<li>' + item
+-            levels.append(level)
+-        else:
+-            levels.pop()
+-            while levels:
+-                last_level = levels.pop()
+-                if level == last_level:
+-                    s += '</li>\n</ul>\n</li>\n<li>' + item
+-                    levels.append(level)
+-                    break
+-                elif level > last_level:
+-                    s += '</li>\n<li>' + item
+-                    levels.append(last_level)
+-                    levels.append(level)
+-                    break
+-                else:
+-                    s += '</li>\n</ul>\n'
+-            else:
+-                levels.append(level)
+-                s += '</li>\n<li>' + item
+-
+-    while len(levels) > 1:
+-        s += '</li>\n</ul>\n'
+-        levels.pop()
+-
+-    return s + '</li>\n</ul>\n'
++def render_toc_ul(toc: Iterable[Tuple[int, str, str]]) ->str:
++    s = ''
++    last_level = 0
++    
++    for level, heading_id, text in toc:
++        if level > last_level:
++            # Open new nested lists
++            for _ in range(level - last_level):
++                s += '<ul>\n'
++        elif level < last_level:
++            # Close nested lists
++            for _ in range(last_level - level):
++                s += '</ul>\n'
++        
++        s += '<li><a href="#' + heading_id + '">' + text + '</a></li>\n'
++        last_level = level
++    
++    # Close remaining open lists
++    for _ in range(last_level):
++        s += '</ul>\n'
++    
++    return s

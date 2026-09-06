@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef dropwhile(self, key=T):\n    \"\"\"Returns a new :class:`Iter()` spec which drops stream items until\n    *key* becomes falsy.\n\n    >>> glom([0, 0, 3, 2, 0], Iter().dropwhile(lambda t: t < 1).all())\n    [3, 2, 0]\n\n    Note that while similar to :meth:`Iter.filter()`, the filter\n    only applies to the beginning of the stream. In a way,\n    :meth:`Iter.dropwhile` can be thought of as\n    :meth:`~str.lstrip()` for streams. See\n    :func:`itertools.dropwhile` for more details.\n\n    \"\"\"\n\n    return self._add_op(\n        'dropwhile',\n        (key,),\n        lambda it, scope: dropwhile(\n            lambda t: scope[glom](t, key, scope), it))\n```",
+  "rewrite": "def dropwhile(self, key=T):\n    \"\"\"Returns a new :class:`Iter()` spec which drops stream items until\n    *key* becomes falsy.\n\n    >>> glom([0, 0, 3, 2, 0], Iter().dropwhile(lambda t: t < 1).all())\n    [3, 2, 0]\n\n    Note that while similar to :meth:`Iter.filter()`, the filter\n    only applies to the beginning of the stream. In a way,\n    :meth:`Iter.dropwhile` can be thought of as\n    :meth:`~str.lstrip()` for streams. See\n    :func:`itertools.dropwhile` for more details.\n\n    \"\"\"\n\n    return self._add_op(\n        'dropwhile',\n        (key,),\n        lambda it, scope: dropwhile(\n            lambda t: scope[glom](t, key, scope), it))\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

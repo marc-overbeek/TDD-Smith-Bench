@@ -1,0 +1,38 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -264,13 +264,28 @@
+     print(output, file=file)
+ 
+ 
+-def list_modules_handler(
+-    args: argparse.Namespace, stdout: IO[str], stderr: IO[str]
+-) -> None:
+-    output, file = None, stdout
+-    modules = args.config.trace_store().list_modules()
+-    output = "\n".join(modules)
+-    print(output, file=file)
++def list_modules_handler(args: argparse.Namespace, stdout: IO[str], stderr:
++    IO[str]) ->None:
++    import os
++    from monkeytype.config import DefaultConfig
++    
++    db_path = os.environ.get(DefaultConfig.DB_PATH_VAR)
++    if not db_path:
++        return
++    
++    try:
++        from monkeytype.db import TypeStore
++        store = TypeStore(db_path)
++        modules = set()
++        for trace in store.all_traces():
++            modules.add(trace.funcname.split('.')[0])
++        
++        if modules:
++            print('\n'.join(sorted(modules)), file=stdout)
++        else:
++            print('', file=stdout)
++    except Exception:
++        print('', file=stdout)
+ 
+ 
+ def run_handler(args: argparse.Namespace, stdout: IO[str], stderr: IO[str]) -> None:

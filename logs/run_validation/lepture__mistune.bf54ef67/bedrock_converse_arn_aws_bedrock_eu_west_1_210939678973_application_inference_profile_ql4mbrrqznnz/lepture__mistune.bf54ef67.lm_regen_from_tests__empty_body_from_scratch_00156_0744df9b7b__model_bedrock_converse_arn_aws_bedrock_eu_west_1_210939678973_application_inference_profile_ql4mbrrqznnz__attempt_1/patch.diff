@@ -1,0 +1,75 @@
+--- a/src/mistune/plugins/def_list.py
++++ b/src/mistune/plugins/def_list.py
+@@ -44,42 +44,38 @@
+     return pos
+ 
+ 
+-def _parse_def_item(block: "BlockParser", m: Match[str]) -> Iterable[Dict[str, Any]]:
+-    head = m.group("def_list_head")
+-    for line in head.splitlines():
++def _parse_def_item(block: 'BlockParser', m: Match[str]) ->Iterable[Dict[
++    str, Any]]:
++    head = m.group('def_list_head')
++    # Parse each term (dt elements)
++    for term in head.strip().splitlines():
++        term = term.strip()
++        if term:
++            yield {
++                'type': 'def_list_head',
++                'children': [{'type': 'inline', 'raw': term}],
++            }
++
++    # Get the definition body (everything after the head)
++    body = m.group(0)[len(head):]
++
++    # Check if this is a loose list (has blank lines between items)
++    loose = bool(HAS_BLANK_LINE_RE.search(body))
++
++    # Split into individual definition items
++    # Each item starts with ': '
++    items = DD_START_RE.split(body)
++    for item in items:
++        item = item.strip('\n')
++        if not item:
++            continue
++        # Check if this particular item has blank lines (loose)
++        item_loose = loose or bool(HAS_BLANK_LINE_RE.search(item + '\n'))
++        children = _process_text(block, item, item_loose)
+         yield {
+-          'type': 'def_list_head',
+-          'text': line,
++            'type': 'def_list_item',
++            'children': children,
+         }
+-
+-    src = m.group(0)
+-    end = len(head)
+-
+-    m2 = DD_START_RE.search(src, end)
+-    assert m2 is not None
+-    start = m2.start()
+-    prev_blank_line = src[end:start] == '\n'
+-    while m2:
+-        m2 = DD_START_RE.search(src, start + 1)
+-        if not m2:
+-            break
+-
+-        end = m2.start()
+-        text = src[start:end].replace(':', ' ', 1)
+-        children = _process_text(block, text, prev_blank_line)
+-        prev_blank_line = bool(HAS_BLANK_LINE_RE.search(text))
+-        yield {
+-          'type': 'def_list_item',
+-          'children': children,
+-        }
+-        start = end
+-
+-    text = src[start:].replace(':', ' ', 1)
+-    children = _process_text(block, text, prev_blank_line)
+-    yield {
+-      'type': 'def_list_item',
+-      'children': children,
+-    }
+ 
+ 
+ def _process_text(block: "BlockParser", text: str, loose: bool) -> List[Any]:

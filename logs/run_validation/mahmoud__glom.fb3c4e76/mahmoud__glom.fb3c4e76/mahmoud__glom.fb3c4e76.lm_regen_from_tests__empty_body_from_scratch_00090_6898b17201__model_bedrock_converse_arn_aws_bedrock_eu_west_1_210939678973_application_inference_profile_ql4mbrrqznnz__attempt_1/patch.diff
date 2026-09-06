@@ -1,0 +1,18 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1455,6 +1455,15 @@
+         """how many times the result will be wrapped in extra lists"""
+         t_ops = self.__ops__[1::2]
+         return t_ops.count('x') + t_ops.count('X')
++
++    def __sub__(self, arg):
++        return _t_child(self, '-', arg)
++
++    def __mul__(self, arg):
++        return _t_child(self, '*', arg)
++
++    if op == '+':
++        cur = cur + arg
+ 
+     def __add__(self, arg):
+         return _t_child(self, '+', arg)

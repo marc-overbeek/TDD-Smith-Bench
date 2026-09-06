@@ -1,0 +1,25 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -521,8 +521,21 @@
+ 
+     __req__ = __eq__
+ 
++    def test_verify_symmetry_and_get_elem_and_compare_to_old_value(self):
++        """
++            Test a specific case where path was a list of elements (in the form of tuples)
++            and the item could not be found.
++            """
++        delta = Delta({}, bidirectional=True, raise_errors=True, log_errors=False)
++        with pytest.raises(DeltaError) as excinfo:
++            delta._get_elem_and_compare_to_old_value(obj={},
++                path_for_err_reporting=(('root', GETATTR),), expected_old_value
++                ='Expected Value', action=GET, elem='key')
++        assert VERIFICATION_MSG.format('root', 'Expected Value', 'not found',
++            "'key'") == str(excinfo.value)
++
+     def __repr__(self):
+-        return 'not found'
++        return str(self)
+ 
+     __str__ = __repr__
+ 

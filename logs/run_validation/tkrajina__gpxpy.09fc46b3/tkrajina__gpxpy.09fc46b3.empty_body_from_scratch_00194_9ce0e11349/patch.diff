@@ -1,0 +1,38 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2431,33 +2431,8 @@
+ 
+         return MinimumMaximum(min(elevations), max(elevations))
+ 
+-    def get_points_data(self, distance_2d: bool=False) -> List[PointData]:
+-        """
+-        Returns a list of tuples containing the actual point, its distance from the start,
+-        track_no, segment_no, and segment_point_no
+-        """
+-        distance_from_start = 0
+-        previous_point = None
+-
+-        # (point, distance_from_start) pairs:
+-        points = []
+-
+-        for track_no, track in enumerate(self.tracks):
+-            for segment_no, segment in enumerate(track.segments):
+-                for point_no, point in enumerate(segment.points):
+-                    if previous_point and point_no > 0:
+-                        if distance_2d:
+-                            distance = point.distance_2d(previous_point)
+-                        else:
+-                            distance = point.distance_3d(previous_point)
+-
+-                        distance_from_start += distance
+-
+-                    points.append(PointData(point, distance_from_start, track_no, segment_no, point_no))
+-
+-                    previous_point = point
+-
+-        return points
++    def get_points_data(self, distance_2d: bool=False) ->List[PointData]:
++        pass
+ 
+     def get_nearest_locations(self, location: mod_geo.Location, threshold_distance: float=0.01) -> List[NearestLocationData]:
+         """

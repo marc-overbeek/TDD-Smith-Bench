@@ -1,0 +1,20 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -552,13 +552,10 @@
+         self.extensions: List[Any] = []
+ 
+     def __repr__(self) -> str:
+-        parts = [f'{self.latitude}, {self.longitude}']
+-        for attribute in 'elevation', 'time', 'symbol', 'comment', 'horizontal_dilution', \
+-                'vertical_dilution', 'position_dilution', 'speed', 'name':
+-            value = getattr(self, attribute)
+-            if value is not None:
+-                parts.append(f'{attribute}={value!r}')
+-        return f'GPXTrackPoint({", ".join(parts)})'
++        return f'GPXTrackSegment(points=[{"..." if self.points else ""}])'
++
++    def __repr__(self) -> str:
++        return f'GPXTrackSegment(points=[{"..." if self.points else ""}])'
+ 
+     def adjust_time(self, delta: mod_datetime.timedelta) -> None:
+         """

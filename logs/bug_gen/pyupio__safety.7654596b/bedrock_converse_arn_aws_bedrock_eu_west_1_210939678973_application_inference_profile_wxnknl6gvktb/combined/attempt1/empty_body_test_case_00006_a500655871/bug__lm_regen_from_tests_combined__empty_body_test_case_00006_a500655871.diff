@@ -1,0 +1,162 @@
+--- a/safety/formatters/json.py
++++ b/safety/formatters/json.py
+@@ -13,51 +13,60 @@
+ LOG = logging.getLogger(__name__)
+ 
+ 
+-def build_json_report(announcements: List[Dict], vulnerabilities: List[Dict], remediations: Dict[str, Any],
+-                      packages: List[Any]) -> Dict[str, Any]:
+-    """
+-    Build a JSON report for vulnerabilities, remediations, and packages.
+-
+-    Args:
+-        announcements (List[Dict]): List of announcements.
+-        vulnerabilities (List[Dict]): List of vulnerabilities.
+-        remediations (Dict[str, Any]): Remediation data.
+-        packages (List[Any]): List of packages.
+-
+-    Returns:
+-        Dict[str, Any]: JSON report.
+-    """
+-    vulns_ignored = [vuln.to_dict() for vuln in vulnerabilities if vuln.ignored]
+-    vulns = [vuln.to_dict() for vuln in vulnerabilities if not vuln.ignored]
+-
+-    report = get_report_brief_info(as_dict=True, report_type=1, vulnerabilities_found=len(vulns),
+-                                   vulnerabilities_ignored=len(vulns_ignored),
+-                                   remediations_recommended=remediations)
+-
+-    if 'using_sentence' in report:
+-        del report['using_sentence']
+-
+-    remed = {}
+-    for k, v in remediations.items():
+-        if k not in remed:
+-            remed[k] = {'requirements': v}
+-
+-        remed[k]['current_version'] = None
+-        remed[k]['vulnerabilities_found'] = None
+-        remed[k]['recommended_version'] = None
+-        remed[k]['other_recommended_versions'] = []
+-        remed[k]['more_info_url'] = None
+-
+-    return {
+-        "report_meta": report,
+-        "scanned_packages": {p.name: p.to_dict(short_version=True) for p in packages},
+-        "affected_packages": {v.pkg.name: v.pkg.to_dict() for v in vulnerabilities},
+-        "announcements": [{'type': item.get('type'), 'message': item.get('message')} for item in
+-                          get_basic_announcements(announcements)],
+-        "vulnerabilities": vulns,
+-        "ignored_vulnerabilities": vulns_ignored,
+-        "remediations": remed
++def build_json_report(announcements: List[Dict], vulnerabilities: List[Dict], remediations: Dict[str, Any], packages: List[Any]) ->Dict[str, Any]:
++    report = get_report_brief_info(as_dict=True)
++    
++    scanned_packages = {}
++    for package in packages:
++        scanned_packages[package.name] = {
++            'name': package.name,
++            'version': package.version,
++            'requirements': [req.to_dict() for req in package.requirements]
++        }
++    
++    affected_packages = {}
++    for vuln in vulnerabilities:
++        pkg = vuln.get('pkg')
++        if pkg and pkg.name not in affected_packages:
++            affected_packages[pkg.name] = {
++                'name': pkg.name,
++                'version': pkg.version,
++                'requirements': [req.to_dict() for req in pkg.requirements],
++                'found': None,
++                'insecure_versions': pkg.insecure_versions,
++                'secure_versions': pkg.secure_versions,
++                'latest_version_without_known_vulnerabilities': pkg.latest_version_without_known_vulnerabilities,
++                'latest_version': pkg.latest_version,
++                'more_info_url': pkg.more_info_url
++            }
++    
++    remediations_data = {}
++    for package_name, remediation_info in remediations.items():
++        remediations_data[package_name] = {
++            'requirements': remediation_info.get('requirements', {}),
++            'current_version': remediation_info.get('current_version'),
++            'vulnerabilities_found': remediation_info.get('vulnerabilities_found'),
++            'recommended_version': remediation_info.get('recommended_version'),
++            'other_recommended_versions': remediation_info.get('other_recommended_versions', []),
++            'more_info_url': remediation_info.get('more_info_url')
++        }
++    
++    template = {
++        'report_meta': report,
++        'scanned_packages': scanned_packages,
++        'affected_packages': affected_packages,
++        'announcements': get_basic_announcements(announcements),
++        'vulnerabilities': vulnerabilities,
++        'ignored_vulnerabilities': [],
++        'remediations': remediations_data,
++        'remediations_results': {
++            'vulnerabilities_fixed': [],
++            'remediations_applied': {},
++            'remediations_skipped': {}
++        }
+     }
++    
++    return template
+ 
+ 
+ class JsonReport(FormatterAPI):
+@@ -65,32 +74,11 @@
+ 
+     VERSIONS = ("0.5", "1.1")
+ 
+-    def __init__(self, version="1.1", **kwargs):
+-        """
+-        Initialize JsonReport with the specified version.
++    def __init__(self, version='1.1', **kwargs):
++        super().__init__(**kwargs)
++        self.version: str = version if version in self.VERSIONS else '1.1'
+ 
+-        Args:
+-            version (str): Report version.
+-        """
+-        super().__init__(**kwargs)
+-        self.version: str = version if version in self.VERSIONS else "1.1"
+-
+-    def render_vulnerabilities(self, announcements: List[Dict], vulnerabilities: List[Dict],
+-                               remediations: Dict[str, Any], full: bool, packages: List[Any], fixes: Iterable = ()) -> str:
+-        """
+-        Render vulnerabilities in JSON format.
+-
+-        Args:
+-            announcements (List[Dict]): List of announcements.
+-            vulnerabilities (List[Dict]): List of vulnerabilities.
+-            remediations (Dict[str, Any]): Remediation data.
+-            full (bool): Flag indicating full output.
+-            packages (List[Any]): List of packages.
+-            fixes (Iterable, optional): Iterable of fixes.
+-
+-        Returns:
+-            str: Rendered JSON vulnerabilities report.
+-        """
++    def render_vulnerabilities(self, announcements: List[Dict], vulnerabilities: List[Dict], remediations: Dict[str, Any], full: bool, packages: List[Any], fixes: Iterable=()) ->str:
+         if self.version == '0.5':
+             return json_parser.dumps(VulnerabilitySchemaV05().dump(obj=vulnerabilities, many=True), indent=4)
+ 
+@@ -138,17 +126,6 @@
+         return json_parser.dumps({"announcements": get_basic_announcements(announcements)}, indent=4)
+ 
+     def __render_fixes(self, scan_template: Dict[str, Any], fixes: Iterable) -> Dict[str, Any]:
+-        """
+-        Render fixes and update the scan template with remediations information.
+-
+-        Args:
+-            scan_template (Dict[str, Any]): Initial scan template.
+-            fixes (Iterable): Iterable of fixes.
+-
+-        Returns:
+-            Dict[str, Any]: Updated scan template with remediations.
+-        """
+-
+         applied = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
+         skipped = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
+ 

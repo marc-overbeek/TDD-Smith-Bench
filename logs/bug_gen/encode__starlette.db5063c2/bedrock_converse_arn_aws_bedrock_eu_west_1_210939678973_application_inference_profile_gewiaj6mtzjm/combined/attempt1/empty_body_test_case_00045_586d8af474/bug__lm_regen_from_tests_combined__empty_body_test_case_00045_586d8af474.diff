@@ -1,0 +1,27 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -248,13 +248,8 @@
+ class ImmutableMultiDict(typing.Mapping[_KeyType, _CovariantValueType]):
+     _dict: dict[_KeyType, _CovariantValueType]
+ 
+-    def __init__(
+-        self,
+-        *args: ImmutableMultiDict[_KeyType, _CovariantValueType]
+-        | typing.Mapping[_KeyType, _CovariantValueType]
+-        | typing.Iterable[tuple[_KeyType, _CovariantValueType]],
+-        **kwargs: typing.Any,
+-    ) -> None:
++    def __init__(self, *args: (ImmutableMultiDict[_KeyType, _CovariantValueType] | typing.Mapping[_KeyType, _CovariantValueType] | typing.Iterable[
++        tuple[_KeyType, _CovariantValueType]]), **kwargs: typing.Any) ->None:
+         assert len(args) < 2, "Too many arguments."
+ 
+         value: typing.Any = args[0] if args else []
+@@ -294,7 +289,7 @@
+     def __getitem__(self, key: _KeyType) -> _CovariantValueType:
+         return self._dict[key]
+ 
+-    def __contains__(self, key: typing.Any) -> bool:
++    def __contains__(self, key: typing.Any) ->bool:
+         return key in self._dict
+ 
+     def __iter__(self) -> typing.Iterator[_KeyType]:

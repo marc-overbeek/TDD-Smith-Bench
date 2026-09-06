@@ -1,0 +1,45 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/pre_configured.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/pre_configured.py
+@@ -76,8 +76,8 @@
+     """An all-in-one endpoint featuring Authorization code grant and Bearer tokens."""
+ 
+     def __init__(self, request_validator, token_generator=None,
+-                 token_expires_in=None, refresh_token_generator=None, **kwargs):
+-        """Construct a new web application server.
++        token_expires_in=None, refresh_token_generator=None):
++        """Construct a new all-grants-in-one server.
+ 
+         :param request_validator: An implementation of
+                                   oauthlib.oauth2.RequestValidator.
+@@ -91,15 +91,28 @@
+                        token-, resource-, and revocation-endpoint constructors.
+         """
+         self.auth_grant = AuthorizationCodeGrant(request_validator)
++        self.implicit_grant = ImplicitGrant(request_validator)
++        self.password_grant = ResourceOwnerPasswordCredentialsGrant(
++            request_validator)
++        self.credentials_grant = ClientCredentialsGrant(request_validator)
+         self.refresh_grant = RefreshTokenGrant(request_validator)
+-        self.bearer = BearerToken(request_validator, token_generator,
+-                             token_expires_in, refresh_token_generator)
++
++        self.bearer = BearerToken(request_validator, token_generator,
++                             token_expires_in, refresh_token_generator)
++
+         AuthorizationEndpoint.__init__(self, default_response_type='code',
+-                                       response_types={'code': self.auth_grant},
++                                       response_types={
++                                           'code': self.auth_grant,
++                                           'token': self.implicit_grant,
++                                           'none': self.auth_grant
++                                       },
+                                        default_token_type=self.bearer)
++
+         TokenEndpoint.__init__(self, default_grant_type='authorization_code',
+                                grant_types={
+                                    'authorization_code': self.auth_grant,
++                                   'password': self.password_grant,
++                                   'client_credentials': self.credentials_grant,
+                                    'refresh_token': self.refresh_grant,
+                                },
+                                default_token_type=self.bearer)

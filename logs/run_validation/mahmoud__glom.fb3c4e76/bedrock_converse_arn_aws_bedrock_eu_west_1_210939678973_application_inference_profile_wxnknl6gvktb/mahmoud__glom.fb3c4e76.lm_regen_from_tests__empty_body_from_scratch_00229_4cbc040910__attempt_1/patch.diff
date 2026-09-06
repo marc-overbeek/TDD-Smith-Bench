@@ -1,0 +1,37 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -392,6 +392,34 @@
+ 
+     def __init__(self, spec):
+         self.spec = spec
++
++    def __eq__(self, other):
++        return _MExpr(self, '=', other)
++
++    def __ne__(self, other):
++        return _MExpr(self, '!', other)
++
++    def __gt__(self, other):
++        return _MExpr(self, '>', other)
++
++    def __lt__(self, other):
++        return _MExpr(self, '<', other)
++
++    def __ge__(self, other):
++        return _MExpr(self, 'g', other)
++
++    def test_m_call_match():
++        """test that M __call__ can be used to wrap a subspec for comparison"""
++        # ...
++        valid_target_spec_pairs = [
++            # ...
++            ({'a': 2, 'b': 1}, M(T['a']) >= M(T['b'])),
++            ({'a': 2, 'b': 2}, M(T['a']) >= M(T['b'])),
++            ({'a': 2, 'b': 2}, M(T['a']) <= M(T['b'])),
++            ({'a': 1, 'b': 2}, M(T['a']) <= M(T['b']))
++        ]
++        for target, spec in valid_target_spec_pairs:
++            assert glom(target, spec) is target
+ 
+     def __eq__(self, other):
+         return _MExpr(self, '=', other)

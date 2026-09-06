@@ -1,0 +1,40 @@
+--- a/safety/scan/render.py
++++ b/safety/scan/render.py
+@@ -326,34 +326,9 @@
+     msg = f"[bold]{project.id} project found[/bold] - {config_msg}"
+     console.print(msg)
+ 
+-def print_wait_policy_download(console: Console, closure: Tuple[Any, Dict[str, Any]]) -> Optional[PolicyFileModel]:
+-    """
+-    Print a waiting message while downloading a policy from the cloud.
+-
+-    Args:
+-        console (Console): The console for output.
+-        closure (Tuple[Any, Dict[str, Any]]): The function and its arguments to call.
+-
+-    Returns:
+-        Optional[PolicyFileModel]: The downloaded policy file model.
+-    """
+-    policy = None
+-    wait_msg = "Looking for a policy from cloud..."
+-
+-    with console.status(wait_msg, spinner=DEFAULT_SPINNER):
+-        try:
+-            f, kwargs = closure
+-            policy = f(**kwargs)
+-        except Exception as e:
+-            LOG.exception(f'Policy download failed, reason: {e}')
+-            console.print("Not using cloud policy file.")
+-
+-        if policy:
+-            wait_msg = "Policy fetched from Safety Platform."
+-        else:
+-            # TODO: Send a log
+-            pass
+-    return policy
++def print_wait_policy_download(console: Console, closure: Tuple[Any, Dict[
++    str, Any]]) ->Optional[PolicyFileModel]:
++    pass
+ 
+ 
+ def prompt_project_id(console: Console, stage: Stage, prj_root_name: Optional[str], do_not_exit: bool = True) -> Optional[str]:

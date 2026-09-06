@@ -1,0 +1,52 @@
+--- a/oauthlib/oauth1/rfc5849/signature.py
++++ b/oauthlib/oauth1/rfc5849/signature.py
+@@ -554,31 +554,24 @@
+ 
+ 
+ def _get_jwt_rsa_algorithm(hash_algorithm_name: str):
+-    """
+-    Obtains an RSAAlgorithm object that implements RSA with the hash algorithm.
+-
+-    This method maintains the ``_jwt_rsa`` cache.
+-
+-    Returns a jwt.algorithm.RSAAlgorithm.
+-    """
+-    if hash_algorithm_name in _jwt_rsa:
+-        # Found in cache: return it
+-        return _jwt_rsa[hash_algorithm_name]
+-    else:
+-        # Not in cache: instantiate a new RSAAlgorithm
+-
+-        # PyJWT has some nice pycrypto/cryptography abstractions
+-        import jwt.algorithms as jwt_algorithms
+-        m = {
+-            'SHA-1': jwt_algorithms.hashes.SHA1,
+-            'SHA-256': jwt_algorithms.hashes.SHA256,
+-            'SHA-512': jwt_algorithms.hashes.SHA512,
+-        }
+-        v = jwt_algorithms.RSAAlgorithm(m[hash_algorithm_name])
+-
+-        _jwt_rsa[hash_algorithm_name] = v  # populate cache
+-
+-        return v
++    try:
++        import jwt.algorithms
++    except ImportError:
++        raise ImportError("PyJWT is required for RSA signature methods")
++
++    # Cache the algorithms to avoid repeated imports
++    global _jwt_rsa
++    if hash_algorithm_name not in _jwt_rsa:
++        if hash_algorithm_name == 'SHA-1':
++            _jwt_rsa[hash_algorithm_name] = jwt.algorithms.RSAAlgorithm(jwt.algorithms.hashes.SHA1)
++        elif hash_algorithm_name == 'SHA-256':
++            _jwt_rsa[hash_algorithm_name] = jwt.algorithms.RSAAlgorithm(jwt.algorithms.hashes.SHA256)
++        elif hash_algorithm_name == 'SHA-512':
++            _jwt_rsa[hash_algorithm_name] = jwt.algorithms.RSAAlgorithm(jwt.algorithms.hashes.SHA512)
++        else:
++            raise ValueError(f"Unsupported hash algorithm: {hash_algorithm_name}")
++    
++    return _jwt_rsa[hash_algorithm_name]
+ 
+ 
+ def _prepare_key_plus(alg, keystr):

@@ -1,0 +1,19 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -681,6 +681,16 @@
+         attribute_removed = self.diff.get('attribute_removed')
+         if attribute_removed:
+             self._do_item_removed(attribute_removed)
++
++    def _do_set_item_removed(self):
++        items = self.diff.get('set_item_removed')
++        if items:
++            self._do_set_or_frozenset_item(items, func='difference')
++
++    def _do_set_item_added(self):
++        items = self.diff.get('set_item_added')
++        if items:
++            self._do_set_or_frozenset_item(items, func='union')
+ 
+     def _do_set_item_added(self):
+         items = self.diff.get('set_item_added')

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the current implementation, the issue is with the indentation. The comment `# We don't want to exhaust a generator` and the code after it are outside the function body due to incorrect indentation - they appear to be at the module level rather than inside the function.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the current implementation, the issue is with the indentation. The comment `# We don't want to exhaust a generator` and the code after it are outside the function body due to incorrect indentation - they appear to be at the module level rather than inside the function.\n\n```python\ndef _all_values_basic_hashable(self, iterable):\n    \"\"\"\n    Are all items basic hashable types?\n    Or there are custom types too?\n    \"\"\"\n    # We don't want to exhaust a generator\n    if isinstance(iterable, types.GeneratorType):\n        return False\n    for item in iterable:\n        if not isinstance(item, basic_types):\n            return False\n    return True\n```",
+  "rewrite": "def _all_values_basic_hashable(self, iterable):\n    \"\"\"\n    Are all items basic hashable types?\n    Or there are custom types too?\n    \"\"\"\n    # We don't want to exhaust a generator\n    if isinstance(iterable, types.GeneratorType):\n        return False\n    for item in iterable:\n        if not isinstance(item, basic_types):\n            return False\n    return True",
+  "strategy": "lm_regen_from_tests"
+}

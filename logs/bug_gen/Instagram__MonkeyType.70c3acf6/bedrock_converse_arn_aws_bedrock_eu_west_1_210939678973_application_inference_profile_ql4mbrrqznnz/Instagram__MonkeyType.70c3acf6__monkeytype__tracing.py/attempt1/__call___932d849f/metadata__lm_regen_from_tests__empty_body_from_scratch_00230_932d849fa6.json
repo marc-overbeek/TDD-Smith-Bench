@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef __call__(self, frame: FrameType, event: str, arg: Any) -> 'CallTracer':\n    code = frame.f_code\n    if (\n        event not in SUPPORTED_EVENTS\n        or code.co_name == \"trace_types\"\n        or self.should_trace\n        and not self.should_trace(code)\n    ):\n        return self\n    try:\n        if event == EVENT_CALL:\n            self.handle_call(frame)\n        elif event == EVENT_RETURN:\n            self.handle_return(frame, arg)\n        else:\n            logger.error(\"Cannot handle event %s\", event)\n    except Exception:\n        logger.exception(\"Failed collecting trace\")\n    return self\n```",
+  "rewrite": "def __call__(self, frame: FrameType, event: str, arg: Any) -> 'CallTracer':\n    code = frame.f_code\n    if (\n        event not in SUPPORTED_EVENTS\n        or code.co_name == \"trace_types\"\n        or self.should_trace\n        and not self.should_trace(code)\n    ):\n        return self\n    try:\n        if event == EVENT_CALL:\n            self.handle_call(frame)\n        elif event == EVENT_RETURN:\n            self.handle_return(frame, arg)\n        else:\n            logger.error(\"Cannot handle event %s\", event)\n    except Exception:\n        logger.exception(\"Failed collecting trace\")\n    return self",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,50 @@
+--- a/src/mistune/plugins/task_lists.py
++++ b/src/mistune/plugins/task_lists.py
+@@ -59,15 +59,35 @@
+     return tokens
+ 
+ 
+-def _rewrite_list_item(tok: Dict[str, Any]) -> None:
+-    children = tok['children']
+-    if children:
+-        first_child = children[0]
+-        text = first_child.get('text', '')
+-        m = TASK_LIST_ITEM.match(text)
+-        if m:
+-            mark = m.group(1)
+-            first_child['text'] = text[m.end():]
+-
+-            tok['type'] = 'task_list_item'
+-            tok['attrs'] = {'checked': mark != '[ ]'}
++def _rewrite_list_item(tok: Dict[str, Any]) ->None:
++    if 'children' not in tok or not tok['children']:
++        return
++    
++    # Get the first child which contains the text
++    first_child = tok['children'][0]
++    if first_child.get('type') != 'paragraph':
++        return
++        
++    # Get the text content
++    text = first_child.get('text', '')
++    if not text:
++        return
++        
++    # Check if it matches task list pattern
++    match = TASK_LIST_ITEM.match(text)
++    if not match:
++        return
++        
++    # Extract checkbox status
++    checkbox = match.group(1)
++    checked = checkbox.lower() == '[x]'
++    
++    # Remove the checkbox part from text
++    new_text = text[match.end():].lstrip()
++    
++    # Update the paragraph text
++    first_child['text'] = new_text
++    
++    # Mark this as a task list item
++    tok['type'] = 'task_list_item'
++    tok['checked'] = checked

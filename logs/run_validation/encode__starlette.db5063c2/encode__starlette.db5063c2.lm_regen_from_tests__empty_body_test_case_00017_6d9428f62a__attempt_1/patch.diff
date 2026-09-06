@@ -1,0 +1,82 @@
+--- a/starlette/applications.py
++++ b/starlette/applications.py
+@@ -112,7 +112,13 @@
+         await self.middleware_stack(scope, receive, send)
+ 
+     def on_event(self, event_type: str) -> typing.Callable:  # type: ignore[type-arg]
+-        return self.router.on_event(event_type)  # pragma: no cover
++        warnings.warn(
++            "The `on_event` decorator is deprecated, and will be removed in version 1.0.0. "
++            "Refer to https://www.starlette.io/lifespan/ for the recommended approach.",
++            DeprecationWarning,
++            stacklevel=2,
++        )
++        return self.router.on_event(event_type)
+ 
+     def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:
+         self.router.mount(path, app=app, name=name)  # pragma: no cover
+@@ -167,6 +173,7 @@
+             "The `exception_handler` decorator is deprecated, and will be removed in version 1.0.0. "
+             "Refer to https://www.starlette.io/exceptions/ for the recommended approach.",
+             DeprecationWarning,
++            stacklevel=2,
+         )
+ 
+         def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
+@@ -182,17 +189,11 @@
+         name: str | None = None,
+         include_in_schema: bool = True,
+     ) -> typing.Callable:  # type: ignore[type-arg]
+-        """
+-        We no longer document this decorator style API, and its usage is discouraged.
+-        Instead you should use the following approach:
+-
+-        >>> routes = [Route(path, endpoint=...), ...]
+-        >>> app = Starlette(routes=routes)
+-        """
+         warnings.warn(
+             "The `route` decorator is deprecated, and will be removed in version 1.0.0. "
+             "Refer to https://www.starlette.io/routing/ for the recommended approach.",
+             DeprecationWarning,
++            stacklevel=2,
+         )
+ 
+         def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
+@@ -208,17 +209,11 @@
+         return decorator
+ 
+     def websocket_route(self, path: str, name: str | None = None) -> typing.Callable:  # type: ignore[type-arg]
+-        """
+-        We no longer document this decorator style API, and its usage is discouraged.
+-        Instead you should use the following approach:
+-
+-        >>> routes = [WebSocketRoute(path, endpoint=...), ...]
+-        >>> app = Starlette(routes=routes)
+-        """
+         warnings.warn(
+             "The `websocket_route` decorator is deprecated, and will be removed in version 1.0.0. "
+             "Refer to https://www.starlette.io/routing/#websocket-routing for the recommended approach.",
+             DeprecationWarning,
++            stacklevel=2,
+         )
+ 
+         def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
+@@ -228,17 +223,11 @@
+         return decorator
+ 
+     def middleware(self, middleware_type: str) -> typing.Callable:  # type: ignore[type-arg]
+-        """
+-        We no longer document this decorator style API, and its usage is discouraged.
+-        Instead you should use the following approach:
+-
+-        >>> middleware = [Middleware(...), ...]
+-        >>> app = Starlette(middleware=middleware)
+-        """
+         warnings.warn(
+             "The `middleware` decorator is deprecated, and will be removed in version 1.0.0. "
+             "Refer to https://www.starlette.io/middleware/#using-middleware for recommended approach.",
+             DeprecationWarning,
++            stacklevel=2,
+         )
+         assert middleware_type == "http", 'Currently only middleware("http") is supported.'
+ 

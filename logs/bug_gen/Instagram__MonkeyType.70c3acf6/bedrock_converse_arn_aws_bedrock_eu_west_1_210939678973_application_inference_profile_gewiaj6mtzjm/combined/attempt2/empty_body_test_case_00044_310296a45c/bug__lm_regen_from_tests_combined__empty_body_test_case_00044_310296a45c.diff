@@ -1,0 +1,190 @@
+--- a/monkeytype/encoding.py
++++ b/monkeytype/encoding.py
+@@ -49,39 +49,59 @@
+     }
+ 
+ 
+-def type_to_dict(typ: type) -> TypeDict:
+-    """Convert a type into a dictionary representation that we can store.
+-
+-    The dictionary must:
+-        1. Be encodable as JSON
+-        2. Contain enough information to let us reify the type
+-    """
++def type_to_dict(typ: type) ->TypeDict:
+     if is_typed_dict(typ):
+         return typed_dict_to_dict(typ)
+-
+-    # Union and Any are special cases that aren't actually types.
++    
++    if is_any(typ):
++        return {"module": "typing", "qualname": "Any"}
++    
++    if is_generic(typ):
++        # Handle generic types like List[int], Dict[str, int], etc.
++        qualname = qualname_of_generic(typ)
++        module = typ.__module__
++        elem_types = []
++        if hasattr(typ, '__args__') and typ.__args__ is not None:
++            elem_types = [type_to_dict(arg) for arg in typ.__args__]
++        return {
++            "module": module,
++            "qualname": qualname,
++            "elem_types": elem_types,
++        }
++    
+     if is_union(typ):
+-        qualname = "Union"
+-    elif is_any(typ):
+-        qualname = "Any"
+-    elif is_generic(typ):
+-        qualname = qualname_of_generic(typ)
+-    else:
+-        qualname = typ.__qualname__
+-    d: TypeDict = {
+-        "module": typ.__module__,
++        # Handle Union types
++        if hasattr(typ, '__args__') and typ.__args__ is not None:
++            elem_types = [type_to_dict(arg) for arg in typ.__args__]
++            return {
++                "module": "typing",
++                "qualname": "Union",
++                "elem_types": elem_types,
++            }
++    
++    # Handle regular types
++    module = typ.__module__
++    qualname = typ.__qualname__
++    
++    # Special handling for hidden builtin types
++    if module == "builtins" and qualname in _HIDDEN_BUILTIN_TYPES:
++        return {
++            "module": module,
++            "qualname": qualname,
++        }
++    
++    # For other types, check if it's a builtin
++    if module == "builtins":
++        return {
++            "module": module,
++            "qualname": qualname,
++        }
++    
++    # For user-defined types
++    return {
++        "module": module,
+         "qualname": qualname,
+     }
+-    elem_types = getattr(typ, "__args__", None)
+-    # In Python < 3.9, bare generics still have args
+-    is_bare_generic = typ in {Dict, List, Tuple}
+-    if not is_bare_generic and elem_types is not None and is_generic(typ):
+-        # empty typing.Tuple is weird; the spec says it should be Tuple[()],
+-        # which results in __args__ of `((),)` pre-Python 3.11
+-        if elem_types == ((),):
+-            elem_types = ()
+-        d["elem_types"] = [type_to_dict(t) for t in elem_types]
+-    return d
+ 
+ 
+ _HIDDEN_BUILTIN_TYPES: Dict[str, type] = {
+@@ -98,33 +118,74 @@
+     )
+ 
+ 
+-def type_from_dict(d: TypeDict) -> type:
+-    """Given a dictionary produced by type_to_dict, return the equivalent type.
+-
+-    Raises:
+-        NameLookupError if we can't reify the specified type
+-        InvalidTypeError if the named type isn't actually a type
+-    """
+-    module, qualname = d["module"], d["qualname"]
++def type_from_dict(d: TypeDict) ->type:
++    module = d["module"]
++    qualname = d["qualname"]
++    
++    # Check if it's a typed dict
+     if d.get("is_typed_dict", False):
+         return typed_dict_from_dict(d)
+-    if module == "builtins" and qualname in _HIDDEN_BUILTIN_TYPES:
+-        typ = _HIDDEN_BUILTIN_TYPES[qualname]
+-    else:
+-        typ = get_name_in_module(module, qualname)
+-    if not (isinstance(typ, type) or is_any(typ) or is_generic(typ)):
+-        raise InvalidTypeError(
+-            f"Attribute specified by '{qualname}' in module '{module}' "
+-            f"is of type {type(typ)}, not type."
+-        )
+-    elem_type_dicts = d.get("elem_types")
+-    if elem_type_dicts is not None and is_generic(typ):
+-        elem_types = tuple(type_from_dict(e) for e in elem_type_dicts)
+-        # mypy complains that a value of type `type` isn't indexable. That's
+-        # true, but we know typ is a subtype that is indexable. Even checking
+-        # with hasattr(typ, '__getitem__') doesn't help
+-        typ = typ[elem_types]  # type: ignore[index]
+-    return typ
++    
++    # Handle special cases for built-in types
++    if module == "builtins":
++        if qualname == "NoneType":
++            return NoneType
++        elif qualname == "NotImplementedType":
++            return NotImplementedType
++        elif qualname == "mappingproxy":
++            return mappingproxy
++    
++    # Handle generic types
++    if "elem_types" in d and d["elem_types"]:
++        from typing import get_origin, get_args
++        import typing
++        
++        # Try to reconstruct the generic type
++        try:
++            # Handle typing module types
++            if module == "typing":
++                if qualname == "Any":
++                    return typing.Any
++                elif qualname == "Union":
++                    args = tuple(type_from_dict(elem) for elem in d["elem_types"])
++                    return typing.Union[args]
++                else:
++                    # For other typing types, try to get them from typing module
++                    if hasattr(typing, qualname):
++                        typing_module = getattr(typing, qualname)
++                        if d["elem_types"]:
++                            args = tuple(type_from_dict(elem) for elem in d["elem_types"])
++                            return typing_module[args]
++                        else:
++                            return typing_module
++            else:
++                # For non-typing module generics, try to reconstruct
++                base_type = get_name_in_module(module, qualname)
++                if d["elem_types"]:
++                    args = tuple(type_from_dict(elem) for elem in d["elem_types"])
++                    return base_type[args]
++                else:
++                    return base_type
++        except Exception:
++            # Fallback to direct lookup
++            pass
++    
++    # Direct lookup for simple types
++    try:
++        return get_name_in_module(module, qualname)
++    except AttributeError:
++        # If we can't find it directly, try to construct it
++        if module == "typing":
++            # Handle typing module specially
++            if qualname == "Any":
++                return typing.Any
++            elif qualname == "Union":
++                # Union case - reconstruct from elem_types
++                args = tuple(type_from_dict(elem) for elem in d["elem_types"])
++                return typing.Union[args]
++        
++        # If all else fails, raise an exception
++        raise InvalidTypeError(f"Cannot reconstruct type from dict: {d}")
+ 
+ 
+ def type_to_json(typ: type) -> str:

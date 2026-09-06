@@ -1,0 +1,22 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -131,18 +131,7 @@
+     """
+     @classmethod
+     def wrap(cls, exc):
+-        # TODO: need to test this against a wide array of exception types
+-        # this approach to wrapping errors works for exceptions
+-        # defined in pure-python as well as C
+-        exc_type = type(exc)
+-        bases = (GlomError,) if issubclass(GlomError, exc_type) else (exc_type, GlomError)
+-        exc_wrapper_type = type(f"GlomError.wrap({exc_type.__name__})", bases, {})
+-        try:
+-            wrapper = exc_wrapper_type(*exc.args)
+-            wrapper.__wrapped = exc
+-            return wrapper
+-        except Exception:  # maybe exception can't be re-created
+-            return exc
++        pass
+ 
+     def _set_wrapped(self, exc):
+         self.__wrapped = exc

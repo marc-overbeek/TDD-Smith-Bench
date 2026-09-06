@@ -1,0 +1,27 @@
+--- a/fvcore/common/checkpoint.py
++++ b/fvcore/common/checkpoint.py
+@@ -173,8 +173,23 @@
+         Returns:
+             bool: whether a checkpoint exists in the target directory.
+         """
++        if not self.save_dir:
++            return False
+         save_file = os.path.join(self.save_dir, "last_checkpoint")
+-        return self.path_manager.exists(save_file)
++        if self.path_manager.exists(save_file):
++            try:
++                with self.path_manager.open(save_file, "r") as f:
++                    last_saved = f.read().strip()
++                checkpoint_path = os.path.join(self.save_dir, last_saved)
++                return self.path_manager.exists(checkpoint_path)
++            except (IOError, OSError):
++                return False
++        # Fallback: check if there are any .pth files in the directory
++        try:
++            files = self.path_manager.ls(self.save_dir)
++            return any(f.endswith('.pth') for f in files if self.path_manager.isfile(os.path.join(self.save_dir, f)))
++        except (IOError, OSError):
++            return False
+ 
+     def get_checkpoint_file(self) -> str:
+         """

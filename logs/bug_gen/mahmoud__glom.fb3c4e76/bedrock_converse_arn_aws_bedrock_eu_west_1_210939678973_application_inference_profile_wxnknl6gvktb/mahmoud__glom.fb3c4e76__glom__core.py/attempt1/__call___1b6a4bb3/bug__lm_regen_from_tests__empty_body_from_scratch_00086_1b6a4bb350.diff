@@ -1,0 +1,22 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1436,13 +1436,18 @@
+     def __getitem__(self, item):
+         return _t_child(self, '[', item)
+ 
++    elif op == '(':
++        args, kwargs = arg
++        scope[Path] += t_path[2:i+2:2]
++        cur = scope[glom](
++            target, Call(cur, args, kwargs), scope)
++
+     def __call__(self, *args, **kwargs):
+         if self is S:
+             if args:
+                 raise TypeError(f'S() takes no positional arguments, got: {args!r}')
+             if not kwargs:
+                 raise TypeError('S() expected at least one kwarg, got none')
+-            # TODO: typecheck kwarg vals?
+         return _t_child(self, '(', (args, kwargs))
+ 
+     def __star__(self):

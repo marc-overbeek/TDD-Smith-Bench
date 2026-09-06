@@ -1,0 +1,31 @@
+--- a/safety/alerts/requirements.py
++++ b/safety/alerts/requirements.py
+@@ -403,26 +403,8 @@
+         return False
+ 
+     @property
+-    def version(self) -> Optional[str]:
+-        """
+-        Returns the current version of the requirement.
+-
+-        Returns:
+-            Optional[str]: The current version, or None if not pinned.
+-        """
+-        if self.is_pinned:
+-            return next(iter(self.specs._specs))._spec[1]
+-
+-        specs = self.specs
+-        if self.filter:
+-            specs = SpecifierSet(
+-                ",".join(["".join(s._spec) for s in list(specs._specs) + list(self.filter._specs)])
+-            )
+-        return self.get_latest_version_within_specs(
+-            specs,
+-            versions=self.package.versions,
+-            prereleases=self.prereleases
+-        )
++    def version(self) ->Optional[str]:
++        pass
+ 
+     def get_hashes(self, version: str) -> List:
+         """

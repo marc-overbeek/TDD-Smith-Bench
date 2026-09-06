@@ -1,0 +1,39 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -398,33 +398,9 @@
+                 "the descendants of the analyzed model."
+             )
+ 
+-    def copy(
+-        self,
+-        new_model: Optional[nn.Module] = None,
+-        new_inputs: Union[None, Tensor, Tuple[Tensor, ...]] = None,
+-    ) -> "JitModelAnalysis":
+-        """
+-        Returns a copy of the :class:`JitModelAnalysis` object, keeping all
+-        settings, but on a new model or new inputs.
+-
+-        Args:
+-            new_model (nn.Module or None) : a new model for the new
+-                JitModelAnalysis. If None, uses the original model.
+-            new_inputs (typing.Tuple[object, ...] or None) : new inputs
+-                for the new JitModelAnalysis. If None, uses the original
+-                inputs.
+-        Returns:
+-            JitModelAnalysis : the new model analysis object
+-        """
+-        model = self._model if new_model is None else new_model
+-        inputs = self._inputs if new_inputs is None else new_inputs
+-        return (
+-            JitModelAnalysis(model=model, inputs=inputs)
+-            .set_op_handle(**self._op_handles)
+-            .unsupported_ops_warnings(self._enable_warn_unsupported_ops)
+-            .uncalled_modules_warnings(self._enable_warn_uncalled_mods)
+-            .tracer_warnings(self._warn_trace)
+-        )
++    def copy(self, new_model: Optional[nn.Module]=None, new_inputs: Union[None,
++        Tensor, Tuple[Tensor, ...]]=None) ->'JitModelAnalysis':
++        pass
+ 
+     def tracer_warnings(self: T, mode: str) -> T:
+         """

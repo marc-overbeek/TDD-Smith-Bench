@@ -1,0 +1,32 @@
+--- a/deepdiff/model.py
++++ b/deepdiff/model.py
+@@ -422,15 +422,23 @@
+                 for index in repetition['new_indexes']:
+                     iterable_items_added_at_indexes[index] = value
+ 
++    expected = {'iterable_item_moved': {'root[0]': {'new_path': 'root[2]', 'value': {'id': 1, 'val': 3}}, ...}}
++
+     def _from_tree_iterable_item_moved(self, tree):
+         if 'iterable_item_moved' in tree:
+             for change in tree['iterable_item_moved']:
+-                if (
+-                    change.up.path(force=FORCE_DEFAULT) not in self["_iterable_opcodes"]
+-                ):
+-                    the_changed = {'new_path': change.path(use_t2=True), 'value': change.t2}
+-                    self['iterable_item_moved'][change.path(
+-                        force=FORCE_DEFAULT)] = the_changed
++                the_changed = {'new_path': change.path(use_t2=True, force=FORCE_DEFAULT), 'value': change.t2}
++                if self.verbose_level <= 1:
++                    the_changed.pop('value', None)
++                self['iterable_item_moved'][change.path(
++                    force=FORCE_DEFAULT)] = the_changed
++
++    def _from_tree_iterable_item_moved(self, tree):
++        if 'iterable_item_moved' in tree:
++            for change in tree['iterable_item_moved']:
++                the_changed = {'new_path': change.path(use_t2=True, force=FORCE_DEFAULT), 'value': change.t2}
++                self['iterable_item_moved'][change.path(
++                    force=FORCE_DEFAULT)] = the_changed
+ 
+ 
+ class DiffLevel:

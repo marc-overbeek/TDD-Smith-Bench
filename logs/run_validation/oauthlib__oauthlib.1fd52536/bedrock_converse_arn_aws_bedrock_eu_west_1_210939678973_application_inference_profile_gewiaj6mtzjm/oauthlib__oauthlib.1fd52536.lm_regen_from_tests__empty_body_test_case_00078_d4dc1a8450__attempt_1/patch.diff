@@ -1,0 +1,28 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/authorization.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/authorization.py
+@@ -84,13 +84,11 @@
+ 
+     @catch_errors_and_unavailability
+     def create_authorization_response(self, uri, http_method='GET', body=None,
+-                                      headers=None, scopes=None, credentials=None):
+-        """Extract response_type and route to the designated handler."""
++        headers=None, scopes=None, credentials=None):
+         request = Request(
+             uri, http_method=http_method, body=body, headers=headers)
+         request.scopes = scopes
+-        # TODO: decide whether this should be a required argument
+-        request.user = None     # TODO: explain this in docs
++        request.user = None
+         for k, v in (credentials or {}).items():
+             setattr(request, k, v)
+         response_type_handler = self.response_types.get(
+@@ -102,8 +100,7 @@
+ 
+     @catch_errors_and_unavailability
+     def validate_authorization_request(self, uri, http_method='GET', body=None,
+-                                       headers=None):
+-        """Extract response_type and route to the designated handler."""
++        headers=None):
+         request = Request(
+             uri, http_method=http_method, body=body, headers=headers)
+ 

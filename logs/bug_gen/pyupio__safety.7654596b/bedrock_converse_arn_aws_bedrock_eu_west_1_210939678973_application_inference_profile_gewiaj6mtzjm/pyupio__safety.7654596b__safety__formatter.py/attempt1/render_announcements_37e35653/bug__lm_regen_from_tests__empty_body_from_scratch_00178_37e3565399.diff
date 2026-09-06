@@ -1,0 +1,17 @@
+--- a/safety/formatter.py
++++ b/safety/formatter.py
+@@ -137,5 +137,12 @@
+         Returns:
+             Optional[str]: Rendered announcements.
+         """
+-        LOG.info('Safety is going to render_announcements with format: %s', self.format)
+-        return self.format.render_announcements(announcements)
++        if not announcements:
++            return None
++    
++        rendered = "ANNOUNCEMENTS\n"
++        for announcement in announcements:
++            message = announcement.get('message', '')
++            rendered += f"* {message}\n"
++    
++        return rendered.rstrip()

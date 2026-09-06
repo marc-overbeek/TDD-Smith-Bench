@@ -1,0 +1,37 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1898,11 +1898,29 @@
+ 
+         return result
+ 
+-    def get_nearest_location(self, location: mod_geo.Location) -> Optional[NearestLocationData]:
+-        """ Returns (location, track_segment_no, track_point_no) for nearest location on track """
+-        return min((NearestLocationData(pt, -1, seg, pt_no) for (pt, seg, pt_no) in self.walk()) # type: ignore
+-                   ,key=lambda x: x.location.distance_2d(location) if x is not None else mod_math.inf
+-                   ,default=None)
++    def get_nearest_location(self, location: mod_geo.Location) ->Optional[
++        NearestLocationData]:
++        """ Returns (location, track_no, track_segment_no, track_point_no) for the
++        nearest location on map """
++        if not self.tracks:
++            return None
++        
++        min_distance = None
++        nearest_location_data = None
++    
++        for track_no, track in enumerate(self.tracks):
++            if not track.segments:
++                continue
++            for segment_no, segment in enumerate(track.segments):
++                if not segment.points:
++                    continue
++                for point_no, point in enumerate(segment.points):
++                    distance = location.distance_2d(point)
++                    if min_distance is None or distance < min_distance:
++                        min_distance = distance
++                        nearest_location_data = NearestLocationData(point, track_no, segment_no, point_no)
++    
++        return nearest_location_data
+         
+     def clone(self) -> "GPXTrack":
+         return mod_copy.deepcopy(self)

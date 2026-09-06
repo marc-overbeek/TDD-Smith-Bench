@@ -1,0 +1,32 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -577,8 +577,28 @@
+         click.secho(f'Version "{version}" is not a valid value, allowed values are 3.0 and 2.0. Use --path to specify the target file.', fg='red', file=sys.stderr)
+         sys.exit(EXIT_CODE_FAILURE)
+ 
++    def test_validate_with_policy_file_using_invalid_keyword(self):
++        # ...
++        result = self.runner.invoke(cli.cli, ['validate', 'policy_file', '2.0',
++            '--path', path])
++        cleaned_stdout = click.unstyle(result.stderr)
++        msg_hint = """HINT: "security" -> "transitive" is not a valid keyword. Valid keywords in this level are: ignore-cvss-severity-below, ignore-cvss-unknown-severity, ignore-vulnerabilities, continue-on-vulnerability-error, ignore-unpinned-requirements
++    """
++        msg = f'Unable to load the Safety Policy file "{path}".\n{msg_hint}'
++        self.assertEqual(msg, cleaned_stdout)
++        self.assertEqual(result.exit_code, 1)
++
+     def fail_validation(e):
+-        click.secho(str(e).lstrip(), fg='red', file=sys.stderr)
++        path = ctx.params.get('path', '')
++        error_msg = str(e).lstrip()
++        formatted_msg = f'Unable to load the Safety Policy file "{path}".\n{error_msg}'
++        click.secho(formatted_msg, fg='red', file=sys.stderr)
++        sys.exit(EXIT_CODE_FAILURE)
++
++    def fail_validation(e):
++        error_msg = str(e).lstrip()
++        formatted_msg = f'Unable to load the Safety Policy file "{path}".\n{error_msg}'
++        click.secho(formatted_msg, fg='red', file=sys.stderr)
+         sys.exit(EXIT_CODE_FAILURE)
+ 
+     if not version:

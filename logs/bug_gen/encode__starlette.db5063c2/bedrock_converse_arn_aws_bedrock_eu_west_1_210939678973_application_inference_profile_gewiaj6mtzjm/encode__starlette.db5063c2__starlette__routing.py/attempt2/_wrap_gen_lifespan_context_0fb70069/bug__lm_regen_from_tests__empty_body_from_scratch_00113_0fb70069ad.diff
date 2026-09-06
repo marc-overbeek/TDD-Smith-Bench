@@ -1,0 +1,52 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -549,15 +549,40 @@
+         return self._cm.__exit__(exc_type, exc_value, traceback)
+ 
+ 
+-def _wrap_gen_lifespan_context(
+-    lifespan_context: typing.Callable[[typing.Any], typing.Generator[typing.Any, typing.Any, typing.Any]],
+-) -> typing.Callable[[typing.Any], typing.AsyncContextManager[typing.Any]]:
+-    cmgr = contextlib.contextmanager(lifespan_context)
+-
+-    @functools.wraps(cmgr)
+-    def wrapper(app: typing.Any) -> _AsyncLiftContextManager[typing.Any]:
+-        return _AsyncLiftContextManager(cmgr(app))
+-
++def _wrap_gen_lifespan_context(lifespan_context: typing.Callable[[typing.
++    Any], typing.Generator[typing.Any, typing.Any, typing.Any]]
++    ) ->typing.Callable[[typing.Any], typing.AsyncContextManager[typing.Any]]:
++    @asynccontextmanager
++    async def wrapper(app: typing.Any) -> typing.AsyncGenerator[typing.Any, None]:
++        cm = lifespan_context(app)
++        try:
++            try:
++                value = next(cm)
++            except StopIteration as exc:
++                yield exc.value
++                return
++            
++            while True:
++                try:
++                    if isinstance(value, typing.Awaitable):
++                        value = await value
++                    try:
++                        value = cm.send(value)
++                    except StopIteration as exc:
++                        yield exc.value
++                        return
++                except Exception as exc:
++                    try:
++                        value = cm.throw(exc)
++                    except StopIteration as exc:
++                        yield exc.value
++                        return
++        finally:
++            try:
++                cm.close()
++            except Exception:
++                pass
++    
+     return wrapper
+ 
+ 

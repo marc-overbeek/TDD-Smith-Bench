@@ -1,0 +1,15 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1808,6 +1808,12 @@
+         self.__dict__ = dict(base)
+         self.__dict__.update(defaults)
+ 
++    def test_scoped_vars():
++        target = list(range(10)) + list(range(5))
++        scope_globals = glom(target, ([A.globals.last], S.globals))
++        assert scope_globals.last == 4
++        assert dict(scope_globals) == {'last': 4}
++
+     def __iter__(self):
+         return iter(self.__dict__.items())
+ 

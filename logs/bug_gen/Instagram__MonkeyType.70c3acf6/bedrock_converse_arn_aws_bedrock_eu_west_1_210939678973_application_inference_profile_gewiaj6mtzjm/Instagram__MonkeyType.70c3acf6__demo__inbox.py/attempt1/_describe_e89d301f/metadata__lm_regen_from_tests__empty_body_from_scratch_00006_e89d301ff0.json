@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef _describe(self, events, feedentry, users_by_id: Dict[UserId, User]):\n        users = [users_by_id[e.liker_id].name for e in events]\n        post_name = f'\"{feedentry.caption}\"'\n        if len(users) == 1:\n            return f\"{users[0]} liked your post {post_name}.\"\n\n        elif len(users) == 2:\n            return f\"{users[0]} and {users[1]} liked your post {post_name}.\"\n\n        else:\n            return (\n                f\"{users[0]}, {users[1]} and {len(users) - 2} others \"\n                f\"liked your post {post_name}.\"\n            )\n```",
+  "rewrite": "def _describe(self, events, feedentry, users_by_id: Dict[UserId, User]):\n        users = [users_by_id[e.liker_id].name for e in events]\n        post_name = f'\"{feedentry.caption}\"'\n        if len(users) == 1:\n            return f\"{users[0]} liked your post {post_name}.\"\n\n        elif len(users) == 2:\n            return f\"{users[0]} and {users[1]} liked your post {post_name}.\"\n\n        else:\n            return (\n                f\"{users[0]}, {users[1]} and {len(users) - 2} others \"\n                f\"liked your post {post_name}.\"\n            )",
+  "strategy": "lm_regen_from_tests"
+}

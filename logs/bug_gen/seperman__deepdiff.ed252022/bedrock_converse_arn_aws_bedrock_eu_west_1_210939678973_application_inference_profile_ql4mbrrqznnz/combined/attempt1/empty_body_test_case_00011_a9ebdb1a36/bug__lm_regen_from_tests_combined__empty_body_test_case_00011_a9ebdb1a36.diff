@@ -1,0 +1,57 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -656,17 +656,11 @@
+ 
+ 
+ def cartesian_product_numpy(*arrays):
+-    """
+-    Cartesian product of Numpy arrays by Paul Panzer
+-    https://stackoverflow.com/a/49445693/1497443
+-    """
+     la = len(arrays)
+-    dtype = np.result_type(*arrays)
+-    arr = np.empty((la, *map(len, arrays)), dtype=dtype)
+-    idx = slice(None), *repeat(None, la)
+-    for i, a in enumerate(arrays):
+-        arr[i, ...] = a[idx[:la - i]]
+-    return arr.reshape(la, -1).T
++    arr = np.empty([len(a) for a in arrays] + [la], dtype=arrays[0].dtype)
++    for i, a in enumerate(np.ix_(*arrays)):
++        arr[..., i] = a
++    return arr.reshape(-1, la)
+ 
+ 
+ def diff_numpy_array(A, B):
+@@ -687,18 +681,20 @@
+ 
+ 
+ def get_homogeneous_numpy_compatible_type_of_seq(seq):
+-    """
+-    Return with the numpy dtype if the array can be converted to a non-object numpy array.
+-    Originally written by mgilson https://stackoverflow.com/a/13252348/1497443
+-    This is the modified version.
+-    """
+-    iseq = iter(seq)
+-    first_type = type(next(iseq))
+-    if first_type in {int, float, Decimal}:
+-        type_ = first_type if all((type(x) is first_type) for x in iseq) else False
+-        return PYTHON_TYPE_TO_NUMPY_TYPE.get(type_, False)
+-    else:
+-        return False
++    if not seq:
++        return None
++    type_set = set()
++    for item in seq:
++        item_type = type(item)
++        if item_type in PYTHON_TYPE_TO_NUMPY_TYPE:
++            type_set.add(item_type)
++        else:
++            return None
++    if len(type_set) == 1:
++        return PYTHON_TYPE_TO_NUMPY_TYPE[type_set.pop()]
++    elif type_set == {int, float} or type_set == {int, Decimal} or type_set == {float, Decimal} or type_set == {int, float, Decimal}:
++        return np_float64
++    return None
+ 
+ 
+ def detailed__dict__(obj, ignore_private_variables=True, ignore_keys=frozenset(), include_keys=None):

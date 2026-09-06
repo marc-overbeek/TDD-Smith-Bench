@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef einsum_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:\n    equation = inputs[0].toIValue()\n    input_shapes = [get_shape(v) for v in inputs[1:]]\n    output_shape = get_shape(outputs[0])\n    if \"...\" in equation:\n        raise NotImplementedError(\"Ellipsis in einsum is not supported\")\n    if \",\" not in equation:\n        raise NotImplementedError(\"Unsupported einsum equation\")\n    flop = prod(output_shape)\n    return flop\n```",
+  "rewrite": "def einsum_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:\n    equation = inputs[0].toIValue()\n    input_shapes = [get_shape(v) for v in inputs[1:]]\n    output_shape = get_shape(outputs[0])\n    if \"...\" in equation:\n        raise NotImplementedError(\"Ellipsis in einsum is not supported\")\n    if \",\" not in equation:\n        raise NotImplementedError(\"Unsupported einsum equation\")\n    flop = prod(output_shape)\n    return flop",
+  "strategy": "lm_regen_from_tests_combined"
+}

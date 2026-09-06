@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the code, I need to implement `parse_directive` for the `FencedDirective` class. The method needs to extract the marker from the match and call `_process_directive`.\n\nLooking at the current implementation and the test that's failing, the `parse_directive` method should extract the `fenced_directive_mark` group from the match and delegate to `_process_directive`.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the code, I need to implement `parse_directive` for the `FencedDirective` class. The method needs to extract the marker from the match and call `_process_directive`.\n\nLooking at the current implementation and the test that's failing, the `parse_directive` method should extract the `fenced_directive_mark` group from the match and delegate to `_process_directive`.\n\n```\ndef parse_directive(self, block: 'BlockParser', m: Match[str], state: 'BlockState') ->Optional[int]:\n    marker = m.group('fenced_directive_mark')\n    return self._process_directive(block, marker, m.start(), state)\n```",
+  "rewrite": "def parse_directive(self, block: 'BlockParser', m: Match[str], state: 'BlockState') ->Optional[int]:\n    marker = m.group('fenced_directive_mark')\n    return self._process_directive(block, marker, m.start(), state)",
+  "strategy": "lm_regen_from_tests"
+}

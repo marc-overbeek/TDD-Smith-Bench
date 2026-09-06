@@ -1,0 +1,104 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1670,55 +1670,58 @@
+                 new_segments.append(segment)
+         self.segments = new_segments
+ 
+-    def get_moving_data(self, stopped_speed_threshold: Optional[float]=None, raw: bool=False, speed_extreemes_percentiles: float=IGNORE_TOP_SPEED_PERCENTILES, ignore_nonstandard_distances: bool = True) -> MovingData:
+-        """
+-        Return a tuple of (moving_time, stopped_time, moving_distance,
+-        stopped_distance, max_speed) that may be used for detecting the time
+-        stopped, and max speed. Not that those values are not absolutely true,
+-        because the "stopped" or "moving" information aren't saved in the track.
+-
+-        Because of errors in the GPS recording, it may be good to calculate
+-        them on a reduced and smoothed version of the track.
+-
+-        Parameters
+-        ----------
+-        stopped_speed_threshold : float
+-            speeds (km/h) below this threshold are treated as if having no
+-            movement. Default is 1 km/h.
+-
+-        Returns
+-        ----------
+-        moving_data : MovingData : named tuple
+-            moving_time : float
+-                time (seconds) of track in which movement was occurring
+-            stopped_time : float
+-                time (seconds) of track in which no movement was occurring
+-            stopped_distance : float
+-                distance (meters) travelled during stopped times
+-            moving_distance : float
+-                distance (meters) travelled during moving times
+-            max_speed : float
+-                Maximum speed (m/s) during the track.
+-        """
++    def get_moving_data(self, stopped_speed_threshold: Optional[float]=None,
++        raw: bool=False, speed_extreemes_percentiles: float=
++        IGNORE_TOP_SPEED_PERCENTILES, ignore_nonstandard_distances: bool=True
++        ) ->MovingData:
++        if not stopped_speed_threshold:
++            stopped_speed_threshold = DEFAULT_STOPPED_SPEED_THRESHOLD
++
++        if raw:
++            speed_extreemes_percentiles=0
++            ignore_nonstandard_distances=False
++
+         moving_time = 0.
+         stopped_time = 0.
+ 
+         moving_distance = 0.
+         stopped_distance = 0.
+ 
+-        max_speed = 0.
+-
+-        for segment in self.segments:
+-            moving_data = segment.get_moving_data(stopped_speed_threshold, raw, speed_extreemes_percentiles, ignore_nonstandard_distances)
+-            if moving_data:
+-                moving_time += moving_data.moving_time
+-                stopped_time += moving_data.stopped_time
+-                moving_distance += moving_data.moving_distance
+-                stopped_distance += moving_data.stopped_distance
+-                if moving_data.max_speed is not None and moving_data.max_speed > max_speed:
+-                    max_speed = moving_data.max_speed
+-
+-        return MovingData(moving_time, stopped_time, moving_distance, stopped_distance, max_speed)
++        speeds_and_distances = []
++
++        for previous, point in zip(self.points, self.points[1:]):
++
++            # Won't compute max_speed for first and last because of common GPS
++            # recording errors, and because smoothing don't work well for those
++            # points:
++            if point.time and previous.time:
++                timedelta = point.time - previous.time
++
++                if point.elevation and previous.elevation:
++                    distance = point.distance_3d(previous)
++                else:
++                    distance = point.distance_2d(previous)
++
++                seconds = mod_utils.total_seconds(timedelta)
++                speed_kmh: float = 0
++                if seconds > 0 and distance is not None:
++                    # TODO: compute threshold in m/s instead this to kmh every time:
++                    speed_kmh = (distance / 1000) / (seconds / 60 ** 2)
++                    if distance:
++                        if speed_kmh <= stopped_speed_threshold:
++                            stopped_time += seconds
++                            stopped_distance += distance
++                        else:
++                            moving_time += seconds
++                            moving_distance += distance
++                        if moving_time:
++                            speeds_and_distances.append((distance / seconds, distance, ))
++
++        max_speed = None
++        if speeds_and_distances:
++            max_speed = mod_geo.calculate_max_speed(speeds_and_distances, speed_extreemes_percentiles, ignore_nonstandard_distances)
++
++        return MovingData(moving_time, stopped_time, moving_distance, stopped_distance, max_speed or 0.0)
+ 
+     def add_elevation(self, delta: float) -> None:
+         """

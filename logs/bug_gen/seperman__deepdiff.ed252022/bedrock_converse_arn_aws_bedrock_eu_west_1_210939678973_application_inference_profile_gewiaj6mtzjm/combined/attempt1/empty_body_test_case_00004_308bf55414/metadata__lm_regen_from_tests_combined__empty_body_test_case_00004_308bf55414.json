@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef __init__(self, items=None):\n    self._set = SetOrdered()\n    self._hashes = dict_()\n    self._hash_to_objects = dict_()\n    if items:\n        for item in items:\n            self.add(item)\n\ndef pop(self):\n    if self._set:\n        return self._set.pop()\n    else:\n        return self._hash_to_objects.pop(next(iter(self._hash_to_objects)))\n\ndef __len__(self):\n    return len(self._set) + len(self._hash_to_objects)\n\ndef __bool__(self):\n    return bool(self._set or self._hash_to_objects)\n```",
+  "rewrite": "def __init__(self, items=None):\n    self._set = SetOrdered()\n    self._hashes = dict_()\n    self._hash_to_objects = dict_()\n    if items:\n        for item in items:\n            self.add(item)\n\ndef pop(self):\n    if self._set:\n        return self._set.pop()\n    else:\n        return self._hash_to_objects.pop(next(iter(self._hash_to_objects)))\n\ndef __len__(self):\n    return len(self._set) + len(self._hash_to_objects)\n\ndef __bool__(self):\n    return bool(self._set or self._hash_to_objects)",
+  "strategy": "lm_regen_from_tests_combined"
+}

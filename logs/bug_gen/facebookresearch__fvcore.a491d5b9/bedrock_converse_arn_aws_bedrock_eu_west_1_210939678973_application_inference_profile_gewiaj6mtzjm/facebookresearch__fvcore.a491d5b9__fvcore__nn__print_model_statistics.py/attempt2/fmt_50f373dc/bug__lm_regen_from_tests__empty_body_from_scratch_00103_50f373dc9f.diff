@@ -1,0 +1,17 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -39,7 +39,13 @@
+ 
+     def fmt(x: float) -> str:
+         # use fixed point to avoid scientific notation
+-        return "{{:.{}f}}".format(sig_figs).format(x).rstrip("0").rstrip(".")
++        return "{:.3f}".format(x).rstrip("0").rstrip(".")
++
++    def fmt(x: float) -> str:
++        # use fixed point to avoid scientific notation
++        if x == int(x):
++            return str(int(x))
++        return "{:.3f}".format(x).rstrip("0").rstrip(".")
+ 
+     if abs(x) > 1e14:
+         return fmt(x / 1e15) + "P"

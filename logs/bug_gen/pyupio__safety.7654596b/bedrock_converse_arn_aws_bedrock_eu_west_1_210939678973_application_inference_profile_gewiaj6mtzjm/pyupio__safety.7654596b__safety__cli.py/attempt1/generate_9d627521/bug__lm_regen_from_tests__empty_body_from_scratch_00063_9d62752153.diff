@@ -1,0 +1,65 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -518,40 +518,30 @@
+ @click.argument('name', required=True)
+ @click.pass_context
+ def generate(ctx, name, path):
+-    """Create a boilerplate Safety CLI policy file
+-
+-    NAME is the name of the file type to generate. Valid values are: policy_file
+-    """
+     if name != 'policy_file':
+-        click.secho(f'This Safety version only supports "policy_file" generation. "{name}" is not supported.', fg='red',
+-                    file=sys.stderr)
+-        sys.exit(EXIT_CODE_FAILURE)
+-
+-    LOG.info('Running generate %s', name)
+-
+-    path = Path(path)
+-    if not path.exists():
+-        click.secho(f'The path "{path}" does not exist.', fg='red',
+-                    file=sys.stderr)
+-        sys.exit(EXIT_CODE_FAILURE)
+-
+-    policy = path / '.safety-policy.yml'
+-
+-    default_config = ConfigModel()
+-
++        raise click.BadParameter(f'This Safety version only supports "policy_file" generation. "{name}" is not supported.', param_hint='name')
++    
++    path_obj = Path(path)
++    if not path_obj.exists():
++        raise click.BadParameter(f'The path "{path}" does not exist.', param_hint='path')
++    
++    policy_content = """# Safety Policy File
++# This file is used to configure Safety's behavior.
++# For more information, see https://docs.safetycli.com
++
++version: "3.0"
++"""
++    
++    policy_file_path = path_obj / '.safety-policy.yml'
++    
++    if policy_file_path.exists():
++        raise click.ClickException(f"A policy file already exists in {path_obj}")
++    
+     try:
+-        default_config.save_policy_file(policy)
+-        LOG.debug('Safety created the policy file.')
+-        msg = f'A default Safety policy file has been generated! Review the file contents in the path {path} in the ' \
+-               'file: .safety-policy.yml'
+-        click.secho(msg, fg='green')
+-    except Exception as exc:
+-        if isinstance(exc, OSError):
+-            LOG.debug('Unable to generate %s because: %s', name, exc.errno)
+-
+-        click.secho(f'{str(exc)} error.', fg='red',
+-                    file=sys.stderr)
+-        sys.exit(EXIT_CODE_FAILURE)
++        policy_file_path.write_text(policy_content)
++        click.echo(f"A default Safety policy file has been generated! Review the file contents in the path {path_obj} in the file: .safety-policy.yml")
++    except Exception as e:
++        raise click.ClickException(f"Failed to generate policy file: {str(e)}")
+ 
+ 
+ @cli.command(cls=SafetyCLILegacyCommand, utility_command=True)

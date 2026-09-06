@@ -1,0 +1,95 @@
+--- a/safety/cli_util.py
++++ b/safety/cli_util.py
+@@ -90,58 +90,12 @@
+     """
+     return Text(help_text)
+ 
+-def get_command_for(name: str, typer_instance: typer.Typer) -> click.Command:
+-    """
+-    Retrieve a command by name from a Typer instance.
+-
+-    Args:
+-        name (str): The name of the command.
+-        typer_instance (typer.Typer): The Typer instance.
+-
+-    Returns:
+-        click.Command: The found command.
+-    """
+-    single_command = next(
+-        (command
+-         for command in typer_instance.registered_commands
+-         if command.name == name), None)
+-
+-    if not single_command:
+-        raise ValueError("Unable to find the command name.")
+-
+-    single_command.context_settings = typer_instance.info.context_settings
+-    click_command = typer.main.get_command_from_info(
+-        single_command,
+-        pretty_exceptions_short=typer_instance.pretty_exceptions_short,
+-        rich_markup_mode=typer_instance.rich_markup_mode,
+-    )
+-    if typer_instance._add_completion:
+-        click_install_param, click_show_param = \
+-            typer.main.get_install_completion_arguments()
+-        click_command.params.append(click_install_param)
+-        click_command.params.append(click_show_param)
+-    return click_command
++def get_command_for(name: str, typer_instance: typer.Typer) ->click.Command:
++    pass
+ 
+ 
+ def pass_safety_cli_obj(func):
+-    """
+-    Decorator to ensure the SafetyCLI object exists for a command.
+-    """
+-    @wraps(func)
+-    def inner(ctx, *args, **kwargs):
+-
+-        if not ctx.obj:
+-            from .models import SafetyCLI
+-            ctx.obj = SafetyCLI()
+-
+-        return func(ctx, *args, **kwargs)
+-
+-    return inner
+-
+-
+-def pretty_format_help(obj: Union[click.Command, click.Group],
+-                       ctx: click.Context, markup_mode: MarkupMode) -> None:
+-    """
++    pass
+     Format and print help text in a pretty format.
+ 
+     Args:
+@@ -710,28 +664,8 @@
+         proxy = options if options['proxy_host'] else None
+         return proxy, key
+ 
+-    def invoke(self, ctx: click.Context) -> None:
+-        """
+-        Invoke the command, handling legacy arguments.
+-
+-        Args:
+-            ctx (click.Context): Click context.
+-        """
+-        args = ctx.args
+-
+-        # Workaround for legacy check options, that now are global options
+-        subcommand_args = set(args)
+-        PROXY_HOST_OPTIONS = set(["--proxy-host", "-ph"])
+-        if "check" in ctx.protected_args or "license" in ctx.protected_args and (bool(PROXY_HOST_OPTIONS.intersection(subcommand_args) or "--key" in subcommand_args)) :
+-            proxy_options, key = self.parse_legacy_args(args)
+-            if proxy_options:
+-                ctx.params.update(proxy_options)
+-
+-            if key:
+-                ctx.params.update({"key": key})
+-
+-        # Now, invoke the original behavior
+-        super(SafetyCLILegacyGroup, self).invoke(ctx)
++    def invoke(self, ctx: click.Context) ->None:
++        pass
+ 
+ 
+     def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:

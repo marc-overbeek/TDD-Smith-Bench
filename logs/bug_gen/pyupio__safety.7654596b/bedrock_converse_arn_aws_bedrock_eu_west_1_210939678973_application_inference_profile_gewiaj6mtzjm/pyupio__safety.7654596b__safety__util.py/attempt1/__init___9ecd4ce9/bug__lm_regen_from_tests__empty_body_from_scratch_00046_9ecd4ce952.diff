@@ -1,0 +1,25 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -765,18 +765,10 @@
+     name = "filename"
+     envvar_list_splitter = os.path.pathsep
+ 
+-    def __init__(
+-        self,
+-        mode: str = "r",
+-        encoding: Optional[str] = None,
+-        errors: str = "strict",
+-        pure: bool = os.environ.get('SAFETY_PURE_YAML', 'false').lower() == 'true'
+-    ) -> None:
+-        self.mode = mode
+-        self.encoding = encoding
+-        self.errors = errors
+-        self.basic_msg = '\n' + click.style('Unable to load the Safety Policy file "{name}".', fg='red')
+-        self.pure = pure
++    def __init__(self, mode: str='r', encoding: Optional[str]=None, errors: str
++        ='strict', pure: bool=os.environ.get('SAFETY_PURE_YAML', 'false').lower
++        () == 'true') ->None:
++        super().__init__(mode=mode, encoding=encoding, errors=errors, pure=pure)
+ 
+     def to_info_dict(self) -> Dict[str, Any]:
+         """

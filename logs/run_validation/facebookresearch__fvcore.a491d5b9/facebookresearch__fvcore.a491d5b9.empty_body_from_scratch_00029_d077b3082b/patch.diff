@@ -1,0 +1,26 @@
+--- a/fvcore/common/checkpoint.py
++++ b/fvcore/common/checkpoint.py
+@@ -237,21 +237,8 @@
+         with self.path_manager.open(save_file, "w") as f:
+             f.write(last_filename_basename)
+ 
+-    def _load_file(self, f: str) -> Dict[str, Any]:
+-        """
+-        Load a checkpoint file. Can be overwritten by subclasses to support
+-        different formats.
+-
+-        Args:
+-            f (str): a locally mounted file path.
+-        Returns:
+-            dict: with keys "model" and optionally others that are saved by
+-                the checkpointer dict["model"] must be a dict which maps strings
+-                to torch.Tensor or numpy arrays.
+-        """
+-        with self.path_manager.open(f, "rb") as file:
+-            # pyre-fixme[22]: The cast is redundant.
+-            return torch.load(cast(IO[bytes], file), map_location=torch.device("cpu"))
++    def _load_file(self, f: str) ->Dict[str, Any]:
++        pass
+ 
+     def _load_model(self, checkpoint: Any) -> _IncompatibleKeys:
+         """

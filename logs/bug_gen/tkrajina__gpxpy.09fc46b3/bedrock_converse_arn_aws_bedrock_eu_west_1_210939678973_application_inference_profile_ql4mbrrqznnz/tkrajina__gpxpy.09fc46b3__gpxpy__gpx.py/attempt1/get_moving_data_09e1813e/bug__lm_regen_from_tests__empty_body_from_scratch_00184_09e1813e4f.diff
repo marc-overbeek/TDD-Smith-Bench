@@ -1,0 +1,71 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2204,45 +2204,29 @@
+         for track in self.tracks:
+             track.remove_empty()
+ 
+-    def get_moving_data(self, stopped_speed_threshold: Optional[float]=None, raw: bool=False, speed_extreemes_percentiles: float=IGNORE_TOP_SPEED_PERCENTILES, ignore_nonstandard_distances: bool=True) -> MovingData:
+-        """
+-        Return a tuple of (moving_time, stopped_time, moving_distance, stopped_distance, max_speed)
+-        that may be used for detecting the time stopped, and max speed. Not that those values are not
+-        absolutely true, because the "stopped" or "moving" information aren't saved in the track.
+-
+-        Because of errors in the GPS recording, it may be good to calculate them on a reduced and
+-        smoothed version of the track. Something like this:
+-
+-        cloned_gpx = gpx.clone()
+-        cloned_gpx.reduce_points(2000, min_distance=10)
+-        cloned_gpx.smooth(vertical=True, horizontal=True)
+-        cloned_gpx.smooth(vertical=True, horizontal=False)
+-        moving_time, stopped_time, moving_distance, stopped_distance, max_speed_ms = cloned_gpx.get_moving_data
+-        max_speed_kmh = max_speed_ms * 60. ** 2 / 1000.
+-
+-        Experiment with your own variations to get the values you expect.
+-
+-        Max speed is in m/s.
+-        """
+-        moving_time = 0.
+-        stopped_time = 0.
+-
+-        moving_distance = 0.
+-        stopped_distance = 0.
+-
+-        max_speed = 0.
+-
+-        for track in self.tracks:
+-            track_moving_time, track_stopped_time, track_moving_distance, track_stopped_distance, track_max_speed = track.get_moving_data(stopped_speed_threshold, raw=raw, speed_extreemes_percentiles=speed_extreemes_percentiles, ignore_nonstandard_distances=ignore_nonstandard_distances)
+-            moving_time += track_moving_time
+-            stopped_time += track_stopped_time
+-            moving_distance += track_moving_distance
+-            stopped_distance += track_stopped_distance
+-
+-            if track_max_speed > max_speed:
+-                max_speed = track_max_speed
+-
+-        return MovingData(moving_time, stopped_time, moving_distance, stopped_distance, max_speed)
++    def get_moving_data(self, stopped_speed_threshold: Optional[float]=None,
++        raw: bool=False, speed_extreemes_percentiles: float=
++        IGNORE_TOP_SPEED_PERCENTILES, ignore_nonstandard_distances: bool=True
++        ) ->MovingData:
++            moving_time = 0.
++            stopped_time = 0.
++
++            moving_distance = 0.
++            stopped_distance = 0.
++
++            max_speed = 0.
++
++            for track in self.tracks:
++                track_moving_time, track_stopped_time, track_moving_distance, track_stopped_distance, track_max_speed = track.get_moving_data(stopped_speed_threshold, raw=raw, speed_extreemes_percentiles=speed_extreemes_percentiles, ignore_nonstandard_distances=ignore_nonstandard_distances)
++                moving_time += track_moving_time
++                stopped_time += track_stopped_time
++                moving_distance += track_moving_distance
++                stopped_distance += track_stopped_distance
++
++                if track_max_speed > max_speed:
++                    max_speed = track_max_speed
++
++            return MovingData(moving_time, stopped_time, moving_distance, stopped_distance, max_speed)
+ 
+     def split(self, track_no: int, track_segment_no: int, track_point_no: int) -> None:
+         """

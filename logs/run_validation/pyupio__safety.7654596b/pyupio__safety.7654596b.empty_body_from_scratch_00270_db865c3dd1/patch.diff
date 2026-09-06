@@ -1,0 +1,42 @@
+--- a/safety/scan/decorators.py
++++ b/safety/scan/decorators.py
+@@ -289,38 +289,6 @@
+     """
+     @wraps(func)
+     def inner(ctx, *args, **kwargs):
+-        telemetry = build_telemetry_data(telemetry=ctx.obj.config.telemetry_enabled,
+-                                         command=ctx.command.name,
+-                                         subcommand=ctx.invoked_subcommand)
+-
+-        auth_type = ctx.obj.auth.client.get_authentication_type()
+-
+-        scan_type = ScanType(ctx.command.name)
+-        target = kwargs.get("target", None)
+-        targets = kwargs.get("targets", None)
+-
+-        if not scan_type:
+-            raise SafetyException("Missing scan_type.")
+-
+-        if scan_type is ScanType.scan:
+-            if not target:
+-                raise SafetyException("Missing target.")
+-            targets = [target]
+-
+-        metadata = MetadataModel(
+-            scan_type=scan_type,
+-            stage=ctx.obj.auth.stage,
+-            scan_locations=targets,
+-            authenticated=ctx.obj.auth.client.is_using_auth_credentials(),
+-            authentication_type=auth_type,
+-            telemetry=telemetry,
+-            schema_version=ReportSchemaVersion.v3_0
+-            )
+-
+-        ctx.obj.schema = ReportSchemaVersion.v3_0
+-        ctx.obj.metadata = metadata
+-        ctx.obj.telemetry = telemetry
+-
+-        return func(ctx, *args, **kwargs)
++        pass
+ 
+     return inner

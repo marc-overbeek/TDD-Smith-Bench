@@ -1,0 +1,107 @@
+--- a/deepdiff/search.py
++++ b/deepdiff/search.py
+@@ -82,18 +82,10 @@
+ 
+     warning_num = 0
+ 
+-    def __init__(self,
+-                 obj,
+-                 item,
+-                 exclude_paths=SetOrdered(),
+-                 exclude_regex_paths=SetOrdered(),
+-                 exclude_types=SetOrdered(),
+-                 verbose_level=1,
+-                 case_sensitive=False,
+-                 match_string=False,
+-                 use_regexp=False,
+-                 strict_checking=True,
+-                 **kwargs):
++    def __init__(self, obj, item, exclude_paths=SetOrdered(),
++        exclude_regex_paths=SetOrdered(), exclude_types=SetOrdered(),
++        verbose_level=1, case_sensitive=True, match_string=False, use_regexp=
++        False, strict_checking=True, **kwargs):
+         if kwargs:
+             raise ValueError((
+                 "The following parameter(s) are not valid: %s\n"
+@@ -107,8 +99,7 @@
+         self.exclude_paths = SetOrdered(exclude_paths)
+         self.exclude_regex_paths = [re.compile(exclude_regex_path) for exclude_regex_path in exclude_regex_paths]
+         self.exclude_types = SetOrdered(exclude_types)
+-        self.exclude_types_tuple = tuple(
+-            exclude_types)  # we need tuple for checking isinstance
++        self.exclude_types_tuple = tuple(exclude_types)
+         self.verbose_level = verbose_level
+         self.update(
+             matched_paths=self.__set_or_dict(),
+@@ -124,7 +115,6 @@
+                 raise TypeError(f"The passed item of {item} is not usable for regex: {e}") from None
+         self.strict_checking = strict_checking
+ 
+-        # Cases where user wants to match exact string item
+         self.match_string = match_string
+ 
+         self.__search(obj, item, parents_ids=frozenset({id(obj)}))
+@@ -237,11 +227,7 @@
+                 parent=new_parent,
+                 parents_ids=parents_ids_added)
+ 
+-    def __search_iterable(self,
+-                          obj,
+-                          item,
+-                          parent="root",
+-                          parents_ids=frozenset()):
++    def __search_iterable(self, obj, item, parent='root', parents_ids=frozenset()):
+         """Search iterables except dictionaries, sets and strings."""
+         for i, thing in enumerate(obj):
+             new_parent = "{}[{}]".format(parent, i)
+@@ -253,16 +239,21 @@
+             else:
+                 thing_cased = thing.lower()
+ 
+-            if not self.use_regexp and thing_cased == item:
+-                self.__report(
+-                    report_key='matched_values', key=new_parent, value=thing)
++            matched = False
++            if self.use_regexp and isinstance(thing_cased, strings):
++                if item.search(thing_cased):
++                    matched = True
++            elif not self.use_regexp and thing_cased == item:
++                matched = True
++
++            if matched:
++                self.__report(report_key='matched_values', key=new_parent, value=thing)
+             else:
+                 item_id = id(thing)
+                 if parents_ids and item_id in parents_ids:
+                     continue
+                 parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+-                self.__search(thing, item, "%s[%s]" %
+-                              (parent, i), parents_ids_added)
++                self.__search(thing, item, "%s[%s]" % (parent, i), parents_ids_added)
+ 
+     def __search_str(self, obj, item, parent):
+         """Compare strings"""
+@@ -289,19 +280,14 @@
+             self.__report(report_key='matched_values', key=parent, value=obj)
+ 
+     def __search_tuple(self, obj, item, parent, parents_ids):
+-        # Checking to see if it has _fields. Which probably means it is a named
+-        # tuple.
+         try:
+             obj._asdict
+-        # It must be a normal tuple
+         except AttributeError:
+             self.__search_iterable(obj, item, parent, parents_ids)
+-        # We assume it is a namedtuple then
+-        else:
+-            self.__search_obj(
+-                obj, item, parent, parents_ids, is_namedtuple=True)
+-
+-    def __search(self, obj, item, parent="root", parents_ids=frozenset()):
++        else:
++            self.__search_obj(obj, item, parent, parents_ids, is_namedtuple=True)
++
++    def __search(self, obj, item, parent='root', parents_ids=frozenset()):
+         """The main search method"""
+         if self.__skip_this(item, parent):
+             return

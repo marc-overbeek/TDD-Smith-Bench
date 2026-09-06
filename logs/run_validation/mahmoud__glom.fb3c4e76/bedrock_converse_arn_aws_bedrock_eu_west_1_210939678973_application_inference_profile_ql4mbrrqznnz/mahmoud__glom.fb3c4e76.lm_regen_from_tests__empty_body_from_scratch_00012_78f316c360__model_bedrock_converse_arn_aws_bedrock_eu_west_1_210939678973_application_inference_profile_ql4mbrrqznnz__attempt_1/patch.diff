@@ -1,0 +1,48 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1673,26 +1673,28 @@
+ 
+ 
+ def _extend_children(children, item, get_handler):
+-    try:  # dict or obj-like
+-        keys = get_handler('keys', item)
+-        get = get_handler('get', item)
+-    except UnregisteredTarget:
++    # Try keys-based access first (dict-like objects)
++    keys_handler = get_handler('keys', item, raise_exc=False)
++    if keys_handler:
+         try:
+-            iterate = get_handler('iterate', item)
+-        except UnregisteredTarget:
++            keys = keys_handler(item)
++            get = get_handler('get', item, raise_exc=False)
++            if get:
++                for key in keys:
++                    try:
++                        children.append(get(item, key))
++                    except Exception:
++                        pass
++            return
++        except Exception:
+             pass
+-        else:
+-            try:  # list-like
+-                children.extend(iterate(item))
+-            except Exception:
+-                pass
+-    else:
++    
++    # Try iteration (list-like objects)
++    iterate_handler = get_handler('iterate', item, raise_exc=False)
++    if iterate_handler:
+         try:
+-            for key in keys(item):
+-                try:
+-                    children.append(get(item, key))
+-                except Exception:
+-                    pass
++            for child in iterate_handler(item):
++                children.append(child)
+         except Exception:
+             pass
+ 

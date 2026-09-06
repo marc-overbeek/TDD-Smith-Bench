@@ -1,0 +1,150 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -208,38 +208,119 @@
+ 
+ 
+ def get_type(obj, max_typed_dict_size):
+-    """Return the static type that would be used in a type hint"""
++    """Return the type of obj, with special handling for collections and callables."""
++    # Handle None
++    if obj is None:
++        return NoneType
++    
++    # Handle classes (not instances)
+     if isinstance(obj, type):
+         return Type[obj]
+-    elif isinstance(obj, _BUILTIN_CALLABLE_TYPES):
++    
++    # Handle dicts
++    if isinstance(obj, dict):
++        return get_dict_type(obj, max_typed_dict_size)
++    
++    # Handle lists
++    if isinstance(obj, list):
++        if len(obj) == 0:
++            return List[Any]
++        element_types = [get_type(elem, max_typed_dict_size) for elem in obj]
++        element_type = shrink_types(element_types, max_typed_dict_size)
++        return List[element_type]
++    
++    # Handle sets
++    if isinstance(obj, set):
++        if len(obj) == 0:
++            return Set[Any]
++        element_types = [get_type(elem, max_typed_dict_size) for elem in obj]
++        element_type = shrink_types(element_types, max_typed_dict_size)
++        return Set[element_type]
++    
++    # Handle tuples
++    if isinstance(obj, tuple):
++        if len(obj) == 0:
++            return Tuple[()]
++        element_types = tuple(get_type(elem, max_typed_dict_size) for elem in obj)
++        return Tuple[element_types]
++    
++    # Handle generators
++    if inspect.isgenerator(obj):
++        # Get the yield type, send type, and return type
++        yield_type = Any
++        send_type = NoneType
++        return_type = NoneType
++        return make_generator(yield_type, send_type, return_type)
++    
++    # Handle iterators (but not strings, which are iterable)
++    if isinstance(obj, Iterator) and not isinstance(obj, (str, bytes)):
++        return Iterator[Any]
++    
++    # Handle callables
++    if isinstance(obj, _BUILTIN_CALLABLE_TYPES):
+         return Callable
+-    elif isinstance(obj, types.GeneratorType):
++    
++    if callable(obj):
++        return Callable
++    
++    # Handle defaultdict
++    if isinstance(obj, defaultdict):
++        return get_dict_type(obj, max_typed_dict_size)
++    
++    # Default: return the type of the object
++    return type(obj)
++
++def get_type(obj, max_typed_dict_size):
++    """Return the type of obj, with special handling for collections and callables."""
++    # Handle None
++    if obj is None:
++        return NoneType
++    
++    # Handle classes (not instances)
++    if isinstance(obj, type):
++        return Type[obj]
++    
++    # Handle dicts (including defaultdict)
++    if isinstance(obj, dict):
++        return get_dict_type(obj, max_typed_dict_size)
++    
++    # Handle lists
++    if isinstance(obj, list):
++        if len(obj) == 0:
++            return List[Any]
++        element_types = [get_type(elem, max_typed_dict_size) for elem in obj]
++        element_type = shrink_types(element_types, max_typed_dict_size)
++        return List[element_type]
++    
++    # Handle sets
++    if isinstance(obj, set):
++        if len(obj) == 0:
++            return Set[Any]
++        element_types = [get_type(elem, max_typed_dict_size) for elem in obj]
++        element_type = shrink_types(element_types, max_typed_dict_size)
++        return Set[element_type]
++    
++    # Handle tuples
++    if isinstance(obj, tuple):
++        if len(obj) == 0:
++            return Tuple[()]
++        element_types = tuple(get_type(elem, max_typed_dict_size) for elem in obj)
++        return Tuple[element_types]
++    
++    # Handle generators
++    if inspect.isgenerator(obj):
++        return make_generator(Any, NoneType, NoneType)
++    
++    # Handle iterators
++    if isinstance(obj, Iterator) and not isinstance(obj, (str, bytes)):
+         return Iterator[Any]
+-    typ = type(obj)
+-    if typ is list:
+-        elem_type = shrink_types(
+-            (get_type(e, max_typed_dict_size) for e in obj), max_typed_dict_size
+-        )
+-        return List[elem_type]
+-    elif typ is set:
+-        elem_type = shrink_types(
+-            (get_type(e, max_typed_dict_size) for e in obj), max_typed_dict_size
+-        )
+-        return Set[elem_type]
+-    elif typ is dict:
+-        return get_dict_type(obj, max_typed_dict_size)
+-    elif typ is defaultdict:
+-        key_type = shrink_types(
+-            (get_type(k, max_typed_dict_size) for k in obj.keys()), max_typed_dict_size
+-        )
+-        val_type = shrink_types(
+-            (get_type(v, max_typed_dict_size) for v in obj.values()),
+-            max_typed_dict_size,
+-        )
+-        return DefaultDict[key_type, val_type]
+-    elif typ is tuple:
+-        return Tuple[tuple(get_type(e, max_typed_dict_size) for e in obj)]
+-    return typ
++    
++    # Handle callables
++    if isinstance(obj, _BUILTIN_CALLABLE_TYPES) or callable(obj):
++        return Callable
++    
++    # Default: return the type of the object
++    return type(obj)
+ 
+ 
+ NoneType = type(None)

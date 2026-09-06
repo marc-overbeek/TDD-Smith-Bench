@@ -1,0 +1,87 @@
+--- a/deepdiff/path.py
++++ b/deepdiff/path.py
+@@ -41,75 +41,22 @@
+ 
+ @lru_cache(maxsize=1024 * 128)
+ def _path_to_elements(path, root_element=DEFAULT_FIRST_ELEMENT):
+-    """
+-    Given a path, it extracts the elements that form the path and their relevant most likely retrieval action.
+-
+-        >>> from deepdiff import _path_to_elements
+-        >>> path = "root[4.3].b['a3']"
+-        >>> _path_to_elements(path, root_element=None)
+-        [(4.3, 'GET'), ('b', 'GETATTR'), ('a3', 'GET')]
+-    """
+-    if isinstance(path, (tuple, list)):
+-        return path
+     elements = []
+-    if root_element:
+-        elements.append(root_element)
++    inside = ''
+     elem = ''
+-    inside = False
+-    prev_char = None
+-    path = path[4:]  # removing "root from the beginning"
+-    brackets = []
+-    inside_quotes = False
+-    quote_used = ''
+     for char in path:
+-        if prev_char == '𝆺𝅥𝅯':
+-            elem += char
+-        elif char in {'"', "'"}:
+-            elem += char
+-            # If we are inside and the quote is not what we expected, the quote is not closing
+-            if not(inside_quotes and quote_used != char):
+-                inside_quotes = not inside_quotes
+-                if inside_quotes:
+-                    quote_used = char
+-                else:
+-                    _add_to_elements(elements, elem, inside)
+-                    elem = ''
+-                    quote_used = ''
+-        elif inside_quotes:
+-            elem += char
+-        elif char == '[':
+-            if inside == '.':
++        if char in {'[', '.'}:
++            if elem:
+                 _add_to_elements(elements, elem, inside)
+-                inside = '['
+-                elem = ''
+-            # we are already inside. The bracket is a part of the word.
+-            elif inside == '[':
+-                elem += char
+-            else:
+-                inside = '['
+-                brackets.append('[')
+-                elem = ''
+-        elif char == '.':
+-            if inside == '[':
+-                elem += char
+-            elif inside == '.':
++            elem = ''
++            inside = char
++        elif char == ']':
++            if elem:
+                 _add_to_elements(elements, elem, inside)
+-                elem = ''
+-            else:
+-                inside = '.'
+-                elem = ''
+-        elif char == ']':
+-            if brackets and brackets[-1] == '[':
+-                brackets.pop()
+-            if brackets:
+-                elem += char
+-            else:
+-                _add_to_elements(elements, elem, inside)
+-                elem = ''
+-                inside = False
++            elem = ''
++            inside = ''
+         else:
+             elem += char
+-        prev_char = char
+     if elem:
+         _add_to_elements(elements, elem, inside)
+     return tuple(elements)

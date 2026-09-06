@@ -1,0 +1,34 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -123,30 +123,8 @@
+     return f
+ 
+ def configure_logger(ctx, param, debug):
+-    level = logging.CRITICAL
+-
+-    if debug:
+-        level = logging.DEBUG
+-
++    level = logging.DEBUG if debug else logging.CRITICAL
+     logging.basicConfig(format='%(asctime)s %(name)s => %(message)s', level=level)
+-
+-    if debug:
+-        # Log the contents of the config.ini file
+-        config = configparser.ConfigParser()
+-        config.read(CONFIG_FILE_USER)
+-        LOG.debug('Config file contents:')
+-        for section in config.sections():
+-            LOG.debug('[%s]', section)
+-            for key, value in config.items(section):
+-                LOG.debug('%s = %s', key, value)
+-
+-        # Log the proxy settings if they were attempted
+-        if 'proxy' in config:
+-            LOG.debug('Proxy configuration attempted with settings: %s', dict(config['proxy']))
+-
+-        # Collect and log network telemetry data
+-        network_telemetry = get_network_telemetry()
+-        LOG.debug('Network telemetry: %s', network_telemetry)
+ 
+ @click.group(cls=SafetyCLILegacyGroup, help=CLI_MAIN_INTRODUCTION, epilog=DEFAULT_EPILOG)
+ @auth_options()

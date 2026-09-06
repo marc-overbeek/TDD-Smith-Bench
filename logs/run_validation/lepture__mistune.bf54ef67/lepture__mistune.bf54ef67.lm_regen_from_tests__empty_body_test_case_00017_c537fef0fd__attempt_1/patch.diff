@@ -1,0 +1,40 @@
+--- a/src/mistune/block_parser.py
++++ b/src/mistune/block_parser.py
+@@ -198,13 +198,6 @@
+         return m.end() + 1
+ 
+     def parse_setex_heading(self, m: Match[str], state: BlockState) -> Optional[int]:
+-        """Parse token for setex style heading. A setex heading syntax looks like:
+-
+-        .. code-block:: markdown
+-
+-            H1 title
+-            ========
+-        """
+         last_token = state.last_token()
+         if last_token and last_token['type'] == 'paragraph':
+             level = 1 if m.group('setext_1') == '=' else 2
+@@ -220,23 +213,6 @@
+         return None
+ 
+     def parse_ref_link(self, m: Match[str], state: BlockState) -> Optional[int]:
+-        """Parse link references and save the link information into ``state.env``.
+-
+-        Here is an example of a link reference:
+-
+-        .. code-block:: markdown
+-
+-            a [link][example]
+-
+-            [example]: https://example.com "Optional title"
+-
+-        This method will save the link reference into ``state.env`` as::
+-
+-            state.env['ref_links']['example'] = {
+-                'url': 'https://example.com',
+-                'title': "Optional title",
+-            }
+-        """
+         end_pos = state.append_paragraph()
+         if end_pos:
+             return end_pos

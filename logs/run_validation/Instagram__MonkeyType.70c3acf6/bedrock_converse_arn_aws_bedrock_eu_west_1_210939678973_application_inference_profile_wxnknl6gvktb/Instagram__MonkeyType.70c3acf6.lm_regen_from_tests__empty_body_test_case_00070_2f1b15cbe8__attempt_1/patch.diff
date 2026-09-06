@@ -1,0 +1,27 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -284,21 +284,12 @@
+ 
+ 
+ def _is_optional(anno: Any) -> bool:
+-    """Is the supplied annotation an instance of the 'virtual' Optional type?
+-
+-    Optional isn't really a type. It's an alias to Union[T, NoneType]
+-    """
+-    return is_union(anno) and NoneType in anno.__args__
++    return is_union(anno) and len(getattr(anno, '__args__', ())) == 2 and NoneType in getattr(anno, '__args__', ())
+ 
+ 
+ def _get_optional_elem(anno: Any) -> Any:
+-    """Get the non-null type from an optional."""
+-    if not _is_optional(anno):
+-        raise TypeError("Supplied annotation isn't an optional")
+-    elems = tuple(e for e in anno.__args__ if e is not NoneType)
+-    if len(elems) == 1:
+-        return elems[0]
+-    return Union[elems]
++    args = getattr(anno, '__args__', ())
++    return args[0] if args[1] is NoneType else args[1]
+ 
+ 
+ class RenderAnnotation(GenericTypeRewriter[str]):

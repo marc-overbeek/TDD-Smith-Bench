@@ -1,0 +1,16 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1551,7 +1551,12 @@
+ 
+         return bounds
+ 
+-    def walk(self, only_points: bool=False) -> Iterator[Any]: #Union[GPXTrackPoint, Tuple[GPXTrackPoint, int, int]]]:
++    for tmp_point in track.walk():
++        self.assertTrue(tmp_point)
++    for point, segment_no, point_no in track.walk():
++        self.assertTrue(point)
++
++    def walk(self, only_points: bool=False) -> Iterator[Any]:
+         """
+         Generator used to iterates through track
+ 

@@ -1,0 +1,82 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -19,39 +19,46 @@
+ ### Pre-processing functions ###
+ 
+ 
+-def _format_size(x: int, sig_figs: int = 3, hide_zero: bool = False) -> str:
+-    """
+-    Formats an integer for printing in a table or model representation.
+-    Expresses the number in terms of 'kilo', 'mega', etc., using
+-    'K', 'M', etc. as a suffix.
+-
+-    Args:
+-        x (int) : The integer to format.
+-        sig_figs (int) : The number of significant figures to keep
+-        hide_zero (bool) : If True, x=0 is replaced with an empty string
+-            instead of '0'.
+-
+-    Returns:
+-        str : The formatted string.
+-    """
+-    if hide_zero and x == 0:
+-        return str("")
+-
+-    def fmt(x: float) -> str:
+-        # use fixed point to avoid scientific notation
+-        return "{{:.{}f}}".format(sig_figs).format(x).rstrip("0").rstrip(".")
+-
+-    if abs(x) > 1e14:
+-        return fmt(x / 1e15) + "P"
+-    if abs(x) > 1e11:
+-        return fmt(x / 1e12) + "T"
+-    if abs(x) > 1e8:
+-        return fmt(x / 1e9) + "G"
+-    if abs(x) > 1e5:
+-        return fmt(x / 1e6) + "M"
+-    if abs(x) > 1e2:
+-        return fmt(x / 1e3) + "K"
+-    return str(x)
++formatted = _pretty_statistics(test_statistics)
++self.assertEqual(string_statistics, formatted)
++
++def _format_size(x: int, sig_figs: int=3, hide_zero: bool=False) ->str:
++    if x == 0:
++        return "" if hide_zero else "0"
++    
++    # Define suffixes and their thresholds
++    suffixes = ["", "K", "M", "G", "T"]
++    magnitude = 0
++    value = float(x)
++    
++    # Find appropriate suffix
++    while abs(value) >= 1000 and magnitude < len(suffixes) - 1:
++        value /= 1000
++        magnitude += 1
++    
++    # Format with significant figures
++    # sig_figs applies to the total number of significant digits
++    if magnitude == 0:
++        # For numbers without suffix, just return as integer
++        return str(int(value))
++    else:
++        # For numbers with suffix, format with appropriate decimal places
++        # We need sig_figs total significant figures
++        if abs(value) >= 100:
++            decimal_places = max(0, sig_figs - 3)
++        elif abs(value) >= 10:
++            decimal_places = max(0, sig_figs - 2)
++        else:
++            decimal_places = max(0, sig_figs - 1)
++        
++        format_str = f"{{:.{decimal_places}f}}"
++        formatted_value = format_str.format(value)
++        
++        # Remove trailing zeros after decimal point
++        if '.' in formatted_value:
++            formatted_value = formatted_value.rstrip('0').rstrip('.')
++        
++        return formatted_value + suffixes[magnitude]
+ 
+ 
+ def _pretty_statistics(

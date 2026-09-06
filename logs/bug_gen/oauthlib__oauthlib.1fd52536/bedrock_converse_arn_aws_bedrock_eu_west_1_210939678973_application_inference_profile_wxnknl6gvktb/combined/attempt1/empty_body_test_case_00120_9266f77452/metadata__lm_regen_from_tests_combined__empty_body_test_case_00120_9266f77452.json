@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef __init__(self, request_validator, default_grant=None, oidc_grant=None):\n    self.default_grant = default_grant\n    self.oidc_grant = oidc_grant\n    self.request_validator = request_validator\n\ndef _handler_for_request(self, request):\n    handler = self.default_grant\n    scopes = ()\n    parameters = dict(request.decoded_body)\n    client_id = parameters.get('client_id')\n    code = parameters.get('code')\n    redirect_uri = parameters.get('redirect_uri')\n\n    if code:\n        scopes = self.request_validator.get_authorization_code_scopes(client_id, code, redirect_uri, request)\n\n    if 'openid' in scopes:\n        handler = self.oidc_grant\n\n    log.debug('Selecting handler for request %r.', handler)\n    return handler\n```",
+  "rewrite": "def __init__(self, request_validator, default_grant=None, oidc_grant=None):\n    self.default_grant = default_grant\n    self.oidc_grant = oidc_grant\n    self.request_validator = request_validator\n\ndef _handler_for_request(self, request):\n    handler = self.default_grant\n    scopes = ()\n    parameters = dict(request.decoded_body)\n    client_id = parameters.get('client_id')\n    code = parameters.get('code')\n    redirect_uri = parameters.get('redirect_uri')\n\n    if code:\n        scopes = self.request_validator.get_authorization_code_scopes(client_id, code, redirect_uri, request)\n\n    if 'openid' in scopes:\n        handler = self.oidc_grant\n\n    log.debug('Selecting handler for request %r.', handler)\n    return handler",
+  "strategy": "lm_regen_from_tests_combined"
+}

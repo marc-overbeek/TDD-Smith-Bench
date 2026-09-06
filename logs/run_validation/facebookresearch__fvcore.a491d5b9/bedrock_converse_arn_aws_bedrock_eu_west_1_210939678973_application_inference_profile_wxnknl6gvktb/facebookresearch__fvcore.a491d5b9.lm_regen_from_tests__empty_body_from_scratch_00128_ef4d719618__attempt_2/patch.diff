@@ -1,0 +1,55 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -251,13 +251,46 @@
+ 
+ 
+ def batchnorm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-    training = inputs[5].toIValue()
+-    assert isinstance(training, bool), "Signature of aten::batch_norm has changed!"
++    """
++    Count flops for batch normalization.
++    """
++    # inputs[0]: input tensor
++    # inputs[1]: weight (optional)
++    # inputs[2]: bias (optional)
++    # inputs[3]: running_mean (optional)
++    # inputs[4]: running_var (optional)
++    # inputs[5]: training (optional, default False)
++    # inputs[6]: momentum (optional)
++    # inputs[7]: eps (optional)
++    # inputs[8]: cudnn_enabled (optional)
++    
++    input_shape = get_shape(inputs[0])
++    flop = prod(input_shape)
++    
++    # Check if training mode is enabled
++    training = False
++    if len(inputs) > 5:
++        training = inputs[5].toIValue()
++    
+     if training:
+-        return norm_flop_counter(1)(inputs, outputs)  # pyre-ignore
+-    has_affine = get_shape(inputs[1]) is not None
+-    input_shape = prod(get_shape(inputs[0]))
+-    return input_shape * (2 if has_affine else 1)
++        # Training mode: 5 flops per element
++        flop = flop * 5
++    else:
++        # Check if running_mean and running_var are provided
++        has_running_stats = (
++            len(inputs) > 4 and 
++            get_shape(inputs[3]) is not None and 
++            get_shape(inputs[4]) is not None
++        )
++        
++        if has_running_stats:
++            # With running stats: 2 flops per element
++            flop = flop * 2
++        else:
++            # Without running stats: 1 flop per element
++            flop = flop * 1
++    
++    return flop
+ 
+ 
+ def elementwise_flop_counter(input_scale: float = 1, output_scale: float = 0) -> Handle:

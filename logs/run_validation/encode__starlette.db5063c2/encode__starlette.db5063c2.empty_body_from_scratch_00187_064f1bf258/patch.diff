@@ -1,0 +1,59 @@
+--- a/starlette/schemas.py
++++ b/starlette/schemas.py
+@@ -36,54 +36,8 @@
+     def get_schema(self, routes: list[BaseRoute]) -> dict[str, typing.Any]:
+         raise NotImplementedError()  # pragma: no cover
+ 
+-    def get_endpoints(self, routes: list[BaseRoute]) -> list[EndpointInfo]:
+-        """
+-        Given the routes, yields the following information:
+-
+-        - path
+-            eg: /users/
+-        - http_method
+-            one of 'get', 'post', 'put', 'patch', 'delete', 'options'
+-        - func
+-            method ready to extract the docstring
+-        """
+-        endpoints_info: list[EndpointInfo] = []
+-
+-        for route in routes:
+-            if isinstance(route, (Mount, Host)):
+-                routes = route.routes or []
+-                if isinstance(route, Mount):
+-                    path = self._remove_converter(route.path)
+-                else:
+-                    path = ""
+-                sub_endpoints = [
+-                    EndpointInfo(
+-                        path="".join((path, sub_endpoint.path)),
+-                        http_method=sub_endpoint.http_method,
+-                        func=sub_endpoint.func,
+-                    )
+-                    for sub_endpoint in self.get_endpoints(routes)
+-                ]
+-                endpoints_info.extend(sub_endpoints)
+-
+-            elif not isinstance(route, Route) or not route.include_in_schema:
+-                continue
+-
+-            elif inspect.isfunction(route.endpoint) or inspect.ismethod(route.endpoint):
+-                path = self._remove_converter(route.path)
+-                for method in route.methods or ["GET"]:
+-                    if method == "HEAD":
+-                        continue
+-                    endpoints_info.append(EndpointInfo(path, method.lower(), route.endpoint))
+-            else:
+-                path = self._remove_converter(route.path)
+-                for method in ["get", "post", "put", "patch", "delete", "options"]:
+-                    if not hasattr(route.endpoint, method):
+-                        continue
+-                    func = getattr(route.endpoint, method)
+-                    endpoints_info.append(EndpointInfo(path, method.lower(), func))
+-
+-        return endpoints_info
++    def get_endpoints(self, routes: list[BaseRoute]) ->list[EndpointInfo]:
++        pass
+ 
+     def _remove_converter(self, path: str) -> str:
+         """

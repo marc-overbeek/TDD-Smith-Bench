@@ -1,0 +1,58 @@
+--- a/safety/auth/server.py
++++ b/safety/auth/server.py
+@@ -41,52 +41,9 @@
+ 
+     return None
+ 
+-def auth_process(code: str, state: str, initial_state: str, code_verifier: str, client: Any) -> Any:
+-    """
+-    Process the authentication callback and exchange the authorization code for tokens.
+-
+-    Args:
+-        code (str): The authorization code.
+-        state (str): The state parameter from the callback.
+-        initial_state (str): The initial state parameter.
+-        code_verifier (str): The code verifier for PKCE.
+-        client (Any): The OAuth client.
+-
+-    Returns:
+-        Any: The user information.
+-
+-    Raises:
+-        SystemExit: If there is an error during authentication.
+-    """
+-    err = None
+-
+-    if initial_state is None or initial_state != state:
+-        err = "The state parameter value provided does not match the expected " \
+-                "value. The state parameter is used to protect against Cross-Site " \
+-                "Request Forgery (CSRF) attacks. For security reasons, the " \
+-                "authorization process cannot proceed with an invalid state " \
+-                "parameter value. Please try again, ensuring that the state " \
+-                "parameter value provided in the authorization request matches " \
+-                "the value returned in the callback."
+-
+-    if err:
+-        click.secho(f'Error: {err}', fg='red')
+-        sys.exit(1)
+-
+-    try:
+-        tokens = client.fetch_token(url=f'{AUTH_SERVER_URL}/oauth/token',
+-                                        code_verifier=code_verifier,
+-                                        client_id=client.client_id,
+-                                        grant_type='authorization_code', code=code)
+-
+-        save_auth_config(access_token=tokens['access_token'],
+-                            id_token=tokens['id_token'],
+-                            refresh_token=tokens['refresh_token'])
+-        return client.fetch_user_info()
+-
+-    except Exception as e:
+-        LOG.exception(e)
+-        sys.exit(1)
++def auth_process(code: str, state: str, initial_state: str, code_verifier:
++    str, client: Any) ->Any:
++    pass
+ 
+ class CallbackHandler(http.server.BaseHTTPRequestHandler):
+     def auth(self, code: str, state: str, err: str, error_description: str) -> None:

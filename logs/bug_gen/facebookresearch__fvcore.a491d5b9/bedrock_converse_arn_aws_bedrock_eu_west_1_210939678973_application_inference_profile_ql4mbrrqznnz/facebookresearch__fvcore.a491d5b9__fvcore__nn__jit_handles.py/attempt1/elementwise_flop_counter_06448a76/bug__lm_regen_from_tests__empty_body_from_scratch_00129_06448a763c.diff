@@ -1,0 +1,46 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -260,24 +260,28 @@
+     return input_shape * (2 if has_affine else 1)
+ 
+ 
+-def elementwise_flop_counter(input_scale: float = 1, output_scale: float = 0) -> Handle:
+-    """
+-    Count flops by
+-        input_tensor.numel() * input_scale + output_tensor.numel() * output_scale
+-
+-    Args:
+-        input_scale: scale of the input tensor (first argument)
+-        output_scale: scale of the output tensor (first element in outputs)
+-    """
+-
+-    def elementwise_flop(inputs: List[Any], outputs: List[Any]) -> Number:
++def elementwise_flop_counter(input_scale: float=1, output_scale: float=0
++    ) ->Handle:
++    """
++    Count flops for elementwise operations.
++    
++    Args:
++        input_scale: scale factor for input elements
++        output_scale: scale factor for output elements
++    
++    Returns:
++        Handle: a function that counts flops for elementwise operations
++    """
++    def elementwise_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+         ret = 0
+         if input_scale != 0:
+             shape = get_shape(inputs[0])
+-            ret += input_scale * prod(shape)
++            if shape is not None:
++                ret += input_scale * prod(shape)
+         if output_scale != 0:
+             shape = get_shape(outputs[0])
+-            ret += output_scale * prod(shape)
++            if shape is not None:
++                ret += output_scale * prod(shape)
+         return ret
+-
+-    return elementwise_flop
++    
++    return elementwise_flop_jit

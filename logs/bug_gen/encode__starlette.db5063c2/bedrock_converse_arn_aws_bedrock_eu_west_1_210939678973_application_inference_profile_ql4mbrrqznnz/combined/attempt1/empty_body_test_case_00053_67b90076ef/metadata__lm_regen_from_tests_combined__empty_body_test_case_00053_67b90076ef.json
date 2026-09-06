@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the broken tests and the current implementation, I can see that the `__init__` and `on_field_start` methods of `FormParser` have empty bodies (`pass`) instead of the correct implementations that are visible in the rest of the file.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the broken tests and the current implementation, I can see that the `__init__` and `on_field_start` methods of `FormParser` have empty bodies (`pass`) instead of the correct implementations that are visible in the rest of the file.\n\n```\ndef __init__(self, headers: Headers, stream: typing.AsyncGenerator[bytes, None]) -> None:\n    assert multipart is not None, \"The `python-multipart` library must be installed to use form parsing.\"\n    self.headers = headers\n    self.stream = stream\n    self.messages: list[tuple[FormMessage, bytes]] = []\n\ndef on_field_start(self) -> None:\n    message = (FormMessage.FIELD_START, b\"\")\n    self.messages.append(message)\n```",
+  "rewrite": "def __init__(self, headers: Headers, stream: typing.AsyncGenerator[bytes, None]) -> None:\n    assert multipart is not None, \"The `python-multipart` library must be installed to use form parsing.\"\n    self.headers = headers\n    self.stream = stream\n    self.messages: list[tuple[FormMessage, bytes]] = []\n\ndef on_field_start(self) -> None:\n    message = (FormMessage.FIELD_START, b\"\")\n    self.messages.append(message)",
+  "strategy": "lm_regen_from_tests_combined"
+}

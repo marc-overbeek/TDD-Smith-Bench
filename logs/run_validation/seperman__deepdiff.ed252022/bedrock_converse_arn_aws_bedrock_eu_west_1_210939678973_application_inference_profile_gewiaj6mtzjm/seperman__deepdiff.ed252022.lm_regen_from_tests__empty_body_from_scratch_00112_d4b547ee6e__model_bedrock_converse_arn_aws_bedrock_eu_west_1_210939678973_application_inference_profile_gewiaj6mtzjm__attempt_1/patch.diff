@@ -1,0 +1,98 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -225,55 +225,48 @@
+             self._raise_or_log(VERIFICATION_MSG.format(
+                 path_str, expected_old_value, current_old_value, VERIFY_BIDIRECTIONAL_MSG))
+ 
+-    def _get_elem_and_compare_to_old_value(
+-        self,
+-        obj,
+-        path_for_err_reporting,
+-        expected_old_value,
+-        elem=None,
+-        action=None,
+-        forced_old_value=None,
+-        next_element=None,
+-    ):
+-        # if forced_old_value is not None:
+-        try:
+-            if action == GET:
+-                current_old_value = obj[elem]
+-            elif action == GETATTR:
+-                current_old_value = getattr(obj, elem)
+-            else:
+-                raise DeltaError(INVALID_ACTION_WHEN_CALLING_GET_ELEM.format(action))
+-        except (KeyError, IndexError, AttributeError, TypeError) as e:
+-            if self.force:
+-                if forced_old_value is None:
+-                    if next_element is None or isinstance(next_element, str):
+-                        _forced_old_value = {}
++    def _get_elem_and_compare_to_old_value(self, obj, path_for_err_reporting,
++        expected_old_value, elem=None, action=None, forced_old_value=None,
++        next_element=None):
++            # if forced_old_value is not None:
++            try:
++                if action == GET:
++                    current_old_value = obj[elem]
++                elif action == GETATTR:
++                    current_old_value = getattr(obj, elem)
++                else:
++                    raise DeltaError(INVALID_ACTION_WHEN_CALLING_GET_ELEM.format(action))
++            except (KeyError, IndexError, AttributeError, TypeError) as e:
++                if self.force:
++                    if forced_old_value is None:
++                        if next_element is None or isinstance(next_element, str):
++                            _forced_old_value = {}
++                        else:
++                            _forced_old_value = []    
+                     else:
+-                        _forced_old_value = []    
++                        _forced_old_value = forced_old_value
++                    if action == GET:
++                        if isinstance(obj, list):
++                            if isinstance(elem, int) and elem < len(obj):
++                                obj[elem] = _forced_old_value
++                            else:
++                                obj.append(_forced_old_value)
++                        else:
++                            obj[elem] = _forced_old_value
++                    elif action == GETATTR:
++                        setattr(obj, elem, _forced_old_value)
++                    return _forced_old_value
++                current_old_value = not_found
++                if isinstance(path_for_err_reporting, (list, tuple)):
++                    path_for_err_reporting = '.'.join([i[0] for i in path_for_err_reporting])
++                if self.bidirectional:
++                    self._raise_or_log(VERIFICATION_MSG.format(
++                        path_for_err_reporting,
++                        expected_old_value, current_old_value, e))
+                 else:
+-                    _forced_old_value = forced_old_value
+-                if action == GET:
+-                    if isinstance(obj, list):
+-                        if isinstance(elem, int) and elem < len(obj):
+-                            obj[elem] = _forced_old_value
+-                        else:
+-                            obj.append(_forced_old_value)
+-                    else:
+-                        obj[elem] = _forced_old_value
+-                elif action == GETATTR:
+-                    setattr(obj, elem, _forced_old_value)
+-                return _forced_old_value
+-            current_old_value = not_found
+-            if isinstance(path_for_err_reporting, (list, tuple)):
+-                path_for_err_reporting = '.'.join([i[0] for i in path_for_err_reporting])
+-            if self.bidirectional:
+-                self._raise_or_log(VERIFICATION_MSG.format(
+-                    path_for_err_reporting,
+-                    expected_old_value, current_old_value, e))
+-            else:
+-                self._raise_or_log(UNABLE_TO_GET_PATH_MSG.format(
+-                    path_for_err_reporting))
+-        return current_old_value
++                    self._raise_or_log(UNABLE_TO_GET_PATH_MSG.format(
++                        path_for_err_reporting))
++            return current_old_value
+ 
+     def _simple_set_elem_value(self, obj, path_for_err_reporting, elem=None, value=None, action=None):
+         """

@@ -1,0 +1,19 @@
+--- a/oauthlib/oauth2/rfc6749/clients/base.py
++++ b/oauthlib/oauth2/rfc6749/clients/base.py
+@@ -137,6 +137,16 @@
+         self.populate_token_attributes(self.token)
+ 
+     @property
++    case_insensitive_token_types = {
++        k.lower(): v for k, v in self.token_types.items()}
++    if self.token_type.lower() not in case_insensitive_token_types:
++        raise ValueError("Unsupported token type: %s" % self.token_type)
++
++    client = Client(self.client_id, access_token=self.access_token,
++        default_token_placement='invalid')
++    self.assertRaises(ValueError, client.add_token, self.uri, ...)
++
++    @property
+     def token_types(self):
+         """Supported token types and their respective methods
+ 

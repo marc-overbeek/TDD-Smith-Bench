@@ -1,0 +1,29 @@
+--- a/src/mistune/plugins/task_lists.py
++++ b/src/mistune/plugins/task_lists.py
+@@ -15,21 +15,12 @@
+     return _rewrite_all_list_items(state.tokens)
+ 
+ 
+-def render_task_list_item(
+-    renderer: "BaseRenderer", text: str, checked: bool = False
+-) -> str:
+-    checkbox = '<input class="task-list-item-checkbox" ' 'type="checkbox" disabled'
++def render_task_list_item(renderer: 'BaseRenderer', text: str, checked: bool) -> str:
++    checkbox = '<input type="checkbox" disabled'
+     if checked:
+-        checkbox += ' checked/>'
+-    else:
+-        checkbox += '/>'
+-
+-    if text.startswith('<p>'):
+-        text = text.replace('<p>', '<p>' + checkbox, 1)
+-    else:
+-        text = checkbox + text
+-
+-    return '<li class="task-list-item">' + text + '</li>\n'
++        checkbox += ' checked'
++    checkbox += ' />'
++    return '<li>' + checkbox + ' ' + text + '</li>\n'
+ 
+ 
+ def task_lists(md: "Markdown") -> None:

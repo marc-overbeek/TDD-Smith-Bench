@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef apply_image(self, img: np.ndarray) -> np.ndarray:\n    \"\"\"\n    Flip the image(s).\n\n    Args:\n        img (ndarray): of shape HxW, HxWxC, or NxHxWxC. The array can be\n            of type uint8 in range [0, 255], or floating point in range\n            [0, 1] or [0, 255].\n    Returns:\n        ndarray: the flipped image(s).\n    \"\"\"\n    tensor = torch.from_numpy(np.ascontiguousarray(img))\n    if len(tensor.shape) == 2:\n        # For dimension of HxW.\n        tensor = tensor.flip((-2))\n    elif len(tensor.shape) > 2:\n        # For dimension of HxWxC, NxHxWxC.\n        tensor = tensor.flip((-3))\n    return tensor.numpy()\n```",
+  "rewrite": "def apply_image(self, img: np.ndarray) -> np.ndarray:\n    \"\"\"\n    Flip the image(s).\n\n    Args:\n        img (ndarray): of shape HxW, HxWxC, or NxHxWxC. The array can be\n            of type uint8 in range [0, 255], or floating point in range\n            [0, 1] or [0, 255].\n    Returns:\n        ndarray: the flipped image(s).\n    \"\"\"\n    tensor = torch.from_numpy(np.ascontiguousarray(img))\n    if len(tensor.shape) == 2:\n        # For dimension of HxW.\n        tensor = tensor.flip((-2))\n    elif len(tensor.shape) > 2:\n        # For dimension of HxWxC, NxHxWxC.\n        tensor = tensor.flip((-3))\n    return tensor.numpy()\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

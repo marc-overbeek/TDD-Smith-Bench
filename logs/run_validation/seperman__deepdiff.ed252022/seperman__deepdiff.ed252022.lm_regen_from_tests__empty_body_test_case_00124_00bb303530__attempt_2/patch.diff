@@ -1,0 +1,199 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -67,27 +67,15 @@
+ 
+     __doc__ = doc
+ 
+-    def __init__(
+-        self,
+-        diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
+-        delta_path: Optional[str]=None,
+-        delta_file: Optional[IO]=None,
+-        delta_diff: Optional[dict]=None,
+-        flat_dict_list: Optional[List[Dict]]=None,
+-        flat_rows_list: Optional[List[FlatDeltaRow]]=None,
+-        deserializer: Callable=pickle_load,
+-        log_errors: bool=True,
+-        mutate: bool=False,
+-        raise_errors: bool=False,
+-        safe_to_import: Optional[Set[str]]=None,
+-        serializer: Callable=pickle_dump,
+-        verify_symmetry: Optional[bool]=None,
+-        bidirectional: bool=False,
+-        always_include_values: bool=False,
+-        iterable_compare_func_was_used: Optional[bool]=None,
+-        force: bool=False,
+-    ):
+-        # for pickle deserializer:
++    def __init__(self, diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
++        delta_path: Optional[str]=None, delta_file: Optional[IO]=None,
++        delta_diff: Optional[dict]=None, flat_dict_list: Optional[List[Dict]]=
++        None, flat_rows_list: Optional[List[FlatDeltaRow]]=None, deserializer:
++        Callable=pickle_load, log_errors: bool=True, mutate: bool=False,
++        raise_errors: bool=False, safe_to_import: Optional[Set[str]]=None,
++        serializer: Callable=pickle_dump, verify_symmetry: Optional[bool]=None,
++        bidirectional: bool=False, always_include_values: bool=False,
++        iterable_compare_func_was_used: Optional[bool]=None, force: bool=False):
+         if hasattr(deserializer, '__code__') and 'safe_to_import' in set(deserializer.__code__.co_varnames):
+             _deserializer = deserializer
+         else:
+@@ -106,7 +94,6 @@
+                     result['_iterable_opcodes'] = _iterable_opcodes
+                 return result
+ 
+-
+         self._reversed_diff = None
+ 
+         if verify_symmetry is not None:
+@@ -117,7 +104,7 @@
+ 
+         self.bidirectional = bidirectional
+         if bidirectional:
+-            self.always_include_values = True  # We need to include the values in bidirectional deltas
++            self.always_include_values = True
+         else:
+             self.always_include_values = always_include_values
+ 
+@@ -128,6 +115,8 @@
+                 self.diff = diff
+             elif isinstance(diff, strings):
+                 self.diff = _deserializer(diff, safe_to_import=safe_to_import)
++            else:
++                raise ValueError(DELTA_AT_LEAST_ONE_ARG_NEEDED)
+         elif delta_path:
+             with open(delta_path, 'rb') as the_file:
+                 content = the_file.read()
+@@ -141,7 +130,6 @@
+                 raise ValueError(BINIARY_MODE_NEEDED_MSG.format(e)) from None
+             self.diff = _deserializer(content, safe_to_import=safe_to_import)
+         elif flat_dict_list:
+-            # Use copy to preserve original value of flat_dict_list in calling module
+             self.diff = self._from_flat_dicts(copy.deepcopy(flat_dict_list))
+         elif flat_rows_list:
+             self.diff = self._from_flat_rows(copy.deepcopy(flat_rows_list))
+@@ -152,8 +140,6 @@
+         self.raise_errors = raise_errors
+         self.log_errors = log_errors
+         self._numpy_paths = self.diff.get('_numpy_paths', False)
+-        # When we create the delta from a list of flat dictionaries, details such as iterable_compare_func_was_used get lost.
+-        # That's why we allow iterable_compare_func_was_used to be explicitly set.
+         self._iterable_compare_func_was_used = self.diff.get('_iterable_compare_func_was_used', iterable_compare_func_was_used)
+         self.serializer = serializer
+         self.deserializer = deserializer
+@@ -235,7 +221,6 @@
+         forced_old_value=None,
+         next_element=None,
+     ):
+-        # if forced_old_value is not None:
+         try:
+             if action == GET:
+                 current_old_value = obj[elem]
+@@ -509,13 +494,8 @@
+                     obj=parent, path_for_err_reporting=path, expected_old_value=None,
+                     elem=parent_to_obj_elem, action=parent_to_obj_action, next_element=next2_element)
+             else:
+-                # parent = self
+-                # obj = self.root
+-                # parent_to_obj_elem = 'root'
+-                # parent_to_obj_action = GETATTR
+                 parent = parent_to_obj_elem = parent_to_obj_action = None
+-                obj = self
+-                # obj = self.get_nested_obj(obj=self, elements=elements[:-1])
++                obj = self.root
+             elem, action = elements[-1]
+         except Exception as e:
+             self._raise_or_log(UNABLE_TO_GET_ITEM_MSG.format(path, e))
+@@ -531,20 +511,16 @@
+             if elem_and_details:
+                 elements, parent, parent_to_obj_elem, parent_to_obj_action, obj, elem, action = elem_and_details
+             else:
+-                continue  # pragma: no cover. Due to cPython peephole optimizer, this line doesn't get covered. https://github.com/nedbat/coveragepy/issues/198
++                continue
+             expected_old_value = value.get('old_value', not_found)
+ 
+             current_old_value = self._get_elem_and_compare_to_old_value(
+                 obj=obj, path_for_err_reporting=path, expected_old_value=expected_old_value, elem=elem, action=action)
+             if current_old_value is not_found:
+-                continue  # pragma: no cover. I have not been able to write a test for this case. But we should still check for it.
+-            # With type change if we could have originally converted the type from old_value
+-            # to new_value just by applying the class of the new_value, then we might not include the new_value
+-            # in the delta dictionary. That is defined in Model.DeltaResult._from_tree_type_changes
++                continue
+             if is_type_change and 'new_value' not in value:
+                 try:
+                     new_type = value['new_type']
+-                    # in case of Numpy we pass the ndarray plus the dtype in a tuple
+                     if new_type in numpy_dtypes:
+                         new_value = np_array_factory(current_old_value, new_type)
+                     else:
+@@ -703,9 +679,6 @@
+             self._simple_set_elem_value(parent, path_for_err_reporting=path, elem=elem, value=new_value, action=action)
+ 
+     def _do_ignore_order_get_old(self, obj, remove_indexes_per_path, fixed_indexes_values, path_for_err_reporting):
+-        """
+-        A generator that gets the old values in an iterable when the order was supposed to be ignored.
+-        """
+         old_obj_index = -1
+         max_len = len(obj) - 1
+         while old_obj_index < max_len:
+@@ -723,43 +696,20 @@
+             yield current_old_obj
+ 
+     def _do_ignore_order(self):
+-        """
+-
+-            't1': [5, 1, 1, 1, 6],
+-            't2': [7, 1, 1, 1, 8],
+-
+-            'iterable_items_added_at_indexes': {
+-                'root': {
+-                    0: 7,
+-                    4: 8
+-                }
+-            },
+-            'iterable_items_removed_at_indexes': {
+-                'root': {
+-                    4: 6,
+-                    0: 5
+-                }
+-            }
+-
+-        """
+         fixed_indexes = self.diff.get('iterable_items_added_at_indexes', dict_())
+         remove_indexes = self.diff.get('iterable_items_removed_at_indexes', dict_())
+         paths = SetOrdered(fixed_indexes.keys()) | SetOrdered(remove_indexes.keys())
+         for path in paths:
+-            # In the case of ignore_order reports, we are pointing to the container object.
+-            # Thus we add a [0] to the elements so we can get the required objects and discard what we don't need.
+             elem_and_details = self._get_elements_and_details("{}[0]".format(path))
+             if elem_and_details:
+                 _, parent, parent_to_obj_elem, parent_to_obj_action, obj, _, _ = elem_and_details
+             else:
+-                continue  # pragma: no cover. Due to cPython peephole optimizer, this line doesn't get covered. https://github.com/nedbat/coveragepy/issues/198
+-            # copying both these dictionaries since we don't want to mutate them.
++                continue
+             fixed_indexes_per_path = fixed_indexes.get(path, dict_()).copy()
+             remove_indexes_per_path = remove_indexes.get(path, dict_()).copy()
+             fixed_indexes_values = AnySet(fixed_indexes_per_path.values())
+ 
+             new_obj = []
+-            # Numpy's NdArray does not like the bool function.
+             if isinstance(obj, np_ndarray):
+                 there_are_old_items = obj.size > 0
+             else:
+@@ -779,15 +729,12 @@
+                     else:
+                         new_obj.append(new_item)
+                 else:
+-                    # pop a random item from the fixed_indexes_per_path dictionary
+                     self._raise_or_log(INDEXES_NOT_FOUND_WHEN_IGNORE_ORDER.format(fixed_indexes_per_path))
+                     new_item = fixed_indexes_per_path.pop(next(iter(fixed_indexes_per_path)))
+                     new_obj.append(new_item)
+ 
+             if isinstance(obj, tuple):
+                 new_obj = tuple(new_obj)
+-            # Making sure that the object is re-instated inside the parent especially if it was immutable
+-            # and we had to turn it into a mutable one. In such cases the object has a new id.
+             self._simple_set_elem_value(obj=parent, path_for_err_reporting=path, elem=parent_to_obj_elem,
+                                         value=new_obj, action=parent_to_obj_action)
+ 

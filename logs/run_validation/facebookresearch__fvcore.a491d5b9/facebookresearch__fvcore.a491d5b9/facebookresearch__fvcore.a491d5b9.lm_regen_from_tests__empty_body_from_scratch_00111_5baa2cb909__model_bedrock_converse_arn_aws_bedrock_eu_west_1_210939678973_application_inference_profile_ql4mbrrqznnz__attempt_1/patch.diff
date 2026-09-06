@@ -1,0 +1,175 @@
+--- a/fvcore/nn/parameter_count.py
++++ b/fvcore/nn/parameter_count.py
+@@ -32,7 +32,7 @@
+     return r
+ 
+ 
+-def parameter_count_table(model: nn.Module, max_depth: int = 3) -> str:
++def parameter_count_table(model: nn.Module, max_depth: int=3) ->str:
+     """
+     Format the parameter count of the model (and its submodules or parameters)
+     in a nice table. It looks like this:
+@@ -42,81 +42,102 @@
+         | name                            | #elements or shape   |
+         |:--------------------------------|:---------------------|
+         | model                           | 37.9M                |
+-        |  backbone                       |  31.5M               |
+-        |   backbone.fpn_lateral3         |   0.1M               |
+-        |    backbone.fpn_lateral3.weight |    (256, 512, 1, 1)  |
+-        |    backbone.fpn_lateral3.bias   |    (256,)            |
+-        |   backbone.fpn_output3          |   0.6M               |
+-        |    backbone.fpn_output3.weight  |    (256, 256, 3, 3)  |
+-        |    backbone.fpn_output3.bias    |    (256,)            |
+-        |   backbone.fpn_lateral4         |   0.3M               |
+-        |    backbone.fpn_lateral4.weight |    (256, 1024, 1, 1) |
+-        |    backbone.fpn_lateral4.bias   |    (256,)            |
+-        |   backbone.fpn_output4          |   0.6M               |
+-        |    backbone.fpn_output4.weight  |    (256, 256, 3, 3)  |
+-        |    backbone.fpn_output4.bias    |    (256,)            |
+-        |   backbone.fpn_lateral5         |   0.5M               |
+-        |    backbone.fpn_lateral5.weight |    (256, 2048, 1, 1) |
+-        |    backbone.fpn_lateral5.bias   |    (256,)            |
+-        |   backbone.fpn_output5          |   0.6M               |
+-        |    backbone.fpn_output5.weight  |    (256, 256, 3, 3)  |
+-        |    backbone.fpn_output5.bias    |    (256,)            |
+-        |   backbone.top_block            |   5.3M               |
+-        |    backbone.top_block.p6        |    4.7M              |
+-        |    backbone.top_block.p7        |    0.6M              |
+-        |   backbone.bottom_up            |   23.5M              |
+-        |    backbone.bottom_up.stem      |    9.4K              |
+-        |    backbone.bottom_up.res2      |    0.2M              |
+-        |    backbone.bottom_up.res3      |    1.2M              |
+-        |    backbone.bottom_up.res4      |    7.1M              |
+-        |    backbone.bottom_up.res5      |    14.9M             |
+-        |    ......                       |    .....             |
++        |  backbone                       | 31.5M                |
++        | ...
+ 
+     Args:
+-        model: a torch module
++        model (nn.Module): a torch module
+         max_depth (int): maximum depth to recursively print submodules or
+             parameters
+ 
+     Returns:
+-        str: the table to be printed
++        str: the table string
+     """
+     count: typing.DefaultDict[str, int] = parameter_count(model)
+-    # pyre-fixme[24]: Generic type `tuple` expects at least 1 type parameter.
+-    param_shape: typing.Dict[str, typing.Tuple] = {
++    # collect all the unique prefixes at each depth
++    param_shape: typing.Dict[str, typing.Tuple[int, ...]] = {
+         k: tuple(v.shape) for k, v in model.named_parameters()
+     }
+ 
+-    # pyre-fixme[24]: Generic type `tuple` expects at least 1 type parameter.
+-    table: typing.List[typing.Tuple] = []
++    table_headers = ["name", "#elements or shape"]
++    table_data = []
+ 
+-    def format_size(x: int) -> str:
+-        if x > 1e8:
+-            return "{:.1f}G".format(x / 1e9)
+-        if x > 1e5:
+-            return "{:.1f}M".format(x / 1e6)
+-        if x > 1e2:
+-            return "{:.1f}K".format(x / 1e3)
+-        return str(x)
++    def format_size(n: int) -> str:
++        if n > 1e9:
++            return "{:.1f}G".format(n / 1e9)
++        if n > 1e6:
++            return "{:.1f}M".format(n / 1e6)
++        if n > 1e3:
++            return "{:.1f}K".format(n / 1e3)
++        return str(n)
+ 
+-    def fill(lvl: int, prefix: str) -> None:
+-        if lvl >= max_depth:
++    # We want to show entries up to max_depth levels deep
++    # For each prefix that appears in count, decide whether to show it
++    # We show a prefix if its depth <= max_depth
++    # For leaf parameters (actual named parameters), show their shape instead of count
++    # We need to avoid duplicates
++
++    # Get all prefixes from count, sorted
++    # depth of a prefix = number of dots + 1 (or 0 for root "")
++    def depth_of(prefix: str) -> int:
++        if prefix == "":
++            return 0
++        return prefix.count(".") + 1
++
++    # Collect rows: show entries where depth <= max_depth
++    # For entries that are actual parameters (leaf), show shape
++    # For entries that are modules, show total count
++    # Sort by name to maintain order
++
++    # Get all names from named_parameters to know which are leaf params
++    leaf_params = set(param_shape.keys())
++
++    # We want to show all prefixes with depth <= max_depth
++    # but skip a prefix if it's a leaf param AND its depth > max_depth
++    # Actually: show prefix if depth(prefix) <= max_depth
++    # For leaf params at depth <= max_depth, show shape
++    # For module prefixes at depth <= max_depth, show count
++
++    rows = []
++    # Sort keys: root first, then by name
++    all_keys = sorted(count.keys(), key=lambda x: (x.count("."), x))
++
++    # To maintain model's parameter order, let's use a different approach
++    seen = set()
++    
++    def add_rows(prefix: str, depth: int) -> None:
++        if prefix in seen:
+             return
+-        for name, v in count.items():
+-            if name.count(".") == lvl and name.startswith(prefix):
+-                indent = " " * (lvl + 1)
+-                if name in param_shape:
+-                    table.append((indent + name, indent + str(param_shape[name])))
++        seen.add(prefix)
++        
++        if depth > max_depth:
++            return
++        
++        indent = " " * depth
++        if prefix == "":
++            display_name = model.__class__.__name__
++            rows.append([display_name, format_size(count[prefix])])
++        elif prefix in leaf_params:
++            rows.append([indent + prefix, str(list(param_shape[prefix]))])
++        else:
++            rows.append([indent + prefix, format_size(count[prefix])])
++        
++        # Add children
++        if depth < max_depth:
++            # Find direct children
++            for name in count.keys():
++                if name == prefix:
++                    continue
++                if prefix == "":
++                    # direct children have no dot
++                    if "." not in name:
++                        add_rows(name, depth + 1)
+                 else:
+-                    table.append((indent + name, indent + format_size(v)))
+-                    fill(lvl + 1, name + ".")
++                    if name.startswith(prefix + "."):
++                        rest = name[len(prefix) + 1:]
++                        if "." not in rest:
++                            add_rows(name, depth + 1)
+ 
+-    table.append(("model", format_size(count.pop(""))))
+-    fill(0, "")
++    add_rows("", 0)
+ 
+-    old_ws = tabulate.PRESERVE_WHITESPACE
+-    tabulate.PRESERVE_WHITESPACE = True
+-    tab = tabulate.tabulate(
+-        table, headers=["name", "#elements or shape"], tablefmt="pipe"
+-    )
+-    tabulate.PRESERVE_WHITESPACE = old_ws
+-    return tab
++    return tabulate.tabulate(rows, headers=table_headers, tablefmt="pipe")

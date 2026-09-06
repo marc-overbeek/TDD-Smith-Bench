@@ -1,0 +1,18 @@
+--- a/starlette/requests.py
++++ b/starlette/requests.py
+@@ -126,6 +126,15 @@
+         return self._headers
+ 
+     @property
++    @property
++    def query_params(self) -> QueryParams:
++        if not hasattr(self, "_query_params"):  # pragma: no branch
++            self._query_params = QueryParams(self.scope["query_string"])
++        return self._query_params
++
++    def query_params(self) ->QueryParams:
++        pass
++
+     def query_params(self) -> QueryParams:
+         if not hasattr(self, "_query_params"):  # pragma: no branch
+             self._query_params = QueryParams(self.scope["query_string"])

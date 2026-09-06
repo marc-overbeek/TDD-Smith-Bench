@@ -1,0 +1,310 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -55,24 +55,8 @@
+     return path.endswith(supported_types)
+ 
+ 
+-def parse_requirement(dep: Any, found: str) -> SafetyRequirement:
+-    """
+-    Parse a requirement.
+-
+-    Args:
+-        dep (Any): The dependency.
+-        found (str): The location where the dependency was found.
+-
+-    Returns:
+-        SafetyRequirement: The parsed requirement.
+-    """
+-    req = SafetyRequirement(dep)
+-    req.found = found
+-
+-    if req.specifier == SpecifierSet(''):
+-        req.specifier = SpecifierSet('>=0')
+-
+-    return req
++def parse_requirement(dep: Any, found: str) ->SafetyRequirement:
++    pass
+ 
+ 
+ def find_version(requirements: List[SafetyRequirement]) -> Optional[str]:
+@@ -98,58 +82,9 @@
+     return ver
+ 
+ 
+-def read_requirements(fh: Any, resolve: bool = True) -> Generator[Package, None, None]:
+-    """
+-    Reads requirements from a file-like object and (optionally) from referenced files.
+-
+-    Args:
+-        fh (Any): The file-like object to read from.
+-        resolve (bool): Resolves referenced files.
+-
+-    Returns:
+-        Generator: Yields Package objects.
+-    """
+-    is_temp_file = not hasattr(fh, 'name')
+-    path = None
+-    found = 'temp_file'
+-    file_type = filetypes.requirements_txt
+-    absolute_path: Optional[str] = None
+-
+-    if not is_temp_file and is_supported_by_parser(fh.name):
+-        LOG.debug('not temp and a compatible file')
+-        path = fh.name
+-        absolute_path = os.path.abspath(path)
+-        SafetyContext().scanned_full_path.append(absolute_path)
+-        found = path
+-        file_type = None
+-
+-    LOG.debug(f'Path: {path}')
+-    LOG.debug(f'File Type: {file_type}')
+-    LOG.debug('Trying to parse file using dparse...')
+-    content = fh.read()
+-    LOG.debug(f'Content: {content}')
+-    dependency_file = parse(content, path=path, resolve=resolve,
+-                            file_type=file_type)
+-    LOG.debug(f'Dependency file: {dependency_file.serialize()}')
+-    LOG.debug(f'Parsed, dependencies: {[dep.serialize() for dep in dependency_file.resolved_dependencies]}')
+-
+-    reqs_pkg = defaultdict(list)
+-
+-    for req in dependency_file.resolved_dependencies:
+-        reqs_pkg[canonicalize_name(req.name)].append(req)
+-
+-    for pkg, reqs in reqs_pkg.items():
+-        requirements = list(map(lambda req: parse_requirement(req, absolute_path), reqs))
+-        version = find_version(requirements)
+-
+-        yield Package(name=pkg, version=version,
+-                      requirements=requirements,
+-                      found=found,
+-                      absolute_path=absolute_path,
+-                      insecure_versions=[],
+-                      secure_versions=[], latest_version=None,
+-                      latest_version_without_known_vulnerabilities=None,
+-                      more_info_url=None)
++def read_requirements(fh: Any, resolve: bool=True) ->Generator[Package,
++    None, None]:
++    pass
+ 
+ 
+ def get_proxy_dict(proxy_protocol: str, proxy_host: str, proxy_port: int) -> Optional[Dict[str, str]]:
+@@ -423,48 +358,12 @@
+ 
+     return req.url
+ 
+-def get_processed_options(policy_file: Dict[str, Any], ignore: Dict[str, Any], ignore_severity_rules: Dict[str, Any],
+-    exit_code: bool, ignore_unpinned_requirements: Optional[bool] = None,
+-    project: Optional[str] = None) -> Tuple[Dict[str, Any], Dict[str, Any], bool, Optional[bool], Optional[str]]:
+-    """
+-    Get processed options from the policy file.
+-
+-    Args:
+-        policy_file (Dict[str, Any]): The policy file.
+-        ignore (Dict[str, Any]): The ignore settings.
+-        ignore_severity_rules (Dict[str, Any]): The ignore severity rules.
+-        exit_code (bool): The exit code setting.
+-        ignore_unpinned_requirements (Optional[bool]): The ignore unpinned requirements setting.
+-        project (Optional[str]): The project setting.
+-
+-    Returns:
+-        Tuple[Dict[str, Any], Dict[str, Any], bool, Optional[bool], Optional[str]]: The processed options.
+-    """
+-    if policy_file:
+-        project_config = policy_file.get('project', {})
+-        security = policy_file.get('security', {})
+-        ctx = click.get_current_context()
+-        source = ctx.get_parameter_source("exit_code")
+-
+-        if not project:
+-            project_id = project_config.get('id', None)
+-            if not project_id:
+-                project_id = None
+-            project = project_id
+-
+-        if ctx.get_parameter_source("ignore_unpinned_requirements") == click.core.ParameterSource.DEFAULT:
+-            ignore_unpinned_requirements = security.get('ignore-unpinned-requirements', None)
+-
+-        if not ignore:
+-            ignore = security.get('ignore-vulnerabilities', {})
+-        if source == click.core.ParameterSource.DEFAULT:
+-            exit_code = not security.get('continue-on-vulnerability-error', False)
+-        ignore_cvss_below = security.get('ignore-cvss-severity-below', 0.0)
+-        ignore_cvss_unknown = security.get('ignore-cvss-unknown-severity', False)
+-        ignore_severity_rules = {'ignore-cvss-severity-below': ignore_cvss_below,
+-                                 'ignore-cvss-unknown-severity': ignore_cvss_unknown}
+-
+-    return ignore, ignore_severity_rules, exit_code, ignore_unpinned_requirements, project
++def get_processed_options(policy_file: Dict[str, Any], ignore: Dict[str,
++    Any], ignore_severity_rules: Dict[str, Any], exit_code: bool,
++    ignore_unpinned_requirements: Optional[bool]=None, project: Optional[
++    str]=None) ->Tuple[Dict[str, Any], Dict[str, Any], bool, Optional[bool],
++    Optional[str]]:
++    pass
+ 
+ 
+ def get_fix_options(policy_file: Dict[str, Any], auto_remediation_limit: int) -> int:
+@@ -499,53 +398,11 @@
+     """
+ 
+     def __init__(self, *args, **kwargs):
+-        self.mutually_exclusive = set(kwargs.pop('mutually_exclusive', []))
+-        self.with_values = kwargs.pop('with_values', {})
+-        help = kwargs.get('help', '')
+-        if self.mutually_exclusive:
+-            ex_str = ', '.join(["{0} with values {1}".format(item, self.with_values.get(item)) if item in self.with_values else item for item in self.mutually_exclusive])
+-            kwargs['help'] = help + (
+-                ' NOTE: This argument is mutually exclusive with '
+-                ' arguments: [' + ex_str + '].'
+-            )
+-        super(MutuallyExclusiveOption, self).__init__(*args, **kwargs)
+-
+-    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+-        """
+-        Handle the parse result for mutually exclusive options.
+-
+-        Args:
+-            ctx (click.Context): The click context.
+-            opts (Dict[str, Any]): The options dictionary.
+-            args (List[str]): The arguments list.
+-
+-        Returns:
+-            Tuple[Any, List[str]]: The result and remaining arguments.
+-        """
+-        m_exclusive_used = self.mutually_exclusive.intersection(opts)
+-        option_used = m_exclusive_used and self.name in opts
+-
+-        exclusive_value_used = False
+-        for used in m_exclusive_used:
+-            value_used = opts.get(used, None)
+-            if not isinstance(value_used, List):
+-                value_used = [value_used]
+-            if value_used and set(self.with_values.get(used, [])).intersection(value_used):
+-                exclusive_value_used = True
+-
+-        if option_used and (not self.with_values or exclusive_value_used):
+-            options = ', '.join(self.opts)
+-            prohibited = ''.join(["\n * --{0} with {1}".format(item, self.with_values.get(
+-                        item)) if item in self.with_values else f"\n * {item}" for item in self.mutually_exclusive])
+-            raise click.UsageError(
+-                f"Illegal usage: `{options}` is mutually exclusive with: {prohibited}"
+-            )
+-
+-        return super(MutuallyExclusiveOption, self).handle_parse_result(
+-            ctx,
+-            opts,
+-            args
+-        )
++        pass
++
++    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any],
++        args: List[str]) ->Tuple[Any, List[str]]:
++        pass
+ 
+ 
+ class DependentOption(click.Option):
+@@ -553,71 +410,16 @@
+     A click option that depends on other options.
+     """
+     def __init__(self, *args, **kwargs):
+-        self.required_options = set(kwargs.pop('required_options', []))
+-        help = kwargs.get('help', '')
+-        if self.required_options:
+-            ex_str = ', '.join(self.required_options)
+-            kwargs['help'] = help + (
+-                f" Requires: [ {ex_str} ]"
+-            )
+-        super(DependentOption, self).__init__(*args, **kwargs)
+-
+-    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+-        """
+-        Handle the parse result for dependent options.
+-
+-        Args:
+-            ctx (click.Context): The click context.
+-            opts (Dict[str, Any]): The options dictionary.
+-            args (List[str]): The arguments list.
+-
+-        Returns:
+-            Tuple[Any, List[str]]: The result and remaining arguments.
+-        """
+-        missing_required_arguments = None
+-
+-        if self.name in opts:
+-            missing_required_arguments = self.required_options.difference(opts)
+-
+-        if missing_required_arguments:
+-            raise click.UsageError(
+-                "Illegal usage: `{}` needs the "
+-                "arguments `{}`.".format(
+-                    self.name,
+-                    ', '.join(missing_required_arguments)
+-                )
+-            )
+-
+-        return super(DependentOption, self).handle_parse_result(
+-            ctx,
+-            opts,
+-            args
+-        )
+-
+-
+-def transform_ignore(ctx: click.Context, param: click.Parameter, value: Tuple[str]) -> Dict[str, Dict[str, Optional[str]]]:
+-    """
+-    Transform ignore parameters into a dictionary.
+-
+-    Args:
+-        ctx (click.Context): The click context.
+-        param (click.Parameter): The click parameter.
+-        value (Tuple[str]): The parameter value.
+-
+-    Returns:
+-        Dict[str, Dict[str, Optional[str]]]: The transformed ignore parameters.
+-    """
+-    ignored_default_dict = {'reason': '', 'expires': None}
+-    if isinstance(value, tuple) and any(value):
+-        # Following code is required to support the 2 ways of providing 'ignore'
+-        # --ignore=1234,567,789
+-        # or, the historical way (supported for backward compatibility)
+-        # -i 1234 -i 567
+-        combined_value = ','.join(value)
+-        ignore_ids = {vuln_id.strip() for vuln_id in combined_value.split(',')}
+-        return {ignore_id: dict(ignored_default_dict) for ignore_id in ignore_ids}
+-
+-    return {}
++        pass
++
++    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any],
++        args: List[str]) ->Tuple[Any, List[str]]:
++        pass
++
++
++def transform_ignore(ctx: click.Context, param: click.Parameter, value:
++    Tuple[str]) ->Dict[str, Dict[str, Optional[str]]]:
++    pass
+ 
+ 
+ def active_color_if_needed(ctx: click.Context, param: click.Parameter, value: str) -> str:
+@@ -765,18 +567,10 @@
+     name = "filename"
+     envvar_list_splitter = os.path.pathsep
+ 
+-    def __init__(
+-        self,
+-        mode: str = "r",
+-        encoding: Optional[str] = None,
+-        errors: str = "strict",
+-        pure: bool = os.environ.get('SAFETY_PURE_YAML', 'false').lower() == 'true'
+-    ) -> None:
+-        self.mode = mode
+-        self.encoding = encoding
+-        self.errors = errors
+-        self.basic_msg = '\n' + click.style('Unable to load the Safety Policy file "{name}".', fg='red')
+-        self.pure = pure
++    def __init__(self, mode: str='r', encoding: Optional[str]=None, errors: str
++        ='strict', pure: bool=os.environ.get('SAFETY_PURE_YAML', 'false').lower
++        () == 'true') ->None:
++        pass
+ 
+     def to_info_dict(self) -> Dict[str, Any]:
+         """

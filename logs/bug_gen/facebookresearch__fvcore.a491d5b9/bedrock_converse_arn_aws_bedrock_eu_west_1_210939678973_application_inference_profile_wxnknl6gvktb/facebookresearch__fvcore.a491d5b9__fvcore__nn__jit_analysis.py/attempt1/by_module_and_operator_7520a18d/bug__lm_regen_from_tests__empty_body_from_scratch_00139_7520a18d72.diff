@@ -1,0 +1,21 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -268,6 +268,18 @@
+         module_name = self.canonical_module_name(module_name)
+         return stats.counts[module_name]
+ 
++    def by_module(self) -> typing.Counter[str]:
++        stats = self._analyze()
++        summed_counts = Counter()
++        for mod, results in stats.counts.items():
++            summed_counts[mod] = sum(results.values())
++        return summed_counts
++
++    def by_operator(self, module_name: str = "") -> typing.Counter[str]:
++        stats = self._analyze()
++        module_name = self.canonical_module_name(module_name)
++        return stats.counts[module_name]
++
+     def by_module_and_operator(self) -> Dict[str, typing.Counter[str]]:
+         """
+         Returns the statistics for all submodules, separated out by

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef update(self, value: float, iteration: Optional[float] = None) -> None:\n    \"\"\"\n    Add a new scalar value produced at certain iteration. If the length\n    of the buffer exceeds self._max_length, the oldest element will be\n    removed from the buffer.\n    \"\"\"\n    if iteration is None:\n        iteration = self._count\n    if len(self._data) == self._max_length:\n        self._data.pop(0)\n    self._data.append((value, iteration))\n\n    self._count += 1\n    self._global_avg += (value - self._global_avg) / self._count\n```",
+  "rewrite": "def update(self, value: float, iteration: Optional[float] = None) -> None:\n    \"\"\"\n    Add a new scalar value produced at certain iteration. If the length\n    of the buffer exceeds self._max_length, the oldest element will be\n    removed from the buffer.\n    \"\"\"\n    if iteration is None:\n        iteration = self._count\n    if len(self._data) == self._max_length:\n        self._data.pop(0)\n    self._data.append((value, iteration))\n\n    self._count += 1\n    self._global_avg += (value - self._global_avg) / self._count\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

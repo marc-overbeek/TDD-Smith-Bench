@@ -1,0 +1,35 @@
+--- a/deepdiff/path.py
++++ b/deepdiff/path.py
+@@ -124,13 +124,26 @@
+     return obj
+ 
+ 
++def test_delta_force1(self):
++    t1 = {'x': {'y': [1, 2, 3]}, 'q': {'r': 'abc'}}
++    t2 = {'x': {'y': [1, 2, 3, 4]}, 'q': {'r': 'abc', 't': 0.5}}
++    diff = DeepDiff(t1, t2)
++    delta = Delta(diff=diff, force=True)
++    result = {} + delta
++    expected = {'x': {'y': {(3): 4}}, 'q': {'t': 0.5}}
++    assert expected == result
++
+ def _guess_type(elements, elem, index, next_element):
+-    # If we are not at the last elements
+-    if index < len(elements) - 1:
+-        # We assume it is a nested dictionary not a nested list
+-        return {}
+-    if isinstance(next_element, int):
+-        return []
++    # Check if there's a next element in the path
++    if index + 1 < len(elements):
++        next_elem, next_action = elements[index + 1]
++        # If the next access is via GET with an integer index, create a list
++        if next_action == GET and isinstance(next_elem, int):
++            return []
++        # Otherwise, create a dictionary
++        else:
++            return {}
++    # If there's no next element, default to dict
+     return {}
+ 
+ 

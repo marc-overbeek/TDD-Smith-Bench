@@ -1,0 +1,164 @@
+--- a/oauthlib/oauth2/rfc6749/clients/base.py
++++ b/oauthlib/oauth2/rfc6749/clients/base.py
+@@ -52,89 +52,78 @@
+     """
+     refresh_token_key = 'refresh_token'
+ 
+-    def __init__(self, client_id,
+-                 default_token_placement=AUTH_HEADER,
+-                 token_type='Bearer',
+-                 access_token=None,
+-                 refresh_token=None,
+-                 mac_key=None,
+-                 mac_algorithm=None,
+-                 token=None,
+-                 scope=None,
+-                 state=None,
+-                 redirect_url=None,
+-                 state_generator=generate_token,
+-                 code_verifier=None,
+-                 code_challenge=None,
+-                 code_challenge_method=None,
+-                 **kwargs):
+-        """Initialize a client with commonly used attributes.
+-
+-        :param client_id: Client identifier given by the OAuth provider upon
+-        registration.
+-
+-        :param default_token_placement: Tokens can be supplied in the Authorization
+-        header (default), the URL query component (``query``) or the request
+-        body (``body``).
+-
+-        :param token_type: OAuth 2 token type. Defaults to Bearer. Change this
+-        if you specify the ``access_token`` parameter and know it is of a
+-        different token type, such as a MAC, JWT or SAML token. Can
+-        also be supplied as ``token_type`` inside the ``token`` dict parameter.
+-
+-        :param access_token: An access token (string) used to authenticate
+-        requests to protected resources. Can also be supplied inside the
+-        ``token`` dict parameter.
+-
+-        :param refresh_token: A refresh token (string) used to refresh expired
+-        tokens. Can also be supplied inside the ``token`` dict parameter.
+-
+-        :param mac_key: Encryption key used with MAC tokens.
+-
+-        :param mac_algorithm:  Hashing algorithm for MAC tokens.
+-
+-        :param token: A dict of token attributes such as ``access_token``,
+-        ``token_type`` and ``expires_at``.
+-
+-        :param scope: A list of default scopes to request authorization for.
+-
+-        :param state: A CSRF protection string used during authorization.
+-
+-        :param redirect_url: The redirection endpoint on the client side to which
+-        the user returns after authorization.
+-
+-        :param state_generator: A no argument state generation callable. Defaults
+-        to :py:meth:`oauthlib.common.generate_token`.
+-
+-        :param code_verifier: PKCE parameter. A cryptographically random string that is used to correlate the
+-        authorization request to the token request.
+-
+-        :param code_challenge: PKCE parameter. A challenge derived from the code verifier that is sent in the
+-        authorization request, to be verified against later.
+-
+-        :param code_challenge_method: PKCE parameter. A method that was used to derive code challenge.
+-        Defaults to "plain" if not present in the request.
+-        """
+-
+-        self.client_id = client_id
+-        self.default_token_placement = default_token_placement
+-        self.token_type = token_type
+-        self.access_token = access_token
+-        self.refresh_token = refresh_token
+-        self.mac_key = mac_key
+-        self.mac_algorithm = mac_algorithm
+-        self.token = token or {}
+-        self.scope = scope
+-        self.state_generator = state_generator
+-        self.state = state
+-        self.redirect_url = redirect_url
+-        self.code_verifier = code_verifier
+-        self.code_challenge = code_challenge
+-        self.code_challenge_method = code_challenge_method
+-        self.code = None
+-        self.expires_in = None
+-        self._expires_at = None
+-        self.populate_token_attributes(self.token)
++    def __init__(self, client_id, default_token_placement=AUTH_HEADER,
++        token_type='Bearer', access_token=None, refresh_token=None, mac_key=
++        None, mac_algorithm=None, token=None, scope=None, state=None,
++        redirect_url=None, state_generator=generate_token, code_verifier=None,
++        code_challenge=None, code_challenge_method=None, **kwargs):
++            """Initialize a client with commonly used attributes.
++
++            :param client_id: Client identifier given by the OAuth provider upon
++            registration.
++
++            :param default_token_placement: Tokens can be supplied in the Authorization
++            header (default), the URL query component (``query``) or the request
++            body (``body``).
++
++            :param token_type: OAuth 2 token type. Defaults to Bearer. Change this
++            if you specify the ``access_token`` parameter and know it is of a
++            different token type, such as a MAC, JWT or SAML token. Can
++            also be supplied as ``token_type`` inside the ``token`` dict parameter.
++
++            :param access_token: An access token (string) used to authenticate
++            requests to protected resources. Can also be supplied inside the
++            ``token`` dict parameter.
++
++            :param refresh_token: A refresh token (string) used to refresh expired
++            tokens. Can also be supplied inside the ``token`` dict parameter.
++
++            :param mac_key: Encryption key used with MAC tokens.
++
++            :param mac_algorithm:  Hashing algorithm for MAC tokens.
++
++            :param token: A dict of token attributes such as ``access_token``,
++            ``token_type`` and ``expires_at``.
++
++            :param scope: A list of default scopes to request authorization for.
++
++            :param state: A CSRF protection string used during authorization.
++
++            :param redirect_url: The redirection endpoint on the client side to which
++            the user returns after authorization.
++
++            :param state_generator: A no argument state generation callable. Defaults
++            to :py:meth:`oauthlib.common.generate_token`.
++
++            :param code_verifier: PKCE parameter. A cryptographically random string that is used to correlate the
++            authorization request to the token request.
++
++            :param code_challenge: PKCE parameter. A challenge derived from the code verifier that is sent in the
++            authorization request, to be verified against later.
++
++            :param code_challenge_method: PKCE parameter. A method that was used to derive code challenge.
++            Defaults to "plain" if not present in the request.
++            """
++
++            self.client_id = client_id
++            self.default_token_placement = default_token_placement
++            self.token_type = token_type
++            self.access_token = access_token
++            self.refresh_token = refresh_token
++            self.mac_key = mac_key
++            self.mac_algorithm = mac_algorithm
++            self.token = token or {}
++            self.scope = scope
++            self.state_generator = state_generator
++            self.state = state
++            self.redirect_url = redirect_url
++            self.code_verifier = code_verifier
++            self.code_challenge = code_challenge
++            self.code_challenge_method = code_challenge_method
++            self.code = None
++            self.expires_in = None
++            self._expires_at = None
++            self.populate_token_attributes(self.token)
+ 
+     @property
+     def token_types(self):

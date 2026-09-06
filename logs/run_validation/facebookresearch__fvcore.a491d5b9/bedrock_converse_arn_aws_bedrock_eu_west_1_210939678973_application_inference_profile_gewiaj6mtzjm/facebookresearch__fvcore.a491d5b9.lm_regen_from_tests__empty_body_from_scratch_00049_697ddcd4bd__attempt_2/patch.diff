@@ -1,0 +1,28 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -88,9 +88,22 @@
+         self._end_value = end_value
+ 
+     def __call__(self, where: float) -> float:
+-        return self._end_value + 0.5 * (self._start_value - self._end_value) * (
+-            1 + math.cos(math.pi * where)
+-        )
++        # Find scheduler corresponding to where
++        i = 0
++        running_total = self._lengths[i]
++        while (where + self.WHERE_EPSILON) > running_total and i < len(
++            self._schedulers
++        ) - 1:
++            i += 1
++            running_total += self._lengths[i]
++        scheduler = self._schedulers[i]
++        scheduler_where = where
++        interval_scale = self._interval_scaling[i]
++        if interval_scale == "rescaled":
++            # Calculate corresponding where % for scheduler
++            scheduler_start = running_total - self._lengths[i]
++            scheduler_where = (where - scheduler_start) / self._lengths[i]
++        return scheduler(scheduler_where)
+ 
+ 
+ class ExponentialParamScheduler(ParamScheduler):

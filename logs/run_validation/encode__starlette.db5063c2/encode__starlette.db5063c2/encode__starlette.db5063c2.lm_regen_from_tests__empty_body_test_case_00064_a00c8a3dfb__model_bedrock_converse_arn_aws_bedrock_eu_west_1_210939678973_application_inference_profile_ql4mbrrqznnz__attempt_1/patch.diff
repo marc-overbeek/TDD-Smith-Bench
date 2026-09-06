@@ -1,0 +1,79 @@
+--- a/starlette/responses.py
++++ b/starlette/responses.py
+@@ -287,18 +287,11 @@
+ class FileResponse(Response):
+     chunk_size = 64 * 1024
+ 
+-    def __init__(
+-        self,
+-        path: str | os.PathLike[str],
+-        status_code: int = 200,
+-        headers: typing.Mapping[str, str] | None = None,
+-        media_type: str | None = None,
+-        background: BackgroundTask | None = None,
+-        filename: str | None = None,
+-        stat_result: os.stat_result | None = None,
+-        method: str | None = None,
+-        content_disposition_type: str = "attachment",
+-    ) -> None:
++    def __init__(self, path: (str | os.PathLike[str]), status_code: int=200,
++        headers: (typing.Mapping[str, str] | None)=None, media_type: (str |
++        None)=None, background: (BackgroundTask | None)=None, filename: (str |
++        None)=None, stat_result: (os.stat_result | None)=None, method: (str |
++        None)=None, content_disposition_type: str='attachment') ->None:
+         self.path = path
+         self.status_code = status_code
+         self.filename = filename
+@@ -324,7 +317,7 @@
+         if stat_result is not None:
+             self.set_stat_headers(stat_result)
+ 
+-    def set_stat_headers(self, stat_result: os.stat_result) -> None:
++    def set_stat_headers(self, stat_result: os.stat_result) ->None:
+         content_length = str(stat_result.st_size)
+         last_modified = formatdate(stat_result.st_mtime, usegmt=True)
+         etag_base = str(stat_result.st_mtime) + "-" + str(stat_result.st_size)
+@@ -438,12 +431,12 @@
+                     }
+                 )
+ 
+-    def _should_use_range(self, http_if_range: str) -> bool:
++    def _should_use_range(self, http_if_range: str) ->bool:
+         return http_if_range == self.headers["last-modified"] or http_if_range == self.headers["etag"]
+ 
+     @staticmethod
+-    def _parse_range_header(http_range: str, file_size: int) -> list[tuple[int, int]]:
+-        ranges: list[tuple[int, int]] = []
++    def _parse_range_header(http_range: str, file_size: int) ->list[tuple[int, int]
++        ]:
+         try:
+             units, range_ = http_range.split("=", 1)
+         except ValueError:
+@@ -475,20 +468,20 @@
+         if len(ranges) == 1:
+             return ranges
+ 
+-        # Merge ranges
+         result: list[tuple[int, int]] = []
+         for start, end in ranges:
++            inserted = False
+             for p in range(len(result)):
+                 p_start, p_end = result[p]
+-                if start > p_end:
+-                    continue
+-                elif end < p_start:
+-                    result.insert(p, (start, end))  # THIS IS NOT REACHED!
++                if end < p_start:
++                    result.insert(p, (start, end))
++                    inserted = True
+                     break
+-                else:
++                elif start <= p_end:
+                     result[p] = (min(start, p_start), max(end, p_end))
++                    inserted = True
+                     break
+-            else:
++            if not inserted:
+                 result.append((start, end))
+ 
+         return result

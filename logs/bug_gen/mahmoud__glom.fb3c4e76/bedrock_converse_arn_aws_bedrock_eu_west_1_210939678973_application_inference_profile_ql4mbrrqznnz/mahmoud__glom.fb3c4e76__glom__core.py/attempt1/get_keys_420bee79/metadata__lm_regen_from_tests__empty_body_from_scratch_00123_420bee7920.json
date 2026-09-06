@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the code, I need to implement `get_keys` for the `_ObjStyleKeys` class. This function should return the keys of an object's `__dict__`, which represents the instance attributes of an object.\n\nLooking at the test:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the code, I need to implement `get_keys` for the `_ObjStyleKeys` class. This function should return the keys of an object's `__dict__`, which represents the instance attributes of an object.\n\nLooking at the test:\n```python\nclass A:\n    def __init__(self):\n        self.a = 1\n        self.b = {'c': 2}\nval = A()\nassert glom(val, '*') == [1, {'c': 2}]\nassert glom(val, '**') == [val, 1, {'c': 2}, 2]\n```\n\nThe `_ObjStyleKeys` class is registered to handle objects that have `__dict__` with `keys`. The `get_keys` static method should return the keys from the object's `__dict__`.\n\n```python\n@staticmethod\ndef get_keys(obj):\n    ret = obj.__dict__.keys()\n    return ret\n```",
+  "rewrite": "class A:\n    def __init__(self):\n        self.a = 1\n        self.b = {'c': 2}\nval = A()\nassert glom(val, '*') == [1, {'c': 2}]\nassert glom(val, '**') == [val, 1, {'c': 2}, 2]\n\n@staticmethod\ndef get_keys(obj):\n    ret = obj.__dict__.keys()\n    return ret",
+  "strategy": "lm_regen_from_tests"
+}

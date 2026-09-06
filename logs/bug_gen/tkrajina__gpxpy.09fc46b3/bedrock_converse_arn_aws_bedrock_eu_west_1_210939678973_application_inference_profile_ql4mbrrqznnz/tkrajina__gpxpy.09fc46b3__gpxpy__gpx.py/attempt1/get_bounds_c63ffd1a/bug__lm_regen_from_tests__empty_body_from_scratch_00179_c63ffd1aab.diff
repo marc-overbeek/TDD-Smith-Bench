@@ -1,0 +1,19 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2155,13 +2155,13 @@
+             max_longitude : float
+                 Maximum longitude of track in decimal degrees [-180, 180]
+         """
+-        result: Optional[GPXBounds] = None 
++        result: Optional[GPXBounds] = None
+         for track in self.tracks:
+             track_bounds = track.get_bounds()
+-            if not result:
++            if result is None:
+                 result = track_bounds
+             elif track_bounds:
+-                result = track_bounds.max_bounds(result)
++                result = result.max_bounds(track_bounds)
+         return result
+ 
+     def get_points_no(self) -> int:

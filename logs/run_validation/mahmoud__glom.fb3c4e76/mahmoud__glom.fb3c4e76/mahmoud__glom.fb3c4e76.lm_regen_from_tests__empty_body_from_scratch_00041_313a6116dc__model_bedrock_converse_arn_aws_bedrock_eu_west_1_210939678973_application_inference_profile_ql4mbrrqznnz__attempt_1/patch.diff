@@ -1,0 +1,29 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -423,6 +423,26 @@
+     def __repr__(self):
+         cn = self.__class__.__name__
+         return f'{cn}({self.coal_obj!r}, {self.skipped!r}, {self.path!r})'
++
++    no valid values found. Tried ('xxx', 'yyy') and got (PathAccessError, PathAccessError) (at path [])
++
++    glom.core.CoalesceError: no valid values found. Tried ('xxx', 'yyy') and got (PathAccessError, PathAccessError) (at path [])
++
++    def get_message(self):
++        missed_specs = tuple(self.coal_obj.subspecs)
++        skipped_vals = [v.__class__.__name__
++                        if isinstance(v, self.coal_obj.skip_exc)
++                        else '<skipped %s>' % v.__class__.__name__
++                        for v in self.skipped]
++        msg = ('no valid values found. Tried %r and got (%s)'
++               % (missed_specs, ', '.join(skipped_vals)))
++        if self.coal_obj.skip is not _MISSING:
++            msg += f', skip set to {self.coal_obj.skip!r}'
++        if self.coal_obj.skip_exc is not GlomError:
++            msg += f', skip_exc set to {self.coal_obj.skip_exc!r}'
++        if self.path is not None:
++            msg += f' (at path {self.path!r})'
++        return msg
+ 
+     def get_message(self):
+         missed_specs = tuple(self.coal_obj.subspecs)

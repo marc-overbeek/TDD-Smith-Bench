@@ -1,0 +1,78 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -648,73 +648,8 @@
+               help=CLI_CONFIGURE_SAVE_TO_SYSTEM)
+ @click.pass_context
+ def configure(ctx, proxy_protocol, proxy_host, proxy_port, proxy_timeout,
+-              proxy_required, organization_id, organization_name, stage,
+-              save_to_system):
+-    """
+-    Configure global settings, like proxy settings and organization details
+-    """
+-
+-    config = configparser.ConfigParser()
+-    if save_to_system:
+-        if not CONFIG_FILE_SYSTEM:
+-            click.secho(
+-                f"Unable to determine the system wide config path. You can set the SAFETY_SYSTEM_CONFIG_PATH env var")
+-            sys.exit(1)
+-
+-        CONFIG_FILE = CONFIG_FILE_SYSTEM
+-    else:
+-        CONFIG_FILE = CONFIG_FILE_USER
+-
+-    config.read(CONFIG_FILE)
+-
+-    PROXY_SECTION_NAME: str = 'proxy'
+-    PROXY_TIMEOUT_KEY: str = 'timeout'
+-    PROXY_REQUIRED_KEY: str = 'required'
+-
+-    if organization_id:
+-        config['organization'] = asdict(Organization(id=organization_id,
+-                                                     name=organization_name))
+-
+-    DEFAULT_PROXY_TIMEOUT: int = 500
+-
+-    if not proxy_timeout:
+-        try:
+-            proxy_timeout = int(config['proxy']['timeout'])
+-        except Exception:
+-            proxy_timeout = DEFAULT_PROXY_TIMEOUT
+-
+-    new_proxy_config = {}
+-    new_proxy_config.setdefault(PROXY_TIMEOUT_KEY, str(proxy_timeout))
+-    new_proxy_config.setdefault(PROXY_REQUIRED_KEY, str(proxy_required))
+-
+-    if proxy_host:
+-        new_proxy_config.update({
+-            'protocol': proxy_protocol,
+-            'host': proxy_host,
+-            'port': str(proxy_port)
+-        })
+-
+-    if not config.has_section(PROXY_SECTION_NAME):
+-        config.add_section(PROXY_SECTION_NAME)
+-
+-    proxy_config = dict(config.items(PROXY_SECTION_NAME))
+-    proxy_config.update(new_proxy_config)
+-
+-    for key, value in proxy_config.items():
+-        config.set(PROXY_SECTION_NAME, key, value)
+-
+-    if stage:
+-        config['host'] = {'stage': "development" if stage == "dev" else stage}
+-
+-    try:
+-        with open(CONFIG_FILE, 'w') as configfile:
+-            config.write(configfile)
+-    except Exception as e:
+-        if (isinstance(e, OSError) and e.errno == 2 or e is PermissionError) and save_to_system:
+-            click.secho("Unable to save the configuration: writing to system-wide Safety configuration file requires admin privileges")
+-        else:
+-            click.secho(f"Unable to save the configuration, error: {e}")
+-        sys.exit(1)
++    proxy_required, organization_id, organization_name, stage, save_to_system):
++    pass
+ 
+ 
+ cli_app = typer.Typer(rich_markup_mode="rich", cls=SafetyCLISubGroup)

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing test, it expects `prepare_token_request` to raise `NotImplementedError` when called with a valid HTTPS URL. The `prepare_token_request` method calls `self.prepare_request_body(...)`, which currently just does `pass` (returns `None`) instead of raising `NotImplementedError`.\n\nThe fix is to restore the `prepare_request_body` method to raise `NotImplementedError`:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing test, it expects `prepare_token_request` to raise `NotImplementedError` when called with a valid HTTPS URL. The `prepare_token_request` method calls `self.prepare_request_body(...)`, which currently just does `pass` (returns `None`) instead of raising `NotImplementedError`.\n\nThe fix is to restore the `prepare_request_body` method to raise `NotImplementedError`:\n\n```\ndef prepare_request_body(self, *args, **kwargs):\n    \"\"\"Abstract method used to create request bodies.\"\"\"\n    raise NotImplementedError(\"Must be implemented by inheriting classes.\")\n```",
+  "rewrite": "def prepare_request_body(self, *args, **kwargs):\n    \"\"\"Abstract method used to create request bodies.\"\"\"\n    raise NotImplementedError(\"Must be implemented by inheriting classes.\")\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

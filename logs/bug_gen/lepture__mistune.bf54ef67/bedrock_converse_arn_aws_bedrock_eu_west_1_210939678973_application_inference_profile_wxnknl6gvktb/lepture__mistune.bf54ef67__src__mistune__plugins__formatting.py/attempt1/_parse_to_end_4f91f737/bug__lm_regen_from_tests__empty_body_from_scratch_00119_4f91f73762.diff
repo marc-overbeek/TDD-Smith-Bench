@@ -1,0 +1,49 @@
+--- a/src/mistune/plugins/formatting.py
++++ b/src/mistune/plugins/formatting.py
+@@ -66,24 +66,32 @@
+     return "<sub>" + text + "</sub>"
+ 
+ 
+-def _parse_to_end(
+-    inline: "InlineParser",
+-    m: Match[str],
+-    state: "InlineState",
+-    tok_type: str,
+-    end_pattern: Pattern[str],
+-) -> Optional[int]:
+-    pos = m.end()
+-    m1 = end_pattern.search(state.src, pos)
+-    if not m1:
++def _parse_to_end(inline: 'InlineParser', m: Match[str], state:
++    'InlineState', tok_type: str, end_pattern: Pattern[str]) ->Optional[int]:
++    start_pos = m.end()
++    src = state.src[start_pos:]
++    
++    # Find the closing delimiter
++    end_match = end_pattern.search(src)
++    if not end_match:
+         return None
+-    end_pos = m1.end()
+-    text = state.src[pos:end_pos-2]
++    
++    # Extract text between delimiters (excluding the closing delimiter itself)
++    text = src[:end_match.end() - 2]  # -2 to exclude the closing delimiter (~~, ==, ^^)
++    
++    # Parse the inner content
+     new_state = state.copy()
+     new_state.src = text
+     children = inline.render(new_state)
+-    state.append_token({'type': tok_type, 'children': children})
+-    return end_pos
++    
++    # Create token
++    state.append_token({
++        'type': tok_type,
++        'children': children
++    })
++    
++    # Return position after closing delimiter
++    return start_pos + end_match.end()
+ 
+ 
+ def _parse_script(

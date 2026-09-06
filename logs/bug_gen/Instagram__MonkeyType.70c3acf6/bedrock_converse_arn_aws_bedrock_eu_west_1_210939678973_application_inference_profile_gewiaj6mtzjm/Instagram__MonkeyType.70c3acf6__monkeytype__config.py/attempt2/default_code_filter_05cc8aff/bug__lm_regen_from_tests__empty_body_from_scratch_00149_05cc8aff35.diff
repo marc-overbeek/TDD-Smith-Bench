@@ -1,0 +1,66 @@
+--- a/monkeytype/config.py
++++ b/monkeytype/config.py
+@@ -95,27 +95,43 @@
+ 
+ 
+ @functools.lru_cache(maxsize=8192)
+-def default_code_filter(code: CodeType) -> bool:
+-    """A CodeFilter to exclude stdlib and site-packages."""
+-    # Filter code without a source file
+-    if not code.co_filename or code.co_filename[0] == "<":
+-        return False
+-
+-    filename = pathlib.Path(code.co_filename).resolve()
+-    # if MONKEYTYPE_TRACE_MODULES is defined, trace only specified packages or modules
+-    trace_modules_str = os.environ.get("MONKEYTYPE_TRACE_MODULES")
+-    if trace_modules_str is not None:
+-        trace_modules = trace_modules_str.split(",")
+-        # try to remove lib_path to only check package and module names
+-        for lib_path in LIB_PATHS:
+-            try:
+-                filename = filename.relative_to(lib_path)
+-                break
+-            except ValueError:
+-                pass
+-        return any(m == filename.stem or m in filename.parts for m in trace_modules)
++@functools.lru_cache(maxsize=8192)
++def default_code_filter(code: CodeType) ->bool:
++    # Get the filename of the code object
++    filename = code.co_filename
++    
++    # If filename is empty or not a string, include it (safe default)
++    if not filename or not isinstance(filename, str):
++        return True
++    
++    # Convert to pathlib Path for easier comparison
++    code_path = pathlib.Path(filename).resolve()
++    
++    # Check if this is a stdlib or site-packages file
++    for lib_path in LIB_PATHS:
++        try:
++            code_path.relative_to(lib_path)
++            # This is a stdlib or site-packages file
++            break
++        except ValueError:
++            continue
+     else:
+-        return not any(_startswith(filename, lib_path) for lib_path in LIB_PATHS)
++        # Not in stdlib/site-packages, so include it
++        return True
++    
++    # Check if MONKEYTYPE_TRACE_MODULES is set
++    trace_modules = os.environ.get('MONKEYTYPE_TRACE_MODULES')
++    if trace_modules:
++        # Get the module name from the code object
++        module_name = code.co_filename.split('/')[-1].split('.')[0] if '/' in code.co_filename else code.co_filename.split('.')[0]
++        
++        # Check if this module is in the trace modules list
++        trace_module_names = [name.strip() for name in trace_modules.split(',')]
++        if module_name in trace_module_names:
++            return True
++    
++    # Default behavior: exclude stdlib and site-packages
++    return False
+ 
+ 
+ class DefaultConfig(Config):

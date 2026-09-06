@@ -1,0 +1,14 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1857,6 +1857,11 @@
+             raise TypeError('expected at least one keyword argument')
+         self._binding = kw
+ 
++    def __init__(self, **kw):
++        if not kw:
++            raise TypeError('expected at least one keyword argument')
++        self._binding = kw
++
+     def glomit(self, target, scope):
+         scope.update({
+             k: scope[glom](target, v, scope) for k, v in self._binding.items()})

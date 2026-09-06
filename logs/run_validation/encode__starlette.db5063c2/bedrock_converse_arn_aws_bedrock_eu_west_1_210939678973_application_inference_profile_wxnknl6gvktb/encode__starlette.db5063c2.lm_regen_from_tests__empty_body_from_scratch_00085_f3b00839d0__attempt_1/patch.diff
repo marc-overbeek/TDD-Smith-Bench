@@ -1,0 +1,21 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -665,6 +665,18 @@
+             state = {}
+         super().__setattr__("_state", state)
+ 
++    def test_request_state_object() ->None:
++        scope = {'state': {'old': 'foo'}}
++        s = State(scope['state'])
++        s.new = 'value'
++        assert s.new == 'value'
++        del s.new
++        with pytest.raises(AttributeError):
++            s.new
++
++    def __setattr__(self, key: typing.Any, value: typing.Any) -> None:
++        self._state[key] = value
++
+     def __setattr__(self, key: typing.Any, value: typing.Any) -> None:
+         self._state[key] = value
+ 

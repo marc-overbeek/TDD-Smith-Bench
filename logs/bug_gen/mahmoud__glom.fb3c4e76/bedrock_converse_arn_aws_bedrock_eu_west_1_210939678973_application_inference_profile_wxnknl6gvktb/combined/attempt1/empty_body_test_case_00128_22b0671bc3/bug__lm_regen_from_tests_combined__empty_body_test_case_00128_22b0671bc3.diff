@@ -1,0 +1,36 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -48,12 +48,18 @@
+ 
+ 
+ def _apply_for_each(func, path, val):
+-    layers = path.path_t.__stars__()
+-    if layers:
+-        for i in range(layers - 1):
+-            val = sum(val, [])  # flatten out the extra layers
+-        for inner in val:
+-            func(inner)
++    if path.startswith(S):
++        path = path.from_t()
++    
++    if not path.items():
++        func(val)
++        return
++    
++    last_op, last_arg = path.items()[-1]
++    if last_op == '[' and isinstance(last_arg, str) and last_arg.startswith('*'):
++        parent_path = path[:-1]
++        for item in val:
++            _apply_for_each(func, parent_path, item)
+     else:
+         func(val)
+ 
+@@ -283,7 +289,7 @@
+         if op == '[':
+             try:
+                 del dest[arg]
+-            except IndexError as e:
++            except (KeyError, IndexError) as e:
+                 if not self.ignore_missing:
+                     raise PathDeleteError(e, self.path, arg)
+         elif op == '.':

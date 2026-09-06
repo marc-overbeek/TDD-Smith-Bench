@@ -1,0 +1,25 @@
+--- a/starlette/staticfiles.py
++++ b/starlette/staticfiles.py
+@@ -166,19 +166,9 @@
+                 continue
+         return "", None
+ 
+-    def file_response(
+-        self,
+-        full_path: PathLike,
+-        stat_result: os.stat_result,
+-        scope: Scope,
+-        status_code: int = 200,
+-    ) -> Response:
+-        request_headers = Headers(scope=scope)
+-
+-        response = FileResponse(full_path, status_code=status_code, stat_result=stat_result)
+-        if self.is_not_modified(response.headers, request_headers):
+-            return NotModifiedResponse(response.headers)
+-        return response
++    def file_response(self, full_path: PathLike, stat_result: os.stat_result,
++        scope: Scope, status_code: int=200) ->Response:
++        pass
+ 
+     async def check_config(self) -> None:
+         """

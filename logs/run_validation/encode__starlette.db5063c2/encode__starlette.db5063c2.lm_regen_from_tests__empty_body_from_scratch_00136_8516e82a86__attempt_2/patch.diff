@@ -1,0 +1,42 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -496,26 +496,19 @@
+         return Match.NONE, {}
+ 
+     def url_path_for(self, name: str, /, **path_params: typing.Any) -> URLPath:
+-        if self.name is not None and name == self.name and "path" in path_params:
+-            # 'name' matches "<mount_name>".
+-            path = path_params.pop("path")
+-            host, remaining_params = replace_params(self.host_format, self.param_convertors, path_params)
+-            if not remaining_params:
+-                return URLPath(path=path, host=host)
+-        elif self.name is None or name.startswith(self.name + ":"):
+-            if self.name is None:
+-                # No mount name.
+-                remaining_name = name
+-            else:
+-                # 'name' matches "<mount_name>:<child_name>".
+-                remaining_name = name[len(self.name) + 1 :]
+-            host, remaining_params = replace_params(self.host_format, self.param_convertors, path_params)
+-            for route in self.routes or []:
+-                try:
+-                    url = route.url_path_for(remaining_name, **remaining_params)
+-                    return URLPath(path=str(url), protocol=url.protocol, host=host)
+-                except NoMatchFound:
+-                    pass
++        for route in self.routes:
++            try:
++                return route.url_path_for(name, **path_params)
++            except NoMatchFound:
++                pass
++        raise NoMatchFound(name, path_params)
++
++    def url_path_for(self, name: str, /, **path_params: typing.Any) -> URLPath:
++        for route in self.routes:
++            try:
++                return route.url_path_for(name, **path_params)
++            except NoMatchFound:
++                pass
+         raise NoMatchFound(name, path_params)
+ 
+     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:

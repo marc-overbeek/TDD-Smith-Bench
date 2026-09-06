@@ -1,0 +1,28 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -723,25 +723,6 @@
+             yield current_old_obj
+ 
+     def _do_ignore_order(self):
+-        """
+-
+-            't1': [5, 1, 1, 1, 6],
+-            't2': [7, 1, 1, 1, 8],
+-
+-            'iterable_items_added_at_indexes': {
+-                'root': {
+-                    0: 7,
+-                    4: 8
+-                }
+-            },
+-            'iterable_items_removed_at_indexes': {
+-                'root': {
+-                    4: 6,
+-                    0: 5
+-                }
+-            }
+-
+-        """
+         fixed_indexes = self.diff.get('iterable_items_added_at_indexes', dict_())
+         remove_indexes = self.diff.get('iterable_items_removed_at_indexes', dict_())
+         paths = SetOrdered(fixed_indexes.keys()) | SetOrdered(remove_indexes.keys())

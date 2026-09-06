@@ -1,0 +1,223 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -14,23 +14,6 @@
+ class DistanceMixin:
+ 
+     def _get_rough_distance(self):
+-        """
+-        Gives a numeric value for the distance of t1 and t2 based on how many operations are needed to convert
+-        one to the other.
+-
+-        This is a similar concept to the Levenshtein Edit Distance but for the structured data and is it is designed
+-        to be between 0 and 1.
+-
+-        A distance of zero means the objects are equal and a distance of 1 is very far.
+-
+-        Note: The distance calculation formula is subject to change in future. Use the distance results only as a
+-        way of comparing the distances of pairs of items with other pairs rather than an absolute distance
+-        such as the one provided by Levenshtein edit distance.
+-
+-        Info: The current algorithm is based on the number of operations that are needed to convert t1 to t2 divided
+-        by the number of items that make up t1 and t2.
+-        """
+-
+         _distance = get_numeric_types_distance(
+             self.t1, self.t2, max_=self.cutoff_distance_for_pairs, use_log_scale=self.use_log_scale, log_scale_similarity_threshold=self.log_scale_similarity_threshold)
+ 
+@@ -137,94 +120,72 @@
+ 
+ 
+ def _get_item_length(item, parents_ids=frozenset([])):
+-    """
+-    Get the number of operations in a diff object.
+-    It is designed mainly for the delta view output
+-    but can be used with other dictionary types of view outputs too.
+-    """
+-    length = 0
++    if item is None:
++        return 0
++    
++    item_id = id(item)
++    if item_id in parents_ids:
++        return 0
++    
++    parents_ids = add_to_frozen_set(parents_ids, item_id)
++    
+     if isinstance(item, Mapping):
+-        for key, subitem in item.items():
+-            # dedupe the repetition report so the number of times items have shown up does not affect the distance.
+-            if key in {'iterable_items_added_at_indexes', 'iterable_items_removed_at_indexes'}:
+-                new_subitem = dict_()
+-                for path_, indexes_to_items in subitem.items():
+-                    used_value_ids = set()
+-                    new_indexes_to_items = dict_()
+-                    for k, v in indexes_to_items.items():
+-                        v_id = id(v)
+-                        if v_id not in used_value_ids:
+-                            used_value_ids.add(v_id)
+-                            new_indexes_to_items[k] = v
+-                    new_subitem[path_] = new_indexes_to_items
+-                subitem = new_subitem
+-
+-            # internal keys such as _numpy_paths should not count towards the distance
+-            if isinstance(key, strings) and (key.startswith('_') or key == 'deep_distance' or key == 'new_path'):
+-                continue
+-
+-            item_id = id(subitem)
+-            if parents_ids and item_id in parents_ids:
+-                continue
+-            parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+-            length += _get_item_length(subitem, parents_ids_added)
++        length = 0
++        for k, v in item.items():
++            length += _get_item_length(v, parents_ids)
++        return length
++    elif isinstance(item, strings):
++        return 1
++    elif isinstance(item, np_ndarray):
++        return item.size
++    elif isinstance(item, Iterable):
++        length = 0
++        for i in item:
++            length += _get_item_length(i, parents_ids)
++        return length
+     elif isinstance(item, numbers):
+-        length = 1
+-    elif isinstance(item, strings):
+-        length = 1
+-    elif isinstance(item, Iterable):
+-        for subitem in item:
+-            item_id = id(subitem)
+-            if parents_ids and item_id in parents_ids:
+-                continue
+-            parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+-            length += _get_item_length(subitem, parents_ids_added)
+-    elif isinstance(item, type):  # it is a class
+-        length = 1
++        return 1
+     else:
+-        if hasattr(item, '__dict__'):
+-            for subitem in item.__dict__:
+-                item_id = id(subitem)
+-                parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+-                length += _get_item_length(subitem, parents_ids_added)
+-    return length
+-
+-
+-def _get_numbers_distance(num1, num2, max_=1, use_log_scale=False, log_scale_similarity_threshold=0.1):
+-    """
+-    Get the distance of 2 numbers. The output is a number between 0 to the max.
+-    The reason is the
+-    When max is returned means the 2 numbers are really far, and 0 means they are equal.
+-    """
++        try:
++            length = 0
++            for k, v in item.__dict__.items():
++                length += _get_item_length(v, parents_ids)
++            return length if length > 0 else 1
++        except AttributeError:
++            return 1
++
++
++def _get_numbers_distance(num1, num2, max_=1, use_log_scale=False,
++    log_scale_similarity_threshold=0.1):
+     if num1 == num2:
+         return 0
++    
+     if use_log_scale:
+-        distance = logarithmic_distance(num1, num2)
+-        if distance < logarithmic_distance:
++        dist = logarithmic_distance(num1, num2)
++        if dist < log_scale_similarity_threshold:
+             return 0
+-        return distance
+-    if not isinstance(num1, float):
+-        num1 = float(num1)
+-    if not isinstance(num2, float):
+-        num2 = float(num2)
+-    # Since we have a default cutoff of 0.3 distance when
+-    # getting the pairs of items during the ingore_order=True
+-    # calculations, we need to make the divisor of comparison very big
+-    # so that any 2 numbers can be chosen as pairs.
+-    divisor = (num1 + num2) / max_
+-    if divisor == 0:
++        return min(1, dist)
++    
++    num1 = float(num1)
++    num2 = float(num2)
++    
++    diff = abs(num1 - num2)
++    total = abs(num1) + abs(num2)
++    
++    if total == 0:
++        return 0
++    
++    distance = diff / (diff + total)
++    
++    if distance >= max_:
+         return max_
+-    try:
+-        return min(max_, abs((num1 - num2) / divisor))
+-    except Exception:  # pragma: no cover. I don't think this line will ever run but doesn't hurt to leave it.
+-        return max_  # pragma: no cover
++    
++    return distance
+ 
+ 
+ def _numpy_div(a, b, replace_inf_with=1):
+-    max_array = np.full(shape=a.shape, fill_value=replace_inf_with, dtype=np_float64)
+-    result = np.divide(a, b, out=max_array, where=b != 0, dtype=np_float64)
+-    # wherever 2 numbers are the same, make sure the distance is zero. This is mainly for 0 divided by zero.
+-    result[a == b] = 0
++    with np.errstate(divide='ignore', invalid='ignore'):
++        result = np.where(b == 0, replace_inf_with, a / b)
+     return result
+ 
+ # To deal with numbers close to zero
+@@ -262,27 +223,26 @@
+     return abs(log_a - log_b)
+ 
+ 
+-def _get_numpy_array_distance(num1, num2, max_=1, use_log_scale=False, log_scale_similarity_threshold=0.1):
+-    """
+-    Get the distance of 2 numbers. The output is a number between 0 to the max.
+-    The reason is the
+-    When max is returned means the 2 numbers are really far, and 0 means they are equal.
+-    """
+-    # Since we have a default cutoff of 0.3 distance when
+-    # getting the pairs of items during the ingore_order=True
+-    # calculations, we need to make the divisor of comparison very big
+-    # so that any 2 numbers can be chosen as pairs.
++def _get_numpy_array_distance(num1, num2, max_=1, use_log_scale=False,
++    log_scale_similarity_threshold=0.1):
+     if use_log_scale:
+-        num1 = numpy_apply_log_keep_sign(num1)
+-        num2 = numpy_apply_log_keep_sign(num2)
+-
+-    divisor = (num1 + num2) / max_
+-    result = _numpy_div((num1 - num2), divisor, replace_inf_with=max_)
+-
+-    distance_array = np.clip(np.absolute(result), 0, max_)
+-    if use_log_scale:
+-        distance_array[distance_array < log_scale_similarity_threshold] = 0
+-    return distance_array
++        log_num1 = numpy_apply_log_keep_sign(num1)
++        log_num2 = numpy_apply_log_keep_sign(num2)
++        dist = np.abs(log_num1 - log_num2)
++        result = np.where(dist < log_scale_similarity_threshold, 0, np.minimum(1, dist))
++        return result
++    
++    num1 = num1.astype(np_float64)
++    num2 = num2.astype(np_float64)
++    
++    diff = np.abs(num1 - num2)
++    total = np.abs(num1) + np.abs(num2)
++    
++    distance = _numpy_div(diff, diff + total, replace_inf_with=1)
++    distance = np.where(num1 == num2, 0, distance)
++    distance = np.minimum(distance, max_)
++    
++    return distance
+ 
+ 
+ def _get_datetime_distance(date1, date2, max_, use_log_scale, log_scale_similarity_threshold):

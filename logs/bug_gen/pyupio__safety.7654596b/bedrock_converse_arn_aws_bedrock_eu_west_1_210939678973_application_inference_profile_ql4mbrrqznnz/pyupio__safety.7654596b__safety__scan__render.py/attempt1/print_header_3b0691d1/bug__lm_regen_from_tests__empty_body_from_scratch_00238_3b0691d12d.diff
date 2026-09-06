@@ -1,0 +1,23 @@
+--- a/safety/scan/render.py
++++ b/safety/scan/render.py
+@@ -48,16 +48,10 @@
+     return Text.from_markup(
+         f"[bold]Safety[/bold] {version} {action}\n{scan_datetime}")
+ 
+-def print_header(console, targets: List[Path], is_system_scan: bool = False) -> None:
+-    """
+-    Print the header for the scan.
+-
+-    Args:
+-        console (Console): The console for output.
+-        targets (List[Path]): List of target paths for the scan.
+-        is_system_scan (bool): Indicates if the scan is a system scan.
+-    """
+-    console.print(render_header(targets, is_system_scan), markup=True)
++def print_header(console, targets: List[Path], is_system_scan: bool=False
++    ) ->None:
++    header = render_header(targets=targets, is_system_scan=is_system_scan)
++    console.print(header)
+ 
+ def print_announcements(console: Console, ctx: typer.Context):
+     """

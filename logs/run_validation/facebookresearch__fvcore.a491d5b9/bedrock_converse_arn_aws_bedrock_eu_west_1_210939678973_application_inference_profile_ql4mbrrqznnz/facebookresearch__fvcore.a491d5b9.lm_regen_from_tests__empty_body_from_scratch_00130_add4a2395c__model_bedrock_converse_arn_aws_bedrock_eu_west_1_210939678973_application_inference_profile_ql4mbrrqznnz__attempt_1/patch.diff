@@ -1,0 +1,25 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -64,19 +64,15 @@
+         Callable: An activation handle for the given operation.
+     """
+ 
+-    def _generic_activation_jit(
+-        i: Any, outputs: List[Any]
+-    ) -> Union[typing.Counter[str], Number]:
++    def _generic_activation_jit(i: Any, outputs: List[Any]) ->Union[typing.
++        Counter[str], Number]:
+         """
+         This is a generic jit handle that counts the number of activations for any
+         operation given the output shape.
+         """
+         out_shape = get_shape(outputs[0])
+         ac_count = prod(out_shape)
+-        if op_name is None:
+-            return ac_count
+-        else:
+-            return Counter({op_name: ac_count})
++        return ac_count
+ 
+     return _generic_activation_jit
+ 

@@ -1,0 +1,51 @@
+--- a/src/mistune/plugins/spoiler.py
++++ b/src/mistune/plugins/spoiler.py
+@@ -67,25 +67,30 @@
+     return '<span class="spoiler">' + text + "</span>"
+ 
+ 
+-def spoiler(md: "Markdown") -> None:
+-    """A mistune plugin to support block and inline spoiler. The
+-    syntax is inspired by stackexchange:
++def spoiler(md: 'Markdown') -> None:
++    md.block_parser.register_rule('block_spoiler', parse_block_spoiler, r'^ {0,3}!', before='block_quote')
++    md.block_parser.block_quote_rules = list(md.block_parser.block_quote_rules)
++    if 'block_spoiler' not in md.block_parser.block_quote_rules:
++        md.block_parser.block_quote_rules.insert(0, 'block_spoiler')
+ 
+-    .. code-block:: text
++    md.inline_parser.register_rule('inline_spoiler', INLINE_SPOILER_PATTERN, parse_inline_spoiler)
++    md.inline_parser.rules.insert(0, 'inline_spoiler')
+ 
+-        Block level spoiler looks like block quote, but with `>!`:
+-
+-        >! this is spoiler
+-        >!
+-        >! the content will be hidden
+-
+-        Inline spoiler is surrounded by `>!` and `!<`, such as >! hide me !<.
+-
+-    :param md: Markdown instance
+-    """
+-    # reset block quote parser with block spoiler parser
+-    md.block.register('block_quote', None, parse_block_spoiler)
+-    md.inline.register('inline_spoiler', INLINE_SPOILER_PATTERN, parse_inline_spoiler)
+-    if md.renderer and md.renderer.NAME == 'html':
++    if md.renderer:
+         md.renderer.register('block_spoiler', render_block_spoiler)
+         md.renderer.register('inline_spoiler', render_inline_spoiler)
++
++def spoiler(md: 'Markdown') -> None:
++    md.block_parser.register_rule('block_spoiler', parse_block_spoiler, r'^ {0,3}!')
++    if 'block_spoiler' not in md.block_parser.rules:
++        md.block_parser.rules.insert(0, 'block_spoiler')
++    if hasattr(md.block_parser, 'block_quote_rules') and 'block_spoiler' not in md.block_parser.block_quote_rules:
++        md.block_parser.block_quote_rules = ['block_spoiler'] + list(md.block_parser.block_quote_rules)
++
++    md.inline_parser.register_rule('inline_spoiler', INLINE_SPOILER_PATTERN, parse_inline_spoiler)
++    if 'inline_spoiler' not in md.inline_parser.rules:
++        md.inline_parser.rules.insert(0, 'inline_spoiler')
++
++    if md.renderer:
++        md.renderer.register('block_spoiler', render_block_spoiler)
++        md.renderer.register('inline_spoiler', render_inline_spoiler)

@@ -1,0 +1,20 @@
+--- a/deepdiff/lfucache.py
++++ b/deepdiff/lfucache.py
+@@ -14,6 +14,17 @@
+     def __init__(self, key, report_type, value, freq_node, pre, nxt):
+         self.key = key
+         if report_type:
++            self.content = defaultdict(SetOrdered)
++            self.content[report_type].add(value)
++        else:
++            self.content = value
++        self.freq_node = freq_node
++        self.pre = pre  # previous CacheNode
++        self.nxt = nxt  # next CacheNode
++
++    def __init__(self, key, report_type, value, freq_node, pre, nxt):
++        self.key = key
++        if report_type is not None:
+             self.content = defaultdict(SetOrdered)
+             self.content[report_type].add(value)
+         else:

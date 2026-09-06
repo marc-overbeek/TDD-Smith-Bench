@@ -1,0 +1,19 @@
+--- a/starlette/requests.py
++++ b/starlette/requests.py
+@@ -95,6 +95,16 @@
+     @property
+     def app(self) -> typing.Any:
+         return self.scope["app"]
++
++    @property
++    @property
++    def url(self) -> URL:
++        if not hasattr(self, "_url"):  # pragma: no branch
++            self._url = URL(scope=self.scope)
++        return self._url
++
++    def url(self) ->URL:
++        pass
+ 
+     @property
+     def url(self) -> URL:

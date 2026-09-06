@@ -1,0 +1,124 @@
+--- a/safety/scan/ecosystems/python/main.py
++++ b/safety/scan/ecosystems/python/main.py
+@@ -235,118 +235,9 @@
+         self.ecosystem = file_type.ecosystem
+         self.file_type = file_type
+ 
+-    def __find_dependency_vulnerabilities__(self, dependencies: List[PythonDependency],
+-                                            config: ConfigModel) -> None:
+-        """
+-        Finds vulnerabilities in the dependencies.
+-
+-        Args:
+-            dependencies (List[PythonDependency]): The list of dependencies.
+-            config (ConfigModel): The configuration model.
+-        """
+-        ignored_vulns_data = {}
+-        ignore_vulns = {} \
+-            if not config.depedendency_vulnerability.ignore_vulnerabilities \
+-                else config.depedendency_vulnerability.ignore_vulnerabilities
+-
+-        ignore_severity = config.depedendency_vulnerability.ignore_cvss_severity
+-        ignore_unpinned = config.depedendency_vulnerability.python_ignore.unpinned_specifications
+-        ignore_environment = config.depedendency_vulnerability.python_ignore.environment_results
+-
+-        db = get_from_cache(db_name="insecure.json", skip_time_verification=True)
+-        if not db:
+-            LOG.debug("Cache data for insecure.json is not available or is invalid.")
+-            return
+-        db_full = None
+-        vulnerable_packages = frozenset(db.get('vulnerable_packages', []))
+-        found_dependencies = {}
+-        specifications = iter([])
+-
+-        for dependency in dependencies:
+-            specifications = itertools.chain(dependency.specifications, specifications)
+-            found_dependencies[
+-                canonicalize_name(dependency.name)
+-                ] = dependency
+-
+-        # Let's report by req, pinned in environment will be ==version
+-        for spec in specifications:
+-            vuln_per_req = {}
+-            name = canonicalize_name(spec.name)
+-            dependency: PythonDependency = found_dependencies.get(name, None)
+-            if not dependency:
+-                continue
+-
+-            if not dependency.version:
+-                if not db_full:
+-                    db_full = get_from_cache(db_name="insecure_full.json",
+-                                             skip_time_verification=True)
+-                    if not db_full:
+-                        LOG.debug("Cache data for insecure_full.json is not available or is invalid.")
+-                        return
+-                dependency.refresh_from(db_full)
+-
+-            if name in vulnerable_packages:
+-                # we have a candidate here, build the spec set
+-                for specifier in db['vulnerable_packages'][name]:
+-                    spec_set = SpecifierSet(specifiers=specifier)
+-
+-                    if spec.is_vulnerable(spec_set, dependency.insecure_versions):
+-                        if not db_full:
+-                            db_full = get_from_cache(db_name="insecure_full.json",
+-                                             skip_time_verification=True)
+-                            if not db_full:
+-                                LOG.debug("Cache data for insecure_full.json is not available or is invalid.")
+-                                return
+-                        if not dependency.latest_version:
+-                            dependency.refresh_from(db_full)
+-
+-                        for data in get_vulnerabilities(pkg=name, spec=specifier, db=db_full):
+-                            try:
+-                                vuln_id: str = str(next(filter(lambda i: i.get('type', None) == 'pyup', data.get('ids', []))).get('id', ''))
+-                            except StopIteration:
+-                                vuln_id: str = ''
+-
+-                            if vuln_id in vuln_per_req:
+-                                vuln_per_req[vuln_id].vulnerable_spec.add(specifier)
+-                                continue
+-
+-                            cve = get_cve_from(data, db_full)
+-
+-                            ignore_vuln_if_needed(dependency=dependency,
+-                                                  file_type=self.file_type,
+-                                                  vuln_id=vuln_id, cve=cve,
+-                                                  ignore_vulns=ignore_vulns,
+-                                                  ignore_severity=ignore_severity,
+-                                                  ignore_unpinned=ignore_unpinned,
+-                                                  ignore_environment=ignore_environment,
+-                                                  specification=spec)
+-
+-                            include_ignored = True
+-                            vulnerability = get_vulnerability(vuln_id, cve, data,
+-                                                                   specifier, db_full,
+-                                                                   name, ignore_vulns, spec)
+-
+-                            should_add_vuln = not (vulnerability.is_transitive and
+-                                                   dependency.found and
+-                                                   dependency.found.parts[-1] == FileType.VIRTUAL_ENVIRONMENT.value)
+-
+-                            if vulnerability.ignored:
+-                                ignored_vulns_data[
+-                                    vulnerability.vulnerability_id] = vulnerability
+-
+-                            if not self.dependency_results.failed and not vulnerability.ignored:
+-                                self.dependency_results.failed = should_fail(config, vulnerability)
+-
+-
+-                            if (include_ignored or vulnerability.vulnerability_id not in ignore_vulns) and should_add_vuln:
+-                                vuln_per_req[vulnerability.vulnerability_id] = vulnerability
+-                                spec.vulnerabilities.append(vulnerability)
+-
+-            # TODO: dep_result Save if it should fail the JOB
+-
+-        self.dependency_results.dependencies = [dep for _, dep in found_dependencies.items()]
+-        self.dependency_results.ignored_vulns = ignore_vulns
+-        self.dependency_results.ignored_vulns_data = ignored_vulns_data
++    def __find_dependency_vulnerabilities__(self, dependencies: List[
++        PythonDependency], config: ConfigModel) ->None:
++        pass
+ 
+     def inspect(self, config: ConfigModel) -> None:
+         """

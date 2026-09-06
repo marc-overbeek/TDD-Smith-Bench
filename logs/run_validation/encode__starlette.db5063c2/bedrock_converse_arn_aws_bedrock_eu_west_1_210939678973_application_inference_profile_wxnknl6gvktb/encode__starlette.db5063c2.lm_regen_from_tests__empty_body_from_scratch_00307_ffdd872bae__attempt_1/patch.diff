@@ -1,0 +1,20 @@
+--- a/starlette/requests.py
++++ b/starlette/requests.py
+@@ -158,6 +158,17 @@
+     def session(self) -> dict[str, typing.Any]:
+         assert "session" in self.scope, "SessionMiddleware must be installed to access request.session"
+         return self.scope["session"]  # type: ignore[no-any-return]
++
++    @property
++    @property
++    def session(self) -> dict[str, typing.Any]:
++        assert "session" in self.scope, "SessionMiddleware must be installed to access request.session"
++        return self.scope["session"]  # type: ignore[no-any-return]
++
++    @property
++    def user(self) -> typing.Any:
++        assert "user" in self.scope, "AuthenticationMiddleware must be installed to access request.user"
++        return self.scope["user"]
+ 
+     @property
+     def auth(self) -> typing.Any:

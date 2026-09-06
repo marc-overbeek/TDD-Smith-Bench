@@ -1,0 +1,90 @@
+--- a/src/mistune/renderers/_list.py
++++ b/src/mistune/renderers/_list.py
+@@ -6,48 +6,28 @@
+     from ..core import BaseRenderer, BlockState
+ 
+ 
+-def render_list(
+-    renderer: "BaseRenderer", token: Dict[str, Any], state: "BlockState"
+-) -> str:
+-    attrs = token["attrs"]
+-    if attrs["ordered"]:
+-        children = _render_ordered_list(renderer, token, state)
++def render_list(renderer: 'BaseRenderer', token: Dict[str, Any], state:
++    'BlockState') ->str:
++    if token['ordered']:
++        items = _render_ordered_list(renderer, token, state)
+     else:
+-        children = _render_unordered_list(renderer, token, state)
+-
+-    text = ''.join(children)
+-    parent = token.get('parent')
+-    if parent:
+-        if parent['tight']:
+-            return text
+-        return text + '\n'
+-    return strip_end(text) + '\n'
++        items = _render_unordered_list(renderer, token, state)
++    return renderer.list_open(token) + ''.join(items) + renderer.list_close(token)
+ 
+ 
+-def _render_list_item(
+-    renderer: "BaseRenderer",
+-    parent: Dict[str, Any],
+-    item: Dict[str, Any],
+-    state: "BlockState",
+-) -> str:
+-    leading = cast(str, parent["leading"])
+-    text = ""
+-    for tok in item["children"]:
+-        if tok["type"] == "list":
+-            tok["parent"] = parent
+-        elif tok["type"] == "blank_line":
+-            continue
+-        text += renderer.render_token(tok, state)
+-
+-    lines = text.splitlines()
+-    text = (lines[0] if lines else '') + '\n'
+-    prefix = ' ' * len(leading)
+-    for line in lines[1:]:
+-        if line:
+-            text += prefix + line + '\n'
+-        else:
+-            text += '\n'
+-    return leading + text
++def _render_list_item(renderer: 'BaseRenderer', parent: Dict[str, Any],
++    item: Dict[str, Any], state: 'BlockState') ->str:
++    leading = parent['leading']
++    tight = parent['tight']
++    
++    if tight:
++        text = ''.join(renderer.render_children(item, state))
++        text = strip_end(text)
++    else:
++        text = ''.join(renderer.render_children(item, state))
++    
++    item['leading'] = leading
++    return renderer.list_item_open(item) + text + renderer.list_item_close(item)
+ 
+ 
+ def _render_ordered_list(
+@@ -65,12 +45,12 @@
+         start += 1
+ 
+ 
+-def _render_unordered_list(
+-    renderer: "BaseRenderer", token: Dict[str, Any], state: "BlockState"
+-) -> Iterable[str]:
+-    parent = {
+-        'leading': token['bullet'] + ' ',
+-        'tight': token['tight'],
+-    }
++def _render_unordered_list(renderer: 'BaseRenderer', token: Dict[str, Any],
++    state: 'BlockState') ->Iterable[str]:
+     for item in token['children']:
++        leading = token['bullet'] + ' '
++        parent = {
++            'leading': leading,
++            'tight': token['tight'],
++        }
+         yield _render_list_item(renderer, parent, item, state)

@@ -1,0 +1,11 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -393,6 +393,8 @@
+             raise ValueError(
+                 "There must be at least one scheduler in the composite scheduler"
+             )
++        if len(schedulers) != len(interval_scaling):
++            raise ValueError("Schedulers and interval_scaling must be same length")
+         if abs(sum(lengths) - 1.0) >= 1e-3:
+             raise ValueError("The sum of all values in lengths must be 1")
+         if sum(lengths) != 1.0:

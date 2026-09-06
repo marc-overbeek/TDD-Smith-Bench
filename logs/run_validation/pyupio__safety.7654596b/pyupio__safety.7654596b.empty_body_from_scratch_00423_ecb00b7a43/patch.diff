@@ -1,0 +1,108 @@
+--- a/safety/auth/server.py
++++ b/safety/auth/server.py
+@@ -173,103 +173,5 @@
+         LOG.info(format % args)
+ 
+ 
+-def process_browser_callback(uri: str, **kwargs: Any) -> Any:
+-    """
+-    Process the browser callback for authentication.
+-
+-    Args:
+-        uri (str): The authorization URL.
+-        **kwargs (Any): Additional keyword arguments.
+-
+-    Returns:
+-        Any: The user information.
+-
+-    Raises:
+-        SystemExit: If there is an error during the process.
+-    """
+-
+-    class ThreadedHTTPServer(http.server.HTTPServer):
+-        def __init__(self, server_address: Tuple, RequestHandlerClass: Any) -> None:
+-            """
+-            Initialize the ThreadedHTTPServer.
+-            Args:
+-                server_address (Tuple): The server address as a tuple (host, port).
+-                RequestHandlerClass (Any): The request handler class.
+-            """
+-            super().__init__(server_address, RequestHandlerClass)
+-            self.initial_state = None
+-            self.ctx = None
+-            self.callback = None
+-            self.timeout_reached = False
+-
+-        def handle_timeout(self) -> None:
+-            """
+-            Handle server timeout.
+-            """
+-            self.timeout_reached = True
+-            return super().handle_timeout()
+-
+-    PORT = find_available_port()
+-
+-    if not PORT:
+-        click.secho("No available ports.")
+-        sys.exit(1)
+-
+-    try:
+-        headless = kwargs.get("headless", False)
+-        initial_state = kwargs.get("initial_state", None)
+-        ctx = kwargs.get("ctx", None)
+-        message = "Copy and paste this URL into your browser:\n⚠️ Ensure there are no extra spaces, especially at line breaks, as they may break the link."
+-
+-        if not headless:
+-            # Start a threaded HTTP server to handle the callback
+-            server = ThreadedHTTPServer((HOST, PORT), CallbackHandler)
+-            server.initial_state = initial_state
+-            server.timeout = kwargs.get("timeout", 600)
+-            server.ctx = ctx
+-            server_thread = threading.Thread(target=server.handle_request)
+-            server_thread.start()
+-            message = f"If the browser does not automatically open in 5 seconds, copy and paste this url into your browser:"
+-
+-        target = uri if headless else f"{uri}&port={PORT}"
+-
+-        if is_jupyter_notebook():
+-            console.print(f"{message} {target}")
+-        else:
+-            console.print(f"{message} [link={target}]{target}[/link]")
+-        
+-        if headless:
+-            # Handle the headless mode where user manually provides the response
+-            exchange_data = None
+-            while not exchange_data:
+-                auth_code_text = Prompt.ask("Paste the response here", default=None, console=console)
+-                try:
+-                    exchange_data = json.loads(auth_code_text)
+-                    state = exchange_data["state"]
+-                    code = exchange_data["code"]
+-                except Exception:
+-                    code = state = None
+-
+-            return auth_process(code=code,
+-                                state=state,
+-                                initial_state=initial_state,
+-                                code_verifier=ctx.obj.auth.code_verifier,
+-                                client=ctx.obj.auth.client)
+-        else:
+-            # Wait for the browser authentication in non-headless mode
+-            wait_msg = "waiting for browser authentication"
+-            with console.status(wait_msg, spinner="bouncingBar"):
+-                time.sleep(2)
+-                click.launch(target)
+-                server_thread.join()
+-
+-    except OSError as e:
+-        if e.errno == socket.errno.EADDRINUSE:
+-            reason = f"The port {HOST}:{PORT} is currently being used by another application or process. Please choose a different port or terminate the conflicting application/process to free up the port."
+-        else:
+-            reason = "An error occurred while performing this operation."
+-
+-        click.secho(reason)
+-        sys.exit(1)
+-
+-    return server.callback
++def process_browser_callback(uri: str, **kwargs: Any) ->Any:
++    pass

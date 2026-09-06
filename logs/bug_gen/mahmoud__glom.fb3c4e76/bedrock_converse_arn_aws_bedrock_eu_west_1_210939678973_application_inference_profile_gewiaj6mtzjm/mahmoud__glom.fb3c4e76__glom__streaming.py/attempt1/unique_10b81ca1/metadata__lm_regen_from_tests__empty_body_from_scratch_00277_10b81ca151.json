@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef unique(self, key=T):\n    \"\"\"Return a new :class:`Iter()` spec which lazily filters out duplicate\n    values, i.e., only the first appearance of a value in a stream will\n    be yielded.\n\n    >>> target = list('gloMolIcious')\n    >>> out = list(glom(target, Iter().unique(T.lower())))\n    >>> print(''.join(out))\n    gloMIcus\n    \"\"\"\n    return self._add_op(\n        'unique',\n        (key,),\n        lambda it, scope: unique_iter(it, key=lambda t: scope[glom](t, key, scope)))\n```",
+  "rewrite": "def unique(self, key=T):\n    \"\"\"Return a new :class:`Iter()` spec which lazily filters out duplicate\n    values, i.e., only the first appearance of a value in a stream will\n    be yielded.\n\n    >>> target = list('gloMolIcious')\n    >>> out = list(glom(target, Iter().unique(T.lower())))\n    >>> print(''.join(out))\n    gloMIcus\n    \"\"\"\n    return self._add_op(\n        'unique',\n        (key,),\n        lambda it, scope: unique_iter(it, key=lambda t: scope[glom](t, key, scope)))\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

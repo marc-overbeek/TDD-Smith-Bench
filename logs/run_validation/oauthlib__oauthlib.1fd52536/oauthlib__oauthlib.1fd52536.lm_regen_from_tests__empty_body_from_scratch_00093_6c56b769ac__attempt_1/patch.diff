@@ -1,0 +1,19 @@
+--- a/oauthlib/oauth1/rfc5849/signature.py
++++ b/oauthlib/oauth1/rfc5849/signature.py
+@@ -839,14 +839,5 @@
+ 
+ 
+ def verify_plaintext(request, client_secret=None, resource_owner_secret=None):
+-    """Verify a PLAINTEXT signature.
+-
+-    Per `section 3.4`_ of the spec.
+-
+-    .. _`section 3.4`: https://tools.ietf.org/html/rfc5849#section-3.4
+-    """
+-    signature = sign_plaintext(client_secret, resource_owner_secret)
+-    match = safe_string_equals(signature, request.signature)
+-    if not match:
+-        log.debug('Verify PLAINTEXT failed')
+-    return match
++    expected_signature = sign_plaintext(client_secret, resource_owner_secret)
++    return safe_string_equals(expected_signature, request.signature)

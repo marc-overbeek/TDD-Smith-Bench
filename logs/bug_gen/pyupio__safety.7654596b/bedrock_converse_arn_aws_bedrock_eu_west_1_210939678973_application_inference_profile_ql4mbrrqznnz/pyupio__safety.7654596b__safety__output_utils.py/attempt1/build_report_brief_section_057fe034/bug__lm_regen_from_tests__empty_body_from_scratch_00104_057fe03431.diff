@@ -1,0 +1,90 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -691,49 +691,49 @@
+ REPORT_HEADING = format_long_text(click.style('REPORT', bold=True))
+ 
+ 
+-def build_report_brief_section(columns: Optional[int] = None, primary_announcement: Optional[Dict[str, Any]] = None, report_type: int = 1, **kwargs: Any) -> str:
+-    """
+-    Build the brief section of the report.
+-
+-    Args:
+-        columns (Optional[int], optional): Number of columns for formatting. Defaults to None.
+-        primary_announcement (Optional[Dict[str, Any]], optional): Primary announcement details. Defaults to None.
+-        report_type (int, optional): Type of the report. Defaults to 1.
+-        **kwargs: Additional arguments for formatting.
+-
+-    Returns:
+-        str: Brief section of the report.
+-    """
++def build_report_brief_section(columns: Optional[int]=None,
++    primary_announcement: Optional[Dict[str, Any]]=None, report_type: int=1,
++    **kwargs: Any) ->str:
+     if not columns:
+         columns = get_terminal_size().columns
+ 
+-    styled_brief_lines = []
++    END_SECTION = '+' + '=' * (columns - 2) + '+'
++    START_SECTION = END_SECTION
++
++    brief_info = get_report_brief_info(report_type=report_type, **kwargs)
++
++    format_kwargs = {
++        'columns': columns,
++        'start_line_decorator': ' ',
++        'end_line_decorator': ' ',
++    }
++
++    content = START_SECTION + '\n'
++    content += REPORT_HEADING + '\n'
+ 
+     if primary_announcement:
+-        styled_brief_lines.append(
+-            build_primary_announcement(columns=columns, primary_announcement=primary_announcement))
+-
+-    for line in get_report_brief_info(report_type=report_type, **kwargs):
+-        ln = ''
+-        padding = ' ' * 2
+-
+-        for i, words in enumerate(line):
+-            processed_words = words.get('value', '')
+-            if words.get('style', False):
+-                text = ''
+-                if i == 0:
+-                    text = padding
+-                    padding = ''
+-                text += processed_words
+-
+-                processed_words = click.style(text, bold=True)
+-
+-            ln += processed_words
+-
+-        styled_brief_lines.append(format_long_text(ln, color='', columns=columns, start_line_decorator='',
+-                                                   indent=padding, end_line_decorator='', sub_indent=' ' * 2))
+-
+-    return "\n".join([add_empty_line(), REPORT_HEADING, add_empty_line(), '\n'.join(styled_brief_lines)])
++        try:
++            primary_ann_content = build_primary_announcement(primary_announcement, columns=columns)
++            content += primary_ann_content + '\n'
++        except (ValueError, Exception):
++            pass
++
++    for line_parts in brief_info:
++        line_text = ''
++        for part in line_parts:
++            value = part.get('value', '')
++            if part.get('style', False):
++                line_text += click.style(value, bold=True)
++            else:
++                line_text += value
++
++        formatted = format_long_text(line_text, columns=columns, start_line_decorator=' ',
++                                     end_line_decorator=' ')
++        content += formatted + '\n'
++
++    content += END_SECTION
++
++    return content
+ 
+ 
+ def build_report_for_review_vuln_report(as_dict: bool = False) -> Union[Dict[str, Any], List[List[Dict[str, Any]]]]:

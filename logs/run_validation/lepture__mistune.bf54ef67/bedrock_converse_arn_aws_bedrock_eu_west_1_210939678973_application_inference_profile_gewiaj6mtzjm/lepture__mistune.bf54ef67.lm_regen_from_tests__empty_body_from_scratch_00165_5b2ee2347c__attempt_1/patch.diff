@@ -1,0 +1,37 @@
+--- a/src/mistune/plugins/table.py
++++ b/src/mistune/plugins/table.py
+@@ -67,11 +67,11 @@
+     return pos
+ 
+ 
+-def parse_nptable(
+-    block: "BlockParser", m: Match[str], state: "BlockState"
+-) -> Optional[int]:
+-    header = m.group("nptable_head")
+-    align = m.group("nptable_align")
++def parse_nptable(block: 'BlockParser', m: Match[str], state: 'BlockState'
++    ) ->Optional[int]:
++    pos = m.end()
++    header = m.group('nptable_head')
++    align = m.group('nptable_align')
+     thead, aligns = _process_thead(header, align)
+     if not thead:
+         return None
+@@ -80,6 +80,8 @@
+     rows = []
+     body = m.group('nptable_body')
+     for text in body.splitlines():
++        if not text.strip():
++            continue
+         row = _process_row(text, aligns)
+         if not row:
+             return None
+@@ -87,7 +89,7 @@
+ 
+     children = [thead, {'type': 'table_body', 'children': rows}]
+     state.append_token({'type': 'table', 'children': children})
+-    return m.end()
++    return pos
+ 
+ 
+ def _process_thead(

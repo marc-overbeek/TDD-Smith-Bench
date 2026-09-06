@@ -1,0 +1,14 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -348,7 +348,10 @@
+ 
+ 
+ def _del_sequence_item(target, idx):
+-    del target[int(idx)]
++    try:
++        del target[int(idx)]
++    except IndexError as e:
++        raise PathDeleteError(e, Path(), idx)
+ 
+ 
+ def _delete_autodiscover(type_obj):

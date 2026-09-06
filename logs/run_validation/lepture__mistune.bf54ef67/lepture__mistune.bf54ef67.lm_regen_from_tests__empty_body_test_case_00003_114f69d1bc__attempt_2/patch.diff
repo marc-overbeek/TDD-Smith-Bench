@@ -1,0 +1,47 @@
+--- a/src/mistune/block_parser.py
++++ b/src/mistune/block_parser.py
+@@ -483,14 +483,34 @@
+     return end_pos
+ 
+ 
+-def _parse_html_to_newline(state: BlockState, newline: Pattern[str]) -> int:
+-    m = newline.search(state.src, state.cursor)
+-    if m:
+-        end_pos = m.start()
+-        text = state.get_text(end_pos)
+-    else:
+-        text = state.src[state.cursor:]
+-        end_pos = state.cursor_max
+-
++def _parse_html_to_newline(state: BlockState, newline: Pattern[str]) ->int:
++    start_pos = state.cursor
++    while state.cursor < state.cursor_max:
++        # Find the next newline
++        m = newline.search(state.src, state.cursor)
++        if not m:
++            # No more newlines, consume rest of text
++            state.cursor = state.cursor_max
++            break
++            
++        # Check if we're at the end of a line that's part of the HTML block
++        end_of_line = m.end()
++        
++        # Look ahead to see if there's more content that should be included
++        # or if this is the end of the HTML block
++        pos = end_of_line
++        while pos < state.cursor_max and state.src[pos] in ' \t':
++            pos += 1
++            
++        # If we hit a blank line or end of document, we're done
++        if pos >= state.cursor_max or state.src[pos] == '\n':
++            state.cursor = end_of_line
++            break
++            
++        # Otherwise, continue parsing
++        state.cursor = end_of_line
++        
++    # Add the HTML content as a token
++    text = state.get_text(state.cursor)
+     state.append_token({'type': 'block_html', 'raw': text})
+-    return end_pos
++    return state.cursor

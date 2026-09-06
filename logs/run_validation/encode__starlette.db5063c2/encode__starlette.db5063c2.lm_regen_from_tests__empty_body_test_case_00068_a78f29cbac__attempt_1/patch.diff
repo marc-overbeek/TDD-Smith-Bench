@@ -1,0 +1,47 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -101,18 +101,14 @@
+     return getattr(endpoint, "__name__", endpoint.__class__.__name__)
+ 
+ 
+-def replace_params(
+-    path: str,
+-    param_convertors: dict[str, Convertor[typing.Any]],
+-    path_params: dict[str, str],
+-) -> tuple[str, dict[str, str]]:
+-    for key, value in list(path_params.items()):
+-        if "{" + key + "}" in path:
+-            convertor = param_convertors[key]
+-            value = convertor.to_string(value)
+-            path = path.replace("{" + key + "}", value)
+-            path_params.pop(key)
+-    return path, path_params
++def replace_params(path: str, param_convertors: dict[str, Convertor[typing.
++    Any]], path_params: dict[str, str]) ->tuple[str, dict[str, str]]:
++    for key, value in path_params.items():
++        convertor = param_convertors[key]
++        value = convertor.to_string(value)
++        path = path.replace("{%s}" % key, value)
++    remaining_params = {k: v for k, v in path_params.items() if k not in param_convertors}
++    return path, remaining_params
+ 
+ 
+ # Match parameters in URL paths, eg. '{param}', and '{param:int}'
+@@ -469,7 +465,7 @@
+ 
+ 
+ class Host(BaseRoute):
+-    def __init__(self, host: str, app: ASGIApp, name: str | None = None) -> None:
++    def __init__(self, host: str, app: ASGIApp, name: (str | None)=None) ->None:
+         assert not host.startswith("/"), "Host must not start with '/'"
+         self.host = host
+         self.app = app
+@@ -477,7 +473,7 @@
+         self.host_regex, self.host_format, self.param_convertors = compile_path(host)
+ 
+     @property
+-    def routes(self) -> list[BaseRoute]:
++    def routes(self) ->list[BaseRoute]:
+         return getattr(self.app, "routes", [])
+ 
+     def matches(self, scope: Scope) -> tuple[Match, Scope]:

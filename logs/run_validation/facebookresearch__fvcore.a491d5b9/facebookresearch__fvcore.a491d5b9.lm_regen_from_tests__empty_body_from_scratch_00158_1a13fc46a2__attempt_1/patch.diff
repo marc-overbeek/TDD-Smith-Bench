@@ -1,0 +1,15 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -640,6 +640,12 @@
+                 return False
+         return True
+ 
++    if kind not in self._op_handles:
++        if self._should_ignore_node(node):
++            continue
++        for name in ancestors:
++            unsupported_ops[name][kind] += 1
++
+     def _should_ignore_node(self, node) -> bool:
+         kind = node.kind()
+         if kind in self._ignored_ops:

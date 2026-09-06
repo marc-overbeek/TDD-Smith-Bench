@@ -1,0 +1,61 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -731,30 +731,35 @@
+     return input_string
+ 
+ 
+-def validate_expiration_date(expiration_date: str) -> Optional[datetime]:
+-    """
+-    Validate an expiration date string.
+-
+-    Args:
+-        expiration_date (str): The expiration date string.
+-
+-    Returns:
+-        Optional[datetime]: The validated expiration date if valid, None otherwise.
+-    """
+-    d = None
+-
+-    if expiration_date:
++'ignore-vulnerabilities': {'25853': {'reason': "we don't use the vulnerable function", 'expires': '2022-10-21 00:00:00'}}
++
++# Validate expires date
++d = validate_expiration_date(expires)
++
++if expires and not d:
++    self.fail(msg.format(hint=f"{context_msg}expires: \"{expires}\" isn't a valid format "
++                              f"for the expires keyword, "
++                              "valid options are: YYYY-MM-DD or "
++                              "YYYY-MM-DD HH:MM:SS")
++              )
++
++normalized[str(ignored_vuln_id)] = {'reason': reason, 'expires': d}
++
++def validate_expiration_date(expiration_date: str) ->Optional[datetime]:
++    if not expiration_date:
++        return None
++    
++    # Try parsing with both supported formats
++    formats = ['%Y-%m-%d', '%Y-%m-%d %H:%M:%S']
++    
++    for fmt in formats:
+         try:
+-            d = datetime.strptime(expiration_date, '%Y-%m-%d')
+-        except ValueError as e:
+-            pass
+-
+-        try:
+-            d = datetime.strptime(expiration_date, '%Y-%m-%d %H:%M:%S')
+-        except ValueError as e:
+-            pass
+-
+-    return d
++            return datetime.strptime(expiration_date, fmt)
++        except ValueError:
++            continue
++    
++    # If neither format worked, return None to indicate invalid format
++    return None
+ 
+ 
+ class SafetyPolicyFile(click.ParamType):

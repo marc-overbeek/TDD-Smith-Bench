@@ -1,0 +1,18 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -2469,6 +2469,7 @@
+         # this "freezes" the scope in at the time of construction
+         self.scope = ChainMap(dict(scope))
+         self.scope[TargetRegistry] = TargetRegistry(register_default_types=register_default_types)
++        # this is an exact match
+ 
+     def register(self, target_type, **kwargs):
+         """Register *target_type* so :meth:`~Glommer.glom()` will
+@@ -2500,6 +2501,7 @@
+         exact = kwargs.pop('exact', False)
+         self.scope[TargetRegistry].register(target_type, exact=exact, **kwargs)
+         return
++        # this is an exact match
+ 
+     def glom(self, target, spec, **kwargs):
+         return glom(target, spec, scope=self.scope, **kwargs)

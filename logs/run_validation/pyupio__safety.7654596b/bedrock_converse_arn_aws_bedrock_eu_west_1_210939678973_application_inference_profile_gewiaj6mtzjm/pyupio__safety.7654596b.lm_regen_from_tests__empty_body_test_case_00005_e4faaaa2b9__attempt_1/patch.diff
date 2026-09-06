@@ -1,0 +1,72 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -553,42 +553,39 @@
+     A click option that depends on other options.
+     """
+     def __init__(self, *args, **kwargs):
+-        self.required_options = set(kwargs.pop('required_options', []))
++        self.mutually_exclusive = set(kwargs.pop('mutually_exclusive', []))
++        self.with_values = kwargs.pop('with_values', {})
+         help = kwargs.get('help', '')
+-        if self.required_options:
+-            ex_str = ', '.join(self.required_options)
++        if self.mutually_exclusive:
++            ex_str = ', '.join(["{0} with values {1}".format(item, self.with_values.get(item)) if item in self.with_values else item for item in self.mutually_exclusive])
+             kwargs['help'] = help + (
+-                f" Requires: [ {ex_str} ]"
++                ' NOTE: This argument is mutually exclusive with '
++                ' arguments: [' + ex_str + '].'
+             )
+-        super(DependentOption, self).__init__(*args, **kwargs)
+-
+-    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+-        """
+-        Handle the parse result for dependent options.
+-
+-        Args:
+-            ctx (click.Context): The click context.
+-            opts (Dict[str, Any]): The options dictionary.
+-            args (List[str]): The arguments list.
+-
+-        Returns:
+-            Tuple[Any, List[str]]: The result and remaining arguments.
+-        """
+-        missing_required_arguments = None
+-
+-        if self.name in opts:
+-            missing_required_arguments = self.required_options.difference(opts)
+-
+-        if missing_required_arguments:
++        super(MutuallyExclusiveOption, self).__init__(*args, **kwargs)
++
++    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any],
++        args: List[str]) ->Tuple[Any, List[str]]:
++        m_exclusive_used = self.mutually_exclusive.intersection(opts)
++        option_used = m_exclusive_used and self.name in opts
++
++        exclusive_value_used = False
++        for used in m_exclusive_used:
++            value_used = opts.get(used, None)
++            if not isinstance(value_used, List):
++                value_used = [value_used]
++            if value_used and set(self.with_values.get(used, [])).intersection(value_used):
++                exclusive_value_used = True
++
++        if option_used and (not self.with_values or exclusive_value_used):
++            options = ', '.join(self.opts)
++            prohibited = ''.join(["\n * --{0} with {1}".format(item, self.with_values.get(
++                        item)) if item in self.with_values else f"\n * {item}" for item in self.mutually_exclusive])
+             raise click.UsageError(
+-                "Illegal usage: `{}` needs the "
+-                "arguments `{}`.".format(
+-                    self.name,
+-                    ', '.join(missing_required_arguments)
+-                )
++                f"Illegal usage: `{options}` is mutually exclusive with: {prohibited}"
+             )
+ 
+-        return super(DependentOption, self).handle_parse_result(
++        return super(MutuallyExclusiveOption, self).handle_parse_result(
+             ctx,
+             opts,
+             args

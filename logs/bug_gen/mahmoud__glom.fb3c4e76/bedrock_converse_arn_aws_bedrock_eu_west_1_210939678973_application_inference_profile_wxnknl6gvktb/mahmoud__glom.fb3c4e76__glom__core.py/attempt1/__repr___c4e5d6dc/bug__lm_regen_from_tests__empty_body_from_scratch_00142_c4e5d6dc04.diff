@@ -1,0 +1,18 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -2534,6 +2534,15 @@
+     def fill(self, target):
+         return glom(target, self)
+ 
++    assert repr(Fill()) == 'Fill()'
++    assert repr(Fill(T)) == 'Fill(T)'
++    assert repr(Fill(len)) == 'Fill(len)'
++
++    def __repr__(self):
++        cn = self.__class__.__name__
++        rpr = '' if self.spec is None else bbrepr(self.spec)
++        return f'{cn}({rpr})'
++
+     def __repr__(self):
+         cn = self.__class__.__name__
+         rpr = '' if self.spec is None else bbrepr(self.spec)

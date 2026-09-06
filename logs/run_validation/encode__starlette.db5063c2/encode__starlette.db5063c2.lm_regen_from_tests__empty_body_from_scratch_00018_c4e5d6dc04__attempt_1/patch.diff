@@ -1,0 +1,18 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -159,6 +159,15 @@
+ 
+     def __str__(self) -> str:
+         return self._url
++
++    def __repr__(self) -> str:
++        pass
++
++    def __repr__(self) -> str:
++        url = str(self)
++        if self.password:
++            url = str(self.replace(password="********"))
++        return f"{self.__class__.__name__}({repr(url)})"
+ 
+     def __repr__(self) -> str:
+         url = str(self)

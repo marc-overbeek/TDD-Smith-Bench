@@ -1,0 +1,40 @@
+--- a/src/mistune/inline_parser.py
++++ b/src/mistune/inline_parser.py
+@@ -250,6 +250,8 @@
+ 
+         marker = m.group(0)
+         mlen = len(marker)
++    
++        # Check if we're already in emphasis/strong context
+         if mlen == 1 and state.in_emphasis:
+             state.append_token({'type': 'text', 'raw': marker})
+             return pos
+@@ -272,6 +274,7 @@
+ 
+         new_state = state.copy()
+         new_state.src = text
++    
+         if mlen == 1:
+             new_state.in_emphasis = True
+             children = self.render(new_state)
+@@ -280,17 +283,13 @@
+             new_state.in_strong = True
+             children = self.render(new_state)
+             state.append_token({'type': 'strong', 'children': children})
+-        else:
++        else:  # mlen == 3
+             new_state.in_emphasis = True
+             new_state.in_strong = True
+-
+-            children = [{
+-                'type': 'strong',
+-                'children': self.render(new_state)
+-            }]
++            children = self.render(new_state)
+             state.append_token({
+                 'type': 'emphasis',
+-                'children': children,
++                'children': [{'type': 'strong', 'children': children}]
+             })
+         return end_pos
+ 

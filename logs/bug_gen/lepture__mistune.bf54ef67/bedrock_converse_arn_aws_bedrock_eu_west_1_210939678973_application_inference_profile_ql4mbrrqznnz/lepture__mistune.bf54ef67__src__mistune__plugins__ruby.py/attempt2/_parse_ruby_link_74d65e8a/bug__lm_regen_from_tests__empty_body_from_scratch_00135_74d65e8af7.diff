@@ -1,0 +1,66 @@
+--- a/src/mistune/plugins/ruby.py
++++ b/src/mistune/plugins/ruby.py
+@@ -45,43 +45,38 @@
+     return end_pos
+ 
+ 
+-def _parse_ruby_link(
+-    inline: "InlineParser", state: "InlineState", pos: int, tokens: List[Dict[str, Any]]
+-) -> Optional[int]:
+-    c = state.src[pos]
++def _parse_ruby_link(inline: 'InlineParser', state: 'InlineState', pos: int,
++    tokens: List[Dict[str, Any]]) ->Optional[int]:
++    src = state.src
++    c = src[pos]
++
+     if c == '(':
+-        # standard link [text](<url> "title")
+-        attrs, link_pos = parse_link(state.src, pos + 1)
+-        if link_pos:
++        # inline link: [ruby](/url "title")
++        new_pos, attrs = parse_link(src, pos)
++        if new_pos:
++            children = list(tokens)
+             state.append_token({
+                 'type': 'link',
+-                'children': tokens,
++                'children': children,
+                 'attrs': attrs,
+             })
+-            return link_pos
++            return new_pos
+ 
+     elif c == '[':
+-        # standard ref link [text][label]
+-        label, link_pos = parse_link_label(state.src, pos + 1)
+-        if label and link_pos:
+-            ref_links = state.env['ref_links']
++        # reference link: [ruby][label]
++        new_pos, label = parse_link_label(src, pos + 1)
++        if new_pos:
+             key = unikey(label)
+-            env = ref_links.get(key)
+-            if env:
+-                attrs = {'url': env['url'], 'title': env.get('title')}
++            attrs = state.get_link(key)
++            if attrs:
++                children = list(tokens)
+                 state.append_token({
+                     'type': 'link',
+-                    'children': tokens,
++                    'children': children,
+                     'attrs': attrs,
+                 })
+-            else:
+-                for tok in tokens:
+-                    state.append_token(tok)
+-                state.append_token({
+-                    'type': 'text',
+-                    'raw': '[' + label + ']',
+-                })
+-            return link_pos
++                return new_pos
++
+     return None
+ 
+ 

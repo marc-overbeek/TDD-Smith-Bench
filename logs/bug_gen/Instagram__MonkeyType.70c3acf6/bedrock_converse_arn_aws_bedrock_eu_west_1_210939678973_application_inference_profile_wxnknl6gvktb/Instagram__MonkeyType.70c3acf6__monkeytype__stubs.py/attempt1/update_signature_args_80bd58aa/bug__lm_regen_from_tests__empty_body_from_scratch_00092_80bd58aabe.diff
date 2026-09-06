@@ -1,0 +1,92 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -156,36 +156,60 @@
+     return imports
+ 
+ 
+-def update_signature_args(
+-    sig: inspect.Signature,
+-    arg_types: Dict[str, type],
+-    has_self: bool,
+-    existing_annotation_strategy: ExistingAnnotationStrategy = ExistingAnnotationStrategy.REPLICATE,
+-) -> inspect.Signature:
++def update_signature_args(sig: inspect.Signature, arg_types: Dict[str, type
++    ], has_self: bool, existing_annotation_strategy:
++    ExistingAnnotationStrategy=ExistingAnnotationStrategy.REPLICATE
++    ) ->inspect.Signature:
+     """Update argument annotations with the supplied types"""
+-    params = []
+-    for arg_idx, name in enumerate(sig.parameters):
+-        param = sig.parameters[name]
+-        typ = arg_types.get(name)
+-        typ = inspect.Parameter.empty if typ is None else typ
+-        is_self = has_self and arg_idx == 0
+-        annotated = param.annotation is not inspect.Parameter.empty
+-        if (
+-            annotated
+-            and existing_annotation_strategy == ExistingAnnotationStrategy.OMIT
+-        ):
+-            # generate no annotation for already-annotated args when generating
+-            # a stub to apply, avoiding the possibility of "incompatible
+-            # annotation" errors
+-            param = param.replace(annotation=inspect.Parameter.empty)
+-        # Don't touch existing annotations unless asked to ignore them
+-        if not is_self and (
+-            (existing_annotation_strategy == ExistingAnnotationStrategy.IGNORE)
+-            or not annotated
+-        ):
+-            param = param.replace(annotation=typ)
+-        params.append(param)
+-    return sig.replace(parameters=params)
++    new_params = []
++    for i, param in enumerate(sig.parameters.values()):
++        # Skip annotating 'self' or 'cls' for instance/class methods
++        if has_self and i == 0:
++            new_params.append(param)
++            continue
++        
++        # Check if we have a traced type for this parameter
++        if param.name not in arg_types:
++            new_params.append(param)
++            continue
++        
++        traced_type = arg_types[param.name]
++        existing_anno = param.annotation
++        
++        if existing_annotation_strategy == ExistingAnnotationStrategy.REPLICATE:
++            # Keep existing annotations, only add if not present
++            if existing_anno is not inspect.Parameter.empty:
++                new_params.append(param)
++            else:
++                if traced_type is not None:
++                    new_param = param.replace(annotation=traced_type)
++                    new_params.append(new_param)
++                else:
++                    new_params.append(param)
++        elif existing_annotation_strategy == ExistingAnnotationStrategy.IGNORE:
++            # Override with traced types, ignore existing annotations
++            if traced_type is not None:
++                new_param = param.replace(annotation=traced_type)
++                new_params.append(new_param)
++            else:
++                # traced_type is None, remove annotation
++                new_param = param.replace(annotation=inspect.Parameter.empty)
++                new_params.append(new_param)
++        elif existing_annotation_strategy == ExistingAnnotationStrategy.OMIT:
++            # Remove annotations where they already exist in source
++            if existing_anno is not inspect.Parameter.empty:
++                # Existing annotation present, remove it
++                new_param = param.replace(annotation=inspect.Parameter.empty)
++                new_params.append(new_param)
++            else:
++                # No existing annotation, add traced type if available
++                if traced_type is not None:
++                    new_param = param.replace(annotation=traced_type)
++                    new_params.append(new_param)
++                else:
++                    new_params.append(param)
++    
++    return sig.replace(parameters=new_params)
+ 
+ 
+ def update_signature_return(

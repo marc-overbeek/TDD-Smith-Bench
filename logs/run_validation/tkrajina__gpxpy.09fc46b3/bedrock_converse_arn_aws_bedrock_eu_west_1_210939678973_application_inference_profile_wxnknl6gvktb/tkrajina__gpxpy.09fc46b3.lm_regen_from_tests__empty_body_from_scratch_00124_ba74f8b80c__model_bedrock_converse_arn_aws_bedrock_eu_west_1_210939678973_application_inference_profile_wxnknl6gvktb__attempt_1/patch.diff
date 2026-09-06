@@ -1,0 +1,28 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -841,8 +841,25 @@
+         """ Joins with another segment """
+         self.points += track_segment.points
+ 
++    def test_remove_point_from_segment(self) ->None:
++        # ... setup code ...
++        segment.remove_point(3)
++        # After removing point at index 3:
++        # - points 0, 1, 2 should remain the same
++        # - point at index 3 should now be what was at index 4
++        # - total length should be original_length - 1
++
+     def remove_point(self, point_no: int) -> None:
+         """ Removes a point specified by index from the segment """
++        if point_no < 0 or point_no >= len(self.points):
++            return
++
++        part_1 = self.points[:point_no]
++        part_2 = self.points[point_no + 1:]
++
++        self.points = part_1 + part_2
++
++    def remove_point(self, point_no: int) -> None:
+         if point_no < 0 or point_no >= len(self.points):
+             return
+ 

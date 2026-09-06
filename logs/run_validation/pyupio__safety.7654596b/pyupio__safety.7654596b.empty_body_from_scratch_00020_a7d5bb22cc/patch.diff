@@ -1,0 +1,53 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -331,48 +331,8 @@
+     return TelemetryModel(**body)
+ 
+ 
+-def build_git_data() -> Dict[str, Any]:
+-    """Build git data for the repository.
+-
+-    Returns:
+-        Dict[str, str]: The git data.
+-    """
+-    import subprocess
+-
+-    def git_command(commandline: List[str]) -> str:
+-        return subprocess.run(commandline, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL).stdout.decode('utf-8').strip()
+-
+-    try:
+-        is_git = git_command(["git", "rev-parse", "--is-inside-work-tree"])
+-    except Exception:
+-        is_git = False
+-
+-    if is_git == "true":
+-        result = {
+-            "branch": "",
+-            "tag": "",
+-            "commit": "",
+-            "dirty": "",
+-            "origin": ""
+-        }
+-
+-        try:
+-            result['branch'] = git_command(["git", "symbolic-ref", "--short", "-q", "HEAD"])
+-            result['tag'] = git_command(["git", "describe", "--tags", "--exact-match"])
+-
+-            commit = git_command(["git", "describe", '--match=""', '--always', '--abbrev=40', '--dirty'])
+-            result['dirty'] = commit.endswith('-dirty')
+-            result['commit'] = commit.split("-dirty")[0]
+-
+-            result['origin'] = git_command(["git", "remote", "get-url", "origin"])
+-        except Exception:
+-            pass
+-
+-        return result
+-    else:
+-        return {
+-            "error": "not-git-repo"
+-        }
++def build_git_data() ->Dict[str, Any]:
++    pass
+ 
+ 
+ def output_exception(exception: Exception, exit_code_output: bool = True) -> None:

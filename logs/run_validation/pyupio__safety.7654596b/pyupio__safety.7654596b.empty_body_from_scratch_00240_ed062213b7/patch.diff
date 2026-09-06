@@ -1,0 +1,49 @@
+--- a/safety/scan/render.py
++++ b/safety/scan/render.py
+@@ -82,43 +82,9 @@
+             color = colors.get(announcement.get('type', "info"), "default")
+             console.print(f"[{color}]* {announcement.get('message')}[/{color}]")
+ 
+-def print_detected_ecosystems_section(console: Console, file_paths: Dict[str, Set[Path]], include_safety_prjs: bool = True) -> None:
+-    """
+-    Print detected ecosystems section.
+-
+-    Args:
+-        console (Console): The console for output.
+-        file_paths (Dict[str, Set[Path]]): Dictionary of file paths by type.
+-        include_safety_prjs (bool): Whether to include safety projects.
+-    """
+-    detected: Dict[Ecosystem, Dict[FileType, int]] = {}
+-
+-    for file_type_key, f_paths in file_paths.items():
+-        file_type = FileType(file_type_key)
+-        if file_type.ecosystem:
+-            if file_type.ecosystem not in detected:
+-                detected[file_type.ecosystem] = {}
+-            detected[file_type.ecosystem][file_type] = len(f_paths)
+-
+-    for ecosystem, f_type_count in detected.items():
+-
+-        if not include_safety_prjs and ecosystem is Ecosystem.SAFETY_PROJECT:
+-            continue
+-
+-        brief = "Found "
+-        file_types = []
+-
+-        for f_type, count in f_type_count.items():
+-            file_types.append(f"{count} {f_type.human_name(plural=count>1)}")
+-
+-        if len(file_types) > 1:
+-            brief += ", ".join(file_types[:-1]) + " and " + file_types[-1]
+-        else:
+-            brief += file_types[0]
+-
+-        msg = f"{ecosystem.name.replace('_', ' ').title()} detected. {brief}"
+-
+-        console.print(msg)
++def print_detected_ecosystems_section(console: Console, file_paths: Dict[
++    str, Set[Path]], include_safety_prjs: bool=True) ->None:
++    pass
+         
+ 
+ 

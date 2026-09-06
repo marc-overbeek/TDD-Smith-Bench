@@ -1,0 +1,36 @@
+--- a/oauthlib/oauth2/rfc6749/tokens.py
++++ b/oauthlib/oauth2/rfc6749/tokens.py
+@@ -234,23 +234,16 @@
+ 
+ 
+ def get_token_from_header(request):
+-    """
+-    Helper function to extract a token from the request header.
+-
+-    :param request: OAuthlib request.
+-    :type request: oauthlib.common.Request
+-    :return: Return the token or None if the Authorization header is malformed.
+-    """
+-    token = None
+-
+-    if 'Authorization' in request.headers:
+-        split_header = request.headers.get('Authorization').split()
+-        if len(split_header) == 2 and split_header[0].lower() == 'bearer':
+-            token = split_header[1]
+-    else:
+-        token = request.access_token
+-
+-    return token
++    auth_header = request.headers.get('Authorization')
++    if not auth_header:
++        return None
++        
++    # Split on whitespace and check if first part is 'Bearer' (case insensitive)
++    parts = auth_header.strip().split()
++    if len(parts) < 2 or parts[0].lower() != 'bearer':
++        return None
++        
++    return parts[1]
+ 
+ 
+ class TokenBase:

@@ -1,0 +1,217 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -577,34 +577,8 @@
+         """ Will remove time metadata. """
+         self.time = None
+ 
+-    def time_difference(self, track_point: "GPXTrackPoint") -> Optional[float]:
+-        """
+-        Get time difference between specified point and this point.
+-
+-        Parameters
+-        ----------
+-        track_point : GPXTrackPoint
+-
+-        Returns
+-        ----------
+-        time_difference : float
+-            Time difference returned in seconds
+-        """
+-        if not self.time or not track_point or not track_point.time:
+-            return None
+-
+-        time_1 = self.time
+-        time_2 = track_point.time
+-
+-        if time_1 == time_2:
+-            return 0
+-
+-        if time_1 > time_2:
+-            delta = time_1 - time_2
+-        else:
+-            delta = time_2 - time_1
+-
+-        return mod_utils.total_seconds(delta)
++    def time_difference(self, track_point: 'GPXTrackPoint') ->Optional[float]:
++        pass
+ 
+     def speed_between(self, track_point: "GPXTrackPoint") -> Optional[float]:
+         """
+@@ -1050,71 +1024,14 @@
+             if track_point.elevation is not None:
+                 track_point.elevation += delta
+ 
+-    def add_missing_data(self,
+-                         get_data_function: Callable[[GPXTrackPoint], Any],
+-                         add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint, GPXTrackPoint, List[float]], None]) -> None:
+-        """
+-        Calculate missing data.
+-
+-        Parameters
+-        ----------
+-        get_data_function : object
+-            Returns the data from point
+-        add_missing_function : void
+-            Function with the following arguments: array with points with missing data, the point before them (with data),
+-            the point after them (with data), and distance ratios between points in the interval (the sum of distances ratios
+-            will be 1)
+-        """
+-        if not get_data_function:
+-            raise GPXException(f'Invalid get_data_function: {get_data_function}')
+-        if not add_missing_function:
+-            raise GPXException(f'Invalid add_missing_function: {add_missing_function}')
+-
+-        # Points (*without* data) between two points (*with* data):
+-        interval: List[GPXTrackPoint] = []
+-        # Point (*with* data) before and after the interval:
+-        start_point = None
+-
+-        previous_point = None
+-        for track_point in self.points:
+-            data = get_data_function(track_point)
+-            if data is None and previous_point:
+-                if not start_point:
+-                    start_point = previous_point
+-                interval.append(track_point)
+-            else:
+-                if interval and start_point:
+-                    distances_ratios = self._get_interval_distances_ratios(interval, start_point, track_point)
+-                    add_missing_function(interval, start_point, track_point, distances_ratios)
+-                    start_point = None
+-                    interval = []
+-            previous_point = track_point
+-
+-    def _get_interval_distances_ratios(self, interval: List[GPXTrackPoint], start: GPXTrackPoint, end: GPXTrackPoint) -> List[float]:
+-        assert start, start
+-        assert end, end
+-        assert interval, interval
+-        assert len(interval) > 0, interval
+-
+-        distances = []
+-        distance_from_start: float = 0
+-        previous_point = start
+-        for point in interval:
+-            dist = point.distance_3d(previous_point)
+-            if dist is not None:
+-                distance_from_start += dist
+-                distances.append(distance_from_start)
+-                previous_point = point
+-
+-        dist = interval[-1].distance_3d(end)
+-        from_start_to_end = None
+-        if dist:
+-            from_start_to_end = distances[-1] + dist
+-
+-        assert len(interval) == len(distances)
+-
+-        return [(distance / from_start_to_end) if from_start_to_end else 0
+-                for distance in distances]
++    def add_missing_data(self, get_data_function: Callable[[GPXTrackPoint], Any
++        ], add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint,
++        GPXTrackPoint, List[float]], None]) ->None:
++        pass
++
++    def _get_interval_distances_ratios(self, interval: List[GPXTrackPoint],
++        start: GPXTrackPoint, end: GPXTrackPoint) ->List[float]:
++        pass
+ 
+     def get_duration(self) -> Optional[float]:
+         """
+@@ -1732,11 +1649,10 @@
+         for track_segment in self.segments:
+             track_segment.add_elevation(delta)
+ 
+-    def add_missing_data(self,
+-                         get_data_function: Callable[[GPXTrackPoint], Any],
+-                         add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint, GPXTrackPoint, List[float]], None]) -> None:
+-        for track_segment in self.segments:
+-            track_segment.add_missing_data(get_data_function, add_missing_function)
++    def add_missing_data(self, get_data_function: Callable[[GPXTrackPoint], Any
++        ], add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint,
++        GPXTrackPoint, List[float]], None]) ->None:
++        pass
+ 
+     def move(self, location_delta: mod_geo.LocationDelta) -> None:
+         """
+@@ -2532,11 +2448,10 @@
+         for track in self.tracks:
+             track.add_elevation(delta)
+ 
+-    def add_missing_data(self,
+-                         get_data_function: Callable[[GPXTrackPoint], Any],
+-                         add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint, GPXTrackPoint, List[float]], None]) -> None:
+-        for track in self.tracks:
+-            track.add_missing_data(get_data_function, add_missing_function)
++    def add_missing_data(self, get_data_function: Callable[[GPXTrackPoint], Any
++        ], add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint,
++        GPXTrackPoint, List[float]], None]) ->None:
++        pass
+ 
+     def add_missing_elevations(self) -> None:
+         def _add(interval: List[GPXTrackPoint], start: GPXTrackPoint, end: GPXTrackPoint, distances_ratios: List[float]) -> None:
+@@ -2567,63 +2482,8 @@
+         self.add_missing_data(get_data_function=lambda point: point.time,
+                               add_missing_function=_add)
+ 
+-    def add_missing_speeds(self) -> None:
+-        """
+-        The missing speeds are added to a segment.
+-
+-        The weighted harmonic mean is used to approximate the speed at
+-        a :obj:'~.GPXTrackPoint'.
+-        For this to work the speed of the first and last track point in a
+-        segment needs to be known.
+-        """
+-        def _add(interval: List[GPXTrackPoint], start: GPXTrackPoint, end: GPXTrackPoint, distances_ratios: List[float]) -> None:
+-            if (not start) or (not end) or (not start.time) or (not end.time):
+-                return
+-            assert interval
+-            assert len(interval) == len(distances_ratios)
+-
+-            time_dist_before = (interval[0].time_difference(start),
+-                                interval[0].distance_3d(start))
+-            time_dist_after = (interval[-1].time_difference(end),
+-                               interval[-1].distance_3d(end))
+-
+-            # Assemble list of times and distance to neighbour points
+-            times_dists: List[Tuple[Optional[float], Optional[float]]] = [
+-                (point.time_difference(nextpoint), point.distance_3d(nextpoint))
+-                for point, nextpoint in zip(interval, interval[1:])
+-            ]
+-            times_dists.insert(0, time_dist_before)
+-            times_dists.append(time_dist_after)
+-
+-            for i, point in enumerate(interval):
+-                time_left, dist_left = times_dists[i]
+-                time_right, dist_right = times_dists[i+1]
+-                if time_left and time_right and dist_left and dist_right:
+-                    point.speed = (dist_left + dist_right) / (time_left + time_right)
+-
+-        self.add_missing_data(get_data_function=lambda point: point.speed,
+-                              add_missing_function=_add)
+-
+-    def fill_time_data_with_regular_intervals(self, start_time: Optional[mod_datetime.datetime]=None, time_delta: Optional[mod_datetime.timedelta]=None, end_time: Optional[mod_datetime.datetime]=None, force: bool=True) -> None:
+-        """
+-        Fills the time data for all points in the GPX file. At least two of the parameters start_time, time_delta, and
+-        end_time have to be provided. If the three are provided, time_delta will be ignored and will be recalculated
+-        using start_time and end_time.
+-
+-        The first GPX point will have a time equal to start_time. Then points are assumed to be recorded at regular
+-        intervals time_delta.
+-
+-        If the GPX file currently contains time data, it will be overwritten, unless the force flag is set to False, in
+-        which case the function will return a GPXException error.
+-
+-        Parameters
+-        ----------
+-        start_time: datetime.datetime object
+-            Start time of the GPX file (corresponds to the time of the first point)
+-        time_delta: datetime.timedelta object
+-            Time interval between two points in the GPX file
+-        end_time: datetime.datetime object
+-            End time of the GPX file (corresponds to the time of the last point)
++    def add_missing_speeds(self) ->None:
++        pass
+         force: bool
+             Overwrite current data if the GPX file currently contains time data
+         """

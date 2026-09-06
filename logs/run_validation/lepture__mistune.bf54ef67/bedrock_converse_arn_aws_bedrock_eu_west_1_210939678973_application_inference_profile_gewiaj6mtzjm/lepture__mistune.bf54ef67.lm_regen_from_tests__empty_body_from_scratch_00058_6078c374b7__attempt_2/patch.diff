@@ -1,0 +1,43 @@
+--- a/src/mistune/list_parser.py
++++ b/src/mistune/list_parser.py
+@@ -253,13 +253,32 @@
+     return '\n'.join(rv)
+ 
+ 
+-def _is_loose_list(tokens: Iterable[Dict[str, Any]]) -> bool:
+-    paragraph_count = 0
+-    for tok in tokens:
+-        if tok['type'] == 'blank_line':
++def _is_loose_list(tokens: Iterable[Dict[str, Any]]) ->bool:
++    for token in tokens:
++        if token['type'] == 'list_item':
++            children = token.get('children', [])
++            if not children:
++                return True
++            last_child = children[-1]
++            if last_child['type'] == 'paragraph' and last_child.get('blank_lines', 0) > 0:
++                return True
++        elif token['type'] == 'paragraph' and token.get('blank_lines', 0) > 0:
+             return True
+-        if tok['type'] == 'paragraph':
+-            paragraph_count += 1
+-            if paragraph_count > 1:
+-                return True
+     return False
++
++def _is_loose_list(tokens: Iterable[Dict[str, Any]]) ->bool:
++    for token in tokens:
++        if token['type'] == 'list_item':
++            children = token.get('children', [])
++            if not children:
++                return True
++            last_child = children[-1]
++            if last_child['type'] == 'paragraph':
++                blank_lines = last_child.get('blank_lines', 0)
++                if blank_lines > 0:
++                    return True
++        elif token['type'] == 'paragraph':
++            blank_lines = token.get('blank_lines', 0)
++            if blank_lines > 0:
++                return True
++    return False

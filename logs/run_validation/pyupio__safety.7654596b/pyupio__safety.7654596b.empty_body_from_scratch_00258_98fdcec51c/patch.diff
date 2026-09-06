@@ -1,0 +1,138 @@
+--- a/safety/scan/command.py
++++ b/safety/scan/command.py
+@@ -47,132 +47,9 @@
+     PYTHON = Ecosystem.PYTHON.value
+ 
+ 
+-def process_report(
+-    obj: Any, console: Console, report: ReportModel, output: str,
+-    save_as: Optional[Tuple[str, Path]], **kwargs
+-) -> Optional[str]:
+-    """
+-    Processes and outputs the report based on the given parameters.
+-
+-    Args:
+-        obj (Any): The context object.
+-        console (Console): The console object.
+-        report (ReportModel): The report model.
+-        output (str): The output format.
+-        save_as (Optional[Tuple[str, Path]]): The save-as format and path.
+-        kwargs: Additional keyword arguments.
+-
+-    Returns:
+-        Optional[str]: The URL of the report if uploaded, otherwise None.
+-    """
+-    wait_msg = "Processing report"
+-    with console.status(wait_msg, spinner=DEFAULT_SPINNER) as status:
+-        json_format = report.as_v30().json()
+-
+-    export_type, export_path = None, None
+-
+-    if save_as:
+-        export_type, export_path = save_as
+-        export_type = ScanExport(export_type)
+-
+-    output = ScanOutput(output)
+-
+-    report_to_export = None
+-    report_to_output = None
+-
+-    with console.status(wait_msg, spinner=DEFAULT_SPINNER) as status:
+-
+-        spdx_format, html_format = None, None
+-
+-        if ScanExport.is_format(export_type, ScanExport.SPDX) or ScanOutput.is_format(output, ScanOutput.SPDX):
+-            spdx_version = None
+-            if export_type:
+-                spdx_version = export_type.version if export_type.version and ScanExport.is_format(export_type, ScanExport.SPDX) else None
+-
+-            if not spdx_version and output:
+-                spdx_version = output.version if output.version and ScanOutput.is_format(output, ScanOutput.SPDX) else None
+-
+-            spdx_format = render_scan_spdx(report, obj, spdx_version=spdx_version)
+-
+-        if export_type is ScanExport.HTML or output is ScanOutput.HTML:
+-            html_format = render_scan_html(report, obj)
+-
+-        save_as_format_mapping = {
+-            ScanExport.JSON: json_format,
+-            ScanExport.HTML: html_format,
+-            ScanExport.SPDX: spdx_format,
+-            ScanExport.SPDX_2_3: spdx_format,
+-            ScanExport.SPDX_2_2: spdx_format,
+-        }
+-
+-        output_format_mapping = {
+-            ScanOutput.JSON: json_format,
+-            ScanOutput.HTML: html_format,
+-            ScanOutput.SPDX: spdx_format,
+-            ScanOutput.SPDX_2_3: spdx_format,
+-            ScanOutput.SPDX_2_2: spdx_format,
+-        }
+-
+-        report_to_export = save_as_format_mapping.get(export_type, None)
+-        report_to_output = output_format_mapping.get(output, None)
+-
+-        if report_to_export:
+-            msg = f"Saving {export_type} report at: {export_path}"
+-            status.update(msg)
+-            LOG.debug(msg)
+-            save_report_as(report.metadata.scan_type, export_type, Path(export_path),
+-                           report_to_export)
+-        report_url = None
+-
+-        if obj.platform_enabled:
+-            status.update(f"Uploading report to: {SAFETY_PLATFORM_URL}")
+-            try:
+-                result = obj.auth.client.upload_report(json_format)
+-                status.update("Report uploaded")
+-                report_url = f"{SAFETY_PLATFORM_URL}{result['url']}"
+-            except Exception as e:
+-                raise e
+-
+-        if output is ScanOutput.SCREEN:
+-            console.print()
+-            lines = []
+-
+-            if obj.platform_enabled and report_url:
+-                if report.metadata.scan_type is ScanType.scan:
+-                    project_url = f"{SAFETY_PLATFORM_URL}{obj.project.url_path}"
+-                    # Get the current branch name
+-                    branch_name = get_git_branch_name()
+-
+-                    # Append the branch name if available
+-                    if branch_name:
+-                        project_url_with_branch = f"{project_url}?branch={branch_name}"
+-                    else:
+-                        project_url_with_branch = project_url
+-
+-                    lines.append(f"Project dashboard: [link]{project_url_with_branch}[/link]")
+-
+-                elif report.metadata.scan_type is ScanType.system_scan:
+-                    lines.append(f"System scan report: [link]{report_url}[/link]")
+-
+-            for line in lines:
+-                console.print(line, emoji=True)
+-
+-    if output.is_silent():
+-        console.quiet = False
+-
+-        if output is ScanOutput.JSON or ScanOutput.is_format(output, ScanOutput.SPDX):
+-            if output is ScanOutput.JSON:
+-                kwargs = {"json": report_to_output}
+-            else:
+-                kwargs = {"data": report_to_output}
+-            console.print_json(**kwargs)
+-
+-        else:
+-            console.print(report_to_output)
+-
+-        console.quiet = True
+-
+-    return report_url
++def process_report(obj: Any, console: Console, report: ReportModel, output:
++    str, save_as: Optional[Tuple[str, Path]], **kwargs) ->Optional[str]:
++    pass
+ 
+ 
+ def generate_updates_arguments() -> List:

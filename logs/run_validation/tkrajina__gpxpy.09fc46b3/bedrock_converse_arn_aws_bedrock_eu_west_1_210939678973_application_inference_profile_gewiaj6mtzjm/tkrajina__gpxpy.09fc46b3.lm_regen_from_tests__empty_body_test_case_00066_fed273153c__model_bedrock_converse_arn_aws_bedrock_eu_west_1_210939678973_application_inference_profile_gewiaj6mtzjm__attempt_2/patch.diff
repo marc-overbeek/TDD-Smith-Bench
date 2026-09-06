@@ -1,0 +1,146 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -707,7 +707,7 @@
+         """
+         self.points = mod_geo.simplify_polyline(self.points, max_distance) # type: ignore
+ 
+-    def reduce_points(self, min_distance: float) -> None:
++    def reduce_points(self, min_distance: float) ->None:
+         """
+         Reduces the number of points in the track segment. Segment points will
+         be updated in place.
+@@ -717,15 +717,18 @@
+         min_distance : float
+             The minimum separation in meters between points
+         """
++        if not self.points:
++            return
++        
+         reduced_points: List[GPXTrackPoint] = []
+         for point in self.points:
+-            if reduced_points:
++            if not reduced_points:
++                # Keep first point
++                reduced_points.append(point)
++            else:
+                 distance = reduced_points[-1].distance_3d(point)
+-                if min_distance is not None and distance is not None and distance >= min_distance:
++                if distance is not None and distance >= min_distance:
+                     reduced_points.append(point)
+-            else:
+-                # Leave first point:
+-                reduced_points.append(point)
+ 
+         self.points = reduced_points
+ 
+@@ -1437,18 +1440,43 @@
+         for segment in self.segments:
+             segment.simplify(max_distance=max_distance)
+ 
+-    def reduce_points(self, min_distance: float) -> None:
+-        """
+-        Reduces the number of points in the track. Segment points will be
+-        updated in place.
+-
+-        Parameters
+-        ----------
++    def reduce_points(self, max_points_no: Optional[float]=None, min_distance:
++        Optional[float]=None) ->None:
++        """
++        Reduces the number of points. Points will be updated in place.
++
++        Parameters
++        ----------
++
++        max_points : int
++            The maximum number of points to include in the GPX
+         min_distance : float
+             The minimum separation in meters between points
+         """
+-        for segment in self.segments:
+-            segment.reduce_points(min_distance)
++        if max_points_no is None and min_distance is None:
++            raise ValueError("Either max_point_no or min_distance must be supplied")
++
++        if max_points_no is not None and max_points_no < 2:
++            raise ValueError("max_points_no must be greater than or equal to 2")
++
++        points_no = len(list(self.walk()))
++        if max_points_no is not None and points_no <= max_points_no:
++            # No need to reduce points only if no min_distance is specified:
++            if not min_distance:
++                return
++
++        length = self.length_3d()
++
++        min_distance = min_distance or 0
++        max_points_no = max_points_no or 1000000000
++
++        min_distance = max(min_distance, mod_math.ceil(length / max_points_no)) if length > 0 else min_distance
++
++        for track in self.tracks:
++            track.reduce_points(min_distance)
++
++        # TODO
++        log.debug('Track reduced to %s points', self.get_track_points_no())
+ 
+     def adjust_time(self, delta: mod_datetime.timedelta) -> None:
+         """
+@@ -2281,26 +2309,23 @@
+                 result += length
+         return result
+ 
+-    def length_3d(self) -> float:
+-        """
+-        Computes 3-dimensional length of the GPX file (latitude, longitude, and
+-        elevation). This is the sum of 3D length of all segments in all tracks.
++    def length_3d(self) ->float:
++        """
++        Computes 3-dimensional length of segment (latitude, longitude, and
++        elevation).
+ 
+         Returns
+         ----------
+         length : float
+             Length returned in meters
+         """
+-        result: float = 0
+-        for track in self.tracks:
+-            length = track.length_3d()
+-            if length:
+-                result += length
+-        return result
+-
+-    def walk(self, only_points: bool=False) -> Iterator[Any]:
+-        """
+-        Generator used to iterates through points in GPX file
++        if not self.points:
++            return 0.0
++        return mod_geo.length_3d(self.points)
++
++    def walk(self, only_points: bool=False) ->Iterator[Any]: # Union[GPXTrackPoint, Tuple[GPXTrackPoint, int, int, int]]:
++        """
++        Generator used to iterates through track
+ 
+         Parameters
+         ----------
+@@ -2320,9 +2345,16 @@
+         point_no : integer
+             Index of point. This is suppressed if only_points is True.
+         """
+-        for track_no, track in enumerate(self.tracks if self.tracks else [] ):
+-            for segment_no, segment in enumerate(track.segments if track.segments else []):
+-                for point_no, point in enumerate(segment.points if segment.points else []):
++        if not self.tracks:
++            return
++        
++        for track_no, track in enumerate(self.tracks):
++            if not track.segments:
++                continue
++            for segment_no, segment in enumerate(track.segments):
++                if not segment.points:
++                    continue
++                for point_no, point in enumerate(segment.points):
+                     if only_points:
+                         yield point
+                     else:

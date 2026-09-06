@@ -1,0 +1,33 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -395,6 +395,30 @@
+ 
+     def __eq__(self, other):
+         return _MExpr(self, '=', other)
++
++    def test_m_call_match():
++        """test that M __call__ can be used to wrap a subspec for comparison"""
++        target = {}
++        target['a'] = target
++        assert glom(target, M == M(T['a'])) == target
++        assert glom(target, M(T['a']) == M) == target
++        assert repr(M(T['a'])) == "M(T['a'])"
++        with pytest.raises(TypeError):
++            M('failure')
++        with pytest.raises(MatchError):
++            glom({'a': False}, M(T['a']))
++        valid_target_spec_pairs = [
++            ({'a': 1, 'b': 2}, M(T['a']) < M(T['b'])), 
++            ({'a': 2, 'b': 1}, M(T['a']) > M(T['b'])), 
++            ({'a': 2, 'b': 1}, M(T['a']) != M(T['b'])),  # <-- This uses !=
++            # ... more pairs
++        ]
++
++    def __eq__(self, other):
++        return _MExpr(self, '=', other)
++
++    def __ne__(self, other):
++        return _MExpr(self, '!', other)  # This should be the implementation
+ 
+     def __ne__(self, other):
+         return _MExpr(self, '!', other)

@@ -1,0 +1,20 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1093,6 +1093,17 @@
+         'run against the current target'
+         r = lambda spec: arg_val(target, spec, scope)
+         return r(self.func)(*r(self.args), **r(self.kwargs))
++
++    call_f = Call(F, kwargs=dict(a=T, b=T, c=T))
++    assert repr(call_f)
++
++    def __repr__(self):
++        cn = self.__class__.__name__
++        return f'{cn}({bbrepr(self.func)}, args={self.args!r}, kwargs={self.kwargs!r})'
++
++    call_f = Call(F, kwargs=dict(a=T, b=T, c=T))
++
++    Call(<class F>, args=(), kwargs={'a': T, 'b': T, 'c': T})
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

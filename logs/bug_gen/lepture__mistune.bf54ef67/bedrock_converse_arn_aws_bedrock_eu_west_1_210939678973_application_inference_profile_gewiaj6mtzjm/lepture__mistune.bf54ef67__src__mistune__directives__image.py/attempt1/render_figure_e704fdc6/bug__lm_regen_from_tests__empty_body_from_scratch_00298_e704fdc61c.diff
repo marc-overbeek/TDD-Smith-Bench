@@ -1,0 +1,35 @@
+--- a/src/mistune/directives/image.py
++++ b/src/mistune/directives/image.py
+@@ -156,23 +156,17 @@
+             md.renderer.register('legend', render_legend)
+ 
+ 
+-def render_figure(
+-    self: Any,
+-    text: str,
+-    align: Optional[str] = None,
+-    figwidth: Optional[str] = None,
+-    figclass: Optional[str] = None,
+-) -> str:
+-    _cls = "figure"
++def render_figure(self: Any, text: str, align: Optional[str]=None, figwidth:
++    Optional[str]=None, figclass: Optional[str]=None) ->str:
++    fig = '<figure'
+     if align:
+-        _cls += ' align-' + align
++        fig += ' align="' + align + '"'
++    if figwidth:
++        fig += ' figwidth="' + figwidth + '"'
+     if figclass:
+-        _cls += ' ' + figclass
+-
+-    html = '<figure class="' + _cls + '"'
+-    if figwidth:
+-        html += ' style="width:' + figwidth + '"'
+-    return html + '>\n' + text + '</figure>\n'
++        fig += ' class="' + figclass + '"'
++    fig += '>\n' + text + '</figure>\n'
++    return fig
+ 
+ 
+ def render_figcaption(self: Any, text: str) -> str:

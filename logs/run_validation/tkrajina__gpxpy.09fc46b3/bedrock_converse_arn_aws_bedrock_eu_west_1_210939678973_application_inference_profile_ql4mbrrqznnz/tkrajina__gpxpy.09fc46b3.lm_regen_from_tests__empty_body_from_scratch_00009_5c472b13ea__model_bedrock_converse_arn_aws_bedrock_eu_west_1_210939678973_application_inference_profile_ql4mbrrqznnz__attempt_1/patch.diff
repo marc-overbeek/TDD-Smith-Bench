@@ -1,0 +1,38 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -256,23 +256,22 @@
+     return mod_math.sqrt(distance_2d ** 2 + (elevation_1 - elevation_2) ** 2)
+ 
+ 
+-def elevation_angle(location1: "Location", location2: "Location", radians: float=False) -> Optional[float]:
+-    """ Uphill/downhill angle between two locations. """
++def elevation_angle(location1: 'Location', location2: 'Location', radians:
++    float=False) ->Optional[float]:
+     if location1.elevation is None or location2.elevation is None:
+         return None
+-
+-    b = location2.elevation - location1.elevation
+-    a = location2.distance_2d(location1)
+-
+-    if not a:
+-        return 0
+-
+-    angle = mod_math.atan(b / a)
+-
++    
++    distance_2d = location1.distance_2d(location2)
++    if not distance_2d:
++        return None
++    
++    elevation_diff = location2.elevation - location1.elevation
++    angle = mod_math.atan2(elevation_diff, distance_2d)
++    
+     if radians:
+         return angle
+-
+-    return mod_math.degrees(angle)
++    else:
++        return mod_math.degrees(angle)
+ 
+ 
+ def distance_from_line(point: "Location", line_point_1: "Location", line_point_2: "Location") -> Optional[float]:

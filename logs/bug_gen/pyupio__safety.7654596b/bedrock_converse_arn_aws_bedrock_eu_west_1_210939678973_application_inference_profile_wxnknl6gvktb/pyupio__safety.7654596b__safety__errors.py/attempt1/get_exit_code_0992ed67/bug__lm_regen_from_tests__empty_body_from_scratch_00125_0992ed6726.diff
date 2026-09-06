@@ -1,0 +1,24 @@
+--- a/safety/errors.py
++++ b/safety/errors.py
+@@ -48,9 +48,18 @@
+         self.error_code = error_code
+         super().__init__(self.message)
+ 
+-    def get_exit_code(self) -> int:
+-        """
+-        Get the exit code associated with this error.
++    def test_check_with_fix_only_works_with_files(self):
++        result = self.runner.invoke(cli.cli, ['check', '--key', 'TEST-API_KEY',
++            '--apply-security-updates'])
++        self.assertEqual(click.unstyle(result.stderr),
++            """--apply-security-updates only works with files; use the "-r" option to specify files to remediate.
++    """
++            )
++        self.assertEqual(result.exit_code, 1)
++
++    def get_exit_code(self) -> int:
++        """
++        Get the exit code associated with this exception.
+ 
+         Returns:
+             int: The exit code.

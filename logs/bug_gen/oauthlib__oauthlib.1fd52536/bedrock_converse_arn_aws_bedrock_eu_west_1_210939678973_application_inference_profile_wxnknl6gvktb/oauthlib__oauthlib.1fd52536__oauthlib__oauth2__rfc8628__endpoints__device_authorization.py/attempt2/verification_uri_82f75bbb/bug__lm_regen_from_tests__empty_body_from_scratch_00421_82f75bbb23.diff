@@ -1,0 +1,36 @@
+--- a/oauthlib/oauth2/rfc8628/endpoints/device_authorization.py
++++ b/oauthlib/oauth2/rfc8628/endpoints/device_authorization.py
+@@ -72,6 +72,33 @@
+     def expires_in(self):
+         """The lifetime in seconds of the "device_code" and "user_code"."""
+         return self._expires_in
++
++    @property
++    def test_device_authorization_grant(self, generate_token):
++        generate_token.side_effect = ['abc', 'def']
++        _, body, status_code = self.endpoint.create_device_authorization_response(*
++            self.response_payload())
++        expected_payload = {'verification_uri': 'http://i.b/l/verify',
++            'user_code': 'abc', 'device_code': 'def', 'expires_in': 1800}
++        self.assertEqual(200, status_code)
++        self.assertEqual(body, expected_payload)
++
++    user_code = self.user_code_generator() if self.user_code_generator else generate_token()
++
++    data = {
++        "verification_uri": self.verification_uri,
++        "expires_in": self.expires_in,
++        "user_code": user_code,
++        "device_code": generate_token(),
++    }
++
++    @property
++    def verification_uri(self):
++        """The end-user verification URI on the authorization
++        server.  The URI should be short and easy to remember as end users
++        will be asked to manually type it into their user agent.
++        """
++        return self._verification_uri
+ 
+     @property
+     def verification_uri(self):

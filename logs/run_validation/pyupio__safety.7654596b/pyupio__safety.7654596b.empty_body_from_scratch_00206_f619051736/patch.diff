@@ -1,0 +1,48 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1416,42 +1416,9 @@
+ 
+ 
+ @sync_safety_context
+-def get_licenses(
+-    *,
+-    session: requests.Session,
+-    db_mirror: Union[Optional[str], bool] = False,
+-    cached: int = 0,
+-    telemetry: bool = True
+-) -> Dict[str, Any]:
+-    """
+-    Retrieves the licenses from the database.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        db_mirror (Union[Optional[str], bool]): The database mirror.
+-        cached (int): The cache validity in seconds.
+-        telemetry (bool): Whether to include telemetry data.
+-
+-    Returns:
+-        Dict[str, Any]: The licenses dictionary.
+-    """
+-    if db_mirror:
+-        mirrors = [db_mirror]
+-    else:
+-        mirrors = API_MIRRORS
+-
+-    db_name = "licenses.json"
+-
+-    for mirror in mirrors:
+-        # mirror can either be a local path or a URL
+-        if is_a_remote_mirror(mirror):
+-            licenses = fetch_database_url(session, mirror, db_name=db_name, cached=cached,
+-                                          telemetry=telemetry)
+-        else:
+-            licenses = fetch_database_file(mirror, db_name=db_name, ecosystem=None)
+-        if licenses:
+-            return licenses
+-    raise DatabaseFetchError()
++def get_licenses(*, session: requests.Session, db_mirror: Union[Optional[
++    str], bool]=False, cached: int=0, telemetry: bool=True) ->Dict[str, Any]:
++    pass
+ 
+ 
+ def add_local_notifications(

@@ -1,0 +1,68 @@
+--- a/starlette/staticfiles.py
++++ b/starlette/staticfiles.py
+@@ -55,15 +55,8 @@
+         if check_dir and directory is not None and not os.path.isdir(directory):
+             raise RuntimeError(f"Directory '{directory}' does not exist")
+ 
+-    def get_directories(
+-        self,
+-        directory: PathLike | None = None,
+-        packages: list[str | tuple[str, str]] | None = None,
+-    ) -> list[PathLike]:
+-        """
+-        Given `directory` and `packages` arguments, return a list of all the
+-        directories that should be used for serving static files from.
+-        """
++    def get_directories(self, directory: (PathLike | None)=None, packages: (
++        list[str | tuple[str, str]] | None)=None) ->list[PathLike]:
+         directories = []
+         if directory is not None:
+             directories.append(directory)
+@@ -148,7 +141,7 @@
+                 return FileResponse(full_path, stat_result=stat_result, status_code=404)
+         raise HTTPException(status_code=404)
+ 
+-    def lookup_path(self, path: str) -> tuple[str, os.stat_result | None]:
++    def lookup_path(self, path: str) ->tuple[str, os.stat_result | None]:
+         for directory in self.all_directories:
+             joined_path = os.path.join(directory, path)
+             if self.follow_symlink:
+@@ -157,8 +150,6 @@
+                 full_path = os.path.realpath(joined_path)
+                 directory = os.path.realpath(directory)
+             if os.path.commonpath([full_path, directory]) != directory:
+-                # Don't allow misbehaving clients to break out of the static files
+-                # directory.
+                 continue
+             try:
+                 return full_path, os.stat(full_path)
+@@ -166,13 +157,8 @@
+                 continue
+         return "", None
+ 
+-    def file_response(
+-        self,
+-        full_path: PathLike,
+-        stat_result: os.stat_result,
+-        scope: Scope,
+-        status_code: int = 200,
+-    ) -> Response:
++    def file_response(self, full_path: PathLike, stat_result: os.stat_result,
++        scope: Scope, status_code: int=200) ->Response:
+         request_headers = Headers(scope=scope)
+ 
+         response = FileResponse(full_path, status_code=status_code, stat_result=stat_result)
+@@ -196,11 +182,8 @@
+         if not (stat.S_ISDIR(stat_result.st_mode) or stat.S_ISLNK(stat_result.st_mode)):
+             raise RuntimeError(f"StaticFiles path '{self.directory}' is not a directory.")
+ 
+-    def is_not_modified(self, response_headers: Headers, request_headers: Headers) -> bool:
+-        """
+-        Given the request and response headers, return `True` if an HTTP
+-        "Not Modified" response could be returned instead.
+-        """
++    def is_not_modified(self, response_headers: Headers, request_headers: Headers
++        ) ->bool:
+         try:
+             if_none_match = request_headers["if-none-match"]
+             etag = response_headers["etag"]

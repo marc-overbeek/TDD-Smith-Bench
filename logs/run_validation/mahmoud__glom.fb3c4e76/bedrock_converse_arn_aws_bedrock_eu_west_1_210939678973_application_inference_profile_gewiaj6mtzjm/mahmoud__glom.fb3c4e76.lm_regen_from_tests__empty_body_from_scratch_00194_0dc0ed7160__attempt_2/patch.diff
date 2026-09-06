@@ -1,0 +1,158 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -677,37 +677,127 @@
+ def _handle_dict(target, spec, scope):
+     if not isinstance(target, dict):
+         raise TypeMatchError(type(target), dict)
+-    spec_keys = spec  # cheating a little bit here, list-vs-dict, but saves an object copy sometimes
+-
+-    required = {
+-        key for key in spec_keys
+-        if _precedence(key) == 0 and type(key) is not Optional
+-        or type(key) is Required}
+-    defaults = {  # pre-load result with defaults
+-        key.key: key.default for key in spec_keys
+-        if type(key) is Optional and key.default is not _MISSING}
++    
++    # Handle empty spec case
++    if not spec:
++        if target:
++            raise MatchError("{0!r} does not match empty {1}", target, 'dict')
++        return {}
++    
++    # Create a copy of target to track which keys were matched
++    target_copy = dict(target)
+     result = {}
+-    for key, val in target.items():
+-        for maybe_spec_key in spec_keys:
+-            # handle Required as a special case here rather than letting it be a stand-alone spec
+-            if type(maybe_spec_key) is Required:
+-                spec_key = maybe_spec_key.key
++    
++    # Get all spec keys and sort them by precedence
++    spec_keys = list(spec.keys())
++    spec_keys.sort(key=lambda k: _precedence(k))
++    
++    # Track required keys that must be present
++    required_keys = set()
++    optional_keys = set()
++    
++    # Separate required and optional keys
++    for key in spec_keys:
++        if isinstance(key, Required):
++            required_keys.add(key.key)
++        elif isinstance(key, Optional):
++            optional_keys.add(key.key)
++        else:
++            required_keys.add(key)
++    
++    # Process each spec key
++    for key in spec_keys:
++        spec_value = spec[key]
++        
++        # Handle Optional keys
++        if isinstance(key, Optional):
++            key_val = key.key
++            # Try to find this key in target
++            found_key = None
++            for target_key in target_copy:
++                if target_key == key_val:
++                    found_key = target_key
++                    break
++            
++            if found_key is not None:
++                # Key exists, process it
++                try:
++                    matched_value = scope[glom](target_copy[found_key], spec_value, scope)
++                    result[found_key] = matched_value
++                    del target_copy[found_key]
++                except GlomError:
++                    # Optional key doesn't match, but that's OK
++                    pass
+             else:
+-                spec_key = maybe_spec_key
+-            try:
+-                key = scope[glom](key, spec_key, scope)
+-            except GlomError:
+-                pass
++                # Key doesn't exist, check for default
++                if key.default is not _MISSING:
++                    result[key_val] = arg_val(target, key.default, scope)
++        else:
++            # Handle regular keys (required)
++            key_val = key if not isinstance(key, Required) else key.key
++            
++            # Find matching key in target
++            found_key = None
++            for target_key in target_copy:
++                if target_key == key_val:
++                    found_key = target_key
++                    break
++            
++            if found_key is not None:
++                # Key exists, process it
++                try:
++                    matched_value = scope[glom](target_copy[found_key], spec_value, scope)
++                    result[found_key] = matched_value
++                    del target_copy[found_key]
++                except GlomError as e:
++                    raise e
+             else:
+-                result[key] = scope[glom](val, spec[maybe_spec_key], chain_child(scope))
+-                required.discard(maybe_spec_key)
+-                break
+-        else:
+-            raise MatchError("key {0!r} didn't match any of {1!r}", key, spec_keys)
+-    for key in set(defaults) - set(result):
+-        result[key] = arg_val(target, defaults[key], scope)
+-    if required:
+-        raise MatchError("target missing expected keys: {0}", ', '.join([bbrepr(r) for r in required]))
++                # Key doesn't exist, check if it's required
++                if key_val not in required_keys or key_val in optional_keys:
++                    # This is OK for optional keys or keys that aren't required
++                    pass
++                else:
++                    raise MatchError("target missing expected keys {0}", key_val)
++    
++    # Check for extra keys in target that aren't in spec (unless spec uses object as key)
++    # But first check if spec allows any keys (like {object: object})
++    allow_any = False
++    for spec_key in spec:
++        if spec_key is object or (isinstance(spec_key, type) and spec_key is object):
++            allow_any = True
++            break
++    
++    if not allow_any and target_copy:
++        # Check if we have a spec that matches any key (like {object: object})
++        # If not, we have extra keys that don't match
++        for target_key in target_copy:
++            # Check if there's a matching spec key that could match this target key
++            matched = False
++            for spec_key in spec:
++                try:
++                    if spec_key is object or (isinstance(spec_key, type) and spec_key is object):
++                        matched = True
++                        break
++                    elif isinstance(spec_key, (Required, Optional)):
++                        if spec_key.key == target_key:
++                            matched = True
++                            break
++                    elif spec_key == target_key:
++                        matched = True
++                        break
++                except Exception:
++                    pass
++            if not matched:
++                # This is a real extra key that doesn't match any spec
++                raise MatchError("key {0!r} didn't match any of {1!r}", target_key, list(spec.keys()))
++    
++    # Handle the case where we have a spec like {object: object} that should match everything
++    if allow_any and target_copy:
++        # Add all remaining keys
++        for target_key, target_value in target_copy.items():
++            # For {object: object} pattern, just add the key-value pair
++            result[target_key] = target_value
++    
+     return result
+ 
+ 

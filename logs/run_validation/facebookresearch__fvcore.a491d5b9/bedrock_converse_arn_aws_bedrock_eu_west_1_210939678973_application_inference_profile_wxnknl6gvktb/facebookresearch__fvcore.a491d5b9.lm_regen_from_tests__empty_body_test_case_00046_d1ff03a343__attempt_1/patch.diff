@@ -1,0 +1,335 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -113,73 +113,12 @@
+             yield name, mod
+ 
+ 
+-def _get_scoped_trace_graph(
+-    module: nn.Module,
+-    inputs: Union[Tensor, Tuple[Tensor, ...]],
+-    aliases: Dict[Union[str, nn.Module], str],
+-) -> torch._C.Graph:
+-    """
+-    Traces the provided module using torch.jit._get_trace_graph, but adds
+-    submodule scope information to each graph node. The resulting graph
+-    is in-lined and has all model parameters treated as inputs. The input
+-    model has the scope name '', while its descendants have names of the
+-    form 'child.grandchild.grandgrandchild...'.
+-
+-    Args:
+-        model (nn.Module) : The module to trace
+-        inputs (tuple) : Inputs used during the trace of the model
+-        aliases (dict(str or nn.Module, str) : maps modules and module
+-            names to the canonical name to be used as the scope for
+-            that module.
+-
+-    Returns:
+-        graph (torch._C.Graph) : The pytorch JIT trace of the model
+-    """
+-
+-    class ScopePushHook:
+-        def __init__(self, name: str) -> None:
+-            self.name = name
+-
+-        def __call__(self, module: nn.Module, inputs: Any) -> Any:
+-            tracing_state = torch._C._get_tracing_state()
+-            if tracing_state:
+-                tracing_state.push_scope(self.name)
+-            return inputs
+-
+-    class ScopePopHook:
+-        def __call__(self, module: nn.Module, inputs: Any, outputs: Any) -> Any:
+-            tracing_state = torch._C._get_tracing_state()
+-            if tracing_state:
+-                tracing_state.pop_scope()
+-            return outputs
+-
+-    hook_handles: List[Any] = []
+-
+-    def register_hooks(mod: nn.Module, name: str) -> None:
+-        prehook = mod.register_forward_pre_hook(ScopePushHook(name))
+-        posthook = mod.register_forward_hook(ScopePopHook())
+-        hook_handles.append(prehook)
+-        hook_handles.append(posthook)
+-
+-    # Unwrap DDP, but correct the scope names for the root module.
+-    if isinstance(
+-        module, (nn.parallel.distributed.DistributedDataParallel, nn.DataParallel)
+-    ):
+-        # Since DataParallel just wraps the model, add an extra set of hooks
+-        # to the model it wraps to account for the wrapper. Then trace it.
+-        root_name = aliases[module]
+-        module = module.module
+-        register_hooks(module, root_name)
+-
+-    for name, mod in _named_modules_without_dup(module):
+-        name = aliases[mod]
+-        register_hooks(mod, name)
+-
+-    graph, _ = _get_trace_graph(module, inputs)
+-
+-    for handle in hook_handles:
+-        handle.remove()
+-
++def _get_scoped_trace_graph(module: nn.Module, inputs: Union[Tensor, Tuple[
++    Tensor, ...]], aliases: Dict[Union[str, nn.Module], str]) ->torch._C.Graph:
++    if isinstance(inputs, Tensor):
++        inputs = (inputs,)
++    trace, _ = torch.jit.trace(module, inputs, check_trace=False)
++    graph, _ = _get_trace_graph(trace)
+     return graph
+ 
+ 
+@@ -205,48 +144,21 @@
+     contributing statistics to that module.
+     """
+ 
+-    def __init__(
+-        self,
+-        model: nn.Module,
+-        inputs: Union[Tensor, Tuple[Tensor, ...]],
+-    ) -> None:
+-        """
+-        Args:
+-            model: The model to analyze
+-            inputs: The inputs to the model for analysis.
+-
+-        We will trace the execution of `model.forward(inputs)`. This means
+-        inputs have to be tensors or tuple of tensors (see
+-        https://pytorch.org/docs/stable/generated/torch.jit.trace.html#torch.jit.trace).
+-        In order to trace other methods or unsupported input types, you may need
+-        to implement a wrapper module.
+-        """
++    def __init__(self, model: nn.Module, inputs: Union[Tensor, Tuple[Tensor, ...]]
++        ) ->None:
+         self._model = model
+         self._inputs = inputs
+         self._op_handles: Dict[str, Handle] = {}
+-        # Mapping from names to submodules
+         self._named_modules: Dict[str, nn.Module] = dict(_named_modules_with_dup(model))
+-        # Mapping from submodules and their aliases to the canonical name of each submodule
+         self._aliases: Dict[Union[nn.Module, str], str] = self._get_aliases(model)
+         self._stats: Optional[Statistics] = None
+-
+         self._ignored_ops: Set[str] = copy(_IGNORED_OPS)
+         self.unsupported_ops_warnings(True)
+         self.uncalled_modules_warnings(True)
+         self.tracer_warnings("no_tracer_warning")
+         self.ancestor_mode("owner")
+ 
+-    def total(self, module_name: str = "") -> int:
+-        """
+-        Returns the total aggregated statistic across all operators
+-        for the requested module.
+-
+-        Args:
+-            module_name (str) : The submodule to get data for. Defaults to
+-                the entire model.
+-        Returns:
+-            int : The aggregated statistic.
+-        """
++    def total(self, module_name: str='') ->int:
+         stats = self._analyze()
+         module_name = self.canonical_module_name(module_name)
+         total_count = sum(stats.counts[module_name].values())
+@@ -268,17 +180,7 @@
+         module_name = self.canonical_module_name(module_name)
+         return stats.counts[module_name]
+ 
+-    def by_module_and_operator(self) -> Dict[str, typing.Counter[str]]:
+-        """
+-        Returns the statistics for all submodules, separated out by
+-        operator type for each submodule. The operator handle determines
+-        the name associated with each operator type.
+-
+-        Returns:
+-            dict(str, Counter(str)):
+-                The statistics for each submodule and each operator.
+-                Grouped by submodule names, then by operator name.
+-        """
++    def by_module_and_operator(self) ->Dict[str, typing.Counter[str]]:
+         stats = self._analyze()
+         return stats.counts
+ 
+@@ -317,42 +219,12 @@
+         module_name = self.canonical_module_name(module_name)
+         return self._stats.unsupported_ops[module_name]  # pyre-fixme
+ 
+-    def uncalled_modules(self) -> Set[str]:
+-        """
+-        Returns a set of submodules that were never called during the
+-        trace of the graph. This may be because they were unused, or
+-        because they were accessed via direct calls .forward() or with
+-        other python methods. In the latter case, statistics will not be
+-        attributed to the submodule, though the statistics will be included
+-        in the parent module.
+-
+-        Returns:
+-            set(str) : The set of submodule names that were never called
+-                during the trace of the model.
+-        """
++    def uncalled_modules(self) ->Set[str]:
+         stats = self._analyze()
+         return stats.uncalled_mods
+ 
+-    def set_op_handle(self, *args, **kwargs: Optional[Handle]) -> "JitModelAnalysis":
+-        """
+-        Sets additional operator handles, or replaces existing ones.
+-
+-        Args:
+-            args: (str, Handle) pairs of operator names and handles.
+-            kwargs: mapping from operator names to handles.
+-
+-        If a handle is ``None``, the op will be explicitly ignored. Otherwise,
+-        handle should be a function that calculates the desirable statistic
+-        from an operator. The function must take two arguments, which are the
+-        inputs and outputs of the operator, in the form of ``list(torch._C.Value)``.
+-        The function should return a counter object with per-operator statistics.
+-
+-        Examples
+-        ::
+-            handlers = {"aten::linear": my_handler}
+-            counter.set_op_handle("aten::matmul", None, "aten::bmm", my_handler2)
+-                   .set_op_handle(**handlers)
+-        """
++    def set_op_handle(self, *args, **kwargs: Optional[Handle]
++        ) ->'JitModelAnalysis':
+         self._stats = None
+         if len(args) % 2 != 0:
+             raise TypeError(
+@@ -376,19 +248,7 @@
+         self._stats = None
+         return self
+ 
+-    def canonical_module_name(self, name: str) -> str:
+-        """
+-        Returns the canonical module name of the given ``name``, which might be
+-        different from the given ``name`` if the module is shared.
+-        This is the name that will be used as a key when statistics are
+-        output using .by_module() and .by_module_and_operator().
+-
+-        Args:
+-            name (str) : The name of the module to find the canonical name for.
+-        Returns:
+-            str : The canonical name of the module.
+-        """
+-        # Blocks access by a direct module reference
++    def canonical_module_name(self, name: str) ->str:
+         assert isinstance(name, str), "Module name must be a string."
+         if name in self._aliases:
+             return self._aliases[name]
+@@ -426,40 +286,13 @@
+             .tracer_warnings(self._warn_trace)
+         )
+ 
+-    def tracer_warnings(self: T, mode: str) -> T:
+-        """
+-        Sets which warnings to print when tracing the graph to calculate
+-        statistics. There are three modes. Defaults to 'no_tracer_warning'.
+-        Allowed values are:
+-
+-        * 'all' : keeps all warnings raised while tracing
+-        * 'no_tracer_warning' : suppress torch.jit.TracerWarning only
+-        * 'none' : suppress all warnings raised while tracing
+-
+-        Args:
+-            mode (str) : warning mode in one of the above values.
+-        """
++    def tracer_warnings(self: T, mode: str) ->T:
+         if mode not in ["all", "no_tracer_warning", "none"]:
+             raise ValueError(f"Unrecognized tracer warning mode {mode}.")
+         self._warn_trace = mode
+         return self
+ 
+-    def ancestor_mode(self: T, mode: str) -> T:
+-        """
+-        Sets how to determine the ancestor modules of an operator. Must be one of
+-        "owner" or "caller".
+-
+-        * "caller": an operator belongs to all modules that is currently executing
+-          `forward()` at the time the operator is called.
+-        * "owner": an operator belongs to the last module that's executing
+-          `forward()` at the time the operator is called, plus this module's recursive
+-          parents.  If an module has multiple parents (e.g. a shared module), only one
+-          will be picked.
+-
+-        For most cases, a module only calls submodules it owns, so both options would
+-        work identically. In certain edge cases, this option will affect the hierarchy
+-        of results, but won't affect the total count.
+-        """
++    def ancestor_mode(self: T, mode: str) ->T:
+         if mode not in ["owner", "caller"]:
+             raise ValueError(f"Unrecognized ancestor mode: {mode}")
+         self._ancestor_mode = mode
+@@ -478,18 +311,7 @@
+         self._enable_warn_unsupported_ops = enabled
+         return self
+ 
+-    def uncalled_modules_warnings(self: T, enabled: bool) -> T:
+-        """
+-        Sets if warnings from uncalled submodules are shown. Defaults to true.
+-        A submodule is considered "uncalled" if it is never called during
+-        tracing. This may be because it is actually unused, or because it is
+-        accessed via calls to ``.forward()`` or other methods of the module.
+-        The set of uncalled modules may be obtained from
+-        :meth:`uncalled_modules` regardless of this setting.
+-
+-        Args:
+-            enabled (bool) : Set to 'True' to show warnings.
+-        """
++    def uncalled_modules_warnings(self: T, enabled: bool) ->T:
+         self._enable_warn_uncalled_mods = enabled
+         return self
+ 
+@@ -542,8 +364,7 @@
+             res.add(".".join(parts[:k]))
+         return res
+ 
+-    def _analyze(self) -> "Statistics":
+-        # Don't calculate if results are already stored.
++    def _analyze(self) ->'Statistics':
+         stats = self._stats
+         if stats is not None:
+             return stats
+@@ -555,11 +376,8 @@
+                 warnings.filterwarnings("ignore", category=TracerWarning)
+             graph = _get_scoped_trace_graph(self._model, self._inputs, self._aliases)
+ 
+-        # Assures even modules not in the trace graph are initialized to zero count
+         counts = {}
+         unsupported_ops = {}
+-        # We don't need the duplication here, but self._model.named_modules()
+-        # gives slightly different results for some wrapped models.
+         for _, mod in _named_modules_with_dup(self._model):
+             name = self._aliases[mod]
+             counts[name] = Counter()
+@@ -569,8 +387,6 @@
+         for node in graph.nodes():
+             kind = node.kind()
+             if kind == "prim::PythonOp":
+-                # for PythonOp, pyname contains the actual name in Python
+-                # pyre-fixme[16]: `Node` has no attribute `pyname`.
+                 kind = kind + "." + node.pyname()
+             scope_names = node.scopeName().split("/")
+             all_seen.update(scope_names)
+@@ -596,7 +412,6 @@
+                             "Please use a wider type to avoid overflow."
+                         )
+ 
+-                # Assures an op contributes at most once to a module
+                 for name in ancestors:
+                     counts[name] += op_counts
+ 
+@@ -609,11 +424,7 @@
+         self._warn_uncalled_mods(uncalled_mods)
+         return stats
+ 
+-    def _simplify_op_name(self, full_op_name: str) -> str:
+-        """
+-        Get simplified name of the op without the preceding namespace, e.g.
+-        aten::batch_norm -> batch_norm
+-        """
++    def _simplify_op_name(self, full_op_name: str) ->str:
+         p = full_op_name.find("::")
+         if p != -1:
+             return full_op_name[p + 2 :]

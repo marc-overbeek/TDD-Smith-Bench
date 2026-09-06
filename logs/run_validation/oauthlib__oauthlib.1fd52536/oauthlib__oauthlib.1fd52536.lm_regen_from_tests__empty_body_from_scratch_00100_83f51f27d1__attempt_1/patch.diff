@@ -1,0 +1,30 @@
+--- a/oauthlib/oauth1/rfc5849/request_validator.py
++++ b/oauthlib/oauth1/rfc5849/request_validator.py
+@@ -131,6 +131,27 @@
+         return 20, 30
+ 
+     @property
++    def test_oauth_timestamp(self):
++        """Check for a valid UNIX timestamp."""
++        v = RequestValidator()
++        e = BaseEndpoint(v)
++        r = e._create_request('https://a.b/', 'GET',
++            'oauth_signature=a&oauth_consumer_key=b&oauth_nonce=c&oauth_version=1.0&oauth_signature_method=RSA-SHA1&oauth_timestamp=123456789'
++            , URLENCODED)
++        self.assertRaises(errors.InvalidRequestError, e.
++            _check_mandatory_parameters, r)
++        r = e._create_request('https://a.b/', 'GET',
++            'oauth_signature=a&oauth_consumer_key=b&oauth_nonce=c&oauth_version=1.0&oauth_signature_method=RSA-SHA1&oauth_timestamp=1234567890'
++            , URLENCODED)
++        self.assertRaises(errors.InvalidRequestError, e.
++            _check_mandatory_parameters, r)
++        r = e._create_request('https://a.b/', 'GET',
++            'oauth_signature=a&oauth_consumer_key=b&oauth_nonce=c&oauth_version=1.0&oauth_signature_method=RSA-SHA1&oauth_timestamp=123456789a'
++            , URLENCODED)
++        self.assertRaises(errors.InvalidRequestError, e.
++            _check_mandatory_parameters, r)
++
++    @property
+     def timestamp_lifetime(self):
+         return 600
+ 

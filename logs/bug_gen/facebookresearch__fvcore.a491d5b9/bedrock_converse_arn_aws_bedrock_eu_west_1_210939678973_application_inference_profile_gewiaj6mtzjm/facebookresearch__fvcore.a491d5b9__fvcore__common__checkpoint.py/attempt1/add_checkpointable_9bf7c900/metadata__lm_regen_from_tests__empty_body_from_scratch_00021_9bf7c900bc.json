@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef add_checkpointable(self, key: str, checkpointable: Any) -> None:\n    \"\"\"\n    Add checkpointable object for this checkpointer to track.\n\n    Args:\n        key (str): the key used to save the object\n        checkpointable: any object with ``state_dict()`` and\n            ``load_state_dict()`` method\n    \"\"\"\n    if key in self.checkpointables:\n        raise KeyError(f\"Key {key} already used in the Checkpointer\")\n    if not hasattr(checkpointable, \"state_dict\"):\n        raise TypeError(\n            \"add_checkpointable needs an object with 'state_dict()' method.\"\n        )\n    self.checkpointables[key] = checkpointable\n```",
+  "rewrite": "def add_checkpointable(self, key: str, checkpointable: Any) -> None:\n    \"\"\"\n    Add checkpointable object for this checkpointer to track.\n\n    Args:\n        key (str): the key used to save the object\n        checkpointable: any object with ``state_dict()`` and\n            ``load_state_dict()`` method\n    \"\"\"\n    if key in self.checkpointables:\n        raise KeyError(f\"Key {key} already used in the Checkpointer\")\n    if not hasattr(checkpointable, \"state_dict\"):\n        raise TypeError(\n            \"add_checkpointable needs an object with 'state_dict()' method.\"\n        )\n    self.checkpointables[key] = checkpointable\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

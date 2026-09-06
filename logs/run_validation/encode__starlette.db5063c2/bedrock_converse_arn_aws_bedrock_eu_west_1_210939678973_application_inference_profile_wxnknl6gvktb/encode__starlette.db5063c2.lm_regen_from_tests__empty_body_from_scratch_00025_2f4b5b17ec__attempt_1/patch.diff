@@ -1,0 +1,13 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -212,6 +212,10 @@
+ 
+     def __str__(self) -> str:
+         return self._value
++
++    assert bool(SECRET_KEY)  # SECRET_KEY = config('SECRET_KEY', cast=Secret) where SECRET_KEY='12345'
++    assert not bool(EMPTY_SECRET)  # EMPTY_SECRET = config('EMPTY_SECRET', cast=Secret, default='')
++    assert not bool(UNSET_SECRET)  # UNSET_SECRET = config('UNSET_SECRET', cast=Secret, default=None)
+ 
+     def __bool__(self) -> bool:
+         return bool(self._value)

@@ -1,0 +1,57 @@
+--- a/safety/scan/validators.py
++++ b/safety/scan/validators.py
+@@ -128,51 +128,6 @@
+ 
+ 
+ def verify_project(console, ctx: typer.Context, session: SafetyAuthSession,
+-                   unverified_project: UnverifiedProjectModel, stage: Stage,
+-                   git_origin: Optional[str]):
+-    """
+-    Verify the project, linking it if necessary and saving the verified project information.
+-
+-    Args:
+-        console: The console for output.
+-        ctx (typer.Context): The context of the Typer command.
+-        session (SafetyAuthSession): The authentication session.
+-        unverified_project (UnverifiedProjectModel): The unverified project model.
+-        stage (Stage): The current stage.
+-        git_origin (Optional[str]): The Git origin URL.
+-    """
+-
+-    verified_prj = False
+-
+-    link_prj = True
+-
+-    while not verified_prj:
+-        result = check_project(console, ctx, session, unverified_project, stage, git_origin, ask_project_id=not link_prj)
+-
+-        unverified_slug = result.get("slug")
+-
+-        project = result.get("project", None)
+-        user_confirm = result.get("user_confirm", False)
+-
+-        if user_confirm:
+-            if project and link_prj:
+-                prj_name = project.get("name", None)
+-                prj_admin_email = project.get("admin", None)
+-
+-                link_prj = prompt_link_project(prj_name=prj_name,
+-                                    prj_admin_email=prj_admin_email,
+-                                    console=console)
+-
+-                if not link_prj:
+-                    continue
+-
+-        verified_prj = print_wait_project_verification(
+-            console, unverified_slug, (session.project,
+-                                       {"project_id": unverified_slug}),
+-                                       on_error_delay=1)
+-
+-        if verified_prj and isinstance(verified_prj, dict) and verified_prj.get("slug", None):
+-            save_verified_project(ctx, verified_prj["slug"], verified_prj.get("name", None),
+-                                  unverified_project.project_path, verified_prj.get("url", None))
+-        else:
+-            verified_prj = False
++    unverified_project: UnverifiedProjectModel, stage: Stage, git_origin:
++    Optional[str]):
++    pass

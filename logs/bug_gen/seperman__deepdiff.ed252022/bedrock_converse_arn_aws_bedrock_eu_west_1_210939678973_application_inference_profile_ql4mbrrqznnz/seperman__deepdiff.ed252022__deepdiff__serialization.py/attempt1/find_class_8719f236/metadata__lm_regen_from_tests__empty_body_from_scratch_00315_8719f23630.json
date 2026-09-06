@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef find_class(self, module, name):\n    # Only allow safe classes from self.safe_to_import.\n    module_dot_class = '{}.{}'.format(module, name)\n    if module_dot_class in self.safe_to_import:\n        try:\n            module_obj = sys.modules[module]\n        except KeyError:\n            raise ModuleNotFoundError(MODULE_NOT_FOUND_MSG.format(module_dot_class)) from None\n        return getattr(module_obj, name)\n    # Forbid everything else.\n    raise ForbiddenModule(FORBIDDEN_MODULE_MSG.format(module_dot_class)) from None\n```",
+  "rewrite": "def find_class(self, module, name):\n    # Only allow safe classes from self.safe_to_import.\n    module_dot_class = '{}.{}'.format(module, name)\n    if module_dot_class in self.safe_to_import:\n        try:\n            module_obj = sys.modules[module]\n        except KeyError:\n            raise ModuleNotFoundError(MODULE_NOT_FOUND_MSG.format(module_dot_class)) from None\n        return getattr(module_obj, name)\n    # Forbid everything else.\n    raise ForbiddenModule(FORBIDDEN_MODULE_MSG.format(module_dot_class)) from None\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

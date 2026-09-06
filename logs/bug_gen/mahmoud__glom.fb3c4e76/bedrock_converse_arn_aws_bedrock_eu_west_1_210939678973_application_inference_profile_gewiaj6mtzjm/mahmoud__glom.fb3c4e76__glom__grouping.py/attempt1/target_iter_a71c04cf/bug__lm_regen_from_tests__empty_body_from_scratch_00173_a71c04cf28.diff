@@ -1,0 +1,32 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -30,14 +30,21 @@
+ 
+ 
+ def target_iter(target, scope):
+-    iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
+-
+-    try:
+-        iterator = iterate(target)
+-    except Exception as e:
+-        raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+-                        % (target.__class__.__name__, Path(*scope[Path]), e))
+-    return iterator
++    if target is STOP:
++        return
++    if hasattr(target, '__iter__') and not isinstance(target, (str, bytes)):
++        # Handle iterables properly
++        try:
++            for t in target:
++                if t is STOP:
++                    return
++                yield t
++        except TypeError:
++            # If target is not actually iterable, treat as single item
++            yield target
++    else:
++        # For non-iterable targets, yield them directly
++        yield target
+ 
+ 
+ class Group:

@@ -1,0 +1,17 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/resource.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/resource.py
+@@ -55,6 +55,14 @@
+         return self.tokens.get(self.default_token)
+ 
+     @property
++    def test_defaults(self):
++        uri = 'http://a.b/path?some=query'
++        self.mock_validator.validate_bearer_token.return_value = False
++        valid, request = self.endpoint.verify_request(uri)
++        self.assertFalse(valid)
++        self.assertEqual(request.token_type, 'Bearer')
++
++    @property
+     def tokens(self):
+         return self._tokens
+ 

@@ -1,0 +1,43 @@
+--- a/safety/scan/ecosystems/python/main.py
++++ b/safety/scan/ecosystems/python/main.py
+@@ -365,37 +365,9 @@
+         self.__find_dependency_vulnerabilities__(dependencies=dependencies,
+                                                  config=config)
+ 
+-    def __get_secure_specifications_for_user__(self, dependency: PythonDependency, db_full,
+-                                               secure_vulns_by_user=None) -> List[str]:
+-        """
+-        Gets secure specifications for the user.
+-
+-        Args:
+-            dependency (PythonDependency): The Python dependency.
+-            db_full: The full database.
+-            secure_vulns_by_user: The set of secure vulnerabilities by user.
+-
+-        Returns:
+-            List[str]: The list of secure specifications.
+-        """
+-        if not db_full:
+-            return
+-
+-        if not secure_vulns_by_user:
+-            secure_vulns_by_user = set()
+-
+-        versions = dependency.get_versions(db_full)
+-        affected_versions = []
+-
+-        for vuln in db_full.get('vulnerable_packages', {}).get(dependency.name, []):
+-            vuln_id: str = str(next(filter(lambda i: i.get('type', None) == 'pyup', vuln.get('ids', []))).get('id', ''))
+-            if vuln_id and vuln_id not in secure_vulns_by_user:
+-                affected_versions += vuln.get('affected_versions', [])
+-
+-        affected_v = set(affected_versions)
+-        sec_ver_for_user = list(versions.difference(affected_v))
+-
+-        return sorted(sec_ver_for_user, key=lambda ver: parse_version(ver), reverse=True)
++    def __get_secure_specifications_for_user__(self, dependency:
++        PythonDependency, db_full, secure_vulns_by_user=None) ->List[str]:
++        pass
+ 
+     def remediate(self) -> None:
+         """

@@ -1,0 +1,31 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -60,6 +60,7 @@
+             url = URL("").replace(**components).components.geturl()
+ 
+         self._url = url
++        # this is an exact match
+ 
+     @property
+     def components(self) -> SplitResult:
+@@ -98,10 +99,12 @@
+     @property
+     def hostname(self) -> None | str:
+         return self.components.hostname
++        # this is an exact match
+ 
+     @property
+     def port(self) -> int | None:
+         return self.components.port
++        # this is an exact match
+ 
+     @property
+     def is_secure(self) -> bool:
+@@ -134,6 +137,7 @@
+ 
+         components = self.components._replace(**kwargs)
+         return self.__class__(components.geturl())
++        # this is an exact match
+ 
+     def include_query_params(self, **kwargs: typing.Any) -> URL:
+         params = MultiDict(parse_qsl(self.query, keep_blank_values=True))

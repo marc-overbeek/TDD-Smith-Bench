@@ -1,0 +1,348 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -187,45 +187,13 @@
+ 
+ 
+ def _unpack_stack(scope, only_errors=True):
+-    """
+-    convert scope to [[scope, spec, target, error, [children]]]
+-
+-    this is a convenience method for printing stacks
+-
+-    only_errors=True means ignore branches which may still be hanging around
+-    which were not involved in the stack trace of the error
+-
+-    only_errors=False could be useful for debugger / introspection (similar
+-    to traceback.print_stack())
+-    """
+-    stack = []
+-    scope = scope.maps[0]
+-    while LAST_CHILD_SCOPE in scope:
+-        child = scope[LAST_CHILD_SCOPE]
+-        branches = scope[CHILD_ERRORS]
+-        if branches == [child]:
+-            branches = []  # if there's only one branch, count it as linear
+-        stack.append([scope, scope[Spec], scope[T], scope.get(CUR_ERROR), branches])
+-
+-        # NB: this id() business is necessary to avoid a
+-        # nondeterministic bug in abc's __eq__ see #189 for details
+-        if id(child) in [id(b) for b in branches]:
+-            break  # if child already covered by branches, stop the linear descent
+-
+-        scope = child.maps[0]
+-    else:  # if break executed above, cur scope was already added
+-        stack.append([scope, scope[Spec], scope[T], scope.get(CUR_ERROR), []])
+-    # push errors "down" to where they were first raised / first observed
+-    for i in range(len(stack) - 1):
+-        cur, nxt = stack[i], stack[i + 1]
+-        if cur[3] == nxt[3]:
+-            cur[3] = None
+-    if only_errors:  # trim the stack to the last error
+-        # leave at least 1 to not break formatting func below
+-        # TODO: make format_target_spec_trace() tolerate an "empty" stack cleanly
+-        while len(stack) > 1 and stack[-1][3] is None:
+-            stack.pop()
+-    return stack
++    ret = []
++    while scope is not None:
++        if not only_errors or scope.get(CUR_ERROR) is not None:
++            ret.append((scope, scope.get(Spec), scope.get(T), scope.get(CUR_ERROR),
++                        scope.get(CHILD_ERRORS)))
++        scope = scope.get(LAST_CHILD_SCOPE)
++    return ret
+ 
+ 
+ def _format_trace_value(value, maxlen):
+@@ -1722,41 +1690,51 @@
+ 
+ 
+ def _format_t(path, root=T):
+-    prepr = [{T: 'T', S: 'S', A: 'A'}[root]]
+-    i = 0
+-    while i < len(path):
+-        op, arg = path[i], path[i + 1]
++    if not path:
++        return repr(root)
++    ops = []
++    for i in range(0, len(path), 2):
++        op, arg = path[i], path[i+1]
+         if op == '.':
+-            prepr.append('.' + arg)
++            ops.append('.%s' % arg)
+         elif op == '[':
+-            if type(arg) is tuple:
+-                index = ", ".join([_format_slice(x) for x in arg])
+-            else:
+-                index = _format_slice(arg)
+-            prepr.append(f"[{index}]")
++            ops.append('[%s]' % bbrepr(arg))
++        elif op == 'P':
++            ops.append('[%s]' % bbrepr(arg))
+         elif op == '(':
+             args, kwargs = arg
+-            prepr.append(format_invocation(args=args, kwargs=kwargs, repr=bbrepr))
+-        elif op == 'P':
+-            return _format_path(path)
++            ops.append('(%s)' % ', '.join([bbrepr(a) for a in args] +
++                                          ['%s=%s' % (k, bbrepr(v))
++                                           for k, v in kwargs.items()]))
+         elif op == 'x':
+-            prepr.append(".__star__()")
++            ops.append('.__star__()')
+         elif op == 'X':
+-            prepr.append(".__starstar__()")
+-        elif op in ('_', '~'):  # unary arithmetic operators
+-            if any([o in path[:i] for o in '+-/%:&|^~_']):
+-                prepr = ['('] + prepr + [')']
+-            prepr = ['-' if op == '_' else op] + prepr
+-        else:  # binary arithmetic operators
+-            formatted_arg = bbrepr(arg)
+-            if type(arg) is TType:
+-                arg_path = arg.__ops__
+-                if any([o in arg_path for o in '+-/%:&|^~_']):
+-                    formatted_arg = '(' + formatted_arg + ')'
+-            prepr.append(' ' + ('**' if op == ':' else op) + ' ')
+-            prepr.append(formatted_arg)
+-        i += 2
+-    return "".join(prepr)
++            ops.append('.__starstar__()')
++        elif op == '+':
++            ops.append(' + %s' % bbrepr(arg))
++        elif op == '-':
++            ops.append(' - %s' % bbrepr(arg))
++        elif op == '*':
++            ops.append(' * %s' % bbrepr(arg))
++        elif op == '/':
++            ops.append(' / %s' % bbrepr(arg))
++        elif op == '#':
++            ops.append(' // %s' % bbrepr(arg))
++        elif op == '%':
++            ops.append(' %% %s' % bbrepr(arg))
++        elif op == ':':
++            ops.append(' ** %s' % bbrepr(arg))
++        elif op == '&':
++            ops.append(' & %s' % bbrepr(arg))
++        elif op == '|':
++            ops.append(' | %s' % bbrepr(arg))
++        elif op == '^':
++            ops.append(' ^ %s' % bbrepr(arg))
++        elif op == '~':
++            ops.append(' ~%s' % bbrepr(arg))
++        elif op == '_':
++            ops.append(' -%s' % bbrepr(arg))
++    return repr(root) + ''.join(ops)
+ 
+ 
+ class Val:
+@@ -1919,35 +1897,34 @@
+ # spec is the first argument for convenience in the case
+ # that the handler is a method of the spec type
+ def _handle_dict(target, spec, scope):
+-    ret = type(spec)()  # TODO: works for dict + ordereddict, but sufficient for all?
+-    for field, subspec in spec.items():
+-        val = scope[glom](target, subspec, scope)
+-        if val is SKIP:
++    ret = {}
++    for key, subspec in spec.items():
++        if subspec is SKIP:
+             continue
+-        if type(field) in (Spec, TType):
+-            field = scope[glom](target, field, scope)
+-        ret[field] = val
++        try:
++            if isinstance(key, TType):
++                key = scope[glom](target, key, scope)
++            ret[key] = scope[glom](target, subspec, scope)
++        except Exception as e:
++            if not isinstance(e, GlomError):
++                e = GlomError.wrap(e)
++            raise e
+     return ret
+ 
+ 
+ def _handle_list(target, spec, scope):
+-    subspec = spec[0]
+-    iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
+-    try:
+-        iterator = iterate(target)
+-    except Exception as e:
+-        raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+-                        % (target.__class__.__name__, Path(*scope[Path]), e))
+     ret = []
+-    base_path = scope[Path]
+-    for i, t in enumerate(iterator):
+-        scope[Path] = base_path + [i]
+-        val = scope[glom](t, subspec, scope)
+-        if val is SKIP:
++    for subspec in spec:
++        if subspec is SKIP:
+             continue
+-        if val is STOP:
+-            break
+-        ret.append(val)
++        try:
++            val = scope[glom](target, subspec, scope)
++            if val is not SKIP:
++                ret.append(val)
++        except Exception as e:
++            if not isinstance(e, GlomError):
++                e = GlomError.wrap(e)
++            raise e
+     return ret
+ 
+ 
+@@ -2184,139 +2161,29 @@
+ 
+ 
+ def glom(target, spec, **kwargs):
+-    """Access or construct a value from a given *target* based on the
+-    specification declared by *spec*.
+-
+-    Accessing nested data, aka deep-get:
+-
+-    >>> target = {'a': {'b': 'c'}}
+-    >>> glom(target, 'a.b')
+-    'c'
+-
+-    Here the *spec* was just a string denoting a path,
+-    ``'a.b'``. As simple as it should be. You can also use 
+-    :mod:`glob`-like wildcard selectors:
+-
+-    >>> target = {'a': [{'k': 'v1'}, {'k': 'v2'}]}
+-    >>> glom(target, 'a.*.k')
+-    ['v1', 'v2']
+-
+-    In addition to ``*``, you can also use ``**`` for recursive access:
+-
+-    >>> target = {'a': [{'k': 'v3'}, {'k': 'v4'}], 'k': 'v0'}
+-    >>> glom(target, '**.k')
+-    ['v0', 'v3', 'v4']
+-    
+-    The next example shows how to use nested data to 
+-    access many fields at once, and make a new nested structure.
+-
+-    Constructing, or restructuring more-complicated nested data:
+-
+-    >>> target = {'a': {'b': 'c', 'd': 'e'}, 'f': 'g', 'h': [0, 1, 2]}
+-    >>> spec = {'a': 'a.b', 'd': 'a.d', 'h': ('h', [lambda x: x * 2])}
+-    >>> output = glom(target, spec)
+-    >>> pprint(output)
+-    {'a': 'c', 'd': 'e', 'h': [0, 2, 4]}
+-
+-    ``glom`` also takes a keyword-argument, *default*. When set,
+-    if a ``glom`` operation fails with a :exc:`GlomError`, the
+-    *default* will be returned, very much like
+-    :meth:`dict.get()`:
+-
+-    >>> glom(target, 'a.xx', default='nada')
+-    'nada'
+-
+-    The *skip_exc* keyword argument controls which errors should
+-    be ignored.
+-
+-    >>> glom({}, lambda x: 100.0 / len(x), default=0.0, skip_exc=ZeroDivisionError)
+-    0.0
+-
+-    Args:
+-       target (object): the object on which the glom will operate.
+-       spec (object): Specification of the output object in the form
+-         of a dict, list, tuple, string, other glom construct, or
+-         any composition of these.
+-       default (object): An optional default to return in the case
+-         an exception, specified by *skip_exc*, is raised.
+-       skip_exc (Exception): An optional exception or tuple of
+-         exceptions to ignore and return *default* (None if
+-         omitted). If *skip_exc* and *default* are both not set,
+-         glom raises errors through.
+-       scope (dict): Additional data that can be accessed
+-         via S inside the glom-spec. Read more: :ref:`scope`.
+-
+-    It's a small API with big functionality, and glom's power is
+-    only surpassed by its intuitiveness. Give it a whirl!
+-
+-    """
+-    # TODO: check spec up front
+-    default = kwargs.pop('default', None if 'skip_exc' in kwargs else _MISSING)
+-    skip_exc = kwargs.pop('skip_exc', () if default is _MISSING else GlomError)
+-    glom_debug = kwargs.pop('glom_debug', GLOM_DEBUG)
+-    scope = _DEFAULT_SCOPE.new_child({
+-        Path: kwargs.pop('path', []),
+-        Inspect: kwargs.pop('inspector', None),
+-        MODE: AUTO,
+-        MIN_MODE: None,
+-        CHILD_ERRORS: [],
+-        'globals': ScopeVars({}, {}),
+-    })
+-    scope[UP] = scope
+-    scope[ROOT] = scope
+-    scope[T] = target
+-    scope.update(kwargs.pop('scope', {}))
+-    err = None
++    scope = kwargs.pop('scope', _DEFAULT_SCOPE)
+     if kwargs:
+         raise TypeError('unexpected keyword args: %r' % sorted(kwargs.keys()))
+     try:
+-        try:
+-            ret = _glom(target, spec, scope)
+-        except skip_exc:
+-            if default is _MISSING:
+-                raise
+-            ret = default  # should this also be arg_val'd?
++        return scope[glom](target, spec, scope)
+     except Exception as e:
+-        if glom_debug:
++        if not isinstance(e, GlomError):
++            e = GlomError.wrap(e)
++        if GLOM_DEBUG:
+             raise
+-        if isinstance(e, GlomError):
+-            # need to change id or else py3 seems to not let us truncate the
+-            # stack trace with the explicit "raise err" below
+-            err = copy.copy(e)
+-            err._set_wrapped(e)
+-        else:
+-            err = GlomError.wrap(e)
+-        if isinstance(err, GlomError):
+-            err._finalize(scope[LAST_CHILD_SCOPE])
+-        else:  # wrapping failed, fall back to default behavior
+-            raise
+-
+-    if err:
+-        raise err
+-    return ret
++        e._finalize(scope)
++        raise
+ 
+ 
+ def chain_child(scope):
+-    """
+-    used for specs like Auto(tuple), Switch(), etc
+-    that want to chain their child scopes together
+-
+-    returns a new scope that can be passed to
+-    the next recursive glom call, e.g.
+-
+-    scope[glom](target, spec, chain_child(scope))
+-    """
+-    if LAST_CHILD_SCOPE not in scope.maps[0]:
+-        return scope  # no children yet, nothing to do
+-    # NOTE: an option here is to drill down on LAST_CHILD_SCOPE;
+-    # this would have some interesting consequences for scoping
+-    # of tuples
+-    nxt_in_chain = scope[LAST_CHILD_SCOPE]
+-    nxt_in_chain.maps[0][NO_PYFRAME] = True
+-    # previous failed branches are forgiven as the
+-    # scope is re-wired into a new stack
+-    del nxt_in_chain.maps[0][CHILD_ERRORS][:]
+-    return nxt_in_chain
++    return scope.new_child({
++        T: scope[T],
++        Spec: scope[Spec],
++        UP: scope,
++        CHILD_ERRORS: [],
++        MODE: scope[MODE],
++        MIN_MODE: scope[MIN_MODE],
++    })
+ 
+ 
+ unbound_methods = {type(str.__len__)} #, type(Ref.glomit)])

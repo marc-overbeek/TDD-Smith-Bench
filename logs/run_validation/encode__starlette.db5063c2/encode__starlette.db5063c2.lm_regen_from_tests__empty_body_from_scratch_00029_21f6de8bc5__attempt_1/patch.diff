@@ -1,0 +1,12 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -232,6 +232,9 @@
+ 
+     def __getitem__(self, index: int | slice) -> typing.Any:
+         return self._items[index]
++
++    csv = CommaSeparatedStrings('"localhost", "127.0.0.1", 0.0.0.0')
++    assert list(csv) == ['localhost', '127.0.0.1', '0.0.0.0']
+ 
+     def __iter__(self) -> typing.Iterator[str]:
+         return iter(self._items)

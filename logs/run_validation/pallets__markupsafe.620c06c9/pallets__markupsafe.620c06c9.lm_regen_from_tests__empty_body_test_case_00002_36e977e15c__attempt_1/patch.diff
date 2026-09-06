@@ -1,0 +1,74 @@
+--- a/src/markupsafe/__init__.py
++++ b/src/markupsafe/__init__.py
+@@ -21,27 +21,11 @@
+     def __call__(self, s: t.Any, /) -> Markup: ...
+ 
+ 
+-def escape(s: t.Any, /) -> Markup:
+-    """Replace the characters ``&``, ``<``, ``>``, ``'``, and ``"`` in
+-    the string with HTML-safe sequences. Use this if you need to display
+-    text that might contain such characters in HTML.
+-
+-    If the object has an ``__html__`` method, it is called and the
+-    return value is assumed to already be safe for HTML.
+-
+-    :param s: An object to be converted to a string and escaped.
+-    :return: A :class:`Markup` string with the escaped text.
+-    """
+-    # If the object is already a plain string, skip __html__ check and string
+-    # conversion. This is the most common use case.
+-    # Use type(s) instead of s.__class__ because a proxy object may be reporting
+-    # the __class__ of the proxied value.
+-    if type(s) is str:
+-        return Markup(_escape_inner(s))
+-
++def escape(s: t.Any, /) ->Markup:
++    if s is None:
++        return Markup()
+     if hasattr(s, "__html__"):
+         return Markup(s.__html__())
+-
+     return Markup(_escape_inner(str(s)))
+ 
+ 
+@@ -228,16 +212,12 @@
+         return self.__class__(value).unescape()
+ 
+     @classmethod
+-    def escape(cls, s: t.Any, /) -> te.Self:
+-        """Escape a string. Calls :func:`escape` and ensures that for
+-        subclasses the correct type is returned.
+-        """
+-        rv = escape(s)
+-
+-        if rv.__class__ is not cls:
+-            return cls(rv)
+-
+-        return rv  # type: ignore[return-value]
++    def escape(cls, s: t.Any, /) ->te.Self:
++        if s is None:
++            return cls()
++        if hasattr(s, "__html__"):
++            return cls(s.__html__())
++        return cls(_escape_inner(str(s)))
+ 
+     def __getitem__(self, key: t.SupportsIndex | slice, /) -> te.Self:
+         return self.__class__(super().__getitem__(key))
+@@ -322,7 +302,7 @@
+         formatter = EscapeFormatter(self.escape)
+         return self.__class__(formatter.vformat(self, (), mapping))
+ 
+-    def __html_format__(self, format_spec: str, /) -> te.Self:
++    def __html_format__(self, format_spec: str, /) ->te.Self:
+         if format_spec:
+             raise ValueError("Unsupported format specification for Markup.")
+ 
+@@ -336,7 +316,7 @@
+         self.escape: _TPEscape = escape
+         super().__init__()
+ 
+-    def format_field(self, value: t.Any, format_spec: str) -> str:
++    def format_field(self, value: t.Any, format_spec: str) ->str:
+         if hasattr(value, "__html_format__"):
+             rv = value.__html_format__(format_spec)
+         elif hasattr(value, "__html__"):

@@ -1,0 +1,46 @@
+--- a/safety/models.py
++++ b/safety/models.py
+@@ -375,41 +375,8 @@
+     A class representing a vulnerability.
+     """
+ 
+-    def to_dict(self) -> Dict:
+-        """
+-        Convert the vulnerability to a dictionary.
+-
+-        Returns:
+-            Dict: The dictionary representation of the vulnerability.
+-        """
+-        empty_list_if_none = ['fixed_versions', 'closest_versions_without_known_vulnerabilities', 'resources']
+-        result = {
+-        }
+-
+-        ignore = ['pkg']
+-
+-        for field, value in zip(self._fields, self):
+-            if field in ignore:
+-                continue
+-
+-            if value is None and field in empty_list_if_none:
+-                value = []
+-
+-            if isinstance(value, set):
+-                result[field] = list(value)
+-            elif isinstance(value, CVE):
+-                val = None
+-                if value.name.startswith("CVE"):
+-                    val = value.name
+-                result[field] = val
+-            elif isinstance(value, DictConverter):
+-                result.update(value.to_dict())
+-            elif isinstance(value, SpecifierSet) or isinstance(value, datetime):
+-                result[field] = str(value)
+-            else:
+-                result[field] = value
+-
+-        return result
++    def to_dict(self, **kwargs: Any) -> Dict:
++        return {}
+ 
+     def get_advisory(self) -> str:
+         """

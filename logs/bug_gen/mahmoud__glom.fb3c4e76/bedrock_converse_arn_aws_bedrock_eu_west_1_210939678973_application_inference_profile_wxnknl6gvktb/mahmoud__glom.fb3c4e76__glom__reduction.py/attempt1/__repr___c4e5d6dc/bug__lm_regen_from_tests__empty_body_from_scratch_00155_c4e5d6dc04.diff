@@ -1,0 +1,28 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -125,11 +125,20 @@
+     def __init__(self, subspec=T, init=int):
+         super().__init__(subspec=subspec, init=init, op=operator.iadd)
+ 
+-    def __repr__(self):
+-        cn = self.__class__.__name__
+-        args = () if self.subspec is T else (self.subspec,)
+-        kwargs = {'init': self.init} if self.init is not int else {}
+-        return format_invocation(cn, args, kwargs, repr=bbrepr)
++    assert repr(Sum()) == 'Sum()'
++    assert repr(Sum(len, init=float)) == 'Sum(len, init=float)'
++
++    assert repr(Avg()) == 'Avg()'
++    assert repr(Max()) == 'Max()'
++    assert repr(Min()) == 'Min()'
++    assert repr(Sum()) == 'Sum()'
++    assert repr(Count()) == 'Count()'
++
++    def __repr__(self):
++        return '%s()' % self.__class__.__name__
++
++    def __repr__(self):
++        return '%s()' % self.__class__.__name__
+ 
+ 
+ class Count(Fold):

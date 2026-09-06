@@ -1,0 +1,107 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -107,39 +107,74 @@
+     return qualname.split(".")[0]
+ 
+ 
+-def get_imports_for_annotation(anno: Any) -> ImportMap:
+-    """Return the imports (module, name) needed for the type in the annotation"""
++def get_imports_for_annotation(anno: Any) ->ImportMap:
+     imports = ImportMap()
+-    if (
+-        anno is inspect.Parameter.empty
+-        or anno is inspect.Signature.empty
+-        or not (
+-            isinstance(anno, type) or is_any(anno) or is_union(anno) or is_generic(anno)
+-        )
+-        or anno.__module__ == "builtins"
+-    ):
++    
++    if is_any(anno):
+         return imports
+-    if is_any(anno):
+-        imports["typing"].add("Any")
+-    elif _is_optional(anno):
+-        imports["typing"].add("Optional")
+-        elem_type = _get_optional_elem(anno)
+-        elem_imports = get_imports_for_annotation(elem_type)
+-        imports.merge(elem_imports)
+-    elif is_generic(anno):
+-        if is_union(anno):
+-            imports["typing"].add("Union")
++    
++    if is_forward_ref(anno):
++        # Forward references don't require imports in the normal sense
++        return imports
++    
++    if anno is NoneType or anno is None:
++        return imports
++    
++    if isinstance(anno, type):
++        if anno.__module__ in ("builtins",):
++            return imports
+         else:
+-            imports[anno.__module__].add(
+-                _get_import_for_qualname(qualname_of_generic(anno))
+-            )
+-        elem_types = getattr(anno, "__args__", None) or []
+-        for et in elem_types:
+-            elem_imports = get_imports_for_annotation(et)
+-            imports.merge(elem_imports)
+-    else:
+-        name = _get_import_for_qualname(anno.__qualname__)
+-        imports[anno.__module__].add(name)
++            imports[anno.__module__].add(anno.__qualname__)
++            return imports
++    
++    if hasattr(anno, "__origin__"):
++        # Handle generic types like List[int], Dict[str, int], etc.
++        origin = anno.__origin__
++        if origin is not None:
++            if origin.__module__ == "typing":
++                imports["typing"].add(origin.__name__)
++            else:
++                imports[origin.__module__].add(origin.__qualname__)
++        
++        # Handle type arguments
++        if hasattr(anno, "__args__"):
++            for arg in anno.__args__:
++                if arg is not None:
++                    imports.merge(get_imports_for_annotation(arg))
++    
++    if is_generic(anno):
++        # Handle generic types more broadly
++        if hasattr(anno, "__module__") and anno.__module__ == "typing":
++            imports["typing"].add(anno.__name__)
++        elif hasattr(anno, "__origin__"):
++            origin = anno.__origin__
++            if origin is not None:
++                if origin.__module__ == "typing":
++                    imports["typing"].add(origin.__name__)
++                else:
++                    imports[origin.__module__].add(origin.__qualname__)
++    
++    # Special handling for specific typing constructs
++    if hasattr(anno, "__name__") and anno.__name__ in ("Optional", "Union", "Callable", "Generator", "Iterator"):
++        if hasattr(anno, "__module__") and anno.__module__ == "typing":
++            imports["typing"].add(anno.__name__)
++    
++    # Handle Union types specifically
++    if is_union(anno):
++        if hasattr(anno, "__args__"):
++            for arg in anno.__args__:
++                if arg is not None:
++                    imports.merge(get_imports_for_annotation(arg))
++    
++    # Handle Callable specifically
++    if anno is Callable:
++        imports["typing"].add("Callable")
++    
++    # Handle special cases for typing module
++    if hasattr(anno, "__module__") and anno.__module__ == "typing":
++        if hasattr(anno, "__name__"):
++            imports["typing"].add(anno.__name__)
++    
+     return imports
+ 
+ 

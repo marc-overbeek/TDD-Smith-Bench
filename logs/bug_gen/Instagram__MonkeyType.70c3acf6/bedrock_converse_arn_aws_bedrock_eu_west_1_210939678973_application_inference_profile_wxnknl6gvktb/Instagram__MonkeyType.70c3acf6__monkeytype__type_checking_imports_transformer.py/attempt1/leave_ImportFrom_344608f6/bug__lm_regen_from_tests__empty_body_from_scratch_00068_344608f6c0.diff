@@ -1,0 +1,26 @@
+--- a/monkeytype/type_checking_imports_transformer.py
++++ b/monkeytype/type_checking_imports_transformer.py
+@@ -189,11 +189,9 @@
+         else:
+             return updated_node.with_changes(names=names_to_keep)
+ 
+-    def leave_ImportFrom(
+-        self, original_node: ImportFrom, updated_node: ImportFrom
+-    ) -> Union[
+-        BaseSmallStatement, FlattenSentinel[BaseSmallStatement], RemovalSentinel
+-    ]:
++    def leave_ImportFrom(self, original_node: ImportFrom, updated_node: ImportFrom
++        ) ->Union[BaseSmallStatement, FlattenSentinel[BaseSmallStatement],
++        RemovalSentinel]:
+         if isinstance(updated_node.names, ImportStar):
+             return updated_node
+ 
+@@ -202,7 +200,7 @@
+         for name in updated_node.names:
+             name_value = name.name.value
+             found = False
+-            for import_item in self.import_items_to_be_removed:
++            for import_item in self.import_items_to_be_moved:
+                 if (
+                     import_item.module_name == module_name
+                     and import_item.obj_name == name_value

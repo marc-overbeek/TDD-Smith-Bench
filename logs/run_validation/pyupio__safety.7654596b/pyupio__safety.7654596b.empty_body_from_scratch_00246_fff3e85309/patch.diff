@@ -1,0 +1,57 @@
+--- a/safety/scan/render.py
++++ b/safety/scan/render.py
+@@ -356,51 +356,9 @@
+     return policy
+ 
+ 
+-def prompt_project_id(console: Console, stage: Stage, prj_root_name: Optional[str], do_not_exit: bool = True) -> Optional[str]:
+-    """
+-    Prompt the user to set a project ID for the scan.
+-
+-    Args:
+-        console (Console): The console for output.
+-        stage (Stage): The current stage.
+-        prj_root_name (Optional[str]): The root name of the project.
+-        do_not_exit (bool): Indicates if the function should not exit on failure.
+-
+-    Returns:
+-        Optional[str]: The project ID.
+-    """
+-    from safety.util import clean_project_id
+-    default_prj_id = clean_project_id(prj_root_name) if prj_root_name else None
+-
+-    non_interactive_mode = console.quiet or not console.is_interactive
+-    if stage is not Stage.development and non_interactive_mode:
+-        # Fail here
+-        console.print("The scan needs to be linked to a project.")
+-        raise typer.Exit(code=1)
+-
+-    hint = ""
+-    if default_prj_id:
+-        hint = f" If empty Safety will use [bold]{default_prj_id}[/bold]"
+-    prompt_text = f"Set a project id for this scan (no spaces).{hint}"
+-
+-    def ask():
+-        prj_id = None
+-
+-        result = Prompt.ask(prompt_text, default=None, console=console)
+-
+-        if result:
+-            prj_id = clean_project_id(result)
+-        elif default_prj_id:
+-            prj_id = default_prj_id
+-
+-        return prj_id
+-
+-    project_id = ask()
+-
+-    while not project_id and do_not_exit:
+-        project_id = ask()
+-
+-    return project_id
++def prompt_project_id(console: Console, stage: Stage, prj_root_name:
++    Optional[str], do_not_exit: bool=True) ->Optional[str]:
++    pass
+ 
+ 
+ def prompt_link_project(console: Console, prj_name: str, prj_admin_email: str) -> bool:

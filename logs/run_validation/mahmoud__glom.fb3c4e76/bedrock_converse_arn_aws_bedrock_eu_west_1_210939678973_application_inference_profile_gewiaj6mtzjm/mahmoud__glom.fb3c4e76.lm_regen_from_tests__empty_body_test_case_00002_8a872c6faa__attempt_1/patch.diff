@@ -1,0 +1,393 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1537,122 +1537,73 @@
+ 
+ def _t_eval(target, _t, scope):
+     t_path = _t.__ops__
+-    i = 1
+-    fetch_till = len(t_path)
+-    root = t_path[0]
+-    if root is T:
+-        cur = target
+-    elif root is S or root is A:
+-        # A is basically the same as S, but last step is assign
+-        if root is A:
+-            fetch_till -= 2
+-            if fetch_till < 1:
+-                raise BadSpec('cannot assign without destination')
+-        cur = scope
+-        if fetch_till > 1 and t_path[1] in ('.', 'P'):
+-            cur = _s_first_magic(cur, t_path[2], _t)
+-            i += 2
+-        elif root is S and fetch_till > 1 and t_path[1] == '(':
+-            # S(var='spec') style assignment
+-            _, kwargs = t_path[2]
+-            scope.update({
+-                k: arg_val(target, v, scope) for k, v in kwargs.items()})
+-            return target
+-
+-    else:
+-        raise ValueError('TType instance with invalid root')  # pragma: no cover
+-    pae = None
+-    while i < fetch_till:
++    cur = target
++    path = scope[Path]
++    for i in range(1, len(t_path), 2):
+         op, arg = t_path[i], t_path[i + 1]
+-        arg = arg_val(target, arg, scope)
+-        if op == '.':
++        if op == 'P':
++            try:
++                cur = scope[TargetRegistry].get_handler('get', cur, path=path)
++                cur = cur(cur, arg)
++            except Exception as e:
++                raise PathAccessError(e, Path(*path), i // 2)
++        elif op == '.':
+             try:
+                 cur = getattr(cur, arg)
+-            except AttributeError as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
++            except Exception as e:
++                raise PathAccessError(e, Path(*path), i // 2)
+         elif op == '[':
+             try:
+                 cur = cur[arg]
+-            except (KeyError, IndexError, TypeError) as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        elif op == 'P':
+-            # Path type stuff (fuzzy match)
+-            get = scope[TargetRegistry].get_handler('get', cur, path=t_path[2:i+2:2])
+-            try:
+-                cur = get(cur, arg)
+             except Exception as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        elif op in 'xX':
+-            nxt = []
+-            get_handler = scope[TargetRegistry].get_handler
+-            if op == 'x':  # increases arity of cur each time through
+-                # TODO: so many try/except -- could scope[TargetRegistry] stuff be cached on type?
+-                _extend_children(nxt, cur, get_handler)
+-            elif op == 'X':
+-                sofar = set()
+-                _extend_children(nxt, cur, get_handler)
+-                for item in nxt:
+-                    if id(item) not in sofar:
+-                        sofar.add(id(item))
+-                        _extend_children(nxt, item, get_handler)
+-                nxt.insert(0, cur)
+-            # handle the rest of the t_path in recursive calls
+-            cur = []
+-            todo = TType()
+-            todo.__ops__ = (root,) + t_path[i+2:]
+-            for child in nxt:
+-                try:
+-                    cur.append(_t_eval(child, todo, scope))
+-                except PathAccessError:
+-                    pass
+-            break  # we handled the rest in recursive call, break loop
++                raise PathAccessError(e, Path(*path), i // 2)
+         elif op == '(':
+             args, kwargs = arg
+-            scope[Path] += t_path[2:i+2:2]
+-            cur = scope[glom](
+-                target, Call(cur, args, kwargs), scope)
+-            # call with target rather than cur,
+-            # because it is probably more intuitive
+-            # if args to the call "reset" their path
+-            # e.g. "T.a" should mean the same thing
+-            # in both of these specs: T.a and T.b(T.a)
+-        else:  # arithmetic operators
+             try:
+-                if op == '+':
+-                    cur = cur + arg
+-                elif op == '-':
+-                    cur = cur - arg
+-                elif op == '*':
+-                    cur = cur * arg
+-                #elif op == '#':
+-                #    cur = cur // arg  # TODO: python 2 friendly approach?
+-                elif op == '/':
+-                    cur = cur / arg
+-                elif op == '%':
+-                    cur = cur % arg
+-                elif op == ':':
+-                    cur = cur ** arg
+-                elif op == '&':
+-                    cur = cur & arg
+-                elif op == '|':
+-                    cur = cur | arg
+-                elif op == '^':
+-                    cur = cur ^ arg
+-                elif op == '~':
+-                    cur = ~cur
+-                elif op == '_':
+-                    cur = -cur
+-            except (TypeError, ZeroDivisionError) as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        if pae:
+-            raise pae
+-        i += 2
+-    if root is A:
+-        op, arg = t_path[-2:]
+-        if cur is scope:
+-            op = '['  # all assignment on scope is setitem
+-        _assign_op(dest=cur, op=op, arg=arg, val=target, path=_t, scope=scope)
+-        return target  # A should not change the target
++                cur = cur(*args, **kwargs)
++            except Exception as e:
++                raise PathAccessError(e, Path(*path), i // 2)
++        elif op == 'x':
++            # * operation
++            children = []
++            _extend_children(children, cur, scope[TargetRegistry].get_handler)
++            cur = children
++        elif op == 'X':
++            # ** operation
++            children = []
++            _extend_children(children, cur, scope[TargetRegistry].get_handler)
++            cur = {i: v for i, v in enumerate(children)}
++        elif op == '+':
++            cur = cur + arg
++        elif op == '-':
++            cur = cur - arg
++        elif op == '*':
++            cur = cur * arg
++        elif op == '/':
++            try:
++                cur = cur / arg
++            except ZeroDivisionError as e:
++                raise PathAccessError(e, Path(*path), i // 2)
++        elif op == '#':
++            cur = cur // arg
++        elif op == '%':
++            try:
++                cur = cur % arg
++            except ZeroDivisionError as e:
++                raise PathAccessError(e, Path(*path), i // 2)
++        elif op == ':':
++            cur = cur ** arg
++        elif op == '&':
++            cur = cur & arg
++        elif op == '|':
++            cur = cur | arg
++        elif op == '^':
++            cur = cur ^ arg
++        elif op == '~':
++            cur = ~cur
++        elif op == '_':
++            cur = -cur
++        path.append(arg)
+     return cur
+ 
+ 
+@@ -1722,41 +1673,54 @@
+ 
+ 
+ def _format_t(path, root=T):
+-    prepr = [{T: 'T', S: 'S', A: 'A'}[root]]
+-    i = 0
+-    while i < len(path):
++    if not path:
++        return root.__repr__()
++    ops = []
++    for i in range(0, len(path), 2):
+         op, arg = path[i], path[i + 1]
+         if op == '.':
+-            prepr.append('.' + arg)
++            ops.append('.' + arg)
+         elif op == '[':
+-            if type(arg) is tuple:
+-                index = ", ".join([_format_slice(x) for x in arg])
+-            else:
+-                index = _format_slice(arg)
+-            prepr.append(f"[{index}]")
++            ops.append('[%s]' % bbrepr(arg))
++        elif op == 'P':
++            ops.append('[%s]' % bbrepr(arg))
+         elif op == '(':
+             args, kwargs = arg
+-            prepr.append(format_invocation(args=args, kwargs=kwargs, repr=bbrepr))
+-        elif op == 'P':
+-            return _format_path(path)
++            if args or kwargs:
++                ops.append('(%s)' % ', '.join([bbrepr(a) for a in args] +
++                                              ['%s=%s' % (k, bbrepr(v))
++                                               for k, v in kwargs.items()]))
++            else:
++                ops.append('()')
+         elif op == 'x':
+-            prepr.append(".__star__()")
++            ops.append('.*')
+         elif op == 'X':
+-            prepr.append(".__starstar__()")
+-        elif op in ('_', '~'):  # unary arithmetic operators
+-            if any([o in path[:i] for o in '+-/%:&|^~_']):
+-                prepr = ['('] + prepr + [')']
+-            prepr = ['-' if op == '_' else op] + prepr
+-        else:  # binary arithmetic operators
+-            formatted_arg = bbrepr(arg)
+-            if type(arg) is TType:
+-                arg_path = arg.__ops__
+-                if any([o in arg_path for o in '+-/%:&|^~_']):
+-                    formatted_arg = '(' + formatted_arg + ')'
+-            prepr.append(' ' + ('**' if op == ':' else op) + ' ')
+-            prepr.append(formatted_arg)
+-        i += 2
+-    return "".join(prepr)
++            ops.append('.**')
++        elif op == '+':
++            ops.append(' + %s' % bbrepr(arg))
++        elif op == '-':
++            ops.append(' - %s' % bbrepr(arg))
++        elif op == '*':
++            ops.append(' * %s' % bbrepr(arg))
++        elif op == '/':
++            ops.append(' / %s' % bbrepr(arg))
++        elif op == '#':
++            ops.append(' // %s' % bbrepr(arg))
++        elif op == '%':
++            ops.append(' %% %s' % bbrepr(arg))
++        elif op == ':':
++            ops.append(' ** %s' % bbrepr(arg))
++        elif op == '&':
++            ops.append(' & %s' % bbrepr(arg))
++        elif op == '|':
++            ops.append(' | %s' % bbrepr(arg))
++        elif op == '^':
++            ops.append(' ^ %s' % bbrepr(arg))
++        elif op == '~':
++            ops.append(' ~')
++        elif op == '_':
++            ops.append(' -')
++    return root.__repr__() + ''.join(ops)
+ 
+ 
+ class Val:
+@@ -2184,116 +2148,22 @@
+ 
+ 
+ def glom(target, spec, **kwargs):
+-    """Access or construct a value from a given *target* based on the
+-    specification declared by *spec*.
+-
+-    Accessing nested data, aka deep-get:
+-
+-    >>> target = {'a': {'b': 'c'}}
+-    >>> glom(target, 'a.b')
+-    'c'
+-
+-    Here the *spec* was just a string denoting a path,
+-    ``'a.b'``. As simple as it should be. You can also use 
+-    :mod:`glob`-like wildcard selectors:
+-
+-    >>> target = {'a': [{'k': 'v1'}, {'k': 'v2'}]}
+-    >>> glom(target, 'a.*.k')
+-    ['v1', 'v2']
+-
+-    In addition to ``*``, you can also use ``**`` for recursive access:
+-
+-    >>> target = {'a': [{'k': 'v3'}, {'k': 'v4'}], 'k': 'v0'}
+-    >>> glom(target, '**.k')
+-    ['v0', 'v3', 'v4']
+-    
+-    The next example shows how to use nested data to 
+-    access many fields at once, and make a new nested structure.
+-
+-    Constructing, or restructuring more-complicated nested data:
+-
+-    >>> target = {'a': {'b': 'c', 'd': 'e'}, 'f': 'g', 'h': [0, 1, 2]}
+-    >>> spec = {'a': 'a.b', 'd': 'a.d', 'h': ('h', [lambda x: x * 2])}
+-    >>> output = glom(target, spec)
+-    >>> pprint(output)
+-    {'a': 'c', 'd': 'e', 'h': [0, 2, 4]}
+-
+-    ``glom`` also takes a keyword-argument, *default*. When set,
+-    if a ``glom`` operation fails with a :exc:`GlomError`, the
+-    *default* will be returned, very much like
+-    :meth:`dict.get()`:
+-
+-    >>> glom(target, 'a.xx', default='nada')
+-    'nada'
+-
+-    The *skip_exc* keyword argument controls which errors should
+-    be ignored.
+-
+-    >>> glom({}, lambda x: 100.0 / len(x), default=0.0, skip_exc=ZeroDivisionError)
+-    0.0
+-
+-    Args:
+-       target (object): the object on which the glom will operate.
+-       spec (object): Specification of the output object in the form
+-         of a dict, list, tuple, string, other glom construct, or
+-         any composition of these.
+-       default (object): An optional default to return in the case
+-         an exception, specified by *skip_exc*, is raised.
+-       skip_exc (Exception): An optional exception or tuple of
+-         exceptions to ignore and return *default* (None if
+-         omitted). If *skip_exc* and *default* are both not set,
+-         glom raises errors through.
+-       scope (dict): Additional data that can be accessed
+-         via S inside the glom-spec. Read more: :ref:`scope`.
+-
+-    It's a small API with big functionality, and glom's power is
+-    only surpassed by its intuitiveness. Give it a whirl!
+-
+-    """
+-    # TODO: check spec up front
+-    default = kwargs.pop('default', None if 'skip_exc' in kwargs else _MISSING)
+-    skip_exc = kwargs.pop('skip_exc', () if default is _MISSING else GlomError)
+-    glom_debug = kwargs.pop('glom_debug', GLOM_DEBUG)
+-    scope = _DEFAULT_SCOPE.new_child({
+-        Path: kwargs.pop('path', []),
+-        Inspect: kwargs.pop('inspector', None),
+-        MODE: AUTO,
+-        MIN_MODE: None,
+-        CHILD_ERRORS: [],
+-        'globals': ScopeVars({}, {}),
+-    })
+-    scope[UP] = scope
+-    scope[ROOT] = scope
+-    scope[T] = target
+-    scope.update(kwargs.pop('scope', {}))
+-    err = None
++    scope = kwargs.pop('scope', _DEFAULT_SCOPE)
+     if kwargs:
+         raise TypeError('unexpected keyword args: %r' % sorted(kwargs.keys()))
++    if not isinstance(scope, ChainMap):
++        scope = ChainMap(scope)
++    scope = scope.new_child()
++    scope[Path] = []
+     try:
+-        try:
+-            ret = _glom(target, spec, scope)
+-        except skip_exc:
+-            if default is _MISSING:
+-                raise
+-            ret = default  # should this also be arg_val'd?
++        return _glom(target, spec, scope)
+     except Exception as e:
+-        if glom_debug:
++        if GLOM_DEBUG:
+             raise
+-        if isinstance(e, GlomError):
+-            # need to change id or else py3 seems to not let us truncate the
+-            # stack trace with the explicit "raise err" below
+-            err = copy.copy(e)
+-            err._set_wrapped(e)
+-        else:
+-            err = GlomError.wrap(e)
+-        if isinstance(err, GlomError):
+-            err._finalize(scope[LAST_CHILD_SCOPE])
+-        else:  # wrapping failed, fall back to default behavior
+-            raise
+-
+-    if err:
+-        raise err
+-    return ret
++        if not isinstance(e, GlomError):
++            e = GlomError.wrap(e)
++        e._finalize(scope)
++        raise
+ 
+ 
+ def chain_child(scope):

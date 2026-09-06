@@ -1,0 +1,25 @@
+--- a/starlette/middleware/authentication.py
++++ b/starlette/middleware/authentication.py
+@@ -14,12 +14,9 @@
+ 
+ 
+ class AuthenticationMiddleware:
+-    def __init__(
+-        self,
+-        app: ASGIApp,
+-        backend: AuthenticationBackend,
+-        on_error: typing.Callable[[HTTPConnection, AuthenticationError], Response] | None = None,
+-    ) -> None:
++    def __init__(self, app: ASGIApp, backend: AuthenticationBackend, on_error:
++        (typing.Callable[[HTTPConnection, AuthenticationError], Response] |
++        None)=None) ->None:
+         self.app = app
+         self.backend = backend
+         self.on_error: typing.Callable[[HTTPConnection, AuthenticationError], Response] = (
+@@ -48,5 +45,5 @@
+         await self.app(scope, receive, send)
+ 
+     @staticmethod
+-    def default_on_error(conn: HTTPConnection, exc: Exception) -> Response:
++    def default_on_error(conn: HTTPConnection, exc: Exception) ->Response:
+         return PlainTextResponse(str(exc), status_code=400)

@@ -1,0 +1,44 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -789,37 +789,10 @@
+         info_dict.update(mode=self.mode, encoding=self.encoding)
+         return info_dict
+ 
+-    def fail_if_unrecognized_keys(self, used_keys: List[str], valid_keys: List[str], param: Optional[click.Parameter] = None,
+-        ctx: Optional[click.Context] = None, msg: str = '{hint}', context_hint: str = '') -> None:
+-        """
+-        Fail if unrecognized keys are found in the policy file.
+-
+-        Args:
+-            used_keys (List[str]): The used keys.
+-            valid_keys (List[str]): The valid keys.
+-            param (Optional[click.Parameter]): The click parameter.
+-            ctx (Optional[click.Context]): The click context.
+-            msg (str): The error message template.
+-            context_hint (str): The context hint for the error message.
+-
+-        Raises:
+-            click.UsageError: If unrecognized keys are found.
+-        """
+-        for keyword in used_keys:
+-            if keyword not in valid_keys:
+-                match = None
+-                max_ratio = 0.0
+-                if isinstance(keyword, str):
+-                    for option in valid_keys:
+-                        ratio = SequenceMatcher(None, keyword, option).ratio()
+-                        if ratio > max_ratio:
+-                            match = option
+-                            max_ratio = ratio
+-
+-                maybe_msg = f' Maybe you meant: {match}' if max_ratio > 0.7 else \
+-                            f' Valid keywords in this level are: {", ".join(valid_keys)}'
+-
+-                self.fail(msg.format(hint=f'{context_hint}"{keyword}" is not a valid keyword.{maybe_msg}'), param, ctx)
++    def fail_if_unrecognized_keys(self, used_keys: List[str], valid_keys: List[
++        str], param: Optional[click.Parameter]=None, ctx: Optional[click.
++        Context]=None, msg: str='{hint}', context_hint: str='') ->None:
++        pass
+ 
+     def fail_if_wrong_bool_value(self, keyword: str, value: Any, msg: str = '{hint}') -> None:
+         """

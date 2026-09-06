@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the test, I need to implement `parse_html` that renders an HTML template using Jinja2 with the provided kwargs.\n\nThe test checks for:\n1. `<p>Found vulnerabilities that were ignored: 2</p>` - ignored vulnerabilities count\n2. `Warning: django and numpy are unpinned.` - announcement about unpinned packages\n3. `remediations-suggested` - present when there are affected packages\n4. `Use API Key` - present when there are affected packages (no API key)",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the test, I need to implement `parse_html` that renders an HTML template using Jinja2 with the provided kwargs.\n\nThe test checks for:\n1. `<p>Found vulnerabilities that were ignored: 2</p>` - ignored vulnerabilities count\n2. `Warning: django and numpy are unpinned.` - announcement about unpinned packages\n3. `remediations-suggested` - present when there are affected packages\n4. `Use API Key` - present when there are affected packages (no API key)\n\n```python\ndef parse_html(*, kwargs: Dict[str, Any], template: str='index.html') ->str:\n    env = Environment(loader=PackageLoader('safety', 'templates'))\n    template_obj = env.get_template(template)\n    return template_obj.render(**kwargs)\n```",
+  "rewrite": "def parse_html(*, kwargs: Dict[str, Any], template: str='index.html') ->str:\n    env = Environment(loader=PackageLoader('safety', 'templates'))\n    template_obj = env.get_template(template)\n    return template_obj.render(**kwargs)",
+  "strategy": "lm_regen_from_tests"
+}

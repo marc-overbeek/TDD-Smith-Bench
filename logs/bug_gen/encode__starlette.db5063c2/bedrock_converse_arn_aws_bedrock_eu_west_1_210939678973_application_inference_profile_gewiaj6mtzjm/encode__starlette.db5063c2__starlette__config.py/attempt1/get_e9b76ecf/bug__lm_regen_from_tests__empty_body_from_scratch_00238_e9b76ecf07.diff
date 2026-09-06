@@ -1,0 +1,17 @@
+--- a/starlette/config.py
++++ b/starlette/config.py
+@@ -89,12 +89,8 @@
+     ) -> typing.Any:
+         return self.get(key, cast, default)
+ 
+-    def get(
+-        self,
+-        key: str,
+-        cast: typing.Callable[[typing.Any], typing.Any] | None = None,
+-        default: typing.Any = undefined,
+-    ) -> typing.Any:
++    def get(self, key: str, cast: (typing.Callable[[typing.Any], typing.Any] |
++        None)=None, default: typing.Any=undefined) ->typing.Any:
+         key = self.env_prefix + key
+         if key in self.environ:
+             value = self.environ[key]

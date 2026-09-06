@@ -1,0 +1,13 @@
+--- a/monkeytype/type_checking_imports_transformer.py
++++ b/monkeytype/type_checking_imports_transformer.py
+@@ -59,6 +59,10 @@
+         transformed_source_module = tree.visit(transformer)
+         return transformed_source_module
+ 
++    def _remove_imports(self, tree: Module) -> Module:
++        transformer = RemoveImportsTransformer(self.import_items_to_be_moved)
++        return tree.visit(transformer)
++
+     def _get_import_module(self) -> Module:
+         empty_code = libcst.parse_module("")
+         context = CodemodContext()

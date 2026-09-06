@@ -1,0 +1,74 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -126,31 +126,46 @@
+     return flop
+ 
+ 
+-def conv_flop_count(
+-    x_shape: List[int],
+-    w_shape: List[int],
+-    out_shape: List[int],
+-    transposed: bool = False,
+-) -> Number:
+-    """
+-    Count flops for convolution. Note only multiplication is
+-    counted. Computation for addition and bias is ignored.
+-
+-    Flops for a transposed convolution are calculated as
+-    flops = (x_shape[2:] * prod(w_shape) * batch_size).
+-
+-    Args:
+-        x_shape (list(int)): The input shape before convolution.
+-        w_shape (list(int)): The filter shape.
+-        out_shape (list(int)): The output shape after convolution.
+-        transposed (bool): is the convolution transposed
+-    Returns:
+-        int: the number of flops
+-    """
+-    batch_size = x_shape[0]
+-    conv_shape = (x_shape if transposed else out_shape)[2:]
+-    flop = batch_size * prod(w_shape) * prod(conv_shape)
+-    return flop
++def conv_flop_count(x_shape: List[int], w_shape: List[int], out_shape: List
++    [int], transposed: bool=False) ->Number:
++    # Extract dimensions
++    if len(x_shape) == 4:  # 2D convolution
++        batch_size, input_dim, h, w = x_shape
++        _, output_dim, kh, kw = w_shape
++        _, _, oh, ow = out_shape
++        conv_dim = 2
++        kernel_size = kh
++        spatial_size = oh if conv_dim == 2 else ow
++    elif len(x_shape) == 3:  # 1D convolution
++        batch_size, input_dim, w = x_shape
++        _, output_dim, kw = w_shape
++        _, _, ow = out_shape
++        conv_dim = 1
++        kernel_size = kw
++        spatial_size = ow
++    elif len(x_shape) == 5:  # 3D convolution
++        batch_size, input_dim, d, h, w = x_shape
++        _, output_dim, kd, kh, kw = w_shape
++        _, _, od, oh, ow = out_shape
++        conv_dim = 3
++        kernel_size = kd if conv_dim == 3 else (kh if conv_dim == 2 else kw)
++        spatial_size = od if conv_dim == 3 else (oh if conv_dim == 2 else ow)
++    else:
++        raise ValueError("Unsupported convolution dimension")
++    
++    # Default group size is 1
++    group_size = 1
++    
++    # Calculate flops
++    if conv_dim == 1:
++        flop = batch_size * input_dim * output_dim * kernel_size * spatial_size / group_size
++    elif conv_dim == 2:
++        flop = batch_size * input_dim * output_dim * kernel_size * kernel_size * spatial_size * spatial_size / group_size
++    else:  # conv_dim == 3
++        flop = batch_size * input_dim * output_dim * kernel_size * kernel_size * kernel_size * spatial_size * spatial_size * spatial_size / group_size
++    
++    # Convert to GFLOPs
++    return flop / 1000000000.0
+ 
+ 
+ def conv_flop_jit(inputs: List[Any], outputs: List[Any]) -> typing.Counter[str]:

@@ -1,0 +1,14 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -376,6 +376,11 @@
+         self._stats = None
+         return self
+ 
++    self.assertEqual(analyzer.canonical_module_name('multiname2'), 'multiname1')
++    self.assertEqual(analyzer.canonical_module_name('multiname1'), 'multiname1')
++    self.assertEqual(analyzer.canonical_module_name('submod2.submod'), 'submod1.submod')
++    self.assertEqual(analyzer.canonical_module_name('submod1.submod'), 'submod1.submod')
++
+     def canonical_module_name(self, name: str) -> str:
+         """
+         Returns the canonical module name of the given ``name``, which might be

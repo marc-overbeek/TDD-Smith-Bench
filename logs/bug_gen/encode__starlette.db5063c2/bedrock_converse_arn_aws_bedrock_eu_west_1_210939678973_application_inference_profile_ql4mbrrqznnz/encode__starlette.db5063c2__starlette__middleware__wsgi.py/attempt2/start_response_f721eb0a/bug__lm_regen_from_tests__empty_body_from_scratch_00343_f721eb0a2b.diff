@@ -1,0 +1,22 @@
+--- a/starlette/middleware/wsgi.py
++++ b/starlette/middleware/wsgi.py
+@@ -114,12 +114,13 @@
+             async for message in self.stream_receive:
+                 await send(message)
+ 
+-    def start_response(
+-        self,
+-        status: str,
+-        response_headers: list[tuple[str, str]],
+-        exc_info: typing.Any = None,
+-    ) -> None:
++    if self.exc_info is not None:
++        raise self.exc_info[0].with_traceback(self.exc_info[1], self.exc_info[2])
++
++    if self.exc_info is not None:
++        raise self.exc_info[0].with_traceback(self.exc_info[1], self.exc_info[2])
++
++    def start_response(self, status: str, response_headers: list[tuple[str, str]], exc_info: typing.Any=None) -> None:
+         self.exc_info = exc_info
+         if not self.response_started:
+             self.response_started = True

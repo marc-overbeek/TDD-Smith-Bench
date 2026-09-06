@@ -1,0 +1,15 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -531,6 +531,12 @@
+     def mutablecopy(self) -> MutableHeaders:
+         return MutableHeaders(raw=self._list[:])
+ 
++    h = MutableHeaders()
++    h = h | MutableHeaders({'a': '1'})
++
++    def mutablecopy(self) -> MutableHeaders:
++        return MutableHeaders(raw=self._list[:])
++
+     def __getitem__(self, key: str) -> str:
+         get_header_key = key.lower().encode("latin-1")
+         for header_key, header_value in self._list:

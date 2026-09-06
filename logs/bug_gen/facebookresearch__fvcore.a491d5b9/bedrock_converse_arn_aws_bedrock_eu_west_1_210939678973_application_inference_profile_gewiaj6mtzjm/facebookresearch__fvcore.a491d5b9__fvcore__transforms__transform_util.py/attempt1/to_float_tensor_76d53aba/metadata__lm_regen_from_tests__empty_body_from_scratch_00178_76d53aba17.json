@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef to_float_tensor(numpy_array: np.ndarray) ->torch.Tensor:\n    if numpy_array.ndim == 2:\n        # HxW -> 1x1xHxW\n        return torch.from_numpy(numpy_array).unsqueeze(0).unsqueeze(0).float()\n    elif numpy_array.ndim == 3:\n        # HxWxC -> 1xCxHxW\n        return torch.from_numpy(numpy_array).permute(2, 0, 1).unsqueeze(0).float()\n    elif numpy_array.ndim == 4:\n        # NxHxWxC -> NxCxHxW\n        return torch.from_numpy(numpy_array).permute(0, 3, 1, 2).float()\n    else:\n        raise NotImplementedError(\n            \"Unknown numpy array dimension of {}\".format(numpy_array.ndim)\n        )\n```",
+  "rewrite": "def to_float_tensor(numpy_array: np.ndarray) ->torch.Tensor:\n    if numpy_array.ndim == 2:\n        # HxW -> 1x1xHxW\n        return torch.from_numpy(numpy_array).unsqueeze(0).unsqueeze(0).float()\n    elif numpy_array.ndim == 3:\n        # HxWxC -> 1xCxHxW\n        return torch.from_numpy(numpy_array).permute(2, 0, 1).unsqueeze(0).float()\n    elif numpy_array.ndim == 4:\n        # NxHxWxC -> NxCxHxW\n        return torch.from_numpy(numpy_array).permute(0, 3, 1, 2).float()\n    else:\n        raise NotImplementedError(\n            \"Unknown numpy array dimension of {}\".format(numpy_array.ndim)\n        )",
+  "strategy": "lm_regen_from_tests"
+}

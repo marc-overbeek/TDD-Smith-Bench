@@ -1,0 +1,17 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -345,9 +345,11 @@
+         self.part_idx = part_idx
+ 
+     def get_message(self):
+-        path_part = Path(self.path).values()[self.part_idx]
+-        return ('could not access %r, part %r of %r, got error: %r'
+-                % (path_part, self.part_idx, self.path, self.exc))
++        if hasattr(self, 'exc') and hasattr(self, 'path') and hasattr(self, 'part_idx'):
++            path_part = Path(self.path).values()[self.part_idx]
++            return ('could not access %r, part %r of %r, got error: %r'
++                    % (path_part, self.part_idx, self.path, self.exc))
++        return str(self)
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

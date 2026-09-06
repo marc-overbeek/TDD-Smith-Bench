@@ -1,0 +1,76 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -409,31 +409,48 @@
+ 
+ 
+ def _get_pretty_form_text(verbose_level):
+-    pretty_form_texts = {
+-        "type_changes": "Type of {diff_path} changed from {type_t1} to {type_t2} and value changed from {val_t1} to {val_t2}.",
+-        "values_changed": "Value of {diff_path} changed from {val_t1} to {val_t2}.",
+-        "dictionary_item_added": "Item {diff_path} added to dictionary.",
+-        "dictionary_item_removed": "Item {diff_path} removed from dictionary.",
+-        "iterable_item_added": "Item {diff_path} added to iterable.",
+-        "iterable_item_removed": "Item {diff_path} removed from iterable.",
+-        "attribute_added": "Attribute {diff_path} added.",
+-        "attribute_removed": "Attribute {diff_path} removed.",
+-        "set_item_added": "Item root[{val_t2}] added to set.",
+-        "set_item_removed": "Item root[{val_t1}] removed from set.",
+-        "repetition_change": "Repetition change for item {diff_path}.",
+-    }
+-    if verbose_level == 2:
+-        pretty_form_texts.update(
+-            {
+-                "dictionary_item_added": "Item {diff_path} ({val_t2}) added to dictionary.",
+-                "dictionary_item_removed": "Item {diff_path} ({val_t1}) removed from dictionary.",
+-                "iterable_item_added": "Item {diff_path} ({val_t2}) added to iterable.",
+-                "iterable_item_removed": "Item {diff_path} ({val_t1}) removed from iterable.",
+-                "attribute_added": "Attribute {diff_path} ({val_t2}) added.",
+-                "attribute_removed": "Attribute {diff_path} ({val_t1}) removed.",
+-            }
+-        )
+-    return pretty_form_texts
++    if verbose_level == 0:
++        return {
++            'type_changes': "Item {diff_path} changed type from {type_t1} to {type_t2}.",
++            'dictionary_item_added': "Item {diff_path} added to dictionary.",
++            'dictionary_item_removed': "Item {diff_path} removed from dictionary.",
++            'values_changed': "Item {diff_path} changed from {val_t1} to {val_t2}.",
++            'iterable_item_added': "Item {diff_path} added to iterable.",
++            'iterable_item_removed': "Item {diff_path} removed from iterable.",
++            'attribute_added': "Attribute {diff_path} added.",
++            'attribute_removed': "Attribute {diff_path} removed.",
++            'set_item_added': "Item {diff_path} added to set.",
++            'set_item_removed': "Item {diff_path} removed from set.",
++            'repetition_change': "Item {diff_path} repetition changed.",
++        }
++    elif verbose_level == 2:
++        return {
++            'type_changes': "Item {diff_path} changed type from {type_t1} ({val_t1}) to {type_t2} ({val_t2}).",
++            'dictionary_item_added': "Item {diff_path} added to dictionary with value {val_t2}.",
++            'dictionary_item_removed': "Item {diff_path} removed from dictionary with value {val_t1}.",
++            'values_changed': "Item {diff_path} changed from {val_t1} to {val_t2}.",
++            'iterable_item_added': "Item {diff_path} added to iterable with value {val_t2}.",
++            'iterable_item_removed': "Item {diff_path} removed from iterable with value {val_t1}.",
++            'attribute_added': "Attribute {diff_path} added with value {val_t2}.",
++            'attribute_removed': "Attribute {diff_path} removed with value {val_t1}.",
++            'set_item_added': "Item {diff_path} added to set with value {val_t2}.",
++            'set_item_removed': "Item {diff_path} removed from set with value {val_t1}.",
++            'repetition_change': "Item {diff_path} repetition changed from {val_t1} to {val_t2}.",
++        }
++    else:  # verbose_level == 1 (default)
++        return {
++            'type_changes': "Item {diff_path} changed type from {type_t1} to {type_t2}.",
++            'dictionary_item_added': "Item {diff_path} added to dictionary.",
++            'dictionary_item_removed': "Item {diff_path} removed from dictionary.",
++            'values_changed': "Item {diff_path} changed from {val_t1} to {val_t2}.",
++            'iterable_item_added': "Item {diff_path} added to iterable.",
++            'iterable_item_removed': "Item {diff_path} removed from iterable.",
++            'attribute_added': "Attribute {diff_path} added.",
++            'attribute_removed': "Attribute {diff_path} removed.",
++            'set_item_added': "Item {diff_path} added to set.",
++            'set_item_removed': "Item {diff_path} removed from set.",
++            'repetition_change': "Item {diff_path} repetition changed.",
++        }
+ 
+ 
+ def pretty_print_diff(diff):

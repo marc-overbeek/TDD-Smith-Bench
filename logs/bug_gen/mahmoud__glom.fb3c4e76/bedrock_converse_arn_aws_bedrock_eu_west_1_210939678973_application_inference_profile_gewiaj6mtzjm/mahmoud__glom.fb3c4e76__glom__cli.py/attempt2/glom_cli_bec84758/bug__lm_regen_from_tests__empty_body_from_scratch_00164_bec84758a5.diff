@@ -1,0 +1,51 @@
+--- a/glom/cli.py
++++ b/glom/cli.py
+@@ -50,31 +50,26 @@
+ # TODO: --default?
+ 
+ def glom_cli(target, spec, indent, debug, inspect, scalar):
+-    """Command-line interface to the glom library, providing nested data
+-    access and data restructuring with the power of Python.
+-    """
+-    if debug or inspect:
+-        stdin_open = not sys.stdin.closed
+-        spec = Inspect(spec,
+-                       echo=inspect,
+-                       recursive=inspect,
+-                       breakpoint=inspect and stdin_open,
+-                       post_mortem=debug and stdin_open)
+-
+     try:
+-        result = glom.glom(target, spec)
+-    except GlomError as ge:
+-        print(f'{ge.__class__.__name__}: {ge}')
+-        return 1
+-
+-    if not indent:
+-        indent = None
++        val = glom.glom(target, spec)
++    except GlomError as g:
++        if debug:
++            import pdb; pdb.post_mortem()
++        raise SystemExit(1)
+     
+-    if scalar and is_scalar(result):
+-        print(result, end='')
++    if inspect:
++        Inspect(val)
++        return
++    
++    if scalar and is_scalar(val):
++        print(val)
+     else:
+-        print(json.dumps(result, indent=indent, sort_keys=True))
+-    return
++        import pprint
++        if indent == 0:
++            print(repr(val))
++        else:
++            pprint.pprint(val, width=1, depth=None, stream=sys.stdout, 
++                          compact=False, sort_dicts=False)
+ 
+ 
+ def get_command():

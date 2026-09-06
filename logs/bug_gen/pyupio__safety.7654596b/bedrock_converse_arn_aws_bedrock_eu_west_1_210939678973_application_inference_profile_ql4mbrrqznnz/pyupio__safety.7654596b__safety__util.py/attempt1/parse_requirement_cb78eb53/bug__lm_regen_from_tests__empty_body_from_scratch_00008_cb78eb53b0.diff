@@ -1,0 +1,58 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -55,24 +55,39 @@
+     return path.endswith(supported_types)
+ 
+ 
++requirements = list(map(lambda req: parse_requirement(req, absolute_path), reqs))
++
++expected = [SafetyRequirement('insecure-package==0.1.0'), SafetyRequirement('insecure-package==0.1.1')]
++
++reqs = StringIO('Django==1.8.1 --hash=sha256:c6c7e7a961e2847d050d214ca96dc3167bb5f2b25cd5c6cb2eea96e1717f4ade')
++
+ def parse_requirement(dep: Any, found: str) -> SafetyRequirement:
+     """
+-    Parse a requirement.
+-
+-    Args:
+-        dep (Any): The dependency.
+-        found (str): The location where the dependency was found.
+-
+-    Returns:
+-        SafetyRequirement: The parsed requirement.
+-    """
+-    req = SafetyRequirement(dep)
+-    req.found = found
+-
+-    if req.specifier == SpecifierSet(''):
+-        req.specifier = SpecifierSet('>=0')
+-
+-    return req
++    Parse a dependency into a SafetyRequirement.
++
++    Args:
++        dep (Any): The dependency object from dparse.
++        found (str): The path where the requirement was found.
++
++    Returns:
++        SafetyRequirement: The parsed SafetyRequirement.
++    """
++    req_str = dep.name + str(dep.specs)
++    
++    try:
++        safety_req = SafetyRequirement(req_str)
++    except Exception:
++        safety_req = SafetyRequirement(dep.name)
++    
++    safety_req.found = found
++    
++    if hasattr(dep, 'hashes') and dep.hashes:
++        try:
++            safety_req.hashes = get_hashes(dep)
++        except Exception:
++            safety_req.hashes = []
++    
++    return safety_req
+ 
+ 
+ def find_version(requirements: List[SafetyRequirement]) -> Optional[str]:

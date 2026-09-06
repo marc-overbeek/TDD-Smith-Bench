@@ -1,0 +1,239 @@
+--- a/monkeytype/encoding.py
++++ b/monkeytype/encoding.py
+@@ -49,39 +49,29 @@
+     }
+ 
+ 
+-def type_to_dict(typ: type) -> TypeDict:
+-    """Convert a type into a dictionary representation that we can store.
+-
+-    The dictionary must:
+-        1. Be encodable as JSON
+-        2. Contain enough information to let us reify the type
+-    """
++def type_to_dict(typ: type) ->TypeDict:
+     if is_typed_dict(typ):
+         return typed_dict_to_dict(typ)
+-
+-    # Union and Any are special cases that aren't actually types.
+-    if is_union(typ):
+-        qualname = "Union"
+-    elif is_any(typ):
+-        qualname = "Any"
+-    elif is_generic(typ):
+-        qualname = qualname_of_generic(typ)
+-    else:
+-        qualname = typ.__qualname__
+-    d: TypeDict = {
+-        "module": typ.__module__,
+-        "qualname": qualname,
+-    }
+-    elem_types = getattr(typ, "__args__", None)
+-    # In Python < 3.9, bare generics still have args
+-    is_bare_generic = typ in {Dict, List, Tuple}
+-    if not is_bare_generic and elem_types is not None and is_generic(typ):
+-        # empty typing.Tuple is weird; the spec says it should be Tuple[()],
+-        # which results in __args__ of `((),)` pre-Python 3.11
+-        if elem_types == ((),):
+-            elem_types = ()
+-        d["elem_types"] = [type_to_dict(t) for t in elem_types]
+-    return d
++    if typ is NoneType:
++        return {"module": "builtins", "qualname": "NoneType"}
++    if typ is NotImplementedType:
++        return {"module": "builtins", "qualname": "NotImplementedType"}
++    if typ is mappingproxy:
++        return {"module": "types", "qualname": "mappingproxy"}
++    if hasattr(typ, "__origin__") and is_generic(typ):
++        origin = typ.__origin__
++        if hasattr(origin, "__module__") and hasattr(origin, "__qualname__"):
++            return {
++                "module": origin.__module__,
++                "qualname": origin.__qualname__,
++                "elem_types": [type_to_dict(t) for t in typ.__args__],
++            }
++    if hasattr(typ, "__module__") and hasattr(typ, "__qualname__"):
++        return {
++            "module": typ.__module__,
++            "qualname": typ.__qualname__,
++        }
++    raise InvalidTypeError(f"Cannot convert type {typ!r} to dict")
+ 
+ 
+ _HIDDEN_BUILTIN_TYPES: Dict[str, type] = {
+@@ -98,33 +88,53 @@
+     )
+ 
+ 
+-def type_from_dict(d: TypeDict) -> type:
+-    """Given a dictionary produced by type_to_dict, return the equivalent type.
+-
+-    Raises:
+-        NameLookupError if we can't reify the specified type
+-        InvalidTypeError if the named type isn't actually a type
+-    """
+-    module, qualname = d["module"], d["qualname"]
+-    if d.get("is_typed_dict", False):
++def type_from_dict(d: TypeDict) ->type:
++    if d.get("is_typed_dict"):
+         return typed_dict_from_dict(d)
+-    if module == "builtins" and qualname in _HIDDEN_BUILTIN_TYPES:
+-        typ = _HIDDEN_BUILTIN_TYPES[qualname]
+-    else:
+-        typ = get_name_in_module(module, qualname)
+-    if not (isinstance(typ, type) or is_any(typ) or is_generic(typ)):
+-        raise InvalidTypeError(
+-            f"Attribute specified by '{qualname}' in module '{module}' "
+-            f"is of type {type(typ)}, not type."
+-        )
+-    elem_type_dicts = d.get("elem_types")
+-    if elem_type_dicts is not None and is_generic(typ):
+-        elem_types = tuple(type_from_dict(e) for e in elem_type_dicts)
+-        # mypy complains that a value of type `type` isn't indexable. That's
+-        # true, but we know typ is a subtype that is indexable. Even checking
+-        # with hasattr(typ, '__getitem__') doesn't help
+-        typ = typ[elem_types]  # type: ignore[index]
+-    return typ
++    module = d["module"]
++    qualname = d["qualname"]
++    if module in _HIDDEN_BUILTIN_TYPES:
++        return _HIDDEN_BUILTIN_TYPES[module]
++    if module == "builtins":
++        if qualname == "NoneType":
++            return NoneType
++        elif qualname == "NotImplementedType":
++            return NotImplementedType
++    if "elem_types" in d:
++        elem_types = [type_from_dict(t) for t in d["elem_types"]]
++        if module == "typing" and qualname == "Union":
++            from typing import Union
++            return Union[tuple(elem_types)]
++        elif module == "typing" and qualname == "Optional":
++            from typing import Optional
++            return Optional[elem_types[0]]
++        elif module == "typing" and qualname == "List":
++            from typing import List
++            return List[elem_types[0]]
++        elif module == "typing" and qualname == "Dict":
++            from typing import Dict
++            return Dict[elem_types[0], elem_types[1]]
++        elif module == "typing" and qualname == "Set":
++            from typing import Set
++            return Set[elem_types[0]]
++        elif module == "typing" and qualname == "Tuple":
++            from typing import Tuple
++            return Tuple[tuple(elem_types)]
++        elif module == "typing" and qualname == "Type":
++            from typing import Type
++            return Type[elem_types[0]]
++        else:
++            # For generic types like collections.namedtuple, etc.
++            try:
++                return get_name_in_module(module, qualname)
++            except AttributeError:
++                # If we can't find it, fall back to creating a new one
++                from typing import Generic
++                return Generic
++    try:
++        return get_name_in_module(module, qualname)
++    except AttributeError:
++        raise InvalidTypeError(f"Cannot convert dict {d!r} to type")
+ 
+ 
+ def type_to_json(typ: type) -> str:
+@@ -139,22 +149,19 @@
+     return type_from_dict(type_dict)
+ 
+ 
+-def arg_types_to_json(arg_types: Dict[str, type]) -> str:
+-    """Encode the supplied argument types as json"""
+-    type_dict = {name: type_to_dict(typ) for name, typ in arg_types.items()}
+-    return json.dumps(type_dict, sort_keys=True)
+-
+-
+-def arg_types_from_json(arg_types_json: str) -> Dict[str, type]:
+-    """Reify the encoded argument types from the format produced by arg_types_to_json."""
+-    arg_types = json.loads(arg_types_json)
+-    return {name: type_from_dict(type_dict) for name, type_dict in arg_types.items()}
++def arg_types_to_json(arg_types: Dict[str, type]) ->str:
++    return json.dumps({k: type_to_json(v) for k, v in arg_types.items()})
++
++
++def arg_types_from_json(arg_types_json: str) ->Dict[str, type]:
++    return {k: type_from_json(v) for k, v in json.loads(arg_types_json).items()}
+ 
+ 
+ TypeEncoder = Callable[[type], str]
+ 
+ 
+-def maybe_encode_type(encode: TypeEncoder, typ: Optional[type]) -> Optional[str]:
++def maybe_encode_type(encode: TypeEncoder, typ: Optional[type]) ->Optional[str
++    ]:
+     if typ is None:
+         return None
+     return encode(typ)
+@@ -163,8 +170,9 @@
+ TypeDecoder = Callable[[str], type]
+ 
+ 
+-def maybe_decode_type(decode: TypeDecoder, encoded: Optional[str]) -> Optional[type]:
+-    if (encoded is None) or (encoded == "null"):
++def maybe_decode_type(decode: TypeDecoder, encoded: Optional[str]) ->Optional[
++    type]:
++    if encoded is None:
+         return None
+     return decode(encoded)
+ 
+@@ -175,14 +183,8 @@
+ class CallTraceRow(CallTraceThunk):
+     """A semi-structured call trace where each field has been json encoded."""
+ 
+-    def __init__(
+-        self,
+-        module: str,
+-        qualname: str,
+-        arg_types: str,
+-        return_type: Optional[str],
+-        yield_type: Optional[str],
+-    ) -> None:
++    def __init__(self, module: str, qualname: str, arg_types: str, return_type:
++        Optional[str], yield_type: Optional[str]) ->None:
+         self.module = module
+         self.qualname = qualname
+         self.arg_types = arg_types
+@@ -190,7 +192,7 @@
+         self.yield_type = yield_type
+ 
+     @classmethod
+-    def from_trace(cls: Type[CallTraceRowT], trace: CallTrace) -> CallTraceRowT:
++    def from_trace(cls: Type[CallTraceRowT], trace: CallTrace) ->CallTraceRowT:
+         module = trace.func.__module__
+         qualname = trace.func.__qualname__
+         arg_types = arg_types_to_json(trace.arg_types)
+@@ -198,7 +200,7 @@
+         yield_type = maybe_encode_type(type_to_json, trace.yield_type)
+         return cls(module, qualname, arg_types, return_type, yield_type)
+ 
+-    def to_trace(self) -> CallTrace:
++    def to_trace(self) ->CallTrace:
+         function = get_func_in_module(self.module, self.qualname)
+         arg_types = arg_types_from_json(self.arg_types)
+         return_type = maybe_decode_type(type_from_json, self.return_type)
+@@ -223,15 +225,9 @@
+         return NotImplemented
+ 
+ 
+-def serialize_traces(traces: Iterable[CallTrace]) -> Iterable[CallTraceRow]:
+-    """Serialize an iterable of CallTraces to an iterable of CallTraceRow.
+-
+-    Catches and logs exceptions, so a failure to serialize one CallTrace doesn't
+-    lose all traces.
+-
+-    """
++def serialize_traces(traces: Iterable[CallTrace]) ->Iterable[CallTraceRow]:
+     for trace in traces:
+         try:
+             yield CallTraceRow.from_trace(trace)
+         except Exception:
+-            logger.exception("Failed to serialize trace")
++            logger.warning("Failed to serialize trace", exc_info=True)

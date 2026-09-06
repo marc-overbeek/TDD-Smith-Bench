@@ -1,0 +1,188 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -239,44 +239,151 @@
+     return s
+ 
+ 
+-def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0, prev_target=_MISSING, last_branch=True):
+-    """
+-    unpack a scope into a multi-line but short summary
+-    """
+-    segments = []
+-    indent = " " + "|" * depth
+-    tick = "| " if depth else "- "
+-    def mk_fmt(label, t=None):
+-        pre = indent + (t or tick) + label + ": "
+-        fmt_width = width - len(pre)
+-        return lambda v: pre + _format_trace_value(v, fmt_width)
+-    fmt_t = mk_fmt("Target")
+-    fmt_s = mk_fmt("Spec")
+-    fmt_b = mk_fmt("Spec", "+ ")
+-    recurse = lambda s, last=False: format_target_spec_trace(s, root_error, width, depth + 1, prev_target, last)
+-    tb_exc_line = lambda e: "".join(traceback.format_exception_only(type(e), e))[:-1]
+-    fmt_e = lambda e: indent + tick + tb_exc_line(e)
+-    for scope, spec, target, error, branches in _unpack_stack(scope):
++def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0,
++    prev_target=_MISSING, last_branch=True):
++    stack = _unpack_stack(scope)
++    lines = []
++    indent = ' ' * depth
++    
++    prev_target = _MISSING
++    
++    for i, (frame_scope, spec, target, error, branches) in enumerate(stack):
++        # Print target if it changed
+         if target is not prev_target:
+-            segments.append(fmt_t(target))
+-        prev_target = target
++            target_repr = _format_trace_value(target, width - len(indent) - len(' - Target: '))
++            lines.append(f'{indent} - Target: {target_repr}')
++            prev_target = target
++        
++        spec_repr = _format_trace_value(spec, width - len(indent) - len(' - Spec: '))
++        
+         if branches:
+-            segments.append(fmt_b(spec))
+-            segments.extend([recurse(s) for s in branches[:-1]])
+-            segments.append(recurse(branches[-1], last_branch))
++            # This is a branching spec
++            lines.append(f'{indent} + Spec: {spec_repr}')
++            
++            for branch_scope in branches:
++                branch_stack = _unpack_stack(branch_scope, only_errors=False)
++                if not branch_stack:
++                    continue
++                
++                # Get the first spec in the branch
++                b_scope, b_spec, b_target, b_error, b_branches = branch_stack[0]
++                b_spec_repr = _format_trace_value(b_spec, width - len(indent) - len(' |\\ Spec: '))
++                lines.append(f'{indent} |\\ Spec: {b_spec_repr}')
++                
++                # If there are more items in this branch
++                for j in range(1, len(branch_stack)):
++                    bb_scope, bb_spec, bb_target, bb_error, bb_branches = branch_stack[j]
++                    if bb_branches:
++                        sub_lines = format_target_spec_trace(bb_scope, root_error, width=width, depth=depth+1, last_branch=False)
++                        # indent these lines with branch prefix
++                        for line in sub_lines.split('\n'):
++                            if line:
++                                lines.append(f'{indent} |{line[depth+1:]}')
++                    else:
++                        bb_spec_repr = _format_trace_value(bb_spec, width - len(indent) - len(' || Spec: '))
++                        lines.append(f'{indent} || Spec: {bb_spec_repr}')
++                
++                # Print the error for this branch if it failed
++                b_last = branch_stack[-1]
++                if b_last[3] is not None and b_last[3] is root_error:
++                    pass  # error will be printed at the end
++                elif b_last[3] is not None:
++                    err_repr = f'{type(b_last[3]).__module__}.{type(b_last[3]).__name__}: {b_last[3].get_message() if hasattr(b_last[3], "get_message") else str(b_last[3])}'
++                    lines.append(f'{indent} |X {err_repr}')
+         else:
+-            segments.append(fmt_s(spec))
+-        if error is not None and error is not root_error:
+-            last_line_error = True
+-            segments.append(fmt_e(error))
++            lines.append(f'{indent} - Spec: {spec_repr}')
++    
++    return '\n'.join(lines)
++
++def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0,
++    prev_target=_MISSING, last_branch=True):
++    stack = _unpack_stack(scope)
++    lines = []
++    indent = ' ' * depth
++    prev_target = _MISSING
++
++    def _format_branch(branch_scope, branch_depth, branch_prefix):
++        branch_lines = []
++        b_stack = _unpack_stack(branch_scope, only_errors=False)
++        if not b_stack:
++            return branch_lines
++        b_indent = ' ' * branch_depth
++        b_prev_target = _MISSING
++        for b_scope, b_spec, b_target, b_error, b_branches in b_stack:
++            b_spec_repr = _format_trace_value(b_spec, width - branch_depth - 4)
++            if b_branches:
++                branch_lines.append(f'{b_indent}{branch_prefix}+ Spec: {b_spec_repr}')
++                for sub_branch in b_branches:
++                    branch_lines.extend(_format_branch(sub_branch, branch_depth + 1, branch_prefix + '|'))
++            else:
++                branch_lines.append(f'{b_indent}{branch_prefix} Spec: {b_spec_repr}')
++            if b_error is not None and b_error is not root_error:
++                err_type = type(b_error)
++                err_module = err_type.__module__
++                err_name = err_type.__name__
++                err_msg = b_error.get_message() if hasattr(b_error, 'get_message') else str(b_error)
++                branch_lines.append(f'{b_indent}{branch_prefix}X {err_module}.{err_name}: {err_msg}')
++        return branch_lines
++
++    for frame_scope, spec, target, error, branches in stack:
++        if target is not prev_target:
++            target_repr = _format_trace_value(target, width - depth - len(' - Target: '))
++            lines.append(f'{indent} - Target: {target_repr}')
++            prev_target = target
++        spec_repr = _format_trace_value(spec, width - depth - len(' - Spec: '))
++        if branches:
++            lines.append(f'{indent} + Spec: {spec_repr}')
++            for branch in branches:
++                lines.extend(_format_branch(branch, depth, '|'))
+         else:
+-            last_line_error = False
+-    if depth:  # \ on first line, X on last line
+-        remark = lambda s, m: s[:depth + 1] + m + s[depth + 2:]
+-        segments[0] = remark(segments[0], "\\")
+-        if not last_branch or last_line_error:
+-            segments[-1] = remark(segments[-1], "X")
+-    return "\n".join(segments)
++            lines.append(f'{indent} - Spec: {spec_repr}')
++
++    return '\n'.join(lines)
++
++def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0,
++    prev_target=_MISSING, last_branch=True):
++    stack = _unpack_stack(scope)
++    lines = []
++    indent = ' ' * depth
++    prev_target = _MISSING
++
++    def _fmt_branch(branch_scope, pfx):
++        b_lines = []
++        b_stack = _unpack_stack(branch_scope, only_errors=False)
++        if not b_stack:
++            return b_lines
++        for b_scope, b_spec, b_target, b_error, b_branches in b_stack:
++            b_spec_repr = _format_trace_value(b_spec, width - len(pfx) - 8)
++            if b_branches:
++                b_lines.append(f' {pfx}+ Spec: {b_spec_repr}')
++                for sub_b in b_branches:
++                    b_lines.extend(_fmt_branch(sub_b, pfx + '|'))
++            else:
++                b_lines.append(f' {pfx}\\ Spec: {b_spec_repr}')
++                for sub_b in b_branches:
++                    b_lines.extend(_fmt_branch(sub_b, pfx + '|'))
++            if b_error is not None and b_error is not root_error:
++                err_type = type(b_error)
++                err_module = err_type.__module__
++                err_name = err_type.__name__
++                err_msg = b_error.get_message() if hasattr(b_error, 'get_message') else str(b_error)
++                b_lines.append(f' {pfx}X {err_module}.{err_name}: {err_msg}')
++        return b_lines
++
++    for frame_scope, spec, target, error, branches in stack:
++        if target is not prev_target:
++            target_repr = _format_trace_value(target, width - depth - len(' - Target: '))
++            lines.append(f'{indent} - Target: {target_repr}')
++            prev_target = target
++        spec_repr = _format_trace_value(spec, width - depth - len(' - Spec: '))
++        if branches:
++            lines.append(f'{indent} + Spec: {spec_repr}')
++            for branch in branches:
++                lines.extend(_fmt_branch(branch, '|'))
++        else:
++            lines.append(f'{indent} - Spec: {spec_repr}')
++
++    return '\n'.join(lines)
+ 
+ 
+ # TODO: not used (yet)

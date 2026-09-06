@@ -1,0 +1,84 @@
+--- a/src/mistune/toc.py
++++ b/src/mistune/toc.py
+@@ -7,53 +7,35 @@
+     from .markdown import Markdown
+ 
+ 
+-def add_toc_hook(
+-    md: "Markdown",
+-    min_level: int = 1,
+-    max_level: int = 3,
+-    heading_id: Optional[Callable[[Dict[str, Any], int], str]] = None,
+-) -> None:
+-    """Add a hook to save toc items into ``state.env``. This is
+-    usually helpful for doc generator::
+-
+-        import mistune
+-        from mistune.toc import add_toc_hook, render_toc_ul
+-
+-        md = mistune.create_markdown(...)
+-        add_toc_hook(md)
+-
+-        html, state = md.parse(text)
+-        toc_items = state.env['toc_items']
+-        toc_html = render_toc_ul(toc_items)
+-
+-    :param md: Markdown instance
+-    :param min_level: min heading level
+-    :param max_level: max heading level
+-    :param heading_id: a function to generate heading_id
+-    """
+-    if heading_id is None:
+-
+-        def heading_id(token: Dict[str, Any], index: int) -> str:
+-            return 'toc_' + str(index + 1)
+-
+-    def toc_hook(md: "Markdown", state: "BlockState") -> None:
+-        headings = []
+-
+-        for tok in state.tokens:
+-            if tok['type'] == 'heading':
+-                level = tok['attrs']['level']
++def add_toc_hook(md: 'Markdown', min_level: int=1, max_level: int=3,
++    heading_id: Optional[Callable[[Dict[str, Any], int], str]]=None) ->None:
++    toc_items = []
++    
++    def toc_hook(state: BlockState, block: List[Dict[str, Any]]) -> bool:
++        # Process all blocks to find headings
++        for i, token in enumerate(block):
++            if token.get('type') == 'heading':
++                level = token['attrs']['level']
+                 if min_level <= level <= max_level:
+-                    headings.append(tok)
+-
+-        toc_items = []
+-        for i, tok in enumerate(headings):
+-            tok['attrs']['id'] = heading_id(tok, i)
+-            toc_items.append(normalize_toc_item(md, tok))
+-
+-        # save items into state
+-        state.env['toc_items'] = toc_items
+-
+-    md.before_render_hooks.append(toc_hook)
++                    # Generate ID if not present
++                    if 'id' not in token['attrs']:
++                        if heading_id:
++                            token['attrs']['id'] = heading_id(token, i)
++                        else:
++                            # Default ID generation - strip HTML tags first
++                            text = token['text']
++                            # Remove HTML tags for ID generation
++                            import re
++                            clean_text = re.sub(r'<[^>]+>', '', text)
++                            token['attrs']['id'] = clean_text.lower().replace(' ', '-')
++                    toc_items.append((level, token['attrs']['id'], token['text']))
++        return False  # Don't consume the block
++    
++    # Add the hook to the markdown parser
++    md.block.plugins.append(toc_hook)
++    
++    # Store toc_items in the markdown instance for later use
++    md.toc_items = toc_items
+ 
+ 
+ def normalize_toc_item(md: "Markdown", token: Dict[str, Any]) -> Tuple[int, str, str]:

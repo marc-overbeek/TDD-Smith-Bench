@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef search(self) ->Tuple[str, Dict[str, Set[Path]]]:\n    if self.include_files:\n        files: Dict[str, Set[Path]] = {}\n        for file_type, file_paths in self.include_files.items():\n            if file_type.value not in files:\n                files[file_type.value] = set()\n            for file_path in file_paths:\n                if file_path.is_absolute():\n                    files[file_type.value].add(file_path)\n                else:\n                    files[file_type.value].add(self.target / file_path)\n        return str(self.target), files\n    else:\n        return self.process_directory(self.target, self.max_level)\n```",
+  "rewrite": "def search(self) ->Tuple[str, Dict[str, Set[Path]]]:\n    if self.include_files:\n        files: Dict[str, Set[Path]] = {}\n        for file_type, file_paths in self.include_files.items():\n            if file_type.value not in files:\n                files[file_type.value] = set()\n            for file_path in file_paths:\n                if file_path.is_absolute():\n                    files[file_type.value].add(file_path)\n                else:\n                    files[file_type.value].add(self.target / file_path)\n        return str(self.target), files\n    else:\n        return self.process_directory(self.target, self.max_level)",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,45 @@
+--- a/fvcore/common/benchmark.py
++++ b/fvcore/common/benchmark.py
+@@ -35,40 +35,8 @@
+                       function.
+     """
+ 
+-    def decorator(func: Callable[[], Any]) -> Callable[[], Dict[str, float]]:
+-        def decorated(*args: Any, **kwargs: Any) -> Dict[str, float]:
+-            # Warmup phase.
+-            for _ in range(warmup_iters):
+-                func(*args, **kwargs)
+-
+-            # Estimate the run time of the function.
+-            total_time: float = 0
+-            count = 0
+-            run_times: List[float] = []
+-            max_num_iters = num_iters if num_iters > 0 else sys.maxsize
+-            for _ in range(max_num_iters):
+-                start_time = time.time()
+-                func(*args, **kwargs)
+-                run_time = time.time() - start_time
+-
+-                run_times.append(run_time)
+-                total_time += run_time
+-                count += 1
+-                if num_iters < 0 and total_time >= 0.5:
+-                    # If num_iters is negative, run the function enough times so
+-                    # that we can have a more robust estimate of the average time.
+-                    break
+-            assert count == len(run_times)
+-            ret: Dict[str, float] = {}
+-            ret["iterations"] = count
+-            ret["mean"] = total_time / count
+-            ret["median"] = np.median(run_times)
+-            ret["min"] = np.min(run_times)
+-            ret["max"] = np.max(run_times)
+-            ret["stddev"] = np.std(run_times)
+-            return ret
+-
+-        return decorated
++    def decorator(func: Callable[[], Any]) ->Callable[[], Dict[str, float]]:
++        pass
+ 
+     return decorator
+ 

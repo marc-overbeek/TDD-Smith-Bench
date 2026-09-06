@@ -1,0 +1,75 @@
+--- a/safety/scan/ecosystems/python/dependencies.py
++++ b/safety/scan/ecosystems/python/dependencies.py
+@@ -121,24 +121,8 @@
+     return path.endswith(supported_types)
+ 
+ 
+-def parse_requirement(dep: str, found: Optional[str]) -> PythonSpecification:
+-    """
+-    Parses a requirement and creates a PythonSpecification object.
+-
+-    Args:
+-        dep (str): The dependency string.
+-        found (Optional[str]): The found path.
+-
+-    Returns:
+-        PythonSpecification: The parsed requirement.
+-    """
+-    req = PythonSpecification(dep)
+-    req.found = Path(found).resolve() if found else None
+-
+-    if req.specifier == SpecifierSet(''):
+-        req.specifier = SpecifierSet('>=0')
+-
+-    return req
++def parse_requirement(dep: str, found: Optional[str]) ->PythonSpecification:
++    return PythonSpecification(str(dep), found=found)
+ 
+ 
+ def read_requirements(fh, resolve: bool = True) -> Generator[PythonDependency, None, None]:
+@@ -188,42 +172,9 @@
+                       more_info_url=None)
+ 
+ 
+-def read_dependencies(fh, resolve: bool = True) -> Generator[PythonDependency, None, None]:
+-    """
+-    Reads dependencies from a file-like object.
+-
+-    Args:
+-        fh: The file-like object to read from.
+-        resolve (bool): Whether to resolve referenced files.
+-
+-    Returns:
+-        Generator[PythonDependency, None, None]: A generator of PythonDependency objects.
+-    """
+-    path = fh.name
+-    absolute_path = Path(path).resolve()
+-    found = absolute_path
+-
+-    content = fh.read()
+-    dependency_file = parse(content, path=path, resolve=resolve)
+-
+-    reqs_pkg = defaultdict(list)
+-
+-    for req in dependency_file.resolved_dependencies:
+-        reqs_pkg[canonicalize_name(req.name)].append(req)
+-
+-    for pkg, reqs in reqs_pkg.items():
+-        specifications = list(
+-            map(lambda req: parse_requirement(req, str(absolute_path)), reqs))
+-        version = find_version(specifications)
+-
+-        yield PythonDependency(name=pkg, version=version,
+-                      specifications=specifications,
+-                      found=found,
+-                      absolute_path=absolute_path,
+-                      insecure_versions=[],
+-                      secure_versions=[], latest_version=None,
+-                      latest_version_without_known_vulnerabilities=None,
+-                      more_info_url=None)
++def read_dependencies(fh, resolve: bool=True) ->Generator[PythonDependency,
++    None, None]:
++    yield from read_requirements(fh, resolve=resolve)
+ 
+ def read_virtual_environment_dependencies(f: InspectableFile) -> Generator[PythonDependency, None, None]:
+     """

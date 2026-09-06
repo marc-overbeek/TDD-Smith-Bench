@@ -1,0 +1,82 @@
+--- a/monkeytype/encoding.py
++++ b/monkeytype/encoding.py
+@@ -98,32 +98,57 @@
+     )
+ 
+ 
+-def type_from_dict(d: TypeDict) -> type:
+-    """Given a dictionary produced by type_to_dict, return the equivalent type.
+-
+-    Raises:
+-        NameLookupError if we can't reify the specified type
+-        InvalidTypeError if the named type isn't actually a type
+-    """
+-    module, qualname = d["module"], d["qualname"]
+-    if d.get("is_typed_dict", False):
++def type_from_dict(d: TypeDict) ->type:
++    # Handle TypedDict
++    if d.get("is_typed_dict"):
+         return typed_dict_from_dict(d)
+-    if module == "builtins" and qualname in _HIDDEN_BUILTIN_TYPES:
++    
++    module = d["module"]
++    qualname = d["qualname"]
++    
++    # Check for hidden builtin types
++    if qualname in _HIDDEN_BUILTIN_TYPES:
+         typ = _HIDDEN_BUILTIN_TYPES[qualname]
+     else:
++        # Try to get the type from the module
+         typ = get_name_in_module(module, qualname)
+-    if not (isinstance(typ, type) or is_any(typ) or is_generic(typ)):
+-        raise InvalidTypeError(
+-            f"Attribute specified by '{qualname}' in module '{module}' "
+-            f"is of type {type(typ)}, not type."
+-        )
+-    elem_type_dicts = d.get("elem_types")
+-    if elem_type_dicts is not None and is_generic(typ):
+-        elem_types = tuple(type_from_dict(e) for e in elem_type_dicts)
+-        # mypy complains that a value of type `type` isn't indexable. That's
+-        # true, but we know typ is a subtype that is indexable. Even checking
+-        # with hasattr(typ, '__getitem__') doesn't help
+-        typ = typ[elem_types]  # type: ignore[index]
++    
++    # Verify it's actually a type
++    if not isinstance(typ, type):
++        raise InvalidTypeError(f"{qualname} is not a type")
++    
++    # Handle generic types with elem_types
++    elem_types = d.get("elem_types")
++    if elem_types is not None:
++        elem_types_reified = [type_from_dict(t) for t in elem_types]
++        typ = typ[tuple(elem_types_reified)]
++    
++    return typ
++
++def type_from_dict(d: TypeDict) ->type:
++    # Handle TypedDict
++    if d.get("is_typed_dict"):
++        return typed_dict_from_dict(d)
++    
++    module = d["module"]
++    qualname = d["qualname"]
++    
++    # Check for hidden builtin types
++    if qualname in _HIDDEN_BUILTIN_TYPES:
++        typ = _HIDDEN_BUILTIN_TYPES[qualname]
++    else:
++        # Try to get the type from the module
++        typ = get_name_in_module(module, qualname)
++        # Verify it's actually a type
++        if not isinstance(typ, type):
++            raise InvalidTypeError(f"{qualname} is not a type")
++    
++    # Handle generic types with elem_types
++    elem_types = d.get("elem_types")
++    if elem_types is not None:
++        elem_types_reified = [type_from_dict(t) for t in elem_types]
++        typ = typ[tuple(elem_types_reified)]
++    
+     return typ
+ 
+ 

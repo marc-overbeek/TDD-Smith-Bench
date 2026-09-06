@@ -1,0 +1,41 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -657,16 +657,28 @@
+ 
+ def cartesian_product_numpy(*arrays):
+     """
+-    Cartesian product of Numpy arrays by Paul Panzer
+-    https://stackoverflow.com/a/49445693/1497443
+-    """
+-    la = len(arrays)
+-    dtype = np.result_type(*arrays)
+-    arr = np.empty((la, *map(len, arrays)), dtype=dtype)
+-    idx = slice(None), *repeat(None, la)
+-    for i, a in enumerate(arrays):
+-        arr[i, ...] = a[idx[:la - i]]
+-    return arr.reshape(la, -1).T
++    Compute the cartesian product of numpy arrays.
++    
++    This function computes the cartesian product of multiple numpy arrays
++    and returns a list of lists containing all possible combinations.
++    """
++    if not arrays:
++        return []
++    
++    # Convert arrays to numpy arrays if they aren't already
++    arrays = [np.asarray(arr) for arr in arrays]
++    
++    # Create meshgrid for all arrays
++    grids = np.meshgrid(*arrays, indexing='ij')
++    
++    # Flatten each grid and stack them column-wise
++    flat_grids = [grid.flatten() for grid in grids]
++    
++    # Stack into a 2D array where each row is a combination
++    result = np.column_stack(flat_grids)
++    
++    # Convert to list of lists
++    return result.tolist()
+ 
+ 
+ def diff_numpy_array(A, B):

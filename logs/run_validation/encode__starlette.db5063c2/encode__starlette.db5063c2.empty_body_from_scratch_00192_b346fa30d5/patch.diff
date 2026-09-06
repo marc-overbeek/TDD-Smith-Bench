@@ -1,0 +1,25 @@
+--- a/starlette/schemas.py
++++ b/starlette/schemas.py
+@@ -128,20 +128,5 @@
+     def __init__(self, base_schema: dict[str, typing.Any]) -> None:
+         self.base_schema = base_schema
+ 
+-    def get_schema(self, routes: list[BaseRoute]) -> dict[str, typing.Any]:
+-        schema = dict(self.base_schema)
+-        schema.setdefault("paths", {})
+-        endpoints_info = self.get_endpoints(routes)
+-
+-        for endpoint in endpoints_info:
+-            parsed = self.parse_docstring(endpoint.func)
+-
+-            if not parsed:
+-                continue
+-
+-            if endpoint.path not in schema["paths"]:
+-                schema["paths"][endpoint.path] = {}
+-
+-            schema["paths"][endpoint.path][endpoint.http_method] = parsed
+-
+-        return schema
++    def get_schema(self, routes: list[BaseRoute]) ->dict[str, typing.Any]:
++        pass

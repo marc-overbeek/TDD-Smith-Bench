@@ -1,0 +1,49 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -101,16 +101,14 @@
+     return getattr(endpoint, "__name__", endpoint.__class__.__name__)
+ 
+ 
+-def replace_params(
+-    path: str,
+-    param_convertors: dict[str, Convertor[typing.Any]],
+-    path_params: dict[str, str],
+-) -> tuple[str, dict[str, str]]:
+-    for key, value in list(path_params.items()):
+-        if "{" + key + "}" in path:
+-            convertor = param_convertors[key]
+-            value = convertor.to_string(value)
+-            path = path.replace("{" + key + "}", value)
++def replace_params(path: str, param_convertors: dict[str, Convertor[typing.
++    Any]], path_params: dict[str, str]) ->tuple[str, dict[str, str]]:
++    for key, convertor in list(param_convertors.items()):
++        value = path_params.get(key)
++        if value is not None:
++            converted = convertor.to_string(value)
++            assert convertor.regex.fullmatch(converted), converted
++            path = path.replace("{" + key + "}", converted)
+             path_params.pop(key)
+     return path, path_params
+ 
+@@ -266,15 +264,12 @@
+         return Match.NONE, {}
+ 
+     def url_path_for(self, name: str, /, **path_params: typing.Any) -> URLPath:
+-        seen_params = set(path_params.keys())
+-        expected_params = set(self.param_convertors.keys())
+-
+-        if name != self.name or seen_params != expected_params:
+-            raise NoMatchFound(name, path_params)
+-
+-        path, remaining_params = replace_params(self.path_format, self.param_convertors, path_params)
+-        assert not remaining_params
+-        return URLPath(path=path, protocol="http")
++        for route in self.routes:
++            try:
++                return route.url_path_for(name, **path_params)
++            except NoMatchFound:
++                pass
++        raise NoMatchFound(name, path_params)
+ 
+     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+         if self.methods and scope["method"] not in self.methods:

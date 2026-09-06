@@ -1,0 +1,63 @@
+--- a/safety/auth/cli.py
++++ b/safety/auth/cli.py
+@@ -237,57 +237,9 @@
+                 "authentication is made.")
+ @click.option("--login-timeout", "-w", type=int, default=600,
+               help="Max time allowed to wait for an authentication.")
+-def status(ctx: typer.Context, ensure_auth: bool = False,
+-           login_timeout: int = 600)  -> None:
+-    """
+-    Display Safety CLI's current authentication status.
+-
+-    Args:
+-        ctx (typer.Context): The Typer context object.
+-        ensure_auth (bool): Whether to keep running until authentication is made.
+-        login_timeout (int): Max time allowed to wait for authentication.
+-    """
+-    LOG.info('status started')
+-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+-    from safety.util import get_safety_version
+-    safety_version = get_safety_version()
+-    console.print(f"[{current_time}]: Safety {safety_version}")
+-
+-    info = get_auth_info(ctx)
+-
+-    if ensure_auth:
+-        console.print("running: safety auth status --ensure-auth")
+-        console.print()
+-
+-    if info:
+-        verified = is_email_verified(info)
+-        email_status = " [red](email not verified)[/red]" if not verified else ""
+-
+-        console.print(f'[green]Authenticated as {info["email"]}[/green]{email_status}')
+-    elif ensure_auth:
+-        console.print('Safety is not authenticated. Launching default browser to log in')
+-        console.print()
+-        uri, initial_state = get_authorization_data(client=ctx.obj.auth.client,
+-                                                    code_verifier=ctx.obj.auth.code_verifier,
+-                                                    organization=ctx.obj.auth.org, ensure_auth=ensure_auth)
+-
+-        # Process the browser callback to complete the authentication
+-        info = process_browser_callback(uri, initial_state=initial_state,
+-                                          timeout=login_timeout, ctx=ctx)
+-
+-        if not info:
+-            console.print(f'[red]Timeout error ({login_timeout} seconds): not successfully authenticated without the timeout period.[/red]')
+-            sys.exit(1)
+-
+-        organization = None
+-        if ctx.obj.auth.org and ctx.obj.auth.org.name:
+-            organization = ctx.obj.auth.org.name
+-
+-        render_successful_login(ctx.obj.auth, organization=organization)
+-        console.print()
+-
+-    else:
+-        console.print(MSG_NON_AUTHENTICATED)
++def status(ctx: typer.Context, ensure_auth: bool=False, login_timeout: int=600
++    ) ->None:
++    pass
+ 
+ 
+ @auth_app.command(name=CMD_REGISTER_NAME)

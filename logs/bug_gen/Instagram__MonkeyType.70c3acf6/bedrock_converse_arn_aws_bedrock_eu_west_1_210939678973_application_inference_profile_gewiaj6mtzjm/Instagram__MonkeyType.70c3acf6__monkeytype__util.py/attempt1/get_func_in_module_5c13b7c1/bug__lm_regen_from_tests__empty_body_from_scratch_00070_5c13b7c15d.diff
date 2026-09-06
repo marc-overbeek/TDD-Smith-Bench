@@ -1,0 +1,55 @@
+--- a/monkeytype/util.py
++++ b/monkeytype/util.py
+@@ -18,34 +18,32 @@
+     return func.__module__ + "." + func.__qualname__
+ 
+ 
+-def get_func_in_module(module: str, qualname: str) -> Callable[..., Any]:
++def get_func_in_module(module: str, qualname: str) ->Callable[..., Any]:
+     """Return the function specified by qualname in module.
+ 
+     Raises:
+-        NameLookupError if we can't find the named function
+-        InvalidTypeError if we the name isn't a function
++        InvalidTypeError if the module/qualname does not refer to a function.
+     """
+-    func = get_name_in_module(module, qualname)
+-    func = inspect.unwrap(func)
+-    if isinstance(func, types.MethodType):
+-        func = func.__func__
+-    elif isinstance(func, property):
+-        if func.fget is not None:
+-            if (func.fset is None) and (func.fdel is None):
+-                func = func.fget
++    obj = get_name_in_module(module, qualname)
++    if not isinstance(obj, types.FunctionType):
++        if isinstance(obj, (classmethod, staticmethod)):
++            obj = obj.__func__
++        elif isinstance(obj, property):
++            # For properties, we return the getter function
++            if obj.fget is not None:
++                obj = obj.fget
+             else:
+                 raise InvalidTypeError(
+-                    f"Property {module}.{qualname} has setter or deleter."
++                    f"Property {module}.{qualname} has no getter"
+                 )
++        elif inspect.ismethod(obj):
++            # For bound methods, we return the underlying function
++            obj = obj.__func__
+         else:
+-            raise InvalidTypeError(f"Property {module}.{qualname} is missing getter")
+-    elif cached_property and isinstance(func, cached_property):
+-        func = func.func
+-    elif not isinstance(func, (types.FunctionType, types.BuiltinFunctionType)):
+-        raise InvalidTypeError(
+-            f"{module}.{qualname} is of type '{type(func)}', not function."
+-        )
+-    return func  # type: ignore[no-any-return]
++            raise InvalidTypeError(
++                f"{module}.{qualname} refers to {type(obj)}, not a function"
++            )
++    return obj
+ 
+ 
+ def get_name_in_module(

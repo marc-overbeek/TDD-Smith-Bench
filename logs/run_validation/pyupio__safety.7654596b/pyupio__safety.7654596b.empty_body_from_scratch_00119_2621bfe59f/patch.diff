@@ -1,0 +1,44 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -1197,38 +1197,9 @@
+ 
+ 
+ 
+-def prompt_service(output: Tuple[str, Dict[str, Any]], out_format: str, format_text: Optional[Dict[str, Any]] = None) -> bool:
+-    """
+-    Prompt the user for input.
+-
+-    Args:
+-        output (Tuple[str, Dict[str, Any]]): The output to display.
+-        out_format (str): The output format.
+-        format_text (Optional[Dict[str, Any]], optional): Additional text formatting options. Defaults to None.
+-
+-    Returns:
+-        bool: The user response.
+-
+-    Raises:
+-        ValueError: If the output format is not allowed.
+-    """
+-    formats = ['text', 'screen']
+-
+-    if out_format not in formats:
+-        raise ValueError(f"Prompt is only allowed for {', '.join(formats)}")
+-
+-    if not format_text:
+-        format_text = {'start_line_decorator': '', 'sub_indent': ' ' * 5, 'indent': ' ' * 3}
+-        if out_format == 'text':
+-            format_text['columns'] = 80
+-
+-    line, kwargs = output
+-    msg = format_long_text(line, **{**format_text, **kwargs})
+-
+-    if out_format == 'text':
+-        msg = click.unstyle(msg)
+-
+-    return click.prompt(msg)
++def prompt_service(output: Tuple[str, Dict[str, Any]], out_format: str,
++    format_text: Optional[Dict[str, Any]]=None) ->bool:
++    pass
+ 
+ 
+ def parse_html(*, kwargs: Dict[str, Any], template: str = 'index.html') -> str:

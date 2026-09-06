@@ -1,0 +1,18 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -171,9 +171,12 @@
+         super().__init__(subspec=subspec, init=init, op=operator.iadd)
+ 
+     def _fold(self, iterator):
+-        if self.lazy:
+-            return itertools.chain.from_iterable(iterator)
+-        return super()._fold(iterator)
++        ret, op = self.init(), self.op
++
++        for v in iterator:
++            ret = op(ret, v)
++
++        return ret
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

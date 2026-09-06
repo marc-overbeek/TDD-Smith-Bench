@@ -1,0 +1,20 @@
+--- a/monkeytype/tracing.py
++++ b/monkeytype/tracing.py
+@@ -130,10 +130,13 @@
+     return None
+ 
+ 
+-def get_previous_frames(frame: Optional[FrameType]) -> Iterator[FrameType]:
+-    while frame is not None:
+-        yield frame
+-        frame = frame.f_back
++def get_previous_frames(frame: Optional[FrameType]) ->Iterator[FrameType]:
++    if frame is None:
++        return
++    current = frame.f_back
++    while current is not None:
++        yield current
++        current = current.f_back
+ 
+ 
+ def get_locals_from_previous_frames(frame: FrameType) -> Iterator[Any]:

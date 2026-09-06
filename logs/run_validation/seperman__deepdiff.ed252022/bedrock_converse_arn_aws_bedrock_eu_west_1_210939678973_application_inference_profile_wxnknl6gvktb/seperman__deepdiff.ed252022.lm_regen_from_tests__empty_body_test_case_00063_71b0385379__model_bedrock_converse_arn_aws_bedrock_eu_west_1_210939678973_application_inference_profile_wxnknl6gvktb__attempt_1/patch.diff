@@ -1,0 +1,204 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -67,27 +67,15 @@
+ 
+     __doc__ = doc
+ 
+-    def __init__(
+-        self,
+-        diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
+-        delta_path: Optional[str]=None,
+-        delta_file: Optional[IO]=None,
+-        delta_diff: Optional[dict]=None,
+-        flat_dict_list: Optional[List[Dict]]=None,
+-        flat_rows_list: Optional[List[FlatDeltaRow]]=None,
+-        deserializer: Callable=pickle_load,
+-        log_errors: bool=True,
+-        mutate: bool=False,
+-        raise_errors: bool=False,
+-        safe_to_import: Optional[Set[str]]=None,
+-        serializer: Callable=pickle_dump,
+-        verify_symmetry: Optional[bool]=None,
+-        bidirectional: bool=False,
+-        always_include_values: bool=False,
+-        iterable_compare_func_was_used: Optional[bool]=None,
+-        force: bool=False,
+-    ):
+-        # for pickle deserializer:
++    def __init__(self, diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
++        delta_path: Optional[str]=None, delta_file: Optional[IO]=None,
++        delta_diff: Optional[dict]=None, flat_dict_list: Optional[List[Dict]]=
++        None, flat_rows_list: Optional[List[FlatDeltaRow]]=None, deserializer:
++        Callable=pickle_load, log_errors: bool=True, mutate: bool=False,
++        raise_errors: bool=False, safe_to_import: Optional[Set[str]]=None,
++        serializer: Callable=pickle_dump, verify_symmetry: Optional[bool]=None,
++        bidirectional: bool=False, always_include_values: bool=False,
++        iterable_compare_func_was_used: Optional[bool]=None, force: bool=False):
+         if hasattr(deserializer, '__code__') and 'safe_to_import' in set(deserializer.__code__.co_varnames):
+             _deserializer = deserializer
+         else:
+@@ -106,7 +94,6 @@
+                     result['_iterable_opcodes'] = _iterable_opcodes
+                 return result
+ 
+-
+         self._reversed_diff = None
+ 
+         if verify_symmetry is not None:
+@@ -117,7 +104,7 @@
+ 
+         self.bidirectional = bidirectional
+         if bidirectional:
+-            self.always_include_values = True  # We need to include the values in bidirectional deltas
++            self.always_include_values = True
+         else:
+             self.always_include_values = always_include_values
+ 
+@@ -128,6 +115,8 @@
+                 self.diff = diff
+             elif isinstance(diff, strings):
+                 self.diff = _deserializer(diff, safe_to_import=safe_to_import)
++            else:
++                raise ValueError(DELTA_AT_LEAST_ONE_ARG_NEEDED)
+         elif delta_path:
+             with open(delta_path, 'rb') as the_file:
+                 content = the_file.read()
+@@ -141,7 +130,6 @@
+                 raise ValueError(BINIARY_MODE_NEEDED_MSG.format(e)) from None
+             self.diff = _deserializer(content, safe_to_import=safe_to_import)
+         elif flat_dict_list:
+-            # Use copy to preserve original value of flat_dict_list in calling module
+             self.diff = self._from_flat_dicts(copy.deepcopy(flat_dict_list))
+         elif flat_rows_list:
+             self.diff = self._from_flat_rows(copy.deepcopy(flat_rows_list))
+@@ -152,8 +140,6 @@
+         self.raise_errors = raise_errors
+         self.log_errors = log_errors
+         self._numpy_paths = self.diff.get('_numpy_paths', False)
+-        # When we create the delta from a list of flat dictionaries, details such as iterable_compare_func_was_used get lost.
+-        # That's why we allow iterable_compare_func_was_used to be explicitly set.
+         self._iterable_compare_func_was_used = self.diff.get('_iterable_compare_func_was_used', iterable_compare_func_was_used)
+         self.serializer = serializer
+         self.deserializer = deserializer
+@@ -235,7 +221,6 @@
+         forced_old_value=None,
+         next_element=None,
+     ):
+-        # if forced_old_value is not None:
+         try:
+             if action == GET:
+                 current_old_value = obj[elem]
+@@ -335,9 +320,6 @@
+                                     value=new_value, action=action)
+ 
+     def _simple_delete_elem(self, obj, path_for_err_reporting, elem=None, action=None):
+-        """
+-        Delete the element directly on an object
+-        """
+         try:
+             if action == GET:
+                 del obj[elem]
+@@ -349,20 +331,14 @@
+             self._raise_or_log('Failed to set {} due to {}'.format(path_for_err_reporting, e))
+ 
+     def _del_elem(self, parent, parent_to_obj_elem, parent_to_obj_action,
+-                  obj, elements, path, elem, action):
+-        """
+-        Delete the element value on an object and if necessary convert the object to the proper mutable type
+-        """
++        obj, elements, path, elem, action):
+         obj_is_new = False
+         if isinstance(obj, tuple):
+-            # convert this object back to a tuple later
+             self.post_process_paths_to_convert[elements[:-1]] = {'old_type': list, 'new_type': tuple}
+             obj = list(obj)
+             obj_is_new = True
+         self._simple_delete_elem(obj=obj, path_for_err_reporting=path, elem=elem, action=action)
+         if obj_is_new and parent:
+-            # Making sure that the object is re-instated inside the parent especially if it was immutable
+-            # and we had to turn it into a mutable one. In such cases the object has a new id.
+             self._simple_set_elem_value(obj=parent, path_for_err_reporting=path, elem=parent_to_obj_elem,
+                                         value=obj, action=parent_to_obj_action)
+ 
+@@ -439,9 +415,6 @@
+ 
+     def _do_item_added(self, items, sort=True, insert=False):
+         if sort:
+-            # sorting items by their path so that the items with smaller index
+-            # are applied first (unless `sort` is `False` so that order of
+-            # added items is retained, e.g. for dicts).
+             try:
+                 items = sorted(items.items(), key=self._sort_key_for_item_added)
+             except TypeError:
+@@ -454,9 +427,8 @@
+             if elem_and_details:
+                 elements, parent, parent_to_obj_elem, parent_to_obj_action, obj, elem, action = elem_and_details
+             else:
+-                continue  # pragma: no cover. Due to cPython peephole optimizer, this line doesn't get covered. https://github.com/nedbat/coveragepy/issues/198
+-
+-            # Insert is only true for iterables, make sure it is a valid index.
++                continue
++
+             if(insert and elem < len(obj)):
+                 obj.insert(elem, None)
+ 
+@@ -509,13 +481,8 @@
+                     obj=parent, path_for_err_reporting=path, expected_old_value=None,
+                     elem=parent_to_obj_elem, action=parent_to_obj_action, next_element=next2_element)
+             else:
+-                # parent = self
+-                # obj = self.root
+-                # parent_to_obj_elem = 'root'
+-                # parent_to_obj_action = GETATTR
+                 parent = parent_to_obj_elem = parent_to_obj_action = None
+                 obj = self
+-                # obj = self.get_nested_obj(obj=self, elements=elements[:-1])
+             elem, action = elements[-1]
+         except Exception as e:
+             self._raise_or_log(UNABLE_TO_GET_ITEM_MSG.format(path, e))
+@@ -562,11 +529,6 @@
+                 self._do_verify_changes(path, expected_old_value, current_old_value)
+ 
+     def _do_item_removed(self, items):
+-        """
+-        Handle removing items.
+-        """
+-        # Sorting the iterable_item_removed in reverse order based on the paths.
+-        # So that we delete a bigger index before a smaller index
+         try:
+             sorted_item = sorted(items.items(), key=self._sort_key_for_item_added, reverse=True)
+         except TypeError:
+@@ -576,7 +538,7 @@
+             if elem_and_details:
+                 elements, parent, parent_to_obj_elem, parent_to_obj_action, obj, elem, action = elem_and_details
+             else:
+-                continue  # pragma: no cover. Due to cPython peephole optimizer, this line doesn't get covered. https://github.com/nedbat/coveragepy/issues/198
++                continue
+ 
+             look_for_expected_old_value = False
+             current_old_value = not_found
+@@ -590,7 +552,6 @@
+                 look_for_expected_old_value = True
+ 
+             if look_for_expected_old_value and isinstance(obj, list) and not self._iterable_compare_func_was_used:
+-                # It may return None if it doesn't find it
+                 elem = self._find_closest_iterable_element_for_index(obj, elem, expected_old_value)
+                 if elem is not None:
+                     current_old_value = expected_old_value
+@@ -802,7 +763,6 @@
+             'set_item_added': 'set_item_removed',
+             'dictionary_item_added': 'dictionary_item_removed',
+         }
+-        # Adding the reverse of the dictionary
+         for key in list(SIMPLE_ACTION_TO_REVERSE.keys()):
+             SIMPLE_ACTION_TO_REVERSE[SIMPLE_ACTION_TO_REVERSE[key]] = key
+ 
+@@ -853,6 +813,8 @@
+                             old_values=op_code.new_values,
+                         )
+                         r_diff[action][path].append(new_op_code)
++            else:
++                r_diff[action] = info
+         return r_diff
+ 
+     def dump(self, file):

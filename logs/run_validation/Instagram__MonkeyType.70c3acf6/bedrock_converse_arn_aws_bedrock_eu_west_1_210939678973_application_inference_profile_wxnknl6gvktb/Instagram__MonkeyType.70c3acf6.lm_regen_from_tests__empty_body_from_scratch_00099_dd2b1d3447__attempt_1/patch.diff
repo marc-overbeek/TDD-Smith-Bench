@@ -1,0 +1,55 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -383,32 +383,29 @@
+ 
+ 
+ def render_parameter(param: inspect.Parameter) -> str:
+-    """Convert a parameter into its stub representation.
+-
+-    NB: This is copied almost entirely from https://github.com/python/cpython/blob/3.6/Lib/inspect.py
+-    with the modification that it calls our own rendering functions for annotations.
+-
+-    TODO: push a patch upstream so we don't have to do this on Python 3.x.
+-    """
++    """Render a parameter into its stub representation."""
+     kind = param.kind
+-    formatted = param.name
+-
+-    # Add annotation and default value
++    formatted = ""
++    
++    # Handle VAR_POSITIONAL (*args)
++    if kind == inspect.Parameter.VAR_POSITIONAL:
++        formatted = "*" + param.name
++    # Handle VAR_KEYWORD (**kwargs)
++    elif kind == inspect.Parameter.VAR_KEYWORD:
++        formatted = "**" + param.name
++    # Handle regular parameters
++    else:
++        formatted = param.name
++    
++    # Add annotation if present
+     if param.annotation is not inspect.Parameter.empty:
+-        anno = param.annotation
+-        if not _is_optional(anno) and param.default is None:
+-            anno = Optional[anno]
+-        rendered = render_annotation(anno)
+-        formatted = "{}: {}".format(formatted, rendered)
+-
++        anno = render_annotation(param.annotation)
++        formatted += ": " + anno
++    
++    # Add default value if present
+     if param.default is not inspect.Parameter.empty:
+-        formatted = "{} = ...".format(formatted)
+-
+-    if kind == inspect.Parameter.VAR_POSITIONAL:
+-        formatted = "*" + formatted
+-    elif kind == inspect.Parameter.VAR_KEYWORD:
+-        formatted = "**" + formatted
+-
++        formatted += " = ..."
++    
+     return formatted
+ 
+ 

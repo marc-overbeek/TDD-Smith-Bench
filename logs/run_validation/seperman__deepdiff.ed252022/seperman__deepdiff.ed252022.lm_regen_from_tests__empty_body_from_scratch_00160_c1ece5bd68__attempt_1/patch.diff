@@ -1,0 +1,20 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -289,8 +289,15 @@
+     return _get_numbers_distance(date1.timestamp(), date2.timestamp(), max_)
+ 
+ 
+-def _get_date_distance(date1, date2, max_, use_log_scale, log_scale_similarity_threshold):
+-    return _get_numbers_distance(date1.toordinal(), date2.toordinal(), max_)
++def _get_date_distance(date1, date2, max_, use_log_scale,
++    log_scale_similarity_threshold):
++    return _get_numbers_distance(
++        datetime.datetime.combine(date1, datetime.time.min).timestamp(),
++        datetime.datetime.combine(date2, datetime.time.min).timestamp(),
++        max_,
++        use_log_scale,
++        log_scale_similarity_threshold
++    )
+ 
+ 
+ def _get_timedelta_distance(timedelta1, timedelta2, max_, use_log_scale, log_scale_similarity_threshold):

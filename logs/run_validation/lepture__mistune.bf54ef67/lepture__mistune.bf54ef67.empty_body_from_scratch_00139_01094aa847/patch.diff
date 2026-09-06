@@ -1,0 +1,52 @@
+--- a/src/mistune/plugins/abbr.py
++++ b/src/mistune/plugins/abbr.py
+@@ -33,46 +33,9 @@
+     return m.end() + 1
+ 
+ 
+-def process_text(inline: "InlineParser", text: str, state: "InlineState") -> None:
+-    ref = state.env.get("ref_abbrs")
+-    if not ref:
+-        return state.append_token({'type': 'text', 'raw': text})
+-
+-    if state.tokens:
+-        last = state.tokens[-1]
+-        if last['type'] == 'text':
+-            state.tokens.pop()
+-            text = last['raw'] + text
+-
+-    abbrs_re = state.env.get('abbrs_re')
+-    if not abbrs_re:
+-        abbrs_re = re.compile(r'|'.join(re.escape(k) for k in ref.keys()))
+-        state.env['abbrs_re'] = abbrs_re
+-
+-    pos = 0
+-    while pos < len(text):
+-        m = abbrs_re.search(text, pos)
+-        if not m:
+-            break
+-
+-        end_pos = m.start()
+-        if end_pos > pos:
+-            hole = text[pos:end_pos]
+-            state.append_token({'type': 'text', 'raw': hole})
+-
+-        label = m.group(0)
+-        state.append_token({
+-            'type': 'abbr',
+-            'children': [{'type': 'text', 'raw': label}],
+-            'attrs': {'title': ref[label]}
+-        })
+-        pos = m.end()
+-
+-    if pos == 0:
+-        # special case, just pure text
+-        state.append_token({'type': 'text', 'raw': text})
+-    elif pos < len(text):
+-        state.append_token({'type': 'text', 'raw': text[pos:]})
++def process_text(inline: 'InlineParser', text: str, state: 'InlineState'
++    ) ->None:
++    pass
+ 
+ 
+ def render_abbr(renderer: "BaseRenderer", text: str, title: str) -> str:

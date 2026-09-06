@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef _add_bearer_token(self, uri, http_method='GET', body=None,\n                      headers=None, token_placement=None):\n    \"\"\"Add a bearer token to the request uri, body or authorization header.\"\"\"\n    if token_placement == AUTH_HEADER:\n        headers = tokens.prepare_bearer_headers(self.access_token, headers)\n\n    elif token_placement == URI_QUERY:\n        uri = tokens.prepare_bearer_uri(self.access_token, uri)\n\n    elif token_placement == BODY:\n        body = tokens.prepare_bearer_body(self.access_token, body)\n\n    else:\n        raise ValueError(\"Invalid token placement.\")\n    return uri, headers, body\n```",
+  "rewrite": "def _add_bearer_token(self, uri, http_method='GET', body=None,\n                      headers=None, token_placement=None):\n    \"\"\"Add a bearer token to the request uri, body or authorization header.\"\"\"\n    if token_placement == AUTH_HEADER:\n        headers = tokens.prepare_bearer_headers(self.access_token, headers)\n\n    elif token_placement == URI_QUERY:\n        uri = tokens.prepare_bearer_uri(self.access_token, uri)\n\n    elif token_placement == BODY:\n        body = tokens.prepare_bearer_body(self.access_token, body)\n\n    else:\n        raise ValueError(\"Invalid token placement.\")\n    return uri, headers, body\n                      # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

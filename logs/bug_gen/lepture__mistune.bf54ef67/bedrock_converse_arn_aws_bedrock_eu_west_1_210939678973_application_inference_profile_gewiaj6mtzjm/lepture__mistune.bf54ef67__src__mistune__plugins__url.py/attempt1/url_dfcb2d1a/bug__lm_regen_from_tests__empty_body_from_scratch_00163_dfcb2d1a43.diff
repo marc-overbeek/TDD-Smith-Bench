@@ -1,0 +1,12 @@
+--- a/src/mistune/plugins/url.py
++++ b/src/mistune/plugins/url.py
+@@ -26,5 +26,7 @@
+     return pos
+ 
+ 
+-def url(md: "Markdown") -> None:
+-    md.inline.register("url_link", URL_LINK_PATTERN, parse_url_link)
++def url(md: 'Markdown') ->None:
++    md.inline_parser.rules.insert(0, 'url')
++    md.inline_parser.patterns['url'] = URL_LINK_PATTERN
++    md.inline_parser.funcs['url'] = parse_url_link

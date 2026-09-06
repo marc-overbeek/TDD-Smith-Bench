@@ -1,0 +1,19 @@
+--- a/safety/formatters/json.py
++++ b/safety/formatters/json.py
+@@ -64,6 +64,16 @@
+     """Json report, for when the output is input for something else"""
+ 
+     VERSIONS = ("0.5", "1.1")
++
++    def __init__(self, version="1.1", **kwargs):
++        """
++        Initialize JsonReport with the specified version.
++
++        Args:
++            version (str): Report version.
++        """
++        super().__init__(**kwargs)
++        self.version: str = version if version in self.VERSIONS else "1.1"
+ 
+     def __init__(self, version="1.1", **kwargs):
+         """

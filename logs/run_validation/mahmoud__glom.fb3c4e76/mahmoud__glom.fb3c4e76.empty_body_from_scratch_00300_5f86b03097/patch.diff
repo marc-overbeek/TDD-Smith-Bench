@@ -1,0 +1,36 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -122,32 +122,7 @@
+ 
+     """
+     def __init__(self, path, val, missing=None):
+-        # TODO: an option like require_preexisting or something to
+-        # ensure that a value is mutated, not just added. Current
+-        # workaround is to do a Check().
+-        if isinstance(path, basestring):
+-            path = Path.from_text(path)
+-        elif type(path) is TType:
+-            path = Path(path)
+-        elif not isinstance(path, Path):
+-            raise TypeError('path argument must be a .-delimited string, Path, T, or S')
+-
+-        try:
+-            self.op, self.arg = path.items()[-1]
+-        except IndexError:
+-            raise ValueError('path must have at least one element')
+-        self._orig_path = path
+-        self.path = path[:-1]
+-
+-        if self.op not in '[.P':
+-            # maybe if we add null-coalescing this should do something?
+-            raise ValueError('last part of path must be setattr or setitem')
+-        self.val = val
+-
+-        if missing is not None:
+-            if not callable(missing):
+-                raise TypeError(f'expected missing to be callable, not {missing!r}')
+-        self.missing = missing
++        pass
+ 
+     def glomit(self, target, scope):
+         val = arg_val(target, self.val, scope)

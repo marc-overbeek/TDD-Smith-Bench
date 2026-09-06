@@ -1,0 +1,102 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -838,41 +838,68 @@
+     )
+ 
+ 
+-def build_module_stubs(entries: Iterable[FunctionDefinition]) -> Dict[str, ModuleStub]:
+-    """Given an iterable of function definitions, build the corresponding stubs"""
+-    mod_stubs: Dict[str, ModuleStub] = {}
++def build_module_stubs(entries: Iterable[FunctionDefinition]) ->Dict[str,
++    ModuleStub]:
++    module_function_stubs: DefaultDict[str, Dict[str, FunctionStub]] = collections.defaultdict(dict)
++    module_class_stubs: DefaultDict[str, Dict[str, Dict[str, FunctionStub]]] = collections.defaultdict(lambda: collections.defaultdict(dict))
++    module_imports: DefaultDict[str, ImportMap] = collections.defaultdict(ImportMap)
++    module_typed_dict_stubs: DefaultDict[str, List[ClassStub]] = collections.defaultdict(list)
++
+     for entry in entries:
+-        path = entry.qualname.split(".")
+-        name = path.pop()
+-        class_path = path
+-        # TODO: Handle nested classes
+-        klass = None
+-        if len(class_path) > 0:
+-            klass = ".".join(class_path)
+-        if entry.module not in mod_stubs:
+-            mod_stubs[entry.module] = ModuleStub()
+-        mod_stub = mod_stubs[entry.module]
++        module = entry.module
++        qualname = entry.qualname
++        parts = qualname.split(".")
++        
++        # Collect typed dict class stubs
++        module_typed_dict_stubs[module].extend(entry.typed_dict_class_stubs)
++        
++        # Compute imports from signature
+         imports = get_imports_for_signature(entry.signature)
+-        # Import TypedDict, if needed.
+-        if entry.typed_dict_class_stubs:
+-            imports["mypy_extensions"].add("TypedDict")
++        module_imports[module].merge(imports)
++        
++        func_name = parts[-1]
+         func_stub = FunctionStub(
+-            name, entry.signature, entry.kind, list(imports.keys()), entry.is_async
+-        )
+-        # Don't need to import anything from the same module
+-        imports.pop(entry.module, None)
+-        mod_stub.imports_stub.imports.merge(imports)
+-        if klass is not None:
+-            if klass not in mod_stub.class_stubs:
+-                mod_stub.class_stubs[klass] = ClassStub(klass)
+-            class_stub = mod_stub.class_stubs[klass]
+-            class_stub.function_stubs[func_stub.name] = func_stub
++            name=func_name,
++            signature=entry.signature,
++            kind=entry.kind,
++            strip_modules=[module],
++            is_async=entry.is_async,
++        )
++        
++        if len(parts) == 1:
++            # Module-level function
++            module_function_stubs[module][func_name] = func_stub
+         else:
+-            mod_stub.function_stubs[func_stub.name] = func_stub
+-
+-        mod_stub.typed_dict_class_stubs.extend(entry.typed_dict_class_stubs)
+-
+-    return mod_stubs
++            # Class method
++            class_name = parts[-2]
++            module_class_stubs[module][class_name][func_name] = func_stub
++
++    result: Dict[str, ModuleStub] = {}
++    all_modules = set(module_function_stubs.keys()) | set(module_class_stubs.keys()) | set(module_typed_dict_stubs.keys())
++    
++    for module in all_modules:
++        function_stubs = list(module_function_stubs[module].values())
++        
++        class_stubs = []
++        for class_name, func_stubs_dict in module_class_stubs[module].items():
++            class_stub = ClassStub(
++                name=class_name,
++                function_stubs=list(func_stubs_dict.values()),
++            )
++            class_stubs.append(class_stub)
++        
++        imports_stub = ImportBlockStub(module_imports[module]) if module_imports[module] else ImportBlockStub()
++        
++        typed_dict_stubs = module_typed_dict_stubs[module]
++        
++        result[module] = ModuleStub(
++            function_stubs=function_stubs,
++            class_stubs=class_stubs,
++            imports_stub=imports_stub,
++            typed_dict_class_stubs=typed_dict_stubs,
++        )
++    
++    return result
+ 
+ 
+ def build_module_stubs_from_traces(

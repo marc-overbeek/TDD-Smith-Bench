@@ -1,0 +1,79 @@
+--- a/fvcore/nn/parameter_count.py
++++ b/fvcore/nn/parameter_count.py
+@@ -11,25 +11,59 @@
+ 
+ def parameter_count(model: nn.Module) -> typing.DefaultDict[str, int]:
+     """
+-    Count parameters of a model and its submodules.
++    Count the number of parameters in a model and its submodules.
++    
++    Returns a DefaultDict mapping module names to parameter counts.
++    The empty string "" maps to the total parameter count.
++    """
++    count: typing.DefaultDict[str, int] = defaultdict(int)
++    
++    # Get all named parameters with their full paths
++    seen_params = set()
++    
++    for name, param in model.named_parameters():
++        # Count this parameter's elements
++        param_size = param.numel()
++        
++        # Add to root count
++        count[""] += param_size
++        
++        # Add to each parent module
++        parts = name.split(".")
++        for i in range(len(parts) - 1):
++            module_name = ".".join(parts[:i + 1])
++            count[module_name] += param_size
++    
++    return count
+ 
+-    Args:
+-        model: a torch module
+-
+-    Returns:
+-        dict (str-> int): the key is either a parameter name or a module name.
+-        The value is the number of elements in the parameter, or in all
+-        parameters of the module. The key "" corresponds to the total
+-        number of parameters of the model.
++def parameter_count(model: nn.Module) -> typing.DefaultDict[str, int]:
+     """
+-    r = defaultdict(int)
+-    for name, prm in model.named_parameters():
+-        size = prm.numel()
+-        name = name.split(".")
+-        for k in range(0, len(name) + 1):
+-            prefix = ".".join(name[:k])
+-            r[prefix] += size
+-    return r
++    Count the number of parameters in a model and its submodules.
++    
++    Returns a DefaultDict mapping module names to parameter counts.
++    The empty string "" maps to the total parameter count.
++    """
++    count: typing.DefaultDict[str, int] = defaultdict(int)
++    
++    # Track which parameter objects we've already counted to avoid double-counting
++    seen_params: typing.Set[int] = set()
++    
++    for name, param in model.named_parameters():
++        param_id = id(param)
++        
++        # Only count each unique parameter once
++        if param_id not in seen_params:
++            seen_params.add(param_id)
++            param_size = param.numel()
++            count[""] += param_size
++        
++        # Add to each parent module (always, even if we've seen this param before)
++        parts = name.split(".")
++        for i in range(len(parts) - 1):
++            module_name = ".".join(parts[:i + 1])
++            count[module_name] += param.numel()
++    
++    return count
+ 
+ 
+ def parameter_count_table(model: nn.Module, max_depth: int = 3) -> str:

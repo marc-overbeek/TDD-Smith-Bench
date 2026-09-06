@@ -1,0 +1,139 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -98,58 +98,84 @@
+     return ver
+ 
+ 
+-def read_requirements(fh: Any, resolve: bool = True) -> Generator[Package, None, None]:
+-    """
+-    Reads requirements from a file-like object and (optionally) from referenced files.
+-
+-    Args:
+-        fh (Any): The file-like object to read from.
+-        resolve (bool): Resolves referenced files.
+-
+-    Returns:
+-        Generator: Yields Package objects.
+-    """
+-    is_temp_file = not hasattr(fh, 'name')
+-    path = None
+-    found = 'temp_file'
+-    file_type = filetypes.requirements_txt
+-    absolute_path: Optional[str] = None
+-
+-    if not is_temp_file and is_supported_by_parser(fh.name):
+-        LOG.debug('not temp and a compatible file')
+-        path = fh.name
+-        absolute_path = os.path.abspath(path)
+-        SafetyContext().scanned_full_path.append(absolute_path)
+-        found = path
+-        file_type = None
+-
+-    LOG.debug(f'Path: {path}')
+-    LOG.debug(f'File Type: {file_type}')
+-    LOG.debug('Trying to parse file using dparse...')
+-    content = fh.read()
+-    LOG.debug(f'Content: {content}')
+-    dependency_file = parse(content, path=path, resolve=resolve,
+-                            file_type=file_type)
+-    LOG.debug(f'Dependency file: {dependency_file.serialize()}')
+-    LOG.debug(f'Parsed, dependencies: {[dep.serialize() for dep in dependency_file.resolved_dependencies]}')
+-
+-    reqs_pkg = defaultdict(list)
+-
+-    for req in dependency_file.resolved_dependencies:
+-        reqs_pkg[canonicalize_name(req.name)].append(req)
+-
+-    for pkg, reqs in reqs_pkg.items():
+-        requirements = list(map(lambda req: parse_requirement(req, absolute_path), reqs))
+-        version = find_version(requirements)
+-
+-        yield Package(name=pkg, version=version,
+-                      requirements=requirements,
+-                      found=found,
+-                      absolute_path=absolute_path,
+-                      insecure_versions=[],
+-                      secure_versions=[], latest_version=None,
+-                      latest_version_without_known_vulnerabilities=None,
+-                      more_info_url=None)
++def read_requirements(fh: Any, resolve: bool=True) ->Generator[Package,
++    None, None]:
++    """
++    Read requirements from a file handle and yield Package objects.
++    """
++    contents = fh.read()
++    
++    # Determine the filename for dparse
++    filename = getattr(fh, 'name', 'requirements.txt')
++    
++    if not is_supported_by_parser(filename):
++        filename = 'requirements.txt'
++    
++    dependency_file = parse(contents, file_type=filetypes.requirements_txt)
++    
++    packages: Dict[str, Package] = {}
++    
++    for dep in dependency_file.dependencies:
++        # Skip VCS/URL requirements
++        if dep.extras and not dep.name:
++            continue
++        
++        name = dep.name
++        if not name:
++            continue
++        
++        # Skip VCS requirements (those with no valid name or URL-based)
++        dep_str = str(dep.extras) if dep.extras else ''
++        
++        found = filename
++        
++        try:
++            req = parse_requirement(dep, found)
++        except Exception:
++            continue
++        
++        # Skip VCS/editable requirements
++        if req.url:
++            continue
++        
++        pkg_name = canonicalize_name(name)
++        
++        if pkg_name not in packages:
++            packages[pkg_name] = Package(
++                name=pkg_name,
++                version=None,
++                requirements=[req],
++                found=found,
++                insecure_versions=[],
++                secure_versions=[],
++                latest_version=None,
++                latest_version_without_known_vulnerabilities=None,
++                more_info_url=None
++            )
++        else:
++            packages[pkg_name].requirements.append(req)
++    
++    # Handle recursive requirements files
++    if resolve:
++        base_dir = os.path.dirname(os.path.abspath(filename)) if os.path.exists(filename) else os.path.dirname(os.path.abspath(getattr(fh, 'name', '.')))
++        
++        for dep_file in dependency_file.resolved_files:
++            dep_file_path = dep_file if os.path.isabs(dep_file) else os.path.join(base_dir, dep_file)
++            if os.path.exists(dep_file_path):
++                try:
++                    with open(dep_file_path) as sub_fh:
++                        for pkg in read_requirements(sub_fh, resolve=resolve):
++                            pkg_name = canonicalize_name(pkg.name)
++                            if pkg_name not in packages:
++                                packages[pkg_name] = pkg
++                            else:
++                                packages[pkg_name].requirements.extend(pkg.requirements)
++                except Exception:
++                    pass
++    
++    for pkg_name, pkg in packages.items():
++        pkg.version = find_version(pkg.requirements)
++        yield pkg
+ 
+ 
+ def get_proxy_dict(proxy_protocol: str, proxy_host: str, proxy_port: int) -> Optional[Dict[str, str]]:

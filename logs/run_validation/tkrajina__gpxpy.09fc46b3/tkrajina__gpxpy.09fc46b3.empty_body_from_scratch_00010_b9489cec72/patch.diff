@@ -1,0 +1,30 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -275,24 +275,9 @@
+     return mod_math.degrees(angle)
+ 
+ 
+-def distance_from_line(point: "Location", line_point_1: "Location", line_point_2: "Location") -> Optional[float]:
+-    """ Distance of point from a line given with two points. """
+-    assert point, point
+-    assert line_point_1, line_point_1
+-    assert line_point_2, line_point_2
+-
+-    a = line_point_1.distance_2d(line_point_2)
+-
+-    if not a:
+-        return line_point_1.distance_2d(point)
+-
+-    b = line_point_1.distance_2d(point)
+-    c = line_point_2.distance_2d(point)
+-
+-    if a is not None and b is not None and c is not None:
+-        s = (a + b + c) / 2
+-        return 2 * mod_math.sqrt(abs(s * (s - a) * (s - b) * (s - c))) / a
+-    return None
++def distance_from_line(point: 'Location', line_point_1: 'Location',
++    line_point_2: 'Location') ->Optional[float]:
++    pass
+ 
+ 
+ def get_line_equation_coefficients(location1: "Location", location2: "Location") -> Iterable[float]:

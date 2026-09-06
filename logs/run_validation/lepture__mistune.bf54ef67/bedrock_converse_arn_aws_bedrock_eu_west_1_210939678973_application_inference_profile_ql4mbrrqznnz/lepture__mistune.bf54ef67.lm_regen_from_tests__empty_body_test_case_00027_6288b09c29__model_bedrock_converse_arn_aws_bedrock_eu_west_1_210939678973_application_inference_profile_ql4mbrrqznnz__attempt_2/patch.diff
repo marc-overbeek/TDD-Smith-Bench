@@ -1,0 +1,41 @@
+--- a/src/mistune/directives/admonition.py
++++ b/src/mistune/directives/admonition.py
+@@ -14,9 +14,8 @@
+         "important", "note", "tip", "warning",
+     }
+ 
+-    def parse(
+-        self, block: "BlockParser", m: Match[str], state: "BlockState"
+-    ) -> Dict[str, Any]:
++    def parse(self, block: 'BlockParser', m: Match[str], state: 'BlockState'
++        ) ->Dict[str, Any]:
+         name = self.parse_type(m)
+         attrs = {'name': name}
+         options = dict(self.parse_options(m))
+@@ -44,7 +43,7 @@
+             'attrs': attrs,
+         }
+ 
+-    def __call__(self, directive: "BaseDirective", md: "Markdown") -> None:
++    def __call__(self, directive: 'BaseDirective', md: 'Markdown') ->None:
+         for name in self.SUPPORTED_NAMES:
+             directive.register(name, self.parse)
+ 
+@@ -55,12 +54,11 @@
+             md.renderer.register('admonition_content', render_admonition_content)
+ 
+ 
+-def render_admonition(self: Any, text: str, name: str, **attrs: Any) -> str:
+-    html = '<section class="admonition ' + name
+-    _cls = attrs.get('class')
+-    if _cls:
+-        html += ' ' + _cls
+-    return html + '">\n' + text + '</section>\n'
++def render_admonition(self: Any, text: str, name: str) ->str:
++    html = '<div class="admonition ' + name + '">\n'
++    html += text
++    html += '</div>\n'
++    return html
+ 
+ 
+ def render_admonition_title(self: Any, text: str) -> str:

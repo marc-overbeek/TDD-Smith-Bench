@@ -1,0 +1,42 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -1164,36 +1164,9 @@
+     return msg
+ 
+ 
+-def print_service(output: List[Tuple[str, Dict[str, Any]]], out_format: str, format_text: Optional[Dict[str, Any]] = None):
+-    """
+-    Print the service output.
+-
+-    Args:
+-        output (List[Tuple[str, Dict[str, Any]]]): The output to print.
+-        out_format (str): The output format.
+-        format_text (Optional[Dict[str, Any]], optional): Additional text formatting options. Defaults to None.
+-
+-    Raises:
+-        ValueError: If the output format is not allowed.
+-    """
+-    formats = ['text', 'screen']
+-
+-    if out_format not in formats:
+-        raise ValueError(f"Print is only allowed for {', '.join(formats)}")
+-
+-    if not format_text:
+-        format_text = {'start_line_decorator': '', 'sub_indent': ' ' * 5, 'indent': ' ' * 3}
+-        if out_format == 'text':
+-            format_text['columns'] = 80
+-
+-    while output:
+-        line, kwargs = output.pop(0)
+-        line = format_long_text(line, **{**format_text, **kwargs})
+-
+-        if out_format == 'screen':
+-            click.secho(line)
+-        else:
+-            click.echo(click.unstyle(line))
++def print_service(output: List[Tuple[str, Dict[str, Any]]], out_format: str,
++    format_text: Optional[Dict[str, Any]]=None):
++    pass
+ 
+ 
+ 

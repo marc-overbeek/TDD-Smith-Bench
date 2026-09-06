@@ -1,0 +1,12 @@
+--- a/fvcore/common/history_buffer.py
++++ b/fvcore/common/history_buffer.py
+@@ -50,6 +50,9 @@
+         """
+         Return the median of the latest `window_size` values in the buffer.
+         """
++        if not self._data:
++            return 0.0
++        window_size = min(window_size, len(self._data))
+         return np.median([x[0] for x in self._data[-window_size:]])
+ 
+     def avg(self, window_size: int) -> float:

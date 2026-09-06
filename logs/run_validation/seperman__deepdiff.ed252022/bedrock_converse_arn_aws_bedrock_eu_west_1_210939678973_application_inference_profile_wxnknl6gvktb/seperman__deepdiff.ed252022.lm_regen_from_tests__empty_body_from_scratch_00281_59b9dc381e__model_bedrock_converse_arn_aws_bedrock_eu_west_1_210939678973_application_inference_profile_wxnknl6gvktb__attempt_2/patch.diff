@@ -1,0 +1,63 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -671,12 +671,54 @@
+ 
+ def diff_numpy_array(A, B):
+     """
+-    Numpy Array A - B
+-    return items in A that are not in B
+-    By Divakar
+-    https://stackoverflow.com/a/52417967/1497443
+-    """
+-    return A[~np.isin(A, B)]
++    Find the indices where two numpy arrays differ.
++    
++    Returns a tuple of arrays containing the indices where A and B differ.
++    """
++    if np is None:
++        return None
++    
++    # Handle case where arrays have different shapes
++    if A.shape != B.shape:
++        return (np.array([]), np.array([]))
++    
++    # For floating point arrays, we need to handle NaN values specially
++    # NaN should be considered equal to NaN
++    if np.issubdtype(A.dtype, np.floating) or np.issubdtype(B.dtype, np.floating):
++        # Create a mask where values differ, but treat NaN == NaN as equal
++        diff_mask = np.logical_or(A != B, np.logical_and(np.isnan(A), np.isnan(B)))
++        # We want to find where they differ, so negate the "both NaN" case
++        diff_mask = np.logical_and(A != B, ~np.logical_and(np.isnan(A), np.isnan(B)))
++    else:
++        diff_mask = A != B
++    
++    # Return indices where they differ
++    return np.where(diff_mask)
++
++def diff_numpy_array(A, B):
++    """
++    Find the indices where two numpy arrays differ.
++    
++    Returns a tuple of arrays containing the indices where A and B differ.
++    """
++    if np is None:
++        return None
++    
++    # Handle case where arrays have different shapes
++    if A.shape != B.shape:
++        return (np.array([]), np.array([]))
++    
++    # Find where arrays differ
++    diff_mask = A != B
++    
++    # For floating point types, exclude cases where both values are NaN
++    # (since NaN should be considered equal to NaN)
++    if np.issubdtype(A.dtype, np.floating) or np.issubdtype(B.dtype, np.floating):
++        both_nan = np.logical_and(np.isnan(A), np.isnan(B))
++        diff_mask = np.logical_and(diff_mask, ~both_nan)
++    
++    # Return indices where they differ
++    return np.where(diff_mask)
+ 
+ 
+ PYTHON_TYPE_TO_NUMPY_TYPE = {

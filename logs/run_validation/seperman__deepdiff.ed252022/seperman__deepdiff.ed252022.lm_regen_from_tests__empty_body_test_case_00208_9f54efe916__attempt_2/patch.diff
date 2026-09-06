@@ -1,0 +1,104 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -190,41 +190,32 @@
+     return length
+ 
+ 
+-def _get_numbers_distance(num1, num2, max_=1, use_log_scale=False, log_scale_similarity_threshold=0.1):
+-    """
+-    Get the distance of 2 numbers. The output is a number between 0 to the max.
+-    The reason is the
+-    When max is returned means the 2 numbers are really far, and 0 means they are equal.
+-    """
+-    if num1 == num2:
+-        return 0
++def _get_numbers_distance(num1, num2, max_=1, use_log_scale=False,
++    log_scale_similarity_threshold=0.1):
+     if use_log_scale:
+         distance = logarithmic_distance(num1, num2)
+-        if distance < logarithmic_distance:
++        if distance < log_scale_similarity_threshold:
+             return 0
+-        return distance
+-    if not isinstance(num1, float):
++    else:
+         num1 = float(num1)
+-    if not isinstance(num2, float):
+         num2 = float(num2)
+-    # Since we have a default cutoff of 0.3 distance when
+-    # getting the pairs of items during the ingore_order=True
+-    # calculations, we need to make the divisor of comparison very big
+-    # so that any 2 numbers can be chosen as pairs.
+-    divisor = (num1 + num2) / max_
+-    if divisor == 0:
+-        return max_
+-    try:
+-        return min(max_, abs((num1 - num2) / divisor))
+-    except Exception:  # pragma: no cover. I don't think this line will ever run but doesn't hurt to leave it.
+-        return max_  # pragma: no cover
++        if num1 == num2:
++            return 0
++        max_num = max(abs(num1), abs(num2))
++        if max_num == 0:
++            return 0
++        distance = abs(num1 - num2) / max_num
++    
++    if distance > max_:
++        distance = max_
++    return distance
+ 
+ 
+ def _numpy_div(a, b, replace_inf_with=1):
+-    max_array = np.full(shape=a.shape, fill_value=replace_inf_with, dtype=np_float64)
+-    result = np.divide(a, b, out=max_array, where=b != 0, dtype=np_float64)
+-    # wherever 2 numbers are the same, make sure the distance is zero. This is mainly for 0 divided by zero.
+-    result[a == b] = 0
++    with np.errstate(divide='ignore', invalid='ignore'):
++        result = np.divide(a, b)
++        result[np.isinf(result)] = replace_inf_with
++        result[np.isnan(result)] = replace_inf_with
+     return result
+ 
+ # To deal with numbers close to zero
+@@ -262,27 +253,21 @@
+     return abs(log_a - log_b)
+ 
+ 
+-def _get_numpy_array_distance(num1, num2, max_=1, use_log_scale=False, log_scale_similarity_threshold=0.1):
+-    """
+-    Get the distance of 2 numbers. The output is a number between 0 to the max.
+-    The reason is the
+-    When max is returned means the 2 numbers are really far, and 0 means they are equal.
+-    """
+-    # Since we have a default cutoff of 0.3 distance when
+-    # getting the pairs of items during the ingore_order=True
+-    # calculations, we need to make the divisor of comparison very big
+-    # so that any 2 numbers can be chosen as pairs.
++def _get_numpy_array_distance(num1, num2, max_=1, use_log_scale=False,
++    log_scale_similarity_threshold=0.1):
+     if use_log_scale:
+-        num1 = numpy_apply_log_keep_sign(num1)
+-        num2 = numpy_apply_log_keep_sign(num2)
+-
+-    divisor = (num1 + num2) / max_
+-    result = _numpy_div((num1 - num2), divisor, replace_inf_with=max_)
+-
+-    distance_array = np.clip(np.absolute(result), 0, max_)
+-    if use_log_scale:
+-        distance_array[distance_array < log_scale_similarity_threshold] = 0
+-    return distance_array
++        num1_log = numpy_apply_log_keep_sign(num1.astype(np_float64))
++        num2_log = numpy_apply_log_keep_sign(num2.astype(np_float64))
++        distances = np.abs(num1_log - num2_log)
++        distances = np.where(distances < log_scale_similarity_threshold, 0, distances)
++    else:
++        num1_float = num1.astype(np_float64)
++        num2_float = num2.astype(np_float64)
++        max_num = np.maximum(np.abs(num1_float), np.abs(num2_float))
++        distances = _numpy_div(np.abs(num1_float - num2_float), max_num, replace_inf_with=0)
++    
++    distances = np.minimum(distances, max_)
++    return distances
+ 
+ 
+ def _get_datetime_distance(date1, date2, max_, use_log_scale, log_scale_similarity_threshold):

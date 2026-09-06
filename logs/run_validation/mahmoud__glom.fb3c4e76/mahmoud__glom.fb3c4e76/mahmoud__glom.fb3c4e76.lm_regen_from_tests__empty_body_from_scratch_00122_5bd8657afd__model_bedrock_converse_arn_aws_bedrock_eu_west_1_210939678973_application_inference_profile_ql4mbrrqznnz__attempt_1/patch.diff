@@ -1,0 +1,17 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1898,6 +1898,14 @@
+ 
+ 
+ class _ObjStyleKeysMeta(type):
++    class A:
++        def __init__(self):
++            self.a = 1
++            self.b = {'c': 2}
++    val = A()
++    assert glom(val, '*') == [1, {'c': 2}]
++    assert glom(val, '**') == [val, 1, {'c': 2}, 2]
++
+     def __instancecheck__(cls, C):
+         return hasattr(C, "__dict__") and hasattr(C.__dict__, "keys")
+ 

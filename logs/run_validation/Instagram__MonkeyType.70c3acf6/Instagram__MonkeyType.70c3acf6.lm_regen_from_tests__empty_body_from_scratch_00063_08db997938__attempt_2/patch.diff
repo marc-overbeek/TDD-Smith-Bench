@@ -1,0 +1,91 @@
+--- a/monkeytype/type_checking_imports_transformer.py
++++ b/monkeytype/type_checking_imports_transformer.py
+@@ -102,24 +102,71 @@
+         if not self.import_items_to_be_moved:
+             return module
+ 
++        # First, check if there's already a TYPE_CHECKING block
++        existing_type_checking_block = None
++        for statement in module.body:
++            if isinstance(statement, libcst.If) and isinstance(statement.test, libcst.Name) and statement.test.value == "TYPE_CHECKING":
++                existing_type_checking_block = statement
++                break
++    
++        # Get the imports to be moved
+         import_module = self._get_import_module()
+-
+-        placeholder_module = libcst.parse_module("\nif TYPE_CHECKING:\n    pass\n")
+-        type_checking_block_module = self._replace_pass_with_imports(
+-            placeholder_module,
+-            import_module,
+-        )
+-
+-        # Find the point of insertion for the TYPE_CHECKING block
+-        statements_before_imports, statements_after_imports = self._split_module(module)
+-
+-        updated_body_list = [
+-            *statements_before_imports,
+-            type_checking_block_module,
+-            *statements_after_imports,
+-        ]
+-
+-        return module.with_changes(body=updated_body_list)
++    
++        # If there's already a TYPE_CHECKING block, add imports to it
++        if existing_type_checking_block is not None:
++            # Create a new TYPE_CHECKING block with our imports
++            new_imports = import_module.body
++        
++            # Merge with existing imports in TYPE_CHECKING block
++            if existing_type_checking_block.body:
++                # Combine existing imports with new ones
++                combined_body = list(existing_type_checking_block.body.body) + new_imports
++                new_body = existing_type_checking_block.body.with_changes(body=combined_body)
++                new_type_checking_block = existing_type_checking_block.with_changes(body=new_body)
++            else:
++                # No existing imports, just use our imports
++                new_body = existing_type_checking_block.body.with_changes(body=new_imports)
++                new_type_checking_block = existing_type_checking_block.with_changes(body=new_body)
++        
++            # Replace the existing TYPE_CHECKING block
++            new_body_list = []
++            for statement in module.body:
++                if statement is existing_type_checking_block:
++                    new_body_list.append(new_type_checking_block)
++                else:
++                    new_body_list.append(statement)
++        
++            return module.with_changes(body=new_body_list)
++        else:
++            # Create a new TYPE_CHECKING block
++            # Find where to place it - after imports but before other statements
++            import_end_index = 0
++            for i, statement in enumerate(module.body):
++                if isinstance(statement, (libcst.Import, libcst.ImportFrom)):
++                    import_end_index = i + 1
++                elif isinstance(statement, libcst.SimpleStatementLine):
++                    # Check if it's an import-like statement
++                    for item in statement.body:
++                        if isinstance(item, (libcst.Import, libcst.ImportFrom)):
++                            import_end_index = i + 1
++        
++            # Create the TYPE_CHECKING block
++            type_checking_template = libcst.parse_module("if TYPE_CHECKING:\n    pass\n")
++            type_checking_block = type_checking_template.body[0]
++        
++            # Replace the pass with our actual imports
++            new_type_checking_block = type_checking_block.with_changes(
++                body=import_module.body
++            )
++        
++            # Insert the TYPE_CHECKING block after imports
++            new_body = list(module.body)
++            if import_end_index < len(new_body):
++                new_body.insert(import_end_index, new_type_checking_block)
++            else:
++                new_body.append(new_type_checking_block)
++            
++            return module.with_changes(body=new_body)
+ 
+     @staticmethod
+     def _remove_typing_module(import_item_list: List[ImportItem]) -> List[ImportItem]:

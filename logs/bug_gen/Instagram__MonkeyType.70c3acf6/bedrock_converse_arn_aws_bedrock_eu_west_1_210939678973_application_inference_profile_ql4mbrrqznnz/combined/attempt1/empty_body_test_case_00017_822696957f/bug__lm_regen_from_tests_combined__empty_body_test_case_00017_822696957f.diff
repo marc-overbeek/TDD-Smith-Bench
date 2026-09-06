@@ -1,0 +1,48 @@
+--- a/monkeytype/config.py
++++ b/monkeytype/config.py
+@@ -30,13 +30,7 @@
+         pass
+ 
+     @contextmanager
+-    def cli_context(self, command: str) -> Iterator[None]:
+-        """Lifecycle hook that is called once right after the CLI
+-        starts.
+-
+-        `command` is the name of the command passed to monkeytype
+-        ('run', 'apply', etc).
+-        """
++    def cli_context(self, command: str) ->Iterator[None]:
+         yield
+ 
+     def trace_logger(self) -> CallTraceLogger:
+@@ -124,12 +118,7 @@
+     def type_rewriter(self) -> TypeRewriter:
+         return DEFAULT_REWRITER
+ 
+-    def trace_store(self) -> CallTraceStore:
+-        """By default we store traces in a local SQLite database.
+-
+-        The path to this database file can be customized via the `MT_DB_PATH`
+-        environment variable.
+-        """
++    def trace_store(self) ->CallTraceStore:
+         db_path = os.environ.get(self.DB_PATH_VAR, "monkeytype.sqlite3")
+         return SQLiteStore.make_store(db_path)
+ 
+@@ -138,14 +127,5 @@
+         return default_code_filter
+ 
+ 
+-def get_default_config() -> Config:
+-    """Use monkeytype_config.CONFIG if it exists, otherwise DefaultConfig().
+-
+-    monkeytype_config is not a module that is part of the monkeytype
+-    distribution, it must be created by the user.
+-    """
+-    try:
+-        import monkeytype_config  # type: ignore[import-not-found]
+-    except ImportError:
+-        return DefaultConfig()
+-    return monkeytype_config.CONFIG  # type: ignore[no-any-return]
++def get_default_config() ->Config:
++    return DefaultConfig()

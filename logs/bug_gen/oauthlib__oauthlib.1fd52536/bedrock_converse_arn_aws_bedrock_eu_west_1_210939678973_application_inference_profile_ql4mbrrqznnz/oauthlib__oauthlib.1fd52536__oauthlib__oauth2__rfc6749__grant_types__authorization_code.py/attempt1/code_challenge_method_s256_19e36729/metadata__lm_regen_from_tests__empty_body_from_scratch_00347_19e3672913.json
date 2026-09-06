@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the tests, I need to implement the S256 code challenge method according to RFC 7636. The S256 method works by:\n1. Taking the SHA256 hash of the verifier\n2. Base64url-encoding it (without padding)\n3. Comparing it to the challenge",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the tests, I need to implement the S256 code challenge method according to RFC 7636. The S256 method works by:\n1. Taking the SHA256 hash of the verifier\n2. Base64url-encoding it (without padding)\n3. Comparing it to the challenge\n\n```\ndef code_challenge_method_s256(verifier, challenge):\n    digest = hashlib.sha256(verifier.encode('ascii')).digest()\n    computed = base64.urlsafe_b64encode(digest).rstrip(b'=').decode('ascii')\n    return computed == challenge\n```",
+  "rewrite": "def code_challenge_method_s256(verifier, challenge):\n    digest = hashlib.sha256(verifier.encode('ascii')).digest()\n    computed = base64.urlsafe_b64encode(digest).rstrip(b'=').decode('ascii')\n    return computed == challenge",
+  "strategy": "lm_regen_from_tests"
+}

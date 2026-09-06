@@ -1,0 +1,38 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -146,20 +146,21 @@
+     pass
+ 
+ 
+-def get_newly_imported_items(
+-    stub_module: Module, source_module: Module
+-) -> List[ImportItem]:
+-    context = CodemodContext()
+-    gatherer = GatherImportsVisitor(context)
+-    stub_module.visit(gatherer)
+-    stub_imports = list(gatherer.symbol_mapping.values())
+-
+-    context = CodemodContext()
+-    gatherer = GatherImportsVisitor(context)
+-    source_module.visit(gatherer)
+-    source_imports = list(gatherer.symbol_mapping.values())
+-
+-    return list(set(stub_imports).difference(set(source_imports)))
++def get_newly_imported_items(stub_module: Module, source_module: Module
++    ) ->List[ImportItem]:
++    stub_imports = GatherImportsVisitor().visit(stub_module)
++    source_imports = GatherImportsVisitor().visit(source_module)
++    
++    # Convert source imports to a set for efficient lookup
++    source_import_set = set(source_imports)
++    
++    # Find imports that are in stub but not in source
++    newly_imported = []
++    for import_item in stub_imports:
++        if import_item not in source_import_set:
++            newly_imported.append(import_item)
++    
++    return newly_imported
+ 
+ 
+ def apply_stub_using_libcst(

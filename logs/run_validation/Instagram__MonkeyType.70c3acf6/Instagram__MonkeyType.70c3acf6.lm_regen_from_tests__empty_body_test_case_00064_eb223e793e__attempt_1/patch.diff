@@ -1,0 +1,458 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -107,116 +107,118 @@
+     return qualname.split(".")[0]
+ 
+ 
+-def get_imports_for_annotation(anno: Any) -> ImportMap:
+-    """Return the imports (module, name) needed for the type in the annotation"""
++def get_imports_for_annotation(anno: Any) ->ImportMap:
+     imports = ImportMap()
+-    if (
+-        anno is inspect.Parameter.empty
+-        or anno is inspect.Signature.empty
+-        or not (
+-            isinstance(anno, type) or is_any(anno) or is_union(anno) or is_generic(anno)
+-        )
+-        or anno.__module__ == "builtins"
+-    ):
+-        return imports
+-    if is_any(anno):
+-        imports["typing"].add("Any")
+-    elif _is_optional(anno):
+-        imports["typing"].add("Optional")
+-        elem_type = _get_optional_elem(anno)
+-        elem_imports = get_imports_for_annotation(elem_type)
+-        imports.merge(elem_imports)
++    if hasattr(anno, "__module__") and hasattr(anno, "__qualname__"):
++        if anno.__module__ in ("builtins",):
++            return imports
++        if anno.__module__ == "_io":
++            imports["io"].add(anno.__qualname__)
++        else:
++            imports[anno.__module__].add(anno.__qualname__)
++    elif is_forward_ref(anno):
++        # Forward references don't need imports
++        pass
+     elif is_generic(anno):
+-        if is_union(anno):
+-            imports["typing"].add("Union")
+-        else:
+-            imports[anno.__module__].add(
+-                _get_import_for_qualname(qualname_of_generic(anno))
+-            )
+-        elem_types = getattr(anno, "__args__", None) or []
+-        for et in elem_types:
+-            elem_imports = get_imports_for_annotation(et)
+-            imports.merge(elem_imports)
+-    else:
+-        name = _get_import_for_qualname(anno.__qualname__)
+-        imports[anno.__module__].add(name)
++        for arg in getattr(anno, "__args__", []):
++            if arg is not NoneType:
++                imports.merge(get_imports_for_annotation(arg))
++    elif is_union(anno):
++        for arg in anno.__args__:
++            if arg is not NoneType:
++                imports.merge(get_imports_for_annotation(arg))
++    elif isinstance(anno, type):
++        if anno.__module__ in ("builtins",):
++            return imports
++        if anno.__module__ == "_io":
++            imports["io"].add(anno.__qualname__)
++        else:
++            imports[anno.__module__].add(anno.__qualname__)
++    elif isinstance(anno, str):
++        # String annotations don't need imports
++        pass
+     return imports
+ 
+ 
+-def get_imports_for_signature(sig: inspect.Signature) -> ImportMap:
+-    """Return the imports (module, name) needed for all types in annotations"""
++def get_imports_for_signature(sig: inspect.Signature) ->ImportMap:
+     imports = ImportMap()
+     for param in sig.parameters.values():
+-        param_imports = get_imports_for_annotation(param.annotation)
+-        if not _is_optional(param.annotation) and param.default is None:
+-            imports["typing"].add("Optional")
+-        imports.merge(param_imports)
+-    return_imports = get_imports_for_annotation(sig.return_annotation)
+-    imports.merge(return_imports)
++        if param.annotation is not inspect.Parameter.empty:
++            imports.merge(get_imports_for_annotation(param.annotation))
++    if sig.return_annotation is not inspect.Signature.empty:
++        imports.merge(get_imports_for_annotation(sig.return_annotation))
+     return imports
+ 
+ 
+-def update_signature_args(
+-    sig: inspect.Signature,
+-    arg_types: Dict[str, type],
+-    has_self: bool,
+-    existing_annotation_strategy: ExistingAnnotationStrategy = ExistingAnnotationStrategy.REPLICATE,
+-) -> inspect.Signature:
+-    """Update argument annotations with the supplied types"""
+-    params = []
+-    for arg_idx, name in enumerate(sig.parameters):
+-        param = sig.parameters[name]
+-        typ = arg_types.get(name)
+-        typ = inspect.Parameter.empty if typ is None else typ
+-        is_self = has_self and arg_idx == 0
+-        annotated = param.annotation is not inspect.Parameter.empty
+-        if (
+-            annotated
+-            and existing_annotation_strategy == ExistingAnnotationStrategy.OMIT
+-        ):
+-            # generate no annotation for already-annotated args when generating
+-            # a stub to apply, avoiding the possibility of "incompatible
+-            # annotation" errors
+-            param = param.replace(annotation=inspect.Parameter.empty)
+-        # Don't touch existing annotations unless asked to ignore them
+-        if not is_self and (
+-            (existing_annotation_strategy == ExistingAnnotationStrategy.IGNORE)
+-            or not annotated
+-        ):
+-            param = param.replace(annotation=typ)
+-        params.append(param)
+-    return sig.replace(parameters=params)
+-
+-
+-def update_signature_return(
+-    sig: inspect.Signature,
+-    return_type: Optional[type] = None,
+-    yield_type: Optional[type] = None,
+-    existing_annotation_strategy: ExistingAnnotationStrategy = ExistingAnnotationStrategy.REPLICATE,
+-) -> inspect.Signature:
+-    """Update return annotation with the supplied types"""
+-    anno = sig.return_annotation
+-    if anno is not inspect.Signature.empty:
+-        # If generating a stub to apply and there's already a return type
+-        # annotation, generate a stub with no return type annotation, to avoid
+-        # the possibility of "incompatible annotation" errors.
+-        if existing_annotation_strategy == ExistingAnnotationStrategy.OMIT:
+-            return sig.replace(return_annotation=inspect.Signature.empty)
+-        # Don't change pre-existing annotations unless asked to
+-        if existing_annotation_strategy == ExistingAnnotationStrategy.REPLICATE:
++def update_signature_args(sig: inspect.Signature, arg_types: Dict[str, type
++    ], has_self: bool, existing_annotation_strategy:
++    ExistingAnnotationStrategy=ExistingAnnotationStrategy.REPLICATE
++    ) ->inspect.Signature:
++    new_params = []
++    for i, (param_name, param) in enumerate(sig.parameters.items()):
++        if i == 0 and has_self:
++            # Don't annotate the first argument of instance methods or class methods
++            new_params.append(param)
++        elif param_name in arg_types:
++            new_type = arg_types[param_name]
++            if existing_annotation_strategy == ExistingAnnotationStrategy.IGNORE:
++                # Always override with the new type
++                new_param = param.replace(annotation=new_type)
++                new_params.append(new_param)
++            elif existing_annotation_strategy == ExistingAnnotationStrategy.OMIT:
++                # Only add annotation if there wasn't one before
++                if param.annotation is inspect.Parameter.empty:
++                    new_param = param.replace(annotation=new_type)
++                    new_params.append(new_param)
++                else:
++                    new_params.append(param)
++            else:  # REPLICATE
++                # Keep existing annotation if present
++                if param.annotation is inspect.Parameter.empty:
++                    new_param = param.replace(annotation=new_type)
++                    new_params.append(new_param)
++                else:
++                    new_params.append(param)
++        else:
++            new_params.append(param)
++    return sig.replace(parameters=new_params)
++
++
++def update_signature_return(sig: inspect.Signature, return_type: Optional[
++    type]=None, yield_type: Optional[type]=None,
++    existing_annotation_strategy: ExistingAnnotationStrategy=
++    ExistingAnnotationStrategy.REPLICATE) ->inspect.Signature:
++    if return_type is None and yield_type is None:
++        return sig
++    
++    # If we're yielding, we need to create a Generator or Iterator
++    if yield_type is not None:
++        if return_type is not None:
++            # Both yield and return types specified
++            new_return_type = make_generator(yield_type, None, return_type)
++        else:
++            # Only yield type specified
++            new_return_type = make_iterator(yield_type)
++    else:
++        # Only return type specified
++        new_return_type = return_type
++    
++    # Handle existing annotation strategy
++    if existing_annotation_strategy == ExistingAnnotationStrategy.IGNORE:
++        # Always override with the new return type
++        return sig.replace(return_annotation=new_return_type)
++    elif existing_annotation_strategy == ExistingAnnotationStrategy.OMIT:
++        # Only add annotation if there wasn't one before
++        if sig.return_annotation is inspect.Signature.empty:
++            return sig.replace(return_annotation=new_return_type)
++        else:
+             return sig
+-    # NB: We cannot distinguish between functions that explicitly only
+-    # return None and those that do so implicitly. In the case of generator
+-    # functions both are typed as Iterator[<yield_type>]
+-    if (yield_type is not None) and (
+-        (return_type is None) or (return_type == NoneType)
+-    ):
+-        anno = make_iterator(yield_type)
+-    elif (yield_type is not None) and (return_type is not None):
+-        anno = make_generator(yield_type, NoneType, return_type)
+-    elif return_type is not None:
+-        anno = return_type
+-    return sig.replace(return_annotation=anno)
++    else:  # REPLICATE
++        # Keep existing annotation if present
++        if sig.return_annotation is inspect.Signature.empty:
++            return sig.replace(return_annotation=new_return_type)
++        else:
++            return sig
+ 
+ 
+ def shrink_traced_types(
+@@ -382,101 +384,49 @@
+     return RenderAnnotation().rewrite(anno)
+ 
+ 
+-def render_parameter(param: inspect.Parameter) -> str:
+-    """Convert a parameter into its stub representation.
+-
+-    NB: This is copied almost entirely from https://github.com/python/cpython/blob/3.6/Lib/inspect.py
+-    with the modification that it calls our own rendering functions for annotations.
+-
+-    TODO: push a patch upstream so we don't have to do this on Python 3.x.
+-    """
+-    kind = param.kind
+-    formatted = param.name
+-
+-    # Add annotation and default value
++def render_parameter(param: inspect.Parameter) ->str:
+     if param.annotation is not inspect.Parameter.empty:
+-        anno = param.annotation
+-        if not _is_optional(anno) and param.default is None:
+-            anno = Optional[anno]
+-        rendered = render_annotation(anno)
+-        formatted = "{}: {}".format(formatted, rendered)
+-
+-    if param.default is not inspect.Parameter.empty:
+-        formatted = "{} = ...".format(formatted)
+-
+-    if kind == inspect.Parameter.VAR_POSITIONAL:
+-        formatted = "*" + formatted
+-    elif kind == inspect.Parameter.VAR_KEYWORD:
+-        formatted = "**" + formatted
+-
+-    return formatted
+-
+-
+-def render_signature(
+-    sig: inspect.Signature, max_line_len: Optional[int] = None, prefix: str = ""
+-) -> str:
+-    """Convert a signature into its stub representation.
+-
+-    NB: This is copied almost entirely from https://github.com/python/cpython/blob/3.6/Lib/inspect.py
+-    with the modification that it calls our own rendering functions for annotations.
+-
+-    TODO: push a patch upstream so we don't have to do this on Python 3.x.
+-    """
+-    formatted_params = []
+-    render_pos_only_separator = False
+-    render_kw_only_separator = True
+-    for param in sig.parameters.values():
+-        formatted = render_parameter(param)
+-        kind = param.kind
+-
+-        if kind == inspect.Parameter.POSITIONAL_ONLY:
+-            render_pos_only_separator = True
+-        elif render_pos_only_separator:
+-            # It's not a positional-only parameter, and the flag
+-            # is set to 'True' (there were pos-only params before.)
+-            formatted_params.append("/")
+-            render_pos_only_separator = False
+-
+-        if kind == inspect.Parameter.VAR_POSITIONAL:
+-            # OK, we have an '*args'-like parameter, so we won't need
+-            # a '*' to separate keyword-only arguments
+-            render_kw_only_separator = False
+-        elif kind == inspect.Parameter.KEYWORD_ONLY and render_kw_only_separator:
+-            # We have a keyword-only parameter to render and we haven't
+-            # rendered an '*args'-like parameter before, so add a '*'
+-            # separator to the parameters list ("foo(arg1, *, arg2)" case)
+-            formatted_params.append("*")
+-            # This condition should be only triggered once, so
+-            # reset the flag
+-            render_kw_only_separator = False
+-
+-        formatted_params.append(formatted)
+-
+-    if render_pos_only_separator:
+-        # There were only positional-only parameters, hence the
+-        # flag was not reset to 'False'
+-        formatted_params.append("/")
+-
+-    rendered_return = ""
+-    if sig.return_annotation is not inspect.Signature.empty:
+-        anno = render_annotation(sig.return_annotation)
+-        rendered_return = " -> {}".format(anno)
+-
+-    # first try render it into one single line, if it doesn't exceed
+-    # the limit then just use it
+-    rendered_single_line = "({})".format(", ".join(formatted_params)) + rendered_return
+-    if max_line_len is None or len(rendered_single_line) <= max_line_len:
+-        return rendered_single_line
+-
+-    # add prefix to all lines except the first one
+-    rendered_multi_lines = ["("]
+-    for i, f_param in enumerate(formatted_params):
+-        line = "    " + f_param
+-        if i != len(formatted_params) - 1:
+-            line += ","
+-        rendered_multi_lines.append(prefix + line)
+-    rendered_multi_lines.append(prefix + ")" + rendered_return)
+-    return "\n".join(rendered_multi_lines)
++        annotation_str = render_annotation(param.annotation)
++        if param.default is not inspect.Parameter.empty:
++            default_str = repr(param.default)
++            return f"{param.name}: {annotation_str} = {default_str}"
++        else:
++            return f"{param.name}: {annotation_str}"
++    else:
++        if param.default is not inspect.Parameter.empty:
++            default_str = repr(param.default)
++            return f"{param.name} = {default_str}"
++        else:
++            return f"{param.name}"
++
++
++def render_signature(sig: inspect.Signature, max_line_len: Optional[int]=
++    None, prefix: str='') ->str:
++    # Get all parameters as strings
++    param_strings = [render_parameter(p) for p in sig.parameters.values()]
++    
++    # Check if we need to split across multiple lines
++    if max_line_len is not None:
++        # Calculate the length of the opening part of the signature
++        opening_len = len(prefix) + 4  # "def " + function name + "("
++        
++        # Try to fit everything on one line
++        if len(param_strings) > 0:
++            # Join parameters with commas and spaces
++            joined_params = ", ".join(param_strings)
++            if len(joined_params) + opening_len <= max_line_len:
++                return f"({joined_params})"
++        
++        # If we can't fit on one line, split parameters across multiple lines
++        if len(param_strings) > 0:
++            indented_params = [f"{prefix}    {p}" for p in param_strings]
++            return f"(\n{',\n'.join(indented_params)}\n{prefix})"
++    
++    # Default behavior: join parameters with commas
++    if len(param_strings) == 0:
++        return "()"
++    else:
++        return f"({', '.join(param_strings)})"
+ 
+ 
+ class AttributeStub(Stub):
+@@ -838,41 +788,59 @@
+     )
+ 
+ 
+-def build_module_stubs(entries: Iterable[FunctionDefinition]) -> Dict[str, ModuleStub]:
+-    """Given an iterable of function definitions, build the corresponding stubs"""
+-    mod_stubs: Dict[str, ModuleStub] = {}
++def build_module_stubs(entries: Iterable[FunctionDefinition]) ->Dict[str,
++    ModuleStub]:
++    # Group entries by module
++    module_entries: DefaultDict[str, List[FunctionDefinition]] = collections.defaultdict(list)
+     for entry in entries:
+-        path = entry.qualname.split(".")
+-        name = path.pop()
+-        class_path = path
+-        # TODO: Handle nested classes
+-        klass = None
+-        if len(class_path) > 0:
+-            klass = ".".join(class_path)
+-        if entry.module not in mod_stubs:
+-            mod_stubs[entry.module] = ModuleStub()
+-        mod_stub = mod_stubs[entry.module]
+-        imports = get_imports_for_signature(entry.signature)
+-        # Import TypedDict, if needed.
+-        if entry.typed_dict_class_stubs:
+-            imports["mypy_extensions"].add("TypedDict")
+-        func_stub = FunctionStub(
+-            name, entry.signature, entry.kind, list(imports.keys()), entry.is_async
+-        )
+-        # Don't need to import anything from the same module
+-        imports.pop(entry.module, None)
+-        mod_stub.imports_stub.imports.merge(imports)
+-        if klass is not None:
+-            if klass not in mod_stub.class_stubs:
+-                mod_stub.class_stubs[klass] = ClassStub(klass)
+-            class_stub = mod_stub.class_stubs[klass]
+-            class_stub.function_stubs[func_stub.name] = func_stub
+-        else:
+-            mod_stub.function_stubs[func_stub.name] = func_stub
+-
+-        mod_stub.typed_dict_class_stubs.extend(entry.typed_dict_class_stubs)
+-
+-    return mod_stubs
++        module_entries[entry.module].append(entry)
++    
++    result = {}
++    for module_name, entries_in_module in module_entries.items():
++        # Collect all function stubs
++        function_stubs = []
++        class_stubs = {}
++        imports = ImportMap()
++        typed_dict_class_stubs = []
++        
++        for entry in entries_in_module:
++            # Add imports needed for this entry
++            imports.merge(get_imports_for_signature(entry.signature))
++            
++            # Add typed dict class stubs
++            typed_dict_class_stubs.extend(entry.typed_dict_class_stubs)
++            
++            # Create function stub
++            func_stub = FunctionStub(
++                entry.qualname.split('.')[-1],
++                entry.signature,
++                entry.kind,
++                is_async=entry.is_async
++            )
++            function_stubs.append(func_stub)
++            
++            # For class methods, we also need to collect class stubs
++            if entry.kind in (FunctionKind.CLASS, FunctionKind.INSTANCE, 
++                             FunctionKind.STATIC, FunctionKind.PROPERTY):
++                # Extract class name from qualname
++                qualname_parts = entry.qualname.split('.')
++                if len(qualname_parts) > 1:
++                    class_name = qualname_parts[-2]
++                    if class_name not in class_stubs:
++                        class_stubs[class_name] = ClassStub(class_name)
++                    # Add function stub to class
++                    class_stubs[class_name].function_stubs[entry.qualname.split('.')[-1]] = func_stub
++        
++        # Create module stub
++        module_stub = ModuleStub(
++            function_stubs=function_stubs,
++            class_stubs=list(class_stubs.values()),
++            imports_stub=ImportBlockStub(imports),
++            typed_dict_class_stubs=typed_dict_class_stubs
++        )
++        result[module_name] = module_stub
++    
++    return result
+ 
+ 
+ def build_module_stubs_from_traces(

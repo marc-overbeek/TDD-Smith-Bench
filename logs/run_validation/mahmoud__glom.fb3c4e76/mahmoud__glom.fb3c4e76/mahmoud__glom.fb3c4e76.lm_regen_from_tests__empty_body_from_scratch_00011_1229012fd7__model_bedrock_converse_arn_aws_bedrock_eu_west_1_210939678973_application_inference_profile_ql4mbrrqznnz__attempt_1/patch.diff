@@ -1,0 +1,44 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1656,20 +1656,31 @@
+     return cur
+ 
+ 
++_assign_op(dest=cur, op=op, arg=arg, val=target, path=_t, scope=scope)
++
+ def _assign_op(dest, op, arg, val, path, scope):
+-    """helper method for doing the assignment on a T operation"""
+-    if op == '[':
+-        dest[arg] = val
+-    elif op == '.':
+-        setattr(dest, arg, val)
+-    elif op == 'P':
+-        _assign = scope[TargetRegistry].get_handler('assign', dest)
++    if op == '.':
+         try:
+-            _assign(dest, arg, val)
++            setattr(dest, arg, val)
+         except Exception as e:
+             raise PathAssignError(e, path, arg)
+-    else:  # pragma: no cover
+-        raise ValueError('unsupported T operation for assignment')
++    elif op == '[':
++        try:
++            dest[arg] = val
++        except Exception as e:
++            raise PathAssignError(e, path, arg)
++    elif op == 'P':
++        assign_handler = scope[TargetRegistry].get_handler('assign', dest, path=path)
++        if not assign_handler:
++            raise UnregisteredTarget('assign', type(dest), 
++                                     scope[TargetRegistry].get_type_map('assign'), 
++                                     path=path)
++        try:
++            assign_handler(dest, arg, val)
++        except Exception as e:
++            raise PathAssignError(e, path, arg)
++    else:
++        raise BadSpec(f'unsupported assignment operation: {op!r}')
+ 
+ 
+ def _extend_children(children, item, get_handler):

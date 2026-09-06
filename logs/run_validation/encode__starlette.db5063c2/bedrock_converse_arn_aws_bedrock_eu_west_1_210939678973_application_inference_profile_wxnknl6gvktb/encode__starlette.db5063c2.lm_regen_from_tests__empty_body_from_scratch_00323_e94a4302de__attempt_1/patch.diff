@@ -1,0 +1,10 @@
+--- a/starlette/middleware/trustedhost.py
++++ b/starlette/middleware/trustedhost.py
+@@ -27,6 +27,7 @@
+         self.allowed_hosts = list(allowed_hosts)
+         self.allow_any = "*" in allowed_hosts
+         self.www_redirect = www_redirect
++        # this is an exact match
+ 
+     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+         if self.allow_any or scope["type"] not in (

@@ -1,0 +1,92 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -173,47 +173,49 @@
+     )
+ 
+ 
+-def einsum_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-    """
+-    Count flops for the einsum operation.
+-    """
+-    # Inputs of einsum should be a list of length 2+.
+-    # Inputs[0] stores the equation used for einsum.
+-    # Inputs[1] stores the list of input shapes.
+-    # Inputs[2] optionally stores the optimized path of contraction.
+-    assert len(inputs) >= 2, len(inputs)
+-    equation = inputs[0].toIValue()
+-    # Get rid of white space in the equation string.
+-    equation = equation.replace(" ", "")
+-    input_shapes_jit = inputs[1].node().inputs()
+-    input_shapes = [get_shape(v) for v in input_shapes_jit]
+-
+-    # Re-map equation so that same equation with different alphabet
+-    # representations will look the same.
+-    letter_order = OrderedDict((k, 0) for k in equation if k.isalpha()).keys()
+-    mapping = {ord(x): 97 + i for i, x in enumerate(letter_order)}
+-    equation = equation.translate(mapping)
+-
+-    if equation == "abc,abd->acd":
+-        n, c, t = input_shapes[0]
+-        p = input_shapes[-1][-1]
+-        flop = n * c * t * p
+-        return flop
+-
+-    elif equation == "abc,adc->adb":
+-        n, t, g = input_shapes[0]
+-        c = input_shapes[-1][1]
+-        flop = n * t * g * c
+-        return flop
++def einsum_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:
++    # Get the equation from the first input (assuming it's a string)
++    equation = inputs[0].toIValue() if hasattr(inputs[0], 'toIValue') else str(inputs[0])
++    
++    # Parse the equation to determine input shapes and compute flops
++    # The equation format is like "nct,ncp->ntp" 
++    # We need to count operations based on the Einstein summation convention
++    
++    # Split the equation into input and output parts
++    input_eq, output_eq = equation.split('->')
++    input_terms = input_eq.split(',')
++    
++    # Get shapes of all input tensors
++    input_shapes = [get_shape(inp) for inp in inputs[1:]]
++    
++    # Find all unique dimensions across input terms
++    all_dims = set()
++    for term in input_terms:
++        for char in term:
++            all_dims.add(char)
++    
++    # Compute the total number of operations by multiplying all dimensions
++    # that appear in the input terms
++    total_flops = 1
++    # For each input tensor, multiply by all its dimensions
++    for shape in input_shapes:
++        if shape:
++            total_flops *= prod(shape)
++    
++    # However, for einsum, we should consider the actual computation
++    # The number of operations is the product of all dimensions that appear
++    # in the input terms (not necessarily all dimensions in all inputs)
++    
++    # Actually, let's reconsider - the correct approach is to compute
++    # the size of the output tensor, which represents the number of operations
++    # needed for einsum computation
++    output_shape = get_shape(outputs[0])
++    if output_shape:
++        output_size = prod(output_shape)
++        return output_size
+     else:
+-        np_arrs = [np.zeros(s) for s in input_shapes]
+-        optim = np.einsum_path(equation, *np_arrs, optimize="optimal")[1]
+-        for line in optim.split("\n"):
+-            if "optimized flop" in line.lower():
+-                # divided by 2 because we count MAC (multiply-add counted as one flop)
+-                flop = float(np.floor(float(line.split(":")[-1]) / 2))
+-                return flop
+-        raise NotImplementedError("Unsupported einsum operation.")
++        # Fallback to total flops if we can't determine output shape
++        return total_flops
+ 
+ 
+ def matmul_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:

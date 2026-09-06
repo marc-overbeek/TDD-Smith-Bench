@@ -1,0 +1,27 @@
+--- a/oauthlib/oauth2/rfc6749/utils.py
++++ b/oauthlib/oauth2/rfc6749/utils.py
+@@ -32,9 +32,22 @@
+ 
+ 
+ def params_from_uri(uri):
+-    params = dict(urldecode(urlparse(uri).query))
++    params = {}
++    parsed = urlparse(uri)
++    pairs = urldecode(parsed.query)
++    for k, v in pairs:
++        if k in params:
++            if isinstance(params[k], list):
++                params[k].append(v)
++            else:
++                params[k] = [params[k], v]
++        else:
++            params[k] = v
++    # Handle scope specially - split by space
+     if 'scope' in params:
+-        params['scope'] = scope_to_list(params['scope'])
++        scope = params['scope']
++        if isinstance(scope, str):
++            params['scope'] = scope_to_list(scope)
+     return params
+ 
+ 

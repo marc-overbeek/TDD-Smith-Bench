@@ -1,0 +1,27 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -905,21 +905,9 @@
+         return result
+ 
+     @staticmethod
+-    def _get_flat_row(action, info, _parse_path, keys_and_funcs, report_type_changes=True):
+-        for path, details in info.items():
+-            row = {'path': _parse_path(path), 'action': action}
+-            for key, new_key, func in keys_and_funcs:
+-                if key in details:
+-                    if func:
+-                        row[new_key] = func(details[key])
+-                    else:
+-                        row[new_key] = details[key]
+-            if report_type_changes:
+-                if 'value' in row and 'type' not in row:
+-                    row['type'] = type(row['value'])
+-                if 'old_value' in row and 'old_type' not in row:
+-                    row['old_type'] = type(row['old_value'])
+-            yield FlatDeltaRow(**row)
++    def _get_flat_row(action, info, _parse_path, keys_and_funcs,
++        report_type_changes=True):
++        pass
+ 
+     @staticmethod
+     def _from_flat_rows(flat_rows_list: List[FlatDeltaRow]):

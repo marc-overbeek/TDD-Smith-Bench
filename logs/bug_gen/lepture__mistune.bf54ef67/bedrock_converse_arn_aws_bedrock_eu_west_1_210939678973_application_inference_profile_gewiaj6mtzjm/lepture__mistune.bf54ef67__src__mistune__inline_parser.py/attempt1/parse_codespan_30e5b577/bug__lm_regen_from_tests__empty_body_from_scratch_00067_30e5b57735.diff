@@ -1,0 +1,11 @@
+--- a/src/mistune/inline_parser.py
++++ b/src/mistune/inline_parser.py
+@@ -298,7 +298,7 @@
+         marker = m.group(0)
+         # require same marker with same length at end
+ 
+-        pattern = re.compile(r'(.*?[^`])' + marker + r'(?!`)', re.S)
++        pattern = re.compile(r'(.*?[^`])' + re.escape(marker) + r'(?!`)', re.S)
+ 
+         pos = m.end()
+         m2 = pattern.match(state.src, pos)

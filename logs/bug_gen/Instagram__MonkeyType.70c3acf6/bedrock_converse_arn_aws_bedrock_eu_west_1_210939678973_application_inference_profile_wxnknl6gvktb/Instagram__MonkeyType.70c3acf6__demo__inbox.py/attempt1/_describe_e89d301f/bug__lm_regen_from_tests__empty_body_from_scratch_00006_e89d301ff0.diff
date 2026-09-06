@@ -1,0 +1,25 @@
+--- a/demo/inbox.py
++++ b/demo/inbox.py
+@@ -80,10 +80,21 @@
+         post_name = f'"{feedentry.caption}"'
+         if len(users) == 1:
+             return f"{users[0]} liked your post {post_name}."
+-
+         elif len(users) == 2:
+             return f"{users[0]} and {users[1]} liked your post {post_name}."
++        else:
++            return (
++                f"{users[0]}, {users[1]} and {len(users) - 2} others "
++                f"liked your post {post_name}."
++            )
+ 
++    def _describe(self, events, feedentry, users_by_id: Dict[UserId, User]):
++        users = [users_by_id[e.liker_id].name for e in events]
++        post_name = f'"{feedentry.caption}"'
++        if len(users) == 1:
++            return f"{users[0]} liked your post {post_name}."
++        elif len(users) == 2:
++            return f"{users[0]} and {users[1]} liked your post {post_name}."
+         else:
+             return (
+                 f"{users[0]}, {users[1]} and {len(users) - 2} others "

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef __init__(self, request_validator=None, **kwargs):\n    GrantTypeBase.__init__(self, request_validator, **kwargs)\n    self.proxy_target = OAuth2ImplicitGrant(\n        request_validator=request_validator, **kwargs)\n    self.register_response_type('id_token')\n    self.register_response_type('id_token token')\n    self.custom_validators.post_auth.append(\n        self.openid_authorization_validator)\n    self.register_token_modifier(self.add_id_token)\n\ndef add_id_token(self, token, token_handler, request):\n    if 'state' not in token and request.state:\n        token['state'] = request.state\n    return super().add_id_token(token, token_handler, request, nonce=request.nonce)\n```",
+  "rewrite": "def __init__(self, request_validator=None, **kwargs):\n    GrantTypeBase.__init__(self, request_validator, **kwargs)\n    self.proxy_target = OAuth2ImplicitGrant(\n        request_validator=request_validator, **kwargs)\n    self.register_response_type('id_token')\n    self.register_response_type('id_token token')\n    self.custom_validators.post_auth.append(\n        self.openid_authorization_validator)\n    self.register_token_modifier(self.add_id_token)\n\ndef add_id_token(self, token, token_handler, request):\n    if 'state' not in token and request.state:\n        token['state'] = request.state\n    return super().add_id_token(token, token_handler, request, nonce=request.nonce)",
+  "strategy": "lm_regen_from_tests_combined"
+}

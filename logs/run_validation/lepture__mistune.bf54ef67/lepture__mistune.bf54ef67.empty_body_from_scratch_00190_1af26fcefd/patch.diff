@@ -1,0 +1,34 @@
+--- a/src/mistune/renderers/markdown.py
++++ b/src/mistune/renderers/markdown.py
+@@ -42,29 +42,8 @@
+     def strong(self, token: Dict[str, Any], state: BlockState) -> str:
+         return '**' + self.render_children(token, state) + '**'
+ 
+-    def link(self, token: Dict[str, Any], state: BlockState) -> str:
+-        label = cast(str, token.get("label"))
+-        text = self.render_children(token, state)
+-        out = '[' + text + ']'
+-        if label:
+-            return out + '[' + label + ']'
+-
+-        attrs = token['attrs']
+-        url = attrs['url']
+-        title = attrs.get('title')
+-        if text == url and not title:
+-            return '<' + text + '>'
+-        elif 'mailto:' + text == url and not title:
+-            return '<' + text + '>'
+-
+-        out += '('
+-        if '(' in url or ')' in url:
+-            out += '<' + url + '>'
+-        else:
+-            out += url
+-        if title:
+-            out += ' "' + title + '"'
+-        return out + ')'
++    def link(self, token: Dict[str, Any], state: BlockState) ->str:
++        pass
+ 
+     def image(self, token: Dict[str, Any], state: BlockState) -> str:
+         return '!' + self.link(token, state)

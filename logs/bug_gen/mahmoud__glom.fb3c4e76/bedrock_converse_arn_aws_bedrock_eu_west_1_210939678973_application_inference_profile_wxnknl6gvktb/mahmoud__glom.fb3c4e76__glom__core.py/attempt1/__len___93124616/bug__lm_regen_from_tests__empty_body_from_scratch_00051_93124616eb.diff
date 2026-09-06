@@ -1,0 +1,17 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -671,6 +671,14 @@
+     def glomit(self, target, scope):
+         # The entrypoint for the Path extension
+         return _t_eval(target, self.path_t, scope)
++
++    def test_path_len():
++        assert len(Path()) == 0
++        assert len(Path('a', 'b', 'c')) == 3
++        assert len(Path.from_text('1.2.3.4')) == 4
++        assert len(Path(T)) == 0
++        assert len(Path(T.a.b.c)) == 3
++        assert len(Path(T.a()['b'].c.d)) == 5
+ 
+     def __len__(self):
+         return (len(self.path_t.__ops__) - 1) // 2

@@ -1,0 +1,218 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -470,11 +470,7 @@
+ 
+     """
+     def __init__(self, op, target_type, type_map, path):
+-        self.op = op
+-        self.target_type = target_type
+-        self.type_map = type_map
+-        self.path = path
+-        super().__init__(op, target_type, type_map, path)
++        pass
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__
+@@ -1919,36 +1915,11 @@
+ # spec is the first argument for convenience in the case
+ # that the handler is a method of the spec type
+ def _handle_dict(target, spec, scope):
+-    ret = type(spec)()  # TODO: works for dict + ordereddict, but sufficient for all?
+-    for field, subspec in spec.items():
+-        val = scope[glom](target, subspec, scope)
+-        if val is SKIP:
+-            continue
+-        if type(field) in (Spec, TType):
+-            field = scope[glom](target, field, scope)
+-        ret[field] = val
+-    return ret
++    pass
+ 
+ 
+ def _handle_list(target, spec, scope):
+-    subspec = spec[0]
+-    iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
+-    try:
+-        iterator = iterate(target)
+-    except Exception as e:
+-        raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+-                        % (target.__class__.__name__, Path(*scope[Path]), e))
+-    ret = []
+-    base_path = scope[Path]
+-    for i, t in enumerate(iterator):
+-        scope[Path] = base_path + [i]
+-        val = scope[glom](t, subspec, scope)
+-        if val is SKIP:
+-            continue
+-        if val is STOP:
+-            break
+-        ret.append(val)
+-    return ret
++    pass
+ 
+ 
+ def _handle_tuple(target, spec, scope):
+@@ -2184,116 +2155,7 @@
+ 
+ 
+ def glom(target, spec, **kwargs):
+-    """Access or construct a value from a given *target* based on the
+-    specification declared by *spec*.
+-
+-    Accessing nested data, aka deep-get:
+-
+-    >>> target = {'a': {'b': 'c'}}
+-    >>> glom(target, 'a.b')
+-    'c'
+-
+-    Here the *spec* was just a string denoting a path,
+-    ``'a.b'``. As simple as it should be. You can also use 
+-    :mod:`glob`-like wildcard selectors:
+-
+-    >>> target = {'a': [{'k': 'v1'}, {'k': 'v2'}]}
+-    >>> glom(target, 'a.*.k')
+-    ['v1', 'v2']
+-
+-    In addition to ``*``, you can also use ``**`` for recursive access:
+-
+-    >>> target = {'a': [{'k': 'v3'}, {'k': 'v4'}], 'k': 'v0'}
+-    >>> glom(target, '**.k')
+-    ['v0', 'v3', 'v4']
+-    
+-    The next example shows how to use nested data to 
+-    access many fields at once, and make a new nested structure.
+-
+-    Constructing, or restructuring more-complicated nested data:
+-
+-    >>> target = {'a': {'b': 'c', 'd': 'e'}, 'f': 'g', 'h': [0, 1, 2]}
+-    >>> spec = {'a': 'a.b', 'd': 'a.d', 'h': ('h', [lambda x: x * 2])}
+-    >>> output = glom(target, spec)
+-    >>> pprint(output)
+-    {'a': 'c', 'd': 'e', 'h': [0, 2, 4]}
+-
+-    ``glom`` also takes a keyword-argument, *default*. When set,
+-    if a ``glom`` operation fails with a :exc:`GlomError`, the
+-    *default* will be returned, very much like
+-    :meth:`dict.get()`:
+-
+-    >>> glom(target, 'a.xx', default='nada')
+-    'nada'
+-
+-    The *skip_exc* keyword argument controls which errors should
+-    be ignored.
+-
+-    >>> glom({}, lambda x: 100.0 / len(x), default=0.0, skip_exc=ZeroDivisionError)
+-    0.0
+-
+-    Args:
+-       target (object): the object on which the glom will operate.
+-       spec (object): Specification of the output object in the form
+-         of a dict, list, tuple, string, other glom construct, or
+-         any composition of these.
+-       default (object): An optional default to return in the case
+-         an exception, specified by *skip_exc*, is raised.
+-       skip_exc (Exception): An optional exception or tuple of
+-         exceptions to ignore and return *default* (None if
+-         omitted). If *skip_exc* and *default* are both not set,
+-         glom raises errors through.
+-       scope (dict): Additional data that can be accessed
+-         via S inside the glom-spec. Read more: :ref:`scope`.
+-
+-    It's a small API with big functionality, and glom's power is
+-    only surpassed by its intuitiveness. Give it a whirl!
+-
+-    """
+-    # TODO: check spec up front
+-    default = kwargs.pop('default', None if 'skip_exc' in kwargs else _MISSING)
+-    skip_exc = kwargs.pop('skip_exc', () if default is _MISSING else GlomError)
+-    glom_debug = kwargs.pop('glom_debug', GLOM_DEBUG)
+-    scope = _DEFAULT_SCOPE.new_child({
+-        Path: kwargs.pop('path', []),
+-        Inspect: kwargs.pop('inspector', None),
+-        MODE: AUTO,
+-        MIN_MODE: None,
+-        CHILD_ERRORS: [],
+-        'globals': ScopeVars({}, {}),
+-    })
+-    scope[UP] = scope
+-    scope[ROOT] = scope
+-    scope[T] = target
+-    scope.update(kwargs.pop('scope', {}))
+-    err = None
+-    if kwargs:
+-        raise TypeError('unexpected keyword args: %r' % sorted(kwargs.keys()))
+-    try:
+-        try:
+-            ret = _glom(target, spec, scope)
+-        except skip_exc:
+-            if default is _MISSING:
+-                raise
+-            ret = default  # should this also be arg_val'd?
+-    except Exception as e:
+-        if glom_debug:
+-            raise
+-        if isinstance(e, GlomError):
+-            # need to change id or else py3 seems to not let us truncate the
+-            # stack trace with the explicit "raise err" below
+-            err = copy.copy(e)
+-            err._set_wrapped(e)
+-        else:
+-            err = GlomError.wrap(e)
+-        if isinstance(err, GlomError):
+-            err._finalize(scope[LAST_CHILD_SCOPE])
+-        else:  # wrapping failed, fall back to default behavior
+-            raise
+-
+-    if err:
+-        raise err
+-    return ret
++    pass
+ 
+ 
+ def chain_child(scope):
+@@ -2463,43 +2325,10 @@
+ 
+     """
+     def __init__(self, **kwargs):
+-        register_default_types = kwargs.pop('register_default_types', True)
+-        scope = kwargs.pop('scope', _DEFAULT_SCOPE)
+-
+-        # this "freezes" the scope in at the time of construction
+-        self.scope = ChainMap(dict(scope))
+-        self.scope[TargetRegistry] = TargetRegistry(register_default_types=register_default_types)
++        pass
+ 
+     def register(self, target_type, **kwargs):
+-        """Register *target_type* so :meth:`~Glommer.glom()` will
+-        know how to handle instances of that type as targets.
+-
+-        Args:
+-           target_type (type): A type expected to appear in a glom()
+-              call target
+-           get (callable): A function which takes a target object and
+-              a name, acting as a default accessor. Defaults to
+-              :func:`getattr`.
+-           iterate (callable): A function which takes a target object
+-              and returns an iterator. Defaults to :func:`iter` if
+-              *target_type* appears to be iterable.
+-           exact (bool): Whether or not to match instances of subtypes
+-              of *target_type*.
+-
+-        .. note::
+-
+-           The module-level :func:`register()` function affects the
+-           module-level :func:`glom()` function's behavior. If this
+-           global effect is undesirable for your application, or
+-           you're implementing a library, consider instantiating a
+-           :class:`Glommer` instance, and using the
+-           :meth:`~Glommer.register()` and :meth:`Glommer.glom()`
+-           methods instead.
+-
+-        """
+-        exact = kwargs.pop('exact', False)
+-        self.scope[TargetRegistry].register(target_type, exact=exact, **kwargs)
+-        return
++        pass
+ 
+     def glom(self, target, spec, **kwargs):
+         return glom(target, spec, scope=self.scope, **kwargs)

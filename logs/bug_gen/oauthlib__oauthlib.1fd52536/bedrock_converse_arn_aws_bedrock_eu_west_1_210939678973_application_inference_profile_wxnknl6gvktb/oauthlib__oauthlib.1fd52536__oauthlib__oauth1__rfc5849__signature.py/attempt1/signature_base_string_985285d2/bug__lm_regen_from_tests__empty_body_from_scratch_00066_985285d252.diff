@@ -1,0 +1,93 @@
+--- a/oauthlib/oauth1/rfc5849/signature.py
++++ b/oauthlib/oauth1/rfc5849/signature.py
+@@ -52,55 +52,41 @@
+ 
+ # ==== Common functions ==========================================
+ 
+-def signature_base_string(
+-        http_method: str,
+-        base_str_uri: str,
+-        normalized_encoded_request_parameters: str) -> str:
+-    """
+-    Construct the signature base string.
+-
+-    The *signature base string* is the value that is calculated and signed by
+-    the client. It is also independently calculated by the server to verify
+-    the signature, and therefore must produce the exact same value at both
+-    ends or the signature won't verify.
+-
+-    The rules for calculating the *signature base string* are defined in
+-    section 3.4.1.1`_ of RFC 5849.
+-
+-    .. _`section 3.4.1.1`: https://tools.ietf.org/html/rfc5849#section-3.4.1.1
+-    """
+-
+-    # The signature base string is constructed by concatenating together,
+-    # in order, the following HTTP request elements:
+-
+-    # 1.  The HTTP request method in uppercase.  For example: "HEAD",
+-    #     "GET", "POST", etc.  If the request uses a custom HTTP method, it
+-    #     MUST be encoded (`Section 3.6`_).
+-    #
+-    # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    base_string = utils.escape(http_method.upper())
+-
+-    # 2.  An "&" character (ASCII code 38).
+-    base_string += '&'
+-
+-    # 3.  The base string URI from `Section 3.4.1.2`_, after being encoded
+-    #     (`Section 3.6`_).
+-    #
+-    # .. _`Section 3.4.1.2`: https://tools.ietf.org/html/rfc5849#section-3.4.1.2
+-    # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    base_string += utils.escape(base_str_uri)
+-
+-    # 4.  An "&" character (ASCII code 38).
+-    base_string += '&'
+-
+-    # 5.  The request parameters as normalized in `Section 3.4.1.3.2`_, after
+-    #     being encoded (`Section 3.6`).
+-    #
+-    # .. _`Sec 3.4.1.3.2`: https://tools.ietf.org/html/rfc5849#section-3.4.1.3.2
+-    # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    base_string += utils.escape(normalized_encoded_request_parameters)
+-
+-    return base_string
++def signature_base_string(http_method: str, base_str_uri: str,
++    normalized_encoded_request_parameters: str) ->str:
++    """
++    Calculates the signature base string.
++
++    The *signature base string* is one of the components that make up the
++    signature. It is constructed by concatenating together, in order, the
++    following HTTP request elements:
++
++    1. The HTTP request method in uppercase.
++    2. An "&" character (ASCII code 38).
++    3. The base string URI from `Section 3.4.1.2`_, after being encoded
++       (`Section 3.6`_).
++    4. An "&" character (ASCII code 38).
++    5. The request parameters as normalized in `Section 3.4.1.3.2`_, after
++       being encoded (`Section 3.6`_).
++
++    .. _`Section 3.4.1.2`: https://tools.ietf.org/html/rfc5849#section-3.4.1.2
++    .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
++    .. _`Section 3.4.1.3.2`: https://tools.ietf.org/html/rfc5849#section-3.4.1.3.2
++    """
++    # Construct the signature base string by concatenating:
++    # 1. HTTP method (uppercase)
++    # 2. "&"
++    # 3. Percent-encoded base string URI
++    # 4. "&"
++    # 5. Percent-encoded normalized parameters
++    
++    base_string_parts = [
++        http_method.upper(),
++        utils.escape(base_str_uri),
++        utils.escape(normalized_encoded_request_parameters)
++    ]
++    
++    return '&'.join(base_string_parts)
+ 
+ 
+ def base_string_uri(uri: str, host: str = None) -> str:

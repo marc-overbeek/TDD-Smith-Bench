@@ -1,0 +1,18 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -375,8 +375,14 @@
+     return numpy_dtype_str_to_type[dtype_str]
+ 
+ 
++ddiff1 = DeepDiff({'a': None}, {'a': 1}, ignore_type_subclasses=True,
++    ignore_type_in_groups=[(int, float)])
++
++{'type_changes': {"root['a']": {'old_type': type(None),
++    'new_type': int, 'old_value': None, 'new_value': 1}}}
++
+ def type_in_type_group(item, type_group):
+-    return get_type(item) in type_group
++    return item in type_group or type(item) in type_group
+ 
+ 
+ def type_is_subclass_of_type_group(item, type_group):

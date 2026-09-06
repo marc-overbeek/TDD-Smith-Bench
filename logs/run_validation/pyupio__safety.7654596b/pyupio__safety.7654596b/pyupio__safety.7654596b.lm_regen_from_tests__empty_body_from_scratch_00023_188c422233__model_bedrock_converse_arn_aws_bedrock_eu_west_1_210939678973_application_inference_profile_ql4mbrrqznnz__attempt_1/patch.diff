@@ -1,0 +1,118 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -423,48 +423,74 @@
+ 
+     return req.url
+ 
+-def get_processed_options(policy_file: Dict[str, Any], ignore: Dict[str, Any], ignore_severity_rules: Dict[str, Any],
+-    exit_code: bool, ignore_unpinned_requirements: Optional[bool] = None,
+-    project: Optional[str] = None) -> Tuple[Dict[str, Any], Dict[str, Any], bool, Optional[bool], Optional[str]]:
+-    """
+-    Get processed options from the policy file.
+-
+-    Args:
+-        policy_file (Dict[str, Any]): The policy file.
+-        ignore (Dict[str, Any]): The ignore settings.
+-        ignore_severity_rules (Dict[str, Any]): The ignore severity rules.
+-        exit_code (bool): The exit code setting.
+-        ignore_unpinned_requirements (Optional[bool]): The ignore unpinned requirements setting.
+-        project (Optional[str]): The project setting.
+-
+-    Returns:
+-        Tuple[Dict[str, Any], Dict[str, Any], bool, Optional[bool], Optional[str]]: The processed options.
+-    """
++def get_processed_options(policy_file: Dict[str, Any], ignore: Dict[str,
++    Any], ignore_severity_rules: Dict[str, Any], exit_code: bool,
++    ignore_unpinned_requirements: Optional[bool]=None, project: Optional[
++    str]=None) ->Tuple[Dict[str, Any], Dict[str, Any], bool, Optional[bool],
++    Optional[str]]:
++    ignore_unpinned_packages = ignore_unpinned_requirements
++    
+     if policy_file:
+-        project_config = policy_file.get('project', {})
+-        security = policy_file.get('security', {})
+-        ctx = click.get_current_context()
+-        source = ctx.get_parameter_source("exit_code")
+-
+-        if not project:
+-            project_id = project_config.get('id', None)
+-            if not project_id:
+-                project_id = None
+-            project = project_id
+-
+-        if ctx.get_parameter_source("ignore_unpinned_requirements") == click.core.ParameterSource.DEFAULT:
+-            ignore_unpinned_requirements = security.get('ignore-unpinned-requirements', None)
+-
+-        if not ignore:
+-            ignore = security.get('ignore-vulnerabilities', {})
+-        if source == click.core.ParameterSource.DEFAULT:
+-            exit_code = not security.get('continue-on-vulnerability-error', False)
+-        ignore_cvss_below = security.get('ignore-cvss-severity-below', 0.0)
+-        ignore_cvss_unknown = security.get('ignore-cvss-unknown-severity', False)
+-        ignore_severity_rules = {'ignore-cvss-severity-below': ignore_cvss_below,
+-                                 'ignore-cvss-unknown-severity': ignore_cvss_unknown}
+-
+-    return ignore, ignore_severity_rules, exit_code, ignore_unpinned_requirements, project
++        security_pf = policy_file.get('security', {})
++        
++        # Handle ignore vulnerabilities
++        # Check if CLI ignore was provided via COMMANDLINE source
++        ctx = click.get_current_context(silent=True)
++        ignore_source = None
++        exit_code_source = None
++        
++        if ctx:
++            try:
++                ignore_source = ctx.get_parameter_source('ignore')
++            except Exception:
++                pass
++            try:
++                exit_code_source = ctx.get_parameter_source('exit_code')
++            except Exception:
++                pass
++        
++        # Merge ignore: if CLI provided ignores (non-empty), use CLI ignores
++        # otherwise use policy file ignores
++        policy_ignores = security_pf.get('ignore-vulnerabilities', {})
++        if ignore:
++            # CLI ignores take precedence
++            pass
++        else:
++            ignore = policy_ignores
++        
++        # Handle severity rules from policy file
++        severity_rules = {
++            'ignore-cvss-severity-below': security_pf.get('ignore-cvss-severity-below', 0.0),
++            'ignore-cvss-unknown-severity': security_pf.get('ignore-cvss-unknown-severity', False)
++        }
++        if ignore_severity_rules is None:
++            ignore_severity_rules = severity_rules
++        
++        # Handle exit_code: CLI COMMANDLINE source overrides policy file
++        if exit_code_source == click.core.ParameterSource.COMMANDLINE:
++            # CLI exit_code takes precedence
++            pass
++        else:
++            # Use policy file's continue-on-vulnerability-error (inverted)
++            continue_on_error = security_pf.get('continue-on-vulnerability-error', None)
++            if continue_on_error is not None:
++                exit_code = not continue_on_error
++        
++        # Handle ignore_unpinned_requirements from policy file
++        if ignore_unpinned_packages is None:
++            ignore_unpinned_packages = security_pf.get('ignore-unpinned-requirements', None)
++        
++        # Handle project from policy file
++        if project is None:
++            project = policy_file.get('project', None)
++    
++    if ignore_severity_rules is None:
++        ignore_severity_rules = {
++            'ignore-cvss-severity-below': 0.0,
++            'ignore-cvss-unknown-severity': False
++        }
++    
++    return ignore, ignore_severity_rules, exit_code, ignore_unpinned_packages, project
+ 
+ 
+ def get_fix_options(policy_file: Dict[str, Any], auto_remediation_limit: int) -> int:

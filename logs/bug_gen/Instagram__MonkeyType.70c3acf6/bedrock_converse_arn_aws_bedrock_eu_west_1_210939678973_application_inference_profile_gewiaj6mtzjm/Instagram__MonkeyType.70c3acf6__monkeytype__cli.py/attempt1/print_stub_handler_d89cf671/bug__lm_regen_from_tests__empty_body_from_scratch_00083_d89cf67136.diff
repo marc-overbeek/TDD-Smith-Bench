@@ -1,0 +1,34 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -248,20 +248,20 @@
+     return "\n\n\n".join(diff)
+ 
+ 
+-def print_stub_handler(
+-    args: argparse.Namespace, stdout: IO[str], stderr: IO[str]
+-) -> None:
+-    output, file = None, stdout
++def print_stub_handler(args: argparse.Namespace, stdout: IO[str], stderr:
++    IO[str]) ->None:
+     if args.diff:
+-        output = get_diff(args, stdout, stderr)
++        diff = get_diff(args, stdout, stderr)
++        if diff is None:
++            complain_about_no_traces(args, stderr)
++        else:
++            print(diff, file=stdout)
+     else:
+         stub = get_stub(args, stdout, stderr)
+-        if stub is not None:
+-            output = stub.render()
+-    if output is None:
+-        complain_about_no_traces(args, stderr)
+-        return
+-    print(output, file=file)
++        if stub is None:
++            complain_about_no_traces(args, stderr)
++        else:
++            print(stub.render(), file=stdout)
+ 
+ 
+ def list_modules_handler(

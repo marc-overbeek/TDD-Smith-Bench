@@ -1,0 +1,56 @@
+--- a/safety/formatters/json.py
++++ b/safety/formatters/json.py
+@@ -76,32 +76,32 @@
+         self.version: str = version if version in self.VERSIONS else "1.1"
+ 
+     def render_vulnerabilities(self, announcements: List[Dict], vulnerabilities: List[Dict],
+-                               remediations: Dict[str, Any], full: bool, packages: List[Any], fixes: Iterable = ()) -> str:
+-        """
+-        Render vulnerabilities in JSON format.
++                                   remediations: Dict[str, Any], full: bool, packages: List[Any], fixes: Iterable = ()) -> str:
++            """
++            Render vulnerabilities in JSON format.
+ 
+-        Args:
+-            announcements (List[Dict]): List of announcements.
+-            vulnerabilities (List[Dict]): List of vulnerabilities.
+-            remediations (Dict[str, Any]): Remediation data.
+-            full (bool): Flag indicating full output.
+-            packages (List[Any]): List of packages.
+-            fixes (Iterable, optional): Iterable of fixes.
++            Args:
++                announcements (List[Dict]): List of announcements.
++                vulnerabilities (List[Dict]): List of vulnerabilities.
++                remediations (Dict[str, Any]): Remediation data.
++                full (bool): Flag indicating full output.
++                packages (List[Any]): List of packages.
++                fixes (Iterable, optional): Iterable of fixes.
+ 
+-        Returns:
+-            str: Rendered JSON vulnerabilities report.
+-        """
+-        if self.version == '0.5':
+-            return json_parser.dumps(VulnerabilitySchemaV05().dump(obj=vulnerabilities, many=True), indent=4)
++            Returns:
++                str: Rendered JSON vulnerabilities report.
++            """
++            if self.version == '0.5':
++                return json_parser.dumps(VulnerabilitySchemaV05().dump(obj=vulnerabilities, many=True), indent=4)
+ 
+-        remediations_recommended = len(remediations.keys())
+-        LOG.debug('Rendering %s vulnerabilities, %s package remediations with full_report: %s', len(vulnerabilities),
+-                  remediations_recommended, full)
++            remediations_recommended = len(remediations.keys())
++            LOG.debug('Rendering %s vulnerabilities, %s package remediations with full_report: %s', len(vulnerabilities),
++                      remediations_recommended, full)
+ 
+-        report = build_json_report(announcements, vulnerabilities, remediations, packages)
+-        template = self.__render_fixes(report, fixes)
++            report = build_json_report(announcements, vulnerabilities, remediations, packages)
++            template = self.__render_fixes(report, fixes)
+ 
+-        return json_parser.dumps(template, indent=4, cls=SafetyEncoder)
++            return json_parser.dumps(template, indent=4, cls=SafetyEncoder)
+ 
+     def render_licenses(self, announcements: List[Dict], licenses: List[Dict]) -> str:
+         """

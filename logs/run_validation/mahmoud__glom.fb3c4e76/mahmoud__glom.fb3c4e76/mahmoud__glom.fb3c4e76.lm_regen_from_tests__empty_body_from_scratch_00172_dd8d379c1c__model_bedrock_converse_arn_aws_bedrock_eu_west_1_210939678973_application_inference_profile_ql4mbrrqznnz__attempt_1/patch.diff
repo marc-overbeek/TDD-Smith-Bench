@@ -1,0 +1,21 @@
+--- a/glom/cli.py
++++ b/glom/cli.py
+@@ -231,11 +231,13 @@
+ 
+ 
+ def _compile_code(code_str, name, env=None, verbose=False):
+-    code = compile(code_str, '<glom-generated code>', 'single')
+-    if verbose:
+-        print(code_str)
+     if env is None:
+         env = {}
+-    exec(code, env)
+-
++    try:
++        code = compile(code_str, '<cli_spec>', 'exec')
++        exec(code, env)
++    except Exception as e:
++        if verbose:
++            raise
++        raise UsageError(f'could not compile spec, got: {e.__class__.__name__}: {e}')
+     return env[name]

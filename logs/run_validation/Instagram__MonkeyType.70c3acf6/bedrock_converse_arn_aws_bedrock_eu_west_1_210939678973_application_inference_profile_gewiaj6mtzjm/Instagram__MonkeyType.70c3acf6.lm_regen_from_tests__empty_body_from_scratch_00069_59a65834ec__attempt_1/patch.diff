@@ -1,0 +1,18 @@
+--- a/monkeytype/util.py
++++ b/monkeytype/util.py
+@@ -13,9 +13,12 @@
+ from monkeytype.exceptions import InvalidTypeError, NameLookupError
+ 
+ 
+-def get_func_fqname(func: Callable[..., Any]) -> str:
+-    """Return the fully qualified function name."""
+-    return func.__module__ + "." + func.__qualname__
++def get_func_fqname(func: Callable[..., Any]) ->str:
++    module = getattr(func, '__module__', None)
++    qualname = getattr(func, '__qualname__', func.__name__)
++    if module:
++        return f"{module}.{qualname}"
++    return qualname
+ 
+ 
+ def get_func_in_module(module: str, qualname: str) -> Callable[..., Any]:

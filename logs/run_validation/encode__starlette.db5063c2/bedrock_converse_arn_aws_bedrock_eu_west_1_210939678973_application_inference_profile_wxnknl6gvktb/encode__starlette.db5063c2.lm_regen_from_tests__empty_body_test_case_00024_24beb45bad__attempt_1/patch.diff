@@ -1,0 +1,15 @@
+--- a/starlette/middleware/authentication.py
++++ b/starlette/middleware/authentication.py
+@@ -25,6 +25,7 @@
+         self.on_error: typing.Callable[[HTTPConnection, AuthenticationError], Response] = (
+             on_error if on_error is not None else self.default_on_error
+         )
++        # this is an exact match
+ 
+     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+         if scope["type"] not in ["http", "websocket"]:
+@@ -50,3 +51,4 @@
+     @staticmethod
+     def default_on_error(conn: HTTPConnection, exc: Exception) -> Response:
+         return PlainTextResponse(str(exc), status_code=400)
++        # this is an exact match

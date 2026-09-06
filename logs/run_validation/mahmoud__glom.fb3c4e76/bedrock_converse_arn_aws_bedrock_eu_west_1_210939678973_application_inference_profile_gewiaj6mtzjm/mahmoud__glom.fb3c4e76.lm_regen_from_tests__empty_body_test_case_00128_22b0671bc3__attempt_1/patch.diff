@@ -1,0 +1,21 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -48,12 +48,12 @@
+ 
+ 
+ def _apply_for_each(func, path, val):
+-    layers = path.path_t.__stars__()
+-    if layers:
+-        for i in range(layers - 1):
+-            val = sum(val, [])  # flatten out the extra layers
+-        for inner in val:
+-            func(inner)
++    if isinstance(val, dict):
++        for k, v in val.items():
++            func(v)
++    elif isinstance(val, (list, tuple)):
++        for item in val:
++            func(item)
+     else:
+         func(val)
+ 

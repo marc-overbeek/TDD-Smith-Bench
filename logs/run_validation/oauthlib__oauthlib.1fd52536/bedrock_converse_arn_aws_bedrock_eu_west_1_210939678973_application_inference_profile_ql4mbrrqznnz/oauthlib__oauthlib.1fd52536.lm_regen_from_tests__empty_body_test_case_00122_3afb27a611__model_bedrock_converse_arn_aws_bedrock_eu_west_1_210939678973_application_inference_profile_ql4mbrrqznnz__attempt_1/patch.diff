@@ -1,0 +1,96 @@
+--- a/oauthlib/oauth2/rfc6749/grant_types/base.py
++++ b/oauthlib/oauth2/rfc6749/grant_types/base.py
+@@ -135,19 +135,12 @@
+         raise NotImplementedError('Subclasses must implement this method.')
+ 
+     def add_token(self, token, token_handler, request):
+-        """
+-        :param token:
+-        :param token_handler: A token handler instance, for example of type
+-                              oauthlib.oauth2.BearerToken.
+-        :param request: OAuthlib request.
+-        :type request: oauthlib.common.Request
+-        """
+-        # Only add a hybrid access token on auth step if asked for
+-        if request.response_type not in ["token", "code token", "id_token token", "code id_token token"]:
++            # Only add a hybrid access token on auth step if asked for
++            if request.response_type not in ["token", "code token", "id_token token", "code id_token token"]:
++                return token
++
++            token.update(token_handler.create_token(request, refresh_token=False))
+             return token
+-
+-        token.update(token_handler.create_token(request, refresh_token=False))
+-        return token
+ 
+     def validate_grant_type(self, request):
+         """
+@@ -176,43 +169,31 @@
+             raise errors.InvalidScopeError(request=request)
+ 
+     def prepare_authorization_response(self, request, token, headers, body, status):
+-        """Place token according to response mode.
+-
+-        Base classes can define a default response mode for their authorization
+-        response by overriding the static `default_response_mode` member.
+-
+-        :param request: OAuthlib request.
+-        :type request: oauthlib.common.Request
+-        :param token:
+-        :param headers:
+-        :param body:
+-        :param status:
+-        """
+-        request.response_mode = request.response_mode or self.default_response_mode
+-
+-        if request.response_mode not in ('query', 'fragment'):
+-            log.debug('Overriding invalid response mode %s with %s',
+-                      request.response_mode, self.default_response_mode)
+-            request.response_mode = self.default_response_mode
+-
+-        token_items = token.items()
+-
+-        if request.response_type == 'none':
+-            state = token.get('state', None)
+-            token_items = [('state', state)] if state else []
+-
+-        if request.response_mode == 'query':
+-            headers['Location'] = add_params_to_uri(
+-                request.redirect_uri, token_items, fragment=False)
+-            return headers, body, status
+-
+-        if request.response_mode == 'fragment':
+-            headers['Location'] = add_params_to_uri(
+-                request.redirect_uri, token_items, fragment=True)
+-            return headers, body, status
+-
+-        raise NotImplementedError(
+-            'Subclasses must set a valid default_response_mode')
++            request.response_mode = request.response_mode or self.default_response_mode
++
++            if request.response_mode not in ('query', 'fragment'):
++                log.debug('Overriding invalid response mode %s with %s',
++                          request.response_mode, self.default_response_mode)
++                request.response_mode = self.default_response_mode
++
++            token_items = token.items()
++
++            if request.response_type == 'none':
++                state = token.get('state', None)
++                token_items = [('state', state)] if state else []
++
++            if request.response_mode == 'query':
++                headers['Location'] = add_params_to_uri(
++                    request.redirect_uri, token_items, fragment=False)
++                return headers, body, status
++
++            if request.response_mode == 'fragment':
++                headers['Location'] = add_params_to_uri(
++                    request.redirect_uri, token_items, fragment=True)
++                return headers, body, status
++
++            raise NotImplementedError(
++                'Subclasses must set a valid default_response_mode')
+ 
+     def _get_default_headers(self):
+         """Create default headers for grant responses."""

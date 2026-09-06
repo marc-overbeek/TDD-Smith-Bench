@@ -1,0 +1,51 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -225,27 +225,30 @@
+     print(source_with_types, file=stdout)
+ 
+ 
+-def get_diff(
+-    args: argparse.Namespace, stdout: IO[str], stderr: IO[str]
+-) -> Optional[str]:
++def get_diff(args: argparse.Namespace, stdout: IO[str], stderr: IO[str]
++    ) ->Optional[str]:
++    # Generate stub with existing annotations replicated
++    original_strategy = args.existing_annotation_strategy
+     args.existing_annotation_strategy = ExistingAnnotationStrategy.REPLICATE
+-    stub = get_stub(args, stdout, stderr)
++    stub_with_existing = get_stub(args, stdout, stderr)
++    
++    # Generate stub ignoring existing annotations
+     args.existing_annotation_strategy = ExistingAnnotationStrategy.IGNORE
+-    stub_ignore_anno = get_stub(args, stdout, stderr)
+-    if stub is None or stub_ignore_anno is None:
++    stub_without_existing = get_stub(args, stdout, stderr)
++    
++    # Restore original strategy
++    args.existing_annotation_strategy = original_strategy
++    
++    if stub_with_existing is None or stub_without_existing is None:
+         return None
+-    diff = []
+-    seq1 = (s + "\n" for s in stub.render().split("\n\n\n"))
+-    seq2 = (s + "\n" for s in stub_ignore_anno.render().split("\n\n\n"))
+-    for stub1, stub2 in zip(seq1, seq2):
+-        if stub1 != stub2:
+-            stub_diff = "".join(
+-                difflib.ndiff(
+-                    stub1.splitlines(keepends=True), stub2.splitlines(keepends=True)
+-                )
+-            )
+-            diff.append(stub_diff[:-1])
+-    return "\n\n\n".join(diff)
++    
++    # Generate ndiff
++    original_lines = stub_with_existing.render().splitlines(keepends=True)
++    new_lines = stub_without_existing.render().splitlines(keepends=True)
++    
++    diff = difflib.ndiff(original_lines, new_lines)
++    
++    return ''.join(diff)
+ 
+ 
+ def print_stub_handler(

@@ -1,0 +1,41 @@
+--- a/src/mistune/plugins/table.py
++++ b/src/mistune/plugins/table.py
+@@ -120,19 +120,26 @@
+     return thead, aligns
+ 
+ 
+-def _process_row(text: str, aligns: List[str]) -> Optional[Dict[str, Any]]:
+-    cells = CELL_SPLIT.split(text)
+-    if len(cells) != len(aligns):
+-        return None
+-
+-    children = [
+-        {
++def _process_row(text: str, aligns: List[str]) ->Optional[Dict[str, Any]]:
++    cells = CELL_SPLIT.split(text.strip())
++    # Remove empty strings from leading/trailing pipes
++    if cells and cells[0] == '':
++        cells = cells[1:]
++    if cells and cells[-1] == '':
++        cells = cells[:-1]
++    
++    children = []
++    for i, cell_text in enumerate(cells):
++        if i < len(aligns):
++            align = aligns[i]
++        else:
++            align = None
++        children.append({
+             'type': 'table_cell',
+-            'text': text.strip(),
+-            'attrs': {'align': aligns[i], 'head': False}
+-        }
+-        for i, text in enumerate(cells)
+-    ]
++            'text': cell_text.strip(),
++            'attrs': {'align': align, 'head': False}
++        })
++    
+     return {'type': 'table_row', 'children': children}
+ 
+ 

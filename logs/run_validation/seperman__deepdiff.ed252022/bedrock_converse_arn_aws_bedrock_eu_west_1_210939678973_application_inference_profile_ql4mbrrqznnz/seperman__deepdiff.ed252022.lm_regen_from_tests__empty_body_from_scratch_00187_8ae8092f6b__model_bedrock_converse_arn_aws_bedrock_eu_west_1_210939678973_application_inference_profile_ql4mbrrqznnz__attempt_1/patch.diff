@@ -1,0 +1,29 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -384,6 +384,26 @@
+             skip = True
+         return skip
+ 
++    def _skip_this(self, obj, parent):
++        skip = False
++        if self.exclude_paths and parent in self.exclude_paths:
++            skip = True
++        if self.include_paths and parent != 'root':
++            if parent not in self.include_paths:
++                skip = True
++                for prefix in self.include_paths:
++                    if parent.startswith(prefix):
++                        skip = False
++                        break
++        elif self.exclude_regex_paths and any(
++                [exclude_regex_path.search(parent) for exclude_regex_path in self.exclude_regex_paths]):
++            skip = True
++        elif self.exclude_types_tuple and isinstance(obj, self.exclude_types_tuple):
++            skip = True
++        elif self.exclude_obj_callback and self.exclude_obj_callback(obj, parent):
++            skip = True
++        return skip
++
+     def _prep_dict(self, obj, parent, parents_ids=EMPTY_FROZENSET, print_as_attribute=False, original_type=None):
+ 
+         result = []

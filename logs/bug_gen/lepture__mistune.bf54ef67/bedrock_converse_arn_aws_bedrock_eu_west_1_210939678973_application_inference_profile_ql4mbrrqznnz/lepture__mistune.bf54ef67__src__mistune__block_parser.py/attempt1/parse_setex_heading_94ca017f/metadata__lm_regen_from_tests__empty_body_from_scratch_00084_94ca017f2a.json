@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef parse_setex_heading(self, m: Match[str], state: BlockState) -> Optional[int]:\n    \"\"\"Parse token for setex style heading. A setex heading syntax looks like:\n\n    .. code-block:: markdown\n\n        H1 title\n        ========\n    \"\"\"\n    last_token = state.last_token()\n    if last_token and last_token['type'] == 'paragraph':\n        level = 1 if m.group('setext_1') == '=' else 2\n        last_token['type'] = 'heading'\n        last_token['style'] = 'setext'\n        last_token['attrs'] = {'level': level}\n        return m.end() + 1\n\n    sc = self.compile_sc(['thematic_break', 'list'])\n    m2 = sc.match(state.src, state.cursor)\n    if m2:\n        return self.parse_method(m2, state)\n    return None\n```",
+  "rewrite": "def parse_setex_heading(self, m: Match[str], state: BlockState) -> Optional[int]:\n    \"\"\"Parse token for setex style heading. A setex heading syntax looks like:\n\n    .. code-block:: markdown\n\n        H1 title\n        ========\n    \"\"\"\n    last_token = state.last_token()\n    if last_token and last_token['type'] == 'paragraph':\n        level = 1 if m.group('setext_1') == '=' else 2\n        last_token['type'] = 'heading'\n        last_token['style'] = 'setext'\n        last_token['attrs'] = {'level': level}\n        return m.end() + 1\n\n    sc = self.compile_sc(['thematic_break', 'list'])\n    m2 = sc.match(state.src, state.cursor)\n    if m2:\n        return self.parse_method(m2, state)\n    return None\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

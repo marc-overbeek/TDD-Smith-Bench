@@ -1,0 +1,64 @@
+--- a/src/mistune/block_parser.py
++++ b/src/mistune/block_parser.py
+@@ -198,13 +198,6 @@
+         return m.end() + 1
+ 
+     def parse_setex_heading(self, m: Match[str], state: BlockState) -> Optional[int]:
+-        """Parse token for setex style heading. A setex heading syntax looks like:
+-
+-        .. code-block:: markdown
+-
+-            H1 title
+-            ========
+-        """
+         last_token = state.last_token()
+         if last_token and last_token['type'] == 'paragraph':
+             level = 1 if m.group('setext_1') == '=' else 2
+@@ -291,9 +284,6 @@
+     def extract_block_quote(
+         self, m: Match[str], state: BlockState
+     ) -> Tuple[str, Optional[int]]:
+-        """Extract text and cursor end position of a block quote."""
+-
+-        # cleanup at first to detect if it is code block
+         text = m.group('quote_1') + '\n'
+         text = expand_leading_tab(text, 3)
+         text = _BLOCK_QUOTE_TRIM.sub('', text)
+@@ -335,9 +325,6 @@
+                     continue
+ 
+                 if prev_blank_line:
+-                    # CommonMark Example 249
+-                    # because of laziness, a blank line is needed between
+-                    # a block quote and a following paragraph
+                     break
+ 
+                 m4 = break_sc.match(state.src, state.cursor)
+@@ -346,27 +333,16 @@
+                     if end_pos:
+                         break
+ 
+-                # lazy continuation line
+                 pos = state.find_line_end()
+                 line = state.get_text(pos)
+                 line = expand_leading_tab(line, 3)
+                 text += line
+                 state.cursor = pos
+ 
+-        # according to CommonMark Example 6, the second tab should be
+-        # treated as 4 spaces
+         return expand_tab(text), end_pos
+ 
+     def parse_block_quote(self, m: Match[str], state: BlockState) -> int:
+-        """Parse token for block quote. Here is an example of the syntax:
+-
+-        .. code-block:: markdown
+-
+-            > a block quote starts
+-            > with right arrows
+-        """
+         text, end_pos = self.extract_block_quote(m, state)
+-        # scan children state
+         child = state.child_state(text)
+         if state.depth() >= self.max_nested_level - 1:
+             rules = list(self.block_quote_rules)

@@ -1,0 +1,35 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -153,24 +153,18 @@
+     return flop
+ 
+ 
+-def conv_flop_jit(inputs: List[Any], outputs: List[Any]) -> typing.Counter[str]:
++def conv_flop_jit(inputs: List[Any], outputs: List[Any]) ->typing.Counter[str]:
+     """
+     Count flops for convolution.
+     """
+-    # Inputs of Convolution should be a list of length 12 or 13. They represent:
+-    # 0) input tensor, 1) convolution filter, 2) bias, 3) stride, 4) padding,
+-    # 5) dilation, 6) transposed, 7) out_pad, 8) groups, 9) benchmark_cudnn,
+-    # 10) deterministic_cudnn and 11) user_enabled_cudnn.
+-    # starting with #40737 it will be 12) user_enabled_tf32
+-    assert len(inputs) == 12 or len(inputs) == 13, len(inputs)
+-    x, w = inputs[:2]
+-    x_shape, w_shape, out_shape = (get_shape(x), get_shape(w), get_shape(outputs[0]))
++    x = inputs[0]
++    w = inputs[1]
++    x_shape = get_shape(x)
++    w_shape = get_shape(w)
++    out_shape = get_shape(outputs[0])
+     transposed = inputs[6].toIValue()
+-
+-    # use a custom name instead of "_convolution"
+-    return Counter(
+-        {"conv": conv_flop_count(x_shape, w_shape, out_shape, transposed=transposed)}
+-    )
++    flop_count = conv_flop_count(x_shape, w_shape, out_shape, transposed=transposed)
++    return Counter({"conv": flop_count})
+ 
+ 
+ def einsum_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:

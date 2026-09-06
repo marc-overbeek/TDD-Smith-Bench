@@ -1,0 +1,35 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -251,13 +251,27 @@
+ 
+ 
+ def batchnorm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
++    """
++    Count flops for batchnorm.
++    """
++    # inputs[0]: input tensor
++    # inputs[1]: weight (affine scale)
++    # inputs[2]: bias (affine bias)
++    # inputs[3]: running_mean
++    # inputs[4]: running_var
++    # inputs[5]: training flag
++    has_affine = get_shape(inputs[1]) is not None
+     training = inputs[5].toIValue()
+-    assert isinstance(training, bool), "Signature of aten::batch_norm has changed!"
++    input_shape = get_shape(inputs[0])
++    
+     if training:
+-        return norm_flop_counter(1)(inputs, outputs)  # pyre-ignore
+-    has_affine = get_shape(inputs[1]) is not None
+-    input_shape = prod(get_shape(inputs[0]))
+-    return input_shape * (2 if has_affine else 1)
++        # Computing mean and variance from data: ~5 flops per element with affine, 4 without
++        flop = prod(input_shape) * (5 if has_affine else 4)
++    else:
++        # Using running stats: 2 flops per element with affine, 1 without
++        flop = prod(input_shape) * (2 if has_affine else 1)
++    
++    return flop
+ 
+ 
+ def elementwise_flop_counter(input_scale: float = 1, output_scale: float = 0) -> Handle:

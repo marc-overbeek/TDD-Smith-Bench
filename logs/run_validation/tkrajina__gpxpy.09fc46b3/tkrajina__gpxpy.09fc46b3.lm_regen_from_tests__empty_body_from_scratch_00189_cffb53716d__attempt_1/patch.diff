@@ -1,0 +1,19 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2338,6 +2338,16 @@
+ 
+         return result
+ 
++    def get_track_points_no(self) -> int:
++        """ Number of track points, *without* route and waypoints """
++        result = 0
++
++        for track in self.tracks:
++            for segment in track.segments:
++                result += len(segment.points)
++
++        return result
++
+     def get_duration(self) -> Optional[float]:
+         """
+         Calculates duration of GPX file

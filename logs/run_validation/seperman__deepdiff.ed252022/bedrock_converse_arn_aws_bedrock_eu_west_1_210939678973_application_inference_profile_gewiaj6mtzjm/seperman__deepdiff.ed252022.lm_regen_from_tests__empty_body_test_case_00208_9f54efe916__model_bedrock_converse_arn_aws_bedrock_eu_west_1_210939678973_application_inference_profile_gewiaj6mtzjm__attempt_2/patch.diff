@@ -1,0 +1,99 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -190,42 +190,31 @@
+     return length
+ 
+ 
+-def _get_numbers_distance(num1, num2, max_=1, use_log_scale=False, log_scale_similarity_threshold=0.1):
+-    """
+-    Get the distance of 2 numbers. The output is a number between 0 to the max.
+-    The reason is the
+-    When max is returned means the 2 numbers are really far, and 0 means they are equal.
+-    """
++def _get_numbers_distance(num1, num2, max_=1, use_log_scale=False,
++    log_scale_similarity_threshold=0.1):
+     if num1 == num2:
+         return 0
++    if max_ == 0:
++        return 1
++    diff = abs(num1 - num2)
+     if use_log_scale:
+-        distance = logarithmic_distance(num1, num2)
+-        if distance < logarithmic_distance:
++        diff = logarithmic_distance(num1, num2)
++        if diff <= log_scale_similarity_threshold:
+             return 0
+-        return distance
+-    if not isinstance(num1, float):
+-        num1 = float(num1)
+-    if not isinstance(num2, float):
+-        num2 = float(num2)
+-    # Since we have a default cutoff of 0.3 distance when
+-    # getting the pairs of items during the ingore_order=True
+-    # calculations, we need to make the divisor of comparison very big
+-    # so that any 2 numbers can be chosen as pairs.
+-    divisor = (num1 + num2) / max_
+-    if divisor == 0:
+-        return max_
+-    try:
+-        return min(max_, abs((num1 - num2) / divisor))
+-    except Exception:  # pragma: no cover. I don't think this line will ever run but doesn't hurt to leave it.
+-        return max_  # pragma: no cover
++        return min(1, diff)
++    return min(1, diff / max_)
+ 
+ 
+ def _numpy_div(a, b, replace_inf_with=1):
+-    max_array = np.full(shape=a.shape, fill_value=replace_inf_with, dtype=np_float64)
+-    result = np.divide(a, b, out=max_array, where=b != 0, dtype=np_float64)
+-    # wherever 2 numbers are the same, make sure the distance is zero. This is mainly for 0 divided by zero.
+-    result[a == b] = 0
+-    return result
++    with np.errstate(divide='ignore', invalid='ignore'):
++        result = np.divide(a, b)
++        if not isinstance(result, np.ndarray):
++            if np.isinf(result) or np.isnan(result):
++                return replace_inf_with
++            return result
++        result[np.isinf(result)] = replace_inf_with
++        result[np.isnan(result)] = replace_inf_with
++        return result
+ 
+ # To deal with numbers close to zero
+ MATH_LOG_OFFSET = 1e-10
+@@ -262,27 +251,18 @@
+     return abs(log_a - log_b)
+ 
+ 
+-def _get_numpy_array_distance(num1, num2, max_=1, use_log_scale=False, log_scale_similarity_threshold=0.1):
+-    """
+-    Get the distance of 2 numbers. The output is a number between 0 to the max.
+-    The reason is the
+-    When max is returned means the 2 numbers are really far, and 0 means they are equal.
+-    """
+-    # Since we have a default cutoff of 0.3 distance when
+-    # getting the pairs of items during the ingore_order=True
+-    # calculations, we need to make the divisor of comparison very big
+-    # so that any 2 numbers can be chosen as pairs.
++def _get_numpy_array_distance(num1, num2, max_=1, use_log_scale=False,
++    log_scale_similarity_threshold=0.1):
+     if use_log_scale:
+         num1 = numpy_apply_log_keep_sign(num1)
+         num2 = numpy_apply_log_keep_sign(num2)
+-
+-    divisor = (num1 + num2) / max_
+-    result = _numpy_div((num1 - num2), divisor, replace_inf_with=max_)
+-
+-    distance_array = np.clip(np.absolute(result), 0, max_)
++    diff = np.abs(num1 - num2)
+     if use_log_scale:
+-        distance_array[distance_array < log_scale_similarity_threshold] = 0
+-    return distance_array
++        diff = np.abs(num1 - num2)
++        if log_scale_similarity_threshold > 0:
++            return np.where(diff <= log_scale_similarity_threshold, 0, np.minimum(1, diff))
++        return np.minimum(1, diff)
++    return np.minimum(1, diff / max_)
+ 
+ 
+ def _get_datetime_distance(date1, date2, max_, use_log_scale, log_scale_similarity_threshold):

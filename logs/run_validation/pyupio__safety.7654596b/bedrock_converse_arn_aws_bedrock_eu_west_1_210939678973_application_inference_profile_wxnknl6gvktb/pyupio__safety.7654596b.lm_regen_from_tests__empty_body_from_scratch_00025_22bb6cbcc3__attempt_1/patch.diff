@@ -1,0 +1,65 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -595,29 +595,42 @@
+         )
+ 
+ 
+-def transform_ignore(ctx: click.Context, param: click.Parameter, value: Tuple[str]) -> Dict[str, Dict[str, Optional[str]]]:
+-    """
+-    Transform ignore parameters into a dictionary.
+-
++def transform_ignore(ctx: click.Context, param: click.Parameter, value:
++    Tuple[str]) ->Dict[str, Dict[str, Optional[str]]]:
++    """
++    Transform ignore parameter values into a dictionary format.
++    
++    Handles both comma-separated and multiple argument formats.
++    Converts vulnerability IDs into a normalized dictionary with expires and reason fields.
++    
+     Args:
+         ctx (click.Context): The click context.
+         param (click.Parameter): The click parameter.
+-        value (Tuple[str]): The parameter value.
+-
+-    Returns:
+-        Dict[str, Dict[str, Optional[str]]]: The transformed ignore parameters.
+-    """
+-    ignored_default_dict = {'reason': '', 'expires': None}
+-    if isinstance(value, tuple) and any(value):
+-        # Following code is required to support the 2 ways of providing 'ignore'
+-        # --ignore=1234,567,789
+-        # or, the historical way (supported for backward compatibility)
+-        # -i 1234 -i 567
+-        combined_value = ','.join(value)
+-        ignore_ids = {vuln_id.strip() for vuln_id in combined_value.split(',')}
+-        return {ignore_id: dict(ignored_default_dict) for ignore_id in ignore_ids}
+-
+-    return {}
++        value (Tuple[str]): The tuple of ignore values.
++    
++    Returns:
++        Dict[str, Dict[str, Optional[str]]]: Dictionary mapping vulnerability IDs to their config.
++    """
++    if not value:
++        return {}
++    
++    # Flatten comma-separated values
++    flattened = []
++    for item in value:
++        # Split by comma if present
++        if ',' in item:
++            flattened.extend(item.split(','))
++        else:
++            flattened.append(item)
++    
++    # Build the result dictionary
++    result = {}
++    for vuln_id in flattened:
++        vuln_id = vuln_id.strip()
++        if vuln_id:
++            result[vuln_id] = {'expires': None, 'reason': ''}
++    
++    return result
+ 
+ 
+ def active_color_if_needed(ctx: click.Context, param: click.Parameter, value: str) -> str:

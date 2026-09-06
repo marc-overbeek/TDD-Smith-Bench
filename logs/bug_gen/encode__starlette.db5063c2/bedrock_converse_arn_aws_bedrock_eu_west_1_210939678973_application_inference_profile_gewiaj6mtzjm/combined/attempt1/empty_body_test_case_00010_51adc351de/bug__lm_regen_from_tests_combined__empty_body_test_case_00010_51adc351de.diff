@@ -1,0 +1,21 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -116,10 +116,14 @@
+ 
+             if hostname is None:
+                 netloc = self.netloc
+-                _, _, hostname = netloc.rpartition("@")
+-
+-                if hostname[-1] != "]":
+-                    hostname = hostname.rsplit(":", 1)[0]
++                if "@" in netloc:
++                    userpass, _, hostname = netloc.rpartition("@")
++                    if hostname[-1] != "]":
++                        hostname = hostname.rsplit(":", 1)[0]
++                else:
++                    hostname = self.hostname
++                    if hostname and hostname[-1] != "]":
++                        hostname = hostname.rsplit(":", 1)[0]
+ 
+             netloc = hostname
+             if port is not None:

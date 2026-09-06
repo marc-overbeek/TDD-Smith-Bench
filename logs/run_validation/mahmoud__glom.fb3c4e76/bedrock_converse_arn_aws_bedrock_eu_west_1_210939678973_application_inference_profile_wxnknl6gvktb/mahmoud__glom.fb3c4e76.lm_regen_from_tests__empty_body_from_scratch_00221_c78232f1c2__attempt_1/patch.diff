@@ -1,0 +1,45 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -368,12 +368,38 @@
+         else:
+             raise GlomError("child shouldn't have passed", self.child)
+ 
++    def __repr__(self):
++        child_reprs = [_bool_child_repr(c) for c in self.children]
++        if self._m_repr() and self.default is _MISSING:
++            return f" {self.OP} ".join(child_reprs)
++        if self.default is not _MISSING:
++            child_reprs.append("default=" + repr(self.default))
++        return self.__class__.__name__ + "(" + ", ".join(child_reprs) + ")"
++
++    def __repr__(self):
++        if self.child is M:
++            return '~M'
++        if self._m_repr():  # is in M repr
++            return "~(" + bbrepr(self.child) + ")"
++        return "Not(" + bbrepr(self.child) + ")"
++
+     def _m_repr(self):
+-        if isinstance(self.child, (_MType, _MExpr)):
++        """should this Or() repr as M |?"""
++        # only used by And() and Or(), not Not(), so len(children) >= 1
++        if isinstance(self.children[0], (_MType, _MExpr)):
+             return True
+-        if type(self.child) not in (And, Or, Not):
+-            return False
+-        return self.child._m_repr()
++        if type(self.children[0]) in (And, Or, Not):
++            return self.children[0]._m_repr()
++        return False
++
++    def _m_repr(self):
++        """should this Or() repr as M |?"""
++        # only used by And() and Or(), not Not(), so len(children) >= 1
++        if isinstance(self.children[0], (_MType, _MExpr)):
++            return True
++        if type(self.children[0]) in (And, Or, Not):
++            return self.children[0]._m_repr()
++        return False
+ 
+     def __repr__(self):
+         if self.child is M:

@@ -1,0 +1,67 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -107,39 +107,44 @@
+         print(f"Annotation for {name} based on {count} call trace(s).", file=stderr)
+ 
+ 
+-def get_stub(
+-    args: argparse.Namespace, stdout: IO[str], stderr: IO[str]
+-) -> Optional[Stub]:
++def get_stub(args: argparse.Namespace, stdout: IO[str], stderr: IO[str]
++    ) ->Optional[Stub]:
+     module, qualname = args.module_path
+-    thunks = args.config.trace_store().filter(module, qualname, args.limit)
++    store = args.config.trace_store()
++    rewriter = NoOpRewriter() if args.disable_type_rewriting else args.config.type_rewriter()
++    
++    try:
++        raw_traces = store.filter(module, qualname, args.limit)
++    except MonkeyTypeError as mte:
++        print(f"ERROR: Failed to retrieve traces: {mte}", file=stderr)
++        return None
++    
+     traces = []
+-    failed_to_decode_count = 0
+-    for thunk in thunks:
++    failed = 0
++    for row in raw_traces:
+         try:
+-            traces.append(thunk.to_trace())
++            traces.append(row.to_trace())
+         except MonkeyTypeError as mte:
++            failed += 1
+             if args.verbose:
+                 print(f"WARNING: Failed decoding trace: {mte}", file=stderr)
+-            failed_to_decode_count += 1
+-    if failed_to_decode_count and not args.verbose:
+-        print(
+-            f"{failed_to_decode_count} traces failed to decode; use -v for details",
+-            file=stderr,
+-        )
++    
++    if failed > 0 and not args.verbose:
++        print(f"{failed} traces failed to decode", file=stderr)
++    
+     if not traces:
+         return None
+-    rewriter = args.config.type_rewriter()
+-    if args.disable_type_rewriting:
+-        rewriter = NoOpRewriter()
++    
++    if hasattr(args, 'sample_count') and args.sample_count:
++        display_sample_count(traces, stderr)
++    
+     stubs = build_module_stubs_from_traces(
+         traces,
+-        args.config.max_typed_dict_size(),
+         existing_annotation_strategy=args.existing_annotation_strategy,
+         rewriter=rewriter,
+     )
+-    if args.sample_count:
+-        display_sample_count(traces, stderr)
+-    return stubs.get(module, None)
++    
++    return stubs.get(module)
+ 
+ 
+ class HandlerError(Exception):

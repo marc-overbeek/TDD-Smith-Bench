@@ -1,0 +1,237 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -35,7 +35,7 @@
+ 
+     """
+     def __init__(self, fmt, *args):
+-        super().__init__(fmt, *args)
++        self.args = (fmt,) + args
+ 
+     def get_message(self):
+         fmt, args = self.args[0], self.args[1:]
+@@ -64,8 +64,6 @@
+             "expected type {0.__name__}, not {1.__name__}", expected, actual)
+ 
+     def __copy__(self):
+-        # __init__ args = (actual, expected)
+-        # self.args = (fmt_str, expected, actual)
+         return TypeMatchError(self.args[2], self.args[1])
+ 
+ 
+@@ -314,8 +312,7 @@
+     __slots__ = ('children',)
+ 
+     def _glomit(self, target, scope):
+-        # all children must match without exception
+-        result = target  # so that And() == True, similar to all([]) == True
++        result = target
+         for child in self.children:
+             result = scope[glom](target, child, scope)
+         return result
+@@ -336,7 +333,7 @@
+ 
+     def _glomit(self, target, scope):
+         for child in self.children[:-1]:
+-            try:  # one child must match without exception
++            try:
+                 return scope[glom](target, child, scope)
+             except GlomError:
+                 pass
+@@ -519,10 +516,7 @@
+     __slots__ = ()
+ 
+     def __call__(self, spec):
+-        """wrap a sub-spec in order to apply comparison operators to the result"""
+         if not isinstance(spec, type(T)):
+-            # TODO: open this up for other specs so we can do other
+-            # checks, like function calls
+             raise TypeError("M() only accepts T-style specs, not %s" % type(spec).__name__)
+         return _MSubspec(spec)
+ 
+@@ -676,89 +670,112 @@
+ 
+ def _handle_dict(target, spec, scope):
+     if not isinstance(target, dict):
+-        raise TypeMatchError(type(target), dict)
+-    spec_keys = spec  # cheating a little bit here, list-vs-dict, but saves an object copy sometimes
+-
+-    required = {
+-        key for key in spec_keys
+-        if _precedence(key) == 0 and type(key) is not Optional
+-        or type(key) is Required}
+-    defaults = {  # pre-load result with defaults
+-        key.key: key.default for key in spec_keys
+-        if type(key) is Optional and key.default is not _MISSING}
+-    result = {}
+-    for key, val in target.items():
+-        for maybe_spec_key in spec_keys:
+-            # handle Required as a special case here rather than letting it be a stand-alone spec
+-            if type(maybe_spec_key) is Required:
+-                spec_key = maybe_spec_key.key
+-            else:
+-                spec_key = maybe_spec_key
++        raise MatchError("{0!r} is not a dict, expected dict for spec {1!r}", target, spec)
++    
++    ret = {}
++    spec_keys = sorted(spec.keys(), key=_precedence)
++    target_keys = set(target.keys())
++    matched_target_keys = set()
++    
++    for spec_key in spec_keys:
++        spec_val = spec[spec_key]
++        is_required = type(spec_key) is Required
++        is_optional = type(spec_key) is Optional
++        
++        if is_required:
++            match_key = spec_key.key
++        elif is_optional:
++            match_key = spec_key.key
++        else:
++            match_key = spec_key
++        
++        matched_any = False
++        for target_key in target_keys:
++            if target_key in matched_target_keys:
++                continue
++            
+             try:
+-                key = scope[glom](key, spec_key, scope)
++                scope[glom](target_key, match_key, scope)
+             except GlomError:
+-                pass
+-            else:
+-                result[key] = scope[glom](val, spec[maybe_spec_key], chain_child(scope))
+-                required.discard(maybe_spec_key)
+-                break
+-        else:
+-            raise MatchError("key {0!r} didn't match any of {1!r}", key, spec_keys)
+-    for key in set(defaults) - set(result):
+-        result[key] = arg_val(target, defaults[key], scope)
+-    if required:
+-        raise MatchError("target missing expected keys: {0}", ', '.join([bbrepr(r) for r in required]))
+-    return result
++                continue
++            
++            matched_target_keys.add(target_key)
++            matched_any = True
++            target_val = target[target_key]
++            ret[target_key] = scope[glom](target_val, spec_val, chain_child(scope))
++        
++        if not matched_any and is_required:
++            raise MatchError("target missing expected keys {0!r}", spec_key)
++    
++    unmatched_keys = target_keys - matched_target_keys
++    if unmatched_keys:
++        raise MatchError("target has unexpected keys {0!r}", unmatched_keys)
++    
++    return ret
+ 
+ 
+ def _glom_match(target, spec, scope):
+     if isinstance(spec, type):
+         if not isinstance(target, spec):
+-            raise TypeMatchError(type(target), spec)
+-    elif isinstance(spec, dict):
++            raise TypeMatchError(target, spec)
++        return target
++    
++    if isinstance(spec, dict):
+         return _handle_dict(target, spec, scope)
+-    elif isinstance(spec, (list, set, frozenset)):
+-        if not isinstance(target, type(spec)):
+-            raise TypeMatchError(type(target), type(spec))
+-        result = []
+-        for item in target:
+-            for child in spec:
+-                try:
+-                    result.append(scope[glom](item, child, scope))
+-                    break
+-                except GlomError as e:
+-                    last_error = e
+-            else:  # did not break, something went wrong
+-                if target and not spec:
+-                    raise MatchError(
+-                        "{0!r} does not match empty {1}", target, type(spec).__name__)
+-                # NOTE: unless error happens above, break will skip else branch
+-                # so last_error will have been assigned
+-                raise last_error
+-        if type(spec) is not list:
+-            return type(spec)(result)
+-        return result
+-    elif isinstance(spec, tuple):
+-        if not isinstance(target, tuple):
+-            raise TypeMatchError(type(target), tuple)
+-        if len(target) != len(spec):
++    
++    if isinstance(spec, (list, tuple)):
++        if type(spec) is tuple:
++            if type(target) is not tuple:
++                raise MatchError("{0!r} is not a tuple, expected tuple for spec {1!r}", target, spec)
++            if len(target) != len(spec):
++                raise MatchError("target tuple length {0} != spec tuple length {1}", len(target), len(spec))
++            ret = []
++            for target_item, spec_item in zip(target, spec):
++                ret.append(scope[glom](target_item, spec_item, chain_child(scope)))
++            return tuple(ret)
++        else:
++            if not isinstance(target, list):
++                raise MatchError("{0!r} is not a list, expected list for spec {1!r}", target, spec)
++            if len(spec) != 1:
++                raise MatchError("list spec must have exactly one element, got {0}", len(spec))
++            ret = []
++            for target_item in target:
++                ret.append(scope[glom](target_item, spec[0], chain_child(scope)))
++            return ret
++    
++    if isinstance(spec, set):
++        if not isinstance(target, set):
++            raise MatchError("{0!r} is not a set, expected set for spec {1!r}", target, spec)
++        if len(spec) != 1:
++            raise MatchError("set spec must have exactly one element, got {0}", len(spec))
++        spec_item = next(iter(spec))
++        for target_item in target:
++            scope[glom](target_item, spec_item, chain_child(scope))
++        return target
++    
++    if isinstance(spec, frozenset):
++        if not isinstance(target, frozenset):
++            raise MatchError("{0!r} is not a frozenset, expected frozenset for spec {1!r}", target, spec)
++        if len(spec) != 1:
++            raise MatchError("frozenset spec must have exactly one element, got {0}", len(spec))
++        spec_item = next(iter(spec))
++        for target_item in target:
++            scope[glom](target_item, spec_item, chain_child(scope))
++        return target
++    
++    if callable(spec):
++        try:
++            result = spec(target)
++            if not result:
++                raise MatchError("{0!r} is not truthy", result)
++        except Exception:
+             raise MatchError("{0!r} does not match {1!r}", target, spec)
+-        result = []
+-        for sub_target, sub_spec in zip(target, spec):
+-            result.append(scope[glom](sub_target, sub_spec, scope))
+-        return tuple(result)
+-    elif callable(spec):
+-        try:
+-            if spec(target):
+-                return target
+-        except Exception as e:
+-            raise MatchError(
+-                "{0}({1!r}) did not validate (got exception {2!r})", spec.__name__, target, e)
+-        raise MatchError(
+-            "{0}({1!r}) did not validate (non truthy return)", spec.__name__, target)
+-    elif target != spec:
+-        raise MatchError("{0!r} does not match {1!r}", target, spec)
+-    return target
++        return target
++    
++    if target == spec:
++        return target
++    
++    raise MatchError("{0!r} does not match {1!r}", target, spec)
+ 
+ 
+ class Switch:

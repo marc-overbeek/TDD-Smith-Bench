@@ -1,0 +1,17 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -544,6 +544,14 @@
+             up = up.up
+         return True
+ 
++    if self.ignore_string_type_changes or self.ignore_numeric_type_changes or self.ignore_string_case:
++        t1_clean_to_keys = self._get_clean_to_keys_mapping(keys=t1_keys, level=level)
++        t2_clean_to_keys = self._get_clean_to_keys_mapping(keys=t2_keys, level=level)
++        t1_keys = SetOrdered(t1_clean_to_keys.keys())
++        t2_keys = SetOrdered(t2_clean_to_keys.keys())
++    else:
++        t1_clean_to_keys = t2_clean_to_keys = None
++
+     def _get_clean_to_keys_mapping(self, keys, level):
+         """
+         Get a dictionary of cleaned value of keys to the keys themselves.

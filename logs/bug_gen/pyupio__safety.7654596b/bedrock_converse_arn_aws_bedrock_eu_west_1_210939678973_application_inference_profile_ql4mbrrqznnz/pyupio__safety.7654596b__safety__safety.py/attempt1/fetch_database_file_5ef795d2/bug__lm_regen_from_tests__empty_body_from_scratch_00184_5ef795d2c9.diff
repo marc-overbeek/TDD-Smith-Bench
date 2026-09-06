@@ -1,0 +1,46 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -268,31 +268,19 @@
+         return {}
+ 
+ 
+-def fetch_database_file(path: str, db_name: str, cached: int = 0, ecosystem: Optional[Ecosystem] = None) -> Dict[str, Any]:
+-    """
+-    Fetches the database from a local file.
+-
+-    Args:
+-        path (str): The path to the local file.
+-        db_name (str): The name of the database.
+-        cached (int): The cache validity in seconds.
+-        ecosystem (Optional[Ecosystem]): The ecosystem.
+-
+-    Returns:
+-        Dict[str, Any]: The fetched database.
+-    """
+-    full_path = (Path(path) / (ecosystem.value if ecosystem else '') / db_name).expanduser().resolve()
+-
+-    if not full_path.exists():
+-        raise DatabaseFileNotFoundError(db=path)
+-
++def fetch_database_file(path: str, db_name: str, cached: int=0, ecosystem:
++    Optional[Ecosystem]=None) ->Dict[str, Any]:
++    full_path = os.path.join(path, db_name)
++    
++    if not os.path.exists(full_path):
++        raise DatabaseFileNotFoundError()
++    
+     with open(full_path) as f:
+-        data = json.loads(f.read())
+-
+-    if cached:
+-        LOG.info('Writing %s to cache because cached value was %s', db_name, cached)
+-        write_to_cache(db_name, data)
+-
++        try:
++            data = json.loads(f.read())
++        except json.JSONDecodeError as e:
++            raise MalformedDatabase(reason=e, fetched_from=full_path)
++    
+     return data
+ 
+ 

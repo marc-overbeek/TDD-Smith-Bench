@@ -1,0 +1,103 @@
+--- a/src/mistune/plugins/footnotes.py
++++ b/src/mistune/plugins/footnotes.py
+@@ -62,33 +62,78 @@
+     return m.end()
+ 
+ 
+-def parse_footnote_item(
+-    block: "BlockParser", key: str, index: int, state: BlockState
+-) -> Dict[str, Any]:
+-    ref = state.env.get("ref_footnotes")
+-    if not ref:
+-        raise ValueError("Missing 'ref_footnotes'.")
++def parse_footnote_item(block: 'BlockParser', key: str, index: int, state:
++    BlockState) ->Dict[str, Any]:
++    ref = state.env.get('ref_footnotes')
+     text = ref[key]
+-
++    
++    # Remove leading spaces from continuation lines
+     lines = text.splitlines()
+-    second_line = None
+-    for second_line in lines[1:]:
+-        if second_line:
+-            break
+-
+-    if second_line:
+-      spaces = len(second_line) - len(second_line.lstrip())
+-      pattern = re.compile(r'^ {' + str(spaces) + r',}', flags=re.M)
+-      text = pattern.sub('', text).strip()
+-      items = _PARAGRAPH_SPLIT.split(text)
+-      children = [{'type': 'paragraph', 'text': s} for s in items]
+-    else:
+-      text = text.strip()
+-      children = [{'type': 'paragraph', 'text': text}]
++    new_lines = []
++    for line in lines:
++        # Strip up to 4 leading spaces (footnote indentation)
++        if line.startswith('    '):
++            line = line[4:]
++        elif line.startswith('   '):
++            line = line[3:]
++        elif line.startswith('  '):
++            line = line[2:]
++        elif line.startswith(' '):
++            line = line[1:]
++        new_lines.append(line)
++    text = '\n'.join(new_lines)
++    
++    # Parse paragraphs
++    paragraphs = _PARAGRAPH_SPLIT.split(text.strip())
++    children = []
++    for para in paragraphs:
++        para = para.strip()
++        if para:
++            child_state = BlockState()
++            child_state.process(para)
++            block.parse(child_state)
++            children.extend(child_state.tokens)
++    
++    # Wrap last child in paragraph if needed
++    if children and children[-1]['type'] != 'paragraph':
++        children.append({'type': 'paragraph', 'children': [{'type': 'text', 'raw': ''}]})
++    
++    if not children:
++        children = [{'type': 'paragraph', 'children': [{'type': 'text', 'raw': text.strip()}]}]
++    
+     return {
+         'type': 'footnote_item',
+         'children': children,
+-        'attrs': {'key': key, 'index': index}
++        'attrs': {'key': key, 'index': index},
++    }
++
++def parse_footnote_item(block: 'BlockParser', key: str, index: int, state:
++    BlockState) ->Dict[str, Any]:
++    ref = state.env.get('ref_footnotes')
++    text = ref[key]
++    
++    # Strip leading spaces from continuation lines
++    lines = text.splitlines()
++    new_lines = []
++    for line in lines:
++        if len(line) > 0 and line[0] == ' ':
++            # Remove up to 4 spaces of indentation
++            stripped = line.lstrip(' ')
++            removed = len(line) - len(stripped)
++            line = line[min(removed, 4):]
++        new_lines.append(line)
++    text = '\n'.join(new_lines)
++    
++    child_state = BlockState()
++    child_state.process(text)
++    block.parse(child_state)
++    
++    children = child_state.tokens
++    
++    return {
++        'type': 'footnote_item',
++        'children': children,
++        'attrs': {'key': key, 'index': index},
+     }
+ 
+ 

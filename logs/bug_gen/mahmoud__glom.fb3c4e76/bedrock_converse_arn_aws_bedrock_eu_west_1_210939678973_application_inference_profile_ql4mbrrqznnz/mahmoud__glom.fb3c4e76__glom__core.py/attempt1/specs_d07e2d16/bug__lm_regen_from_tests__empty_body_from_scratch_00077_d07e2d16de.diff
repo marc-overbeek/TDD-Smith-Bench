@@ -1,0 +1,61 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1207,32 +1207,32 @@
+ 
+     def specs(self, *a, **kw):
+         """Returns a new :class:`Invoke` spec, with the provided positional
+-        and keyword arguments stored to be interpreted as specs, with
+-        the results passed to the underlying function.
+-
+-        >>> spec = Invoke(range).specs('value')
+-        >>> glom({'value': 5}, (spec, list))
+-        [0, 1, 2, 3, 4]
+-
+-        Subsequent positional arguments are appended:
+-
+-        >>> spec = Invoke(range).specs('start').specs('end', 'step')
+-        >>> target = {'start': 2, 'end': 10, 'step': 2}
+-        >>> glom(target, (spec, list))
+-        [2, 4, 6, 8]
+-
+-        Keyword arguments also work as one might expect:
+-
+-        >>> multiply = lambda x, y: x * y
+-        >>> times_3 = Invoke(multiply).constants(y=3).specs(x='value')
+-        >>> glom({'value': 5}, times_3)
+-        15
+-
+-        :meth:`~Invoke.specs()` and other :class:`Invoke`
+-        methods may be called multiple times, just remember that every
+-        call returns a new spec.
+-
+-        """
++            and keyword arguments stored to be interpreted as specs, with
++            the results passed to the underlying function.
++
++            >>> spec = Invoke(range).specs('value')
++            >>> glom({'value': 5}, (spec, list))
++            [0, 1, 2, 3, 4]
++
++            Subsequent positional arguments are appended:
++
++            >>> spec = Invoke(range).specs('start').specs('end', 'step')
++            >>> target = {'start': 2, 'end': 10, 'step': 2}
++            >>> glom(target, (spec, list))
++            [2, 4, 6, 8]
++
++            Keyword arguments also work as one might expect:
++
++            >>> multiply = lambda x, y: x * y
++            >>> times_3 = Invoke(multiply).constants(y=3).specs(x='value')
++            >>> glom({'value': 5}, times_3)
++            15
++
++            :meth:`~Invoke.specs()` and other :class:`Invoke`
++            methods may be called multiple times, just remember that every
++            call returns a new spec.
++
++            """
+         ret = self.__class__(self.func)
+         ret._args = self._args + ('S', a, kw)
+         ret._cur_kwargs = dict(self._cur_kwargs)

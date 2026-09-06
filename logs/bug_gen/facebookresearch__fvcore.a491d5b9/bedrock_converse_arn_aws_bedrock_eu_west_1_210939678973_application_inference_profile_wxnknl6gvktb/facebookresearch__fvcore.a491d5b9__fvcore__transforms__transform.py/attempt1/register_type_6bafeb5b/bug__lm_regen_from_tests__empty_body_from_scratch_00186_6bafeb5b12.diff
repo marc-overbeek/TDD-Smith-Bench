@@ -1,0 +1,82 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -150,6 +150,7 @@
+         return [self.apply_coords(p) for p in polygons]
+ 
+     @classmethod
++    @classmethod
+     def register_type(cls, data_type: str, func: Optional[Callable] = None):
+         """
+         Register the given function as a handler that this transform will use
+@@ -197,7 +198,70 @@
+             "You can only register a function that takes two positional "
+             "arguments to a Transform! Got a function with spec {}".format(str(argspec))
+         )
+-        setattr(cls, "apply_" + data_type, func)
++    
++        method_name = "apply_" + data_type
++        assert not hasattr(cls, method_name), (
++            "Method {} already registered for {}".format(method_name, cls.__name__)
++        )
++        setattr(cls, method_name, func)
++
++    with self.assertRaises(AssertionError):
++        T.HFlipTransform.register_type(dtype, lambda x: 1)
++
++    @classmethod
++    def register_type(cls, data_type: str, func: Optional[Callable] = None):
++        """
++        Register the given function as a handler that this transform will use
++        for a specific data type.
++
++        Args:
++            data_type (str): the name of the data type (e.g., box)
++            func (callable): takes a transform and a data, returns the
++                transformed data.
++
++        Examples:
++
++        .. code-block:: python
++
++            # call it directly
++            def func(flip_transform, voxel_data):
++                return transformed_voxel_data
++            HFlipTransform.register_type("voxel", func)
++
++            # or, use it as a decorator
++            @HFlipTransform.register_type("voxel")
++            def func(flip_transform, voxel_data):
++                return transformed_voxel_data
++
++            # ...
++            transform = HFlipTransform(...)
++            transform.apply_voxel(voxel_data)  # func will be called
++        """
++        if func is None:  # the decorator style
++
++            def wrapper(decorated_func):
++                assert decorated_func is not None
++                cls.register_type(data_type, decorated_func)
++                return decorated_func
++
++            return wrapper
++
++        assert callable(
++            func
++        ), "You can only register a callable to a Transform. Got {} instead.".format(
++            func
++        )
++        argspec = inspect.getfullargspec(func)
++        assert len(argspec.args) == 2, (
++            "You can only register a function that takes two positional "
++            "arguments to a Transform! Got a function with spec {}".format(str(argspec))
++        )
++    
++        method_name = "apply_" + data_type
++        assert not hasattr(cls, method_name), (
++            "Method {} already registered".format(method_name)
++        )
++        setattr(cls, method_name, func)
+ 
+     def inverse(self) -> "Transform":
+         """

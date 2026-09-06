@@ -1,0 +1,19 @@
+--- a/oauthlib/oauth2/rfc6749/utils.py
++++ b/oauthlib/oauth2/rfc6749/utils.py
+@@ -58,14 +58,10 @@
+ 
+ 
+ def escape(u):
+-    """Escape a string in an OAuth-compatible fashion.
+-
+-    TODO: verify whether this can in fact be used for OAuth 2
+-
+-    """
++    """Escape a string in an OAuth-compatible fashion."""
+     if not isinstance(u, str):
+         raise ValueError('Only unicode objects are escapable.')
+-    return quote(u.encode('utf-8'), safe=b'~')
++    return quote(u, safe='')
+ 
+ 
+ def generate_age(issue_time):

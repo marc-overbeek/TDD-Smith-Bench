@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef build_module_stubs_from_traces(traces: Iterable[CallTrace],\n    max_typed_dict_size: int, existing_annotation_strategy:\n    ExistingAnnotationStrategy=ExistingAnnotationStrategy.REPLICATE,\n    rewriter: Optional[TypeRewriter]=None) ->Dict[str, ModuleStub]:\n    index: DefaultDict[Callable[..., Any], List[CallTrace]] = collections.defaultdict(list)\n    for trace in traces:\n        index[trace.func].append(trace)\n    defs = (\n        get_updated_definition(\n            func,\n            func_traces,\n            max_typed_dict_size,\n            rewriter,\n            existing_annotation_strategy,\n        )\n        for func, func_traces in index.items()\n    )\n    return build_module_stubs(defs)\n```",
+  "rewrite": "def build_module_stubs_from_traces(traces: Iterable[CallTrace],\n    max_typed_dict_size: int, existing_annotation_strategy:\n    ExistingAnnotationStrategy=ExistingAnnotationStrategy.REPLICATE,\n    rewriter: Optional[TypeRewriter]=None) ->Dict[str, ModuleStub]:\n    index: DefaultDict[Callable[..., Any], List[CallTrace]] = collections.defaultdict(list)\n    for trace in traces:\n        index[trace.func].append(trace)\n    defs = (\n        get_updated_definition(\n            func,\n            func_traces,\n            max_typed_dict_size,\n            rewriter,\n            existing_annotation_strategy,\n        )\n        for func, func_traces in index.items()\n    )\n    return build_module_stubs(defs)",
+  "strategy": "lm_regen_from_tests"
+}

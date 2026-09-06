@@ -1,0 +1,17 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2263,6 +2263,14 @@
+ 
+         track.split(track_segment_no=track_segment_no, track_point_no=track_point_no)
+ 
++    def length_3d(self) -> float:
++        result: float = 0
++        for track in self.tracks:
++            length = track.length_3d()
++            if length:
++                result += length
++        return result
++
+     def length_2d(self) -> float:
+         """
+         Computes 2-dimensional length of the GPX file (only latitude and

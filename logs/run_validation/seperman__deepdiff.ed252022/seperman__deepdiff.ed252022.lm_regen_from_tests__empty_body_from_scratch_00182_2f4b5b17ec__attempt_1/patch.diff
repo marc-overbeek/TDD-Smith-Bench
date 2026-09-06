@@ -1,0 +1,24 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -319,8 +319,21 @@
+ 
+     __str__ = __repr__
+ 
++    def test_skip_type2(self):
++        l1 = logging.getLogger('test')
++        result = DeepHashPrep(l1, exclude_types={logging.Logger})
++        assert not result
++
+     def __bool__(self):
+         return bool(self.hashes)
++
++    def __bool__(self):
++        if not self.hashes:
++            return False
++        # If the only key is UNPROCESSED_KEY, check if it's empty
++        if len(self.hashes) == 1 and UNPROCESSED_KEY in self.hashes:
++            return bool(self.hashes[UNPROCESSED_KEY])
++        return True
+ 
+     def keys(self):
+         return self.hashes.keys()

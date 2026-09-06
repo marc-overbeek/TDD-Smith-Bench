@@ -1,0 +1,45 @@
+--- a/oauthlib/oauth2/rfc6749/grant_types/authorization_code.py
++++ b/oauthlib/oauth2/rfc6749/grant_types/authorization_code.py
+@@ -253,6 +253,9 @@
+         except errors.FatalClientError as e:
+             log.debug('Fatal client error during validation of %r. %r.',
+                       request, e)
++            if self.catch_errors:
++                return {'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Pragma': 'no-cache'}, 
++                       '{"error": "server_error"}', 500
+             raise
+ 
+         # If the resource owner denies the access request or if the request
+@@ -280,6 +283,7 @@
+         return self.prepare_authorization_response(
+             request, grant, {}, None, 302)
+ 
++
+     def create_token_response(self, request, token_handler):
+         """Validate the authorization code.
+ 
+@@ -302,6 +306,8 @@
+         except errors.OAuth2Error as e:
+             log.debug('Client error during validation of %r. %r.', request, e)
+             headers.update(e.headers)
++            if self.catch_errors:
++                return headers, '{"error": "server_error"}', 500
+             return headers, e.json, e.status_code
+ 
+         token = token_handler.create_token(request, refresh_token=self.refresh_token)
+@@ -314,6 +320,7 @@
+             request.client_id, request.code, request)
+         headers.update(self._create_cors_headers(request))
+         return headers, json.dumps(token), 200
++
+ 
+     def validate_authorization_request(self, request):
+         """Check the authorization request for normal and fatal errors.
+@@ -430,6 +437,7 @@
+             request_info.update(validator(request))
+ 
+         return request.scopes, request_info
++
+ 
+     def validate_token_request(self, request):
+         """

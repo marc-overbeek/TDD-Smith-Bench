@@ -1,0 +1,108 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -262,13 +262,7 @@
+ 
+ class _Bool:
+     def __init__(self, *children, **kw):
+-        self.children = children
+-        if not children:
+-            raise ValueError("need at least one operand for {}".format(
+-                self.__class__.__name__))
+-        self.default = kw.pop('default', _MISSING)
+-        if kw:
+-            raise TypeError('got unexpected kwargs: %r' % list(kw.keys()))
++        super().__init__(*children, **kw)
+ 
+     def __and__(self, other):
+         return And(self, other)
+@@ -712,53 +706,46 @@
+ 
+ 
+ def _glom_match(target, spec, scope):
+-    if isinstance(spec, type):
++    if isinstance(spec, dict):
++        return _handle_dict(target, spec, scope)
++    elif isinstance(spec, (list, tuple)):
++        if not isinstance(target, (list, tuple)):
++            raise TypeMatchError(type(target), type(spec))
++        if len(target) != len(spec):
++            raise MatchError("length mismatch: target has {0} items, spec has {1}", len(target), len(spec))
++        result = []
++        for i, (t, s) in enumerate(zip(target, spec)):
++            try:
++                result.append(scope[glom](t, s, scope))
++            except GlomError:
++                raise MatchError("item {0} does not match: {1!r}", i, t)
++        return type(spec)(result)
++    elif isinstance(spec, (set, frozenset)):
++        if not isinstance(target, (set, frozenset)):
++            raise TypeMatchError(type(target), type(spec))
++        if len(target) != len(spec):
++            raise MatchError("length mismatch: target has {0} items, spec has {1}", len(target), len(spec))
++        # For sets, we just check membership
++        for item in target:
++            found = False
++            for s_item in spec:
++                try:
++                    if scope[glom](item, s_item, scope) == item:
++                        found = True
++                        break
++                except GlomError:
++                    continue
++            if not found:
++                raise MatchError("item {0!r} not found in spec", item)
++        return target
++    elif isinstance(spec, type):
+         if not isinstance(target, spec):
+             raise TypeMatchError(type(target), spec)
+-    elif isinstance(spec, dict):
+-        return _handle_dict(target, spec, scope)
+-    elif isinstance(spec, (list, set, frozenset)):
+-        if not isinstance(target, type(spec)):
+-            raise TypeMatchError(type(target), type(spec))
+-        result = []
+-        for item in target:
+-            for child in spec:
+-                try:
+-                    result.append(scope[glom](item, child, scope))
+-                    break
+-                except GlomError as e:
+-                    last_error = e
+-            else:  # did not break, something went wrong
+-                if target and not spec:
+-                    raise MatchError(
+-                        "{0!r} does not match empty {1}", target, type(spec).__name__)
+-                # NOTE: unless error happens above, break will skip else branch
+-                # so last_error will have been assigned
+-                raise last_error
+-        if type(spec) is not list:
+-            return type(spec)(result)
+-        return result
+-    elif isinstance(spec, tuple):
+-        if not isinstance(target, tuple):
+-            raise TypeMatchError(type(target), tuple)
+-        if len(target) != len(spec):
++        return target
++    else:
++        if target != spec:
+             raise MatchError("{0!r} does not match {1!r}", target, spec)
+-        result = []
+-        for sub_target, sub_spec in zip(target, spec):
+-            result.append(scope[glom](sub_target, sub_spec, scope))
+-        return tuple(result)
+-    elif callable(spec):
+-        try:
+-            if spec(target):
+-                return target
+-        except Exception as e:
+-            raise MatchError(
+-                "{0}({1!r}) did not validate (got exception {2!r})", spec.__name__, target, e)
+-        raise MatchError(
+-            "{0}({1!r}) did not validate (non truthy return)", spec.__name__, target)
+-    elif target != spec:
+-        raise MatchError("{0!r} does not match {1!r}", target, spec)
+-    return target
++        return target
+ 
+ 
+ class Switch:

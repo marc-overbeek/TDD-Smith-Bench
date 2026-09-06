@@ -1,0 +1,52 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -174,23 +174,21 @@
+         num_updates: Optional[int] = None,
+         milestones: Optional[List[int]] = None,
+     ) -> None:
+-        """
+-        Args:
+-            values: param value in each range
+-            num_updates: the end of the last range. If None, will use ``milestones[-1]``
+-            milestones: the boundary of each range. If None, will evenly split ``num_updates``
+-
+-        For example, all the following combinations define the same scheduler:
+-
+-        * num_updates=90, milestones=[30, 60], values=[1, 0.1, 0.01]
+-        * num_updates=90, values=[1, 0.1, 0.01]
+-        * milestones=[30, 60, 90], values=[1, 0.1, 0.01]
+-        * milestones=[3, 6, 9], values=[1, 0.1, 0.01]  (ParamScheduler is scale-invariant)
+-        """
++        if not (isinstance(values, Sequence) and len(values) > 0):
++            raise ValueError(
++                "MultiStep scheduler requires a list of at least one param value"
++            )
++        if num_updates is not None and num_updates < 0:
++            raise ValueError(
++                "Total num_updates must be greater than or equal to 0"
++            )
+         if num_updates is None and milestones is None:
+             raise ValueError("num_updates and milestones cannot both be None")
++        if milestones is not None and not isinstance(milestones, (list, tuple)):
++            raise ValueError(
++                "MultiStep scheduler requires a list of milestones"
++            )
+         if milestones is None:
+-            # Default equispaced drop_epochs behavior
+             milestones = []
+             step_width = math.ceil(num_updates / float(len(values)))
+             for idx in range(len(values) - 1):
+@@ -218,13 +216,11 @@
+ 
+         start_epoch = 0
+         for milestone in self._milestones:
+-            # Do not exceed the total number of epochs
+             if milestone >= self._num_updates:
+                 raise ValueError(
+                     "Milestone must be smaller than total number of updates: "
+                     "num_updates=%d, milestone=%d" % (self._num_updates, milestone)
+                 )
+-            # Must be in ascending order
+             if start_epoch >= milestone:
+                 raise ValueError(
+                     "Milestone must be smaller than start epoch: start_epoch=%d, milestone=%d"

@@ -1,0 +1,67 @@
+--- a/src/mistune/block_parser.py
++++ b/src/mistune/block_parser.py
+@@ -392,19 +392,15 @@
+     def parse_raw_html(self, m: Match[str], state: BlockState) -> Optional[int]:
+         marker = m.group(0).strip()
+ 
+-        # rule 2
+         if marker == '<!--':
+             return _parse_html_to_end(state, '-->', m.end())
+ 
+-        # rule 3
+         if marker == '<?':
+             return _parse_html_to_end(state, '?>', m.end())
+ 
+-        # rule 5
+         if marker == '<![CDATA[':
+             return _parse_html_to_end(state, ']]>', m.end())
+ 
+-        # rule 4
+         if marker.startswith('<!'):
+             return _parse_html_to_end(state, '>', m.end())
+ 
+@@ -412,25 +408,20 @@
+         open_tag = None
+         if marker.startswith('</'):
+             close_tag = marker[2:].lower()
+-            # rule 6
+             if close_tag in BLOCK_TAGS:
+                 return _parse_html_to_newline(state, self.BLANK_LINE)
+         else:
+             open_tag = marker[1:].lower()
+-            # rule 1
+             if open_tag in PRE_TAGS:
+                 end_tag = '</' + open_tag + '>'
+                 return _parse_html_to_end(state, end_tag, m.end())
+-            # rule 6
+             if open_tag in BLOCK_TAGS:
+                 return _parse_html_to_newline(state, self.BLANK_LINE)
+ 
+-        # Blocks of type 7 may not interrupt a paragraph.
+         end_pos = state.append_paragraph()
+         if end_pos:
+             return end_pos
+ 
+-        # rule 7
+         start_pos = m.end()
+         end_pos = state.find_line_end()
+         if (open_tag and _OPEN_TAG_END.match(state.src, start_pos, end_pos)) or \
+@@ -483,14 +474,14 @@
+     return end_pos
+ 
+ 
+-def _parse_html_to_newline(state: BlockState, newline: Pattern[str]) -> int:
++def _parse_html_to_newline(state: BlockState, newline: Pattern[str]) ->int:
+     m = newline.search(state.src, state.cursor)
+     if m:
+-        end_pos = m.start()
+-        text = state.get_text(end_pos)
++        text = state.get_text(m.start())
++        end_pos = m.end()
+     else:
+         text = state.src[state.cursor:]
+         end_pos = state.cursor_max
+-
++    
+     state.append_token({'type': 'block_html', 'raw': text})
+     return end_pos

@@ -1,0 +1,93 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -22,20 +22,8 @@
+ Handle = Callable[[List[Any], List[Any]], Union[typing.Counter[str], Number]]
+ 
+ 
+-def get_shape(val: Any) -> Optional[List[int]]:
+-    """
+-    Get the shapes from a jit value object.
+-
+-    Args:
+-        val (torch._C.Value): jit value object.
+-
+-    Returns:
+-        list(int): return a list of ints.
+-    """
+-    if val.isCompleteTensor():
+-        return val.type().sizes()
+-    else:
+-        return None
++def get_shape(val: Any) ->Optional[List[int]]:
++    pass
+ 
+ 
+ """
+@@ -51,44 +39,8 @@
+ """
+ 
+ 
+-def generic_activation_jit(op_name: Optional[str] = None) -> Handle:
+-    """
+-    This method return a handle that counts the number of activation from the
+-    output shape for the specified operation.
+-
+-    Args:
+-        op_name (str): The name of the operation. If given, the handle will
+-            return a counter using this name.
+-
+-    Returns:
+-        Callable: An activation handle for the given operation.
+-    """
+-
+-    def _generic_activation_jit(
+-        i: Any, outputs: List[Any]
+-    ) -> Union[typing.Counter[str], Number]:
+-        """
+-        This is a generic jit handle that counts the number of activations for any
+-        operation given the output shape.
+-        """
+-        out_shape = get_shape(outputs[0])
+-        ac_count = prod(out_shape)
+-        if op_name is None:
+-            return ac_count
+-        else:
+-            return Counter({op_name: ac_count})
+-
+-    return _generic_activation_jit
+-
+-
+-def addmm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-    """
+-    Count flops for fully connected layers.
+-    """
+-    # Count flop for nn.Linear
+-    # inputs is a list of length 3.
+-    input_shapes = [get_shape(v) for v in inputs[1:3]]
+-    # input_shapes[0]: [batch size, input feature dimension]
++def generic_activation_jit(op_name: Optional[str]=None) ->Handle:
++    pass
+     # input_shapes[1]: [batch size, output feature dimension]
+     assert len(input_shapes[0]) == 2, input_shapes[0]
+     assert len(input_shapes[1]) == 2, input_shapes[1]
+@@ -98,18 +50,8 @@
+     return flops
+ 
+ 
+-def linear_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-    """
+-    Count flops for the aten::linear operator.
+-    """
+-    # Inputs is a list of length 3; unlike aten::addmm, it is the first
+-    # two elements that are relevant.
+-    input_shapes = [get_shape(v) for v in inputs[0:2]]
+-    # input_shapes[0]: [dim0, dim1, ..., input_feature_dim]
+-    # input_shapes[1]: [output_feature_dim, input_feature_dim]
+-    assert input_shapes[0][-1] == input_shapes[1][-1]
+-    flops = prod(input_shapes[0]) * input_shapes[1][0]
+-    return flops
++def linear_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:
++    pass
+ 
+ 
+ def bmm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:

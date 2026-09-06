@@ -1,0 +1,88 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1722,41 +1722,60 @@
+ 
+ 
+ def _format_t(path, root=T):
+-    prepr = [{T: 'T', S: 'S', A: 'A'}[root]]
++    """Format a T-like object's operations into a string representation."""
++    if not path:
++        # Just the root
++        if root is T:
++            return 'T'
++        elif root is S:
++            return 'S'
++        elif root is A:
++            return 'A'
++        return repr(root)
++    
++    # Build the representation
++    root_name = {T: 'T', S: 'S', A: 'A'}.get(root, repr(root))
++    result = root_name
++    
+     i = 0
+     while i < len(path):
+-        op, arg = path[i], path[i + 1]
++        op = path[i]
++        arg = path[i + 1] if i + 1 < len(path) else None
++        
+         if op == '.':
+-            prepr.append('.' + arg)
++            result += f'.{arg}'
+         elif op == '[':
+-            if type(arg) is tuple:
+-                index = ", ".join([_format_slice(x) for x in arg])
++            # Handle both single items and tuples of slices
++            if isinstance(arg, tuple):
++                # Multiple indices like T[::3, 1:, 1:2, :2:3]
++                formatted_items = ', '.join(_format_slice(item) for item in arg)
+             else:
+-                index = _format_slice(arg)
+-            prepr.append(f"[{index}]")
++                formatted_items = _format_slice(arg)
++            result += f'[{formatted_items}]'
++        elif op == 'P':
++            result += f'[{bbrepr(arg)}]'
+         elif op == '(':
+             args, kwargs = arg
+-            prepr.append(format_invocation(args=args, kwargs=kwargs, repr=bbrepr))
+-        elif op == 'P':
+-            return _format_path(path)
++            args_str = ', '.join(bbrepr(a) for a in args)
++            kwargs_str = ', '.join(f'{k}={bbrepr(v)}' for k, v in kwargs.items())
++            all_args = ', '.join(filter(None, [args_str, kwargs_str]))
++            result += f'({all_args})'
+         elif op == 'x':
+-            prepr.append(".__star__()")
++            result += '.__star__()'
+         elif op == 'X':
+-            prepr.append(".__starstar__()")
+-        elif op in ('_', '~'):  # unary arithmetic operators
+-            if any([o in path[:i] for o in '+-/%:&|^~_']):
+-                prepr = ['('] + prepr + [')']
+-            prepr = ['-' if op == '_' else op] + prepr
+-        else:  # binary arithmetic operators
+-            formatted_arg = bbrepr(arg)
+-            if type(arg) is TType:
+-                arg_path = arg.__ops__
+-                if any([o in arg_path for o in '+-/%:&|^~_']):
+-                    formatted_arg = '(' + formatted_arg + ')'
+-            prepr.append(' ' + ('**' if op == ':' else op) + ' ')
+-            prepr.append(formatted_arg)
++            result += '.__starstar__()'
++        elif op in ('+', '-', '*', '/', '%', ':', '&', '|', '^'):
++            result = f'({result} {op} {bbrepr(arg)})'
++        elif op == '#':
++            result = f'({result} // {bbrepr(arg)})'
++        elif op == '~':
++            result = f'(~{result})'
++        elif op == '_':
++            result = f'(-{result})'
++        
+         i += 2
+-    return "".join(prepr)
++    
++    return result
+ 
+ 
+ class Val:

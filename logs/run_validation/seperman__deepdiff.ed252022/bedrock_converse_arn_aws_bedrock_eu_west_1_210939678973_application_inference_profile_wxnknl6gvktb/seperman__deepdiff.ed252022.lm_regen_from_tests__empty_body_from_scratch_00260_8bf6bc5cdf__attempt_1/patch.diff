@@ -1,0 +1,71 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -318,27 +318,53 @@
+ 
+ 
+ def add_root_to_paths(paths):
+-    """
+-    Sometimes the users want to just pass
+-    [key] instead of root[key] for example.
+-    Here we automatically add all sorts of variations that might match
+-    the path they were supposed to pass. 
+-    """
+-    if paths is None:
+-        return
+-    result = SetOrdered()
++    if not paths:
++        return None
++    
++    # Convert string to set
++    if isinstance(paths, strings):
++        paths = {paths}
++    else:
++        paths = set(paths)
++    
++    result = set()
+     for path in paths:
++        # If path already starts with 'root', keep it as is
+         if path.startswith('root'):
+             result.add(path)
+         else:
++            # Check if it looks like an index (starts with [ or is a number)
++            if path.startswith('[') or path.startswith('root['):
++                result.add(f'root{path}')
++            else:
++                # It's a key name, convert to root['key']
++                result.add(f"root['{path}']")
++    
++    return result
++
++def add_root_to_paths(paths):
++    if not paths:
++        return None
++    
++    # Convert string to set
++    if isinstance(paths, strings):
++        paths = {paths}
++    else:
++        paths = set(paths)
++    
++    result = set()
++    for path in paths:
++        # If path already starts with 'root', keep it as is
++        if path.startswith('root'):
++            result.add(path)
++        else:
++            # Check if it's a numeric index
+             if path.isdigit():
++                result.add(f'root[{path}]')
++            else:
++                # It's a key name, convert to root['key']
+                 result.add(f"root['{path}']")
+-                result.add(f"root[{path}]")
+-            elif path[0].isdigit():
+-                result.add(f"root['{path}']")
+-            else:
+-                result.add(f"root.{path}")
+-                result.add(f"root['{path}']")
++    
+     return result
+ 
+ 

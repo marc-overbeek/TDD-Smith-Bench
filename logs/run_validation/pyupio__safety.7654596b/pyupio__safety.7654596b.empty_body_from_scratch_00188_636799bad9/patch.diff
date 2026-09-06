@@ -1,0 +1,82 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -385,75 +385,10 @@
+                 yield entry
+ 
+ 
+-def get_vulnerability_from(
+-    vuln_id: str,
+-    cve: Optional[CVE],
+-    data: Dict[str, Any],
+-    specifier: str,
+-    db: Dict[str, Any],
+-    name: str,
+-    pkg: Package,
+-    ignore_vulns: Dict[str, Any],
+-    affected: SafetyRequirement
+-) -> Vulnerability:
+-    """
+-    Constructs a Vulnerability object from the provided data.
+-
+-    Args:
+-        vuln_id (str): The vulnerability ID.
+-        cve (Optional[CVE]): The CVE object.
+-        data (Dict[str, Any]): The vulnerability data.
+-        specifier (str): The specifier set.
+-        db (Dict[str, Any]): The database.
+-        name (str): The package name.
+-        pkg (Package): The Package object.
+-        ignore_vulns (Dict[str, Any]): The ignored vulnerabilities.
+-        affected (SafetyRequirement): The affected requirement.
+-
+-    Returns:
+-        Vulnerability: The constructed Vulnerability object.
+-    """
+-    base_domain = db.get('meta', {}).get('base_domain')
+-    unpinned_ignored = ignore_vulns.get(vuln_id, {}).get('requirements', None)
+-    should_ignore = not unpinned_ignored or str(affected.specifier) in unpinned_ignored
+-
+-    ignored = (ignore_vulns and vuln_id in ignore_vulns and should_ignore and (
+-            not ignore_vulns[vuln_id]['expires'] or ignore_vulns[vuln_id]['expires'] > datetime.utcnow()))
+-    more_info_url = f"{base_domain}{data.get('more_info_path', '')}"
+-    severity = None
+-
+-    if cve and (cve.cvssv2 or cve.cvssv3):
+-        severity = Severity(source=cve.name, cvssv2=cve.cvssv2, cvssv3=cve.cvssv3)
+-
+-    analyzed_requirement = affected
+-    analyzed_version = next(iter(analyzed_requirement.specifier)).version if is_pinned_requirement(
+-        analyzed_requirement.specifier) else None
+-
+-    vulnerable_spec = set()
+-    vulnerable_spec.add(specifier)
+-
+-    return Vulnerability(
+-        vulnerability_id=vuln_id,
+-        package_name=name,
+-        pkg=pkg,
+-        ignored=ignored,
+-        ignored_reason=ignore_vulns.get(vuln_id, {}).get('reason', None) if ignore_vulns else None,
+-        ignored_expires=ignore_vulns.get(vuln_id, {}).get('expires', None) if ignore_vulns else None,
+-        vulnerable_spec=vulnerable_spec,
+-        all_vulnerable_specs=data.get("specs", []),
+-        analyzed_version=analyzed_version,
+-        analyzed_requirement=analyzed_requirement,
+-        advisory=data.get("advisory"),
+-        is_transitive=data.get("transitive", False),
+-        published_date=data.get("published_date"),
+-        fixed_versions=[ver for ver in data.get("fixed_versions", []) if ver],
+-        closest_versions_without_known_vulnerabilities=data.get("closest_secure_versions", []),
+-        resources=data.get("vulnerability_resources"),
+-        CVE=cve,
+-        severity=severity,
+-        affected_versions=data.get("affected_versions", []),
+-        more_info_url=more_info_url
+-    )
++def get_vulnerability_from(vuln_id: str, cve: Optional[CVE], data: Dict[str,
++    Any], specifier: str, db: Dict[str, Any], name: str, pkg: Package,
++    ignore_vulns: Dict[str, Any], affected: SafetyRequirement) ->Vulnerability:
++    pass
+ 
+ 
+ def get_cve_from(data: Dict[str, Any], db_full: Dict[str, Any]) -> Optional[CVE]:

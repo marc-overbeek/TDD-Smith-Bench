@@ -1,0 +1,21 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -328,6 +328,18 @@
+             total=typed_dict.__total__,
+         )
+ 
++    def rewrite_TypedDict(self, typed_dict):
++        if is_anonymous_typed_dict(typed_dict):
++            return self.rewrite_anonymous_TypedDict(typed_dict)
++        return self.make_builtin_typed_dict(
++            typed_dict.__name__,
++            {
++                name: self.rewrite(typ)
++                for name, typ in typed_dict.__annotations__.items()
++            },
++            total=typed_dict.__total__,
++        )
++
+     def rewrite_Union(self, union):
+         return self._rewrite_container(Union, union)
+ 

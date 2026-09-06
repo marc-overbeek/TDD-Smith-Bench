@@ -1,0 +1,40 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -303,14 +303,9 @@
+ 
+ 
+ class WebSocketRoute(BaseRoute):
+-    def __init__(
+-        self,
+-        path: str,
+-        endpoint: typing.Callable[..., typing.Any],
+-        *,
+-        name: str | None = None,
+-        middleware: typing.Sequence[Middleware] | None = None,
+-    ) -> None:
++    def __init__(self, path: str, endpoint: typing.Callable[..., typing.Any], *,
++        name: (str | None)=None, middleware: (typing.Sequence[Middleware] |
++        None)=None) ->None:
+         assert path.startswith("/"), "Routed paths must start with '/'"
+         self.path = path
+         self.endpoint = endpoint
+@@ -320,10 +315,8 @@
+         while isinstance(endpoint_handler, functools.partial):
+             endpoint_handler = endpoint_handler.func
+         if inspect.isfunction(endpoint_handler) or inspect.ismethod(endpoint_handler):
+-            # Endpoint is function or method. Treat it as `func(websocket)`.
+             self.app = websocket_session(endpoint)
+         else:
+-            # Endpoint is a class. Treat it as ASGI.
+             self.app = endpoint
+ 
+         if middleware is not None:
+@@ -364,7 +357,7 @@
+     def __eq__(self, other: typing.Any) -> bool:
+         return isinstance(other, WebSocketRoute) and self.path == other.path and self.endpoint == other.endpoint
+ 
+-    def __repr__(self) -> str:
++    def __repr__(self) ->str:
+         return f"{self.__class__.__name__}(path={self.path!r}, name={self.name!r})"
+ 
+ 

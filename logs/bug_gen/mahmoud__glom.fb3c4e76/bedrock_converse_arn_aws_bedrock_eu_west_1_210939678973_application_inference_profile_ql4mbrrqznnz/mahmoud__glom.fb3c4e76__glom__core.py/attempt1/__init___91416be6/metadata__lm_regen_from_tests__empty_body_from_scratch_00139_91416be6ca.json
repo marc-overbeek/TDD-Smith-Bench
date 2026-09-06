@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, I need to understand what `Fill.__init__` should do. The tests show:\n\n1. `Fill(T)` - takes a spec argument\n2. `Fill()` - no argument (default)\n3. `repr(Fill())` == `'Fill()'`\n4. `repr(Fill(T))` == `'Fill(T)'`\n5. `repr(Fill(len))` == `'Fill(len)'`\n\nThe current implementation has `def __init__(self, spec=None): pass` - it doesn't set `self.spec`, which means `glomit` and `__repr__` will fail with `AttributeError`.\n\nThe fix is simple - just set `self.spec = spec`:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing tests, I need to understand what `Fill.__init__` should do. The tests show:\n\n1. `Fill(T)` - takes a spec argument\n2. `Fill()` - no argument (default)\n3. `repr(Fill())` == `'Fill()'`\n4. `repr(Fill(T))` == `'Fill(T)'`\n5. `repr(Fill(len))` == `'Fill(len)'`\n\nThe current implementation has `def __init__(self, spec=None): pass` - it doesn't set `self.spec`, which means `glomit` and `__repr__` will fail with `AttributeError`.\n\nThe fix is simple - just set `self.spec = spec`:\n\n```\ndef __init__(self, spec=None):\n    self.spec = spec\n```",
+  "rewrite": "def __init__(self, spec=None):\n    self.spec = spec\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

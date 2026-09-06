@@ -1,0 +1,27 @@
+--- a/safety/scan/util.py
++++ b/safety/scan/util.py
+@@ -140,24 +140,9 @@
+         return self.__run__(self.TAG_CMD, env_var="SAFETY_GIT_TAG")
+ 
+     def describe(self) -> Optional[str]:
+-        """
+-        Get the Git describe output.
+-
+-        Returns:
+-            Optional[str]: The Git describe output, or None if an error occurred.
+-        """
+         return self.__run__(self.DESCRIBE_CMD)
+ 
+     def dirty(self, raw_describe: str) -> bool:
+-        """
+-        Check if the working directory is dirty.
+-
+-        Args:
+-            raw_describe (str): The raw describe output.
+-
+-        Returns:
+-            bool: True if the working directory is dirty, otherwise False.
+-        """
+         if os.environ.get("SAFETY_GIT_DIRTY") in ["0", "1"]:
+             return bool(int(os.environ.get("SAFETY_GIT_DIRTY")))
+ 

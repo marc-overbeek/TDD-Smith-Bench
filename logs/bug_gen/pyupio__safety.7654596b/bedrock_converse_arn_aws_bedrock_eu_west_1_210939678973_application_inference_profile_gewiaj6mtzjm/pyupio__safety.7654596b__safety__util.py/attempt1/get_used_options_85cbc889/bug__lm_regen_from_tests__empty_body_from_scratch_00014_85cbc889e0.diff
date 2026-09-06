@@ -1,0 +1,56 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -207,27 +207,32 @@
+     return flags
+ 
+ 
+-def get_used_options() -> Dict[str, Dict[str, int]]:
+-    """
+-    Get the used options from the command-line arguments.
+-
+-    Returns:
+-        Dict[str, Dict[str, int]]: A dictionary of used options and their counts.
+-    """
+-    flags = get_flags_from_context()
+-    used_options = {}
+-
+-    for arg in sys.argv:
+-        cleaned_arg = arg if '=' not in arg else arg.split('=')[0]
+-        if cleaned_arg in flags:
+-            option_used = flags.get(cleaned_arg)
+-
+-            if option_used in used_options:
+-                used_options[option_used][cleaned_arg] = used_options[option_used].get(cleaned_arg, 0) + 1
+-            else:
+-                used_options[option_used] = {cleaned_arg: 1}
+-
+-    return used_options
++def get_used_options() ->Dict[str, Dict[str, int]]:
++    context = click.get_current_context(silent=True)
++    if not context:
++        return {}
++    
++    flags_map = get_flags_from_context()
++    used_options = defaultdict(lambda: defaultdict(int))
++    
++    for param in context.command.params:
++        if param.name in context.params and context.params[param.name] is not None:
++            # Check if this parameter was explicitly provided
++            source = context.get_parameter_source(param.name)
++            if source not in (click.core.ParameterSource.DEFAULT, click.core.ParameterSource.NONE):
++                # Get all flags for this parameter
++                flags = param.opts + param.secondary_opts
++                for flag in flags:
++                    if flag in flags_map:
++                        option_name = flags_map[flag]
++                        used_options[option_name][flag] += 1
++    
++    # Convert defaultdict to regular dict for return
++    result = {}
++    for option_name, flags_dict in used_options.items():
++        result[option_name] = dict(flags_dict)
++    
++    return result
+ 
+ 
+ def get_safety_version() -> str:

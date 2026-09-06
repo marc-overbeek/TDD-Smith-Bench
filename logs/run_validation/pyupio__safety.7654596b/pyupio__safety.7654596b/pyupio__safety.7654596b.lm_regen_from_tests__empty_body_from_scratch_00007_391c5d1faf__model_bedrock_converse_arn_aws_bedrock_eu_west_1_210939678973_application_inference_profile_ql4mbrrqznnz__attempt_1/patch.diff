@@ -1,0 +1,41 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -40,19 +40,30 @@
+     return mirror.startswith("http://") or mirror.startswith("https://")
+ 
+ 
+-def is_supported_by_parser(path: str) -> bool:
+-    """
+-    Check if the file path is supported by the parser.
++def is_supported_by_parser(path: str) ->bool:
++    """
++    Check if a file path is supported by the dparse parser.
+ 
+     Args:
+         path (str): The file path.
+ 
+     Returns:
+-        bool: True if the file path is supported, False otherwise.
+-    """
+-    supported_types = (".txt", ".in", ".yml", ".ini", "Pipfile",
+-                       "Pipfile.lock", "setup.cfg", "poetry.lock")
+-    return path.endswith(supported_types)
++        bool: True if the file is supported by the dparse parser, False otherwise.
++    """
++    supported_files = [
++        filetypes.requirements_txt,
++        filetypes.conda_yml,
++        filetypes.tox_ini,
++        filetypes.pipfile,
++        filetypes.pipfile_lock,
++        filetypes.setup_cfg,
++    ]
++    
++    for file_type in supported_files:
++        if path.endswith(file_type):
++            return True
++    
++    return False
+ 
+ 
+ def parse_requirement(dep: Any, found: str) -> SafetyRequirement:

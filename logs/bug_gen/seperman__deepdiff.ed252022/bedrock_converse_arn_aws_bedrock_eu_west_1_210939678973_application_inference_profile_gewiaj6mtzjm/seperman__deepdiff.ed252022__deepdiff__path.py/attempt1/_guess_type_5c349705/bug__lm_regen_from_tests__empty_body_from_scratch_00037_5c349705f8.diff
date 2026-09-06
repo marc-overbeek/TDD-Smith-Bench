@@ -1,0 +1,28 @@
+--- a/deepdiff/path.py
++++ b/deepdiff/path.py
+@@ -124,14 +124,18 @@
+     return obj
+ 
+ 
++obj[elem] = _guess_type(elements, elem, index, next_element)
++
++obj.append(_guess_type(elements, elem, index), next_element)
++
+ def _guess_type(elements, elem, index, next_element):
+-    # If we are not at the last elements
+-    if index < len(elements) - 1:
+-        # We assume it is a nested dictionary not a nested list
+-        return {}
+-    if isinstance(next_element, int):
+-        return []
+-    return {}
++    # Return a default value based on context
++    # If we're dealing with a list index, return None or 0
++    # If we're dealing with a dict key, return a simple default
++    if isinstance(elem, int):
++        return None
++    else:
++        return None
+ 
+ 
+ def _get_nested_obj_and_force(obj, elements, next_element=None):

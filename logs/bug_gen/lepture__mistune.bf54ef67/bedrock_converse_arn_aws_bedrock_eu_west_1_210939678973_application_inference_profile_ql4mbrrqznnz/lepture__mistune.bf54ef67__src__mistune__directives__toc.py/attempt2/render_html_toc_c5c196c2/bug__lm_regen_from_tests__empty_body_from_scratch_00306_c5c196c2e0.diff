@@ -1,0 +1,40 @@
+--- a/src/mistune/directives/toc.py
++++ b/src/mistune/directives/toc.py
+@@ -91,18 +91,25 @@
+             md.renderer.register('toc', render_html_toc)
+ 
+ 
+-def render_html_toc(
+-    renderer: "BaseRenderer", title: str, collapse: bool = False, **attrs: Any
+-) -> str:
+-    if not title:
+-        title = 'Table of Contents'
+-    content = render_toc_ul(attrs['toc'])
+-
+-    html = '<details class="toc"'
+-    if not collapse:
+-        html += ' open'
+-    html += '>\n<summary>' + title + '</summary>\n'
+-    return html + content + '</details>\n'
++def render_html_toc(renderer: 'BaseRenderer', title: str, collapse: bool=
++    False, **attrs: Any) ->str:
++    toc = attrs.get('toc', [])
++    if not toc:
++        return ''
++    
++    ul = render_toc_ul(toc)
++    
++    if collapse:
++        if title:
++            summary = '<summary>' + title + '</summary>\n'
++        else:
++            summary = '<summary>Table of Contents</summary>\n'
++        return '<details open>\n' + summary + ul + '</details>\n'
++    
++    if title:
++        return '<section class="toc">\n<h2>' + title + '</h2>\n' + ul + '</section>\n'
++    
++    return '<section class="toc">\n' + ul + '</section>\n'
+ 
+ 
+ def _normalize_level(options: Dict[str, Any], name: str, default: Any) -> Any:

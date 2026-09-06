@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing test, I need to analyze what the `json_alias` function should do. The test shows that when `--json` is used, it should set the `SAFETY_OUTPUT` environment variable to 'json'.\n\nLooking at the similar functions like `html_alias` and `bare_alias`, I can see the pattern:\n1. They check if the parameter value is truthy\n2. If so, they set an environment variable\n3. They return the value\n\nThe `json_alias` function should set `SAFETY_OUTPUT` to 'json' when the json flag is used.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "Looking at the failing test, I need to analyze what the `json_alias` function should do. The test shows that when `--json` is used, it should set the `SAFETY_OUTPUT` environment variable to 'json'.\n\nLooking at the similar functions like `html_alias` and `bare_alias`, I can see the pattern:\n1. They check if the parameter value is truthy\n2. If so, they set an environment variable\n3. They return the value\n\nThe `json_alias` function should set `SAFETY_OUTPUT` to 'json' when the json flag is used.\n\n```\ndef json_alias(ctx: click.Context, param: click.Parameter, value: bool\n    ) ->Optional[bool]:\n    if value:\n        os.environ['SAFETY_OUTPUT'] = 'json'\n        return value\n```",
+  "rewrite": "def json_alias(ctx: click.Context, param: click.Parameter, value: bool\n    ) ->Optional[bool]:\n    if value:\n        os.environ['SAFETY_OUTPUT'] = 'json'\n        return value",
+  "strategy": "lm_regen_from_tests"
+}

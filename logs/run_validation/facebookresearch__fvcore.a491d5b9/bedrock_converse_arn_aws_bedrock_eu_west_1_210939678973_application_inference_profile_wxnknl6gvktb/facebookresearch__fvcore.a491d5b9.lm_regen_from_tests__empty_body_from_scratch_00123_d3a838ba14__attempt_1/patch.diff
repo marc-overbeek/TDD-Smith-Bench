@@ -1,0 +1,53 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -126,31 +126,26 @@
+     return flop
+ 
+ 
+-def conv_flop_count(
+-    x_shape: List[int],
+-    w_shape: List[int],
+-    out_shape: List[int],
+-    transposed: bool = False,
+-) -> Number:
+-    """
+-    Count flops for convolution. Note only multiplication is
+-    counted. Computation for addition and bias is ignored.
+-
+-    Flops for a transposed convolution are calculated as
+-    flops = (x_shape[2:] * prod(w_shape) * batch_size).
+-
+-    Args:
+-        x_shape (list(int)): The input shape before convolution.
+-        w_shape (list(int)): The filter shape.
+-        out_shape (list(int)): The output shape after convolution.
+-        transposed (bool): is the convolution transposed
+-    Returns:
+-        int: the number of flops
+-    """
++gt_flop = (batch_size * input_dim * output_dim * kernel_size ** conv_dim * spatial_size ** conv_dim / group_size / 1000000000.0)
++
++def conv_flop_count(x_shape: List[int], w_shape: List[int], out_shape: List[int], transposed: bool=False) ->Number:
+     batch_size = x_shape[0]
+-    conv_shape = (x_shape if transposed else out_shape)[2:]
+-    flop = batch_size * prod(w_shape) * prod(conv_shape)
+-    return flop
++    in_channels = x_shape[1]
++    out_channels = w_shape[0]
++    
++    # kernel_size^conv_dim
++    kernel_ops = prod(w_shape[2:])
++    
++    # output spatial dimensions
++    out_spatial_size = prod(out_shape[2:])
++    
++    # groups = in_channels / w_shape[1]
++    groups = in_channels // w_shape[1]
++    
++    # Total flops
++    flops = batch_size * in_channels * out_channels * kernel_ops * out_spatial_size // groups
++    
++    return flops
+ 
+ 
+ def conv_flop_jit(inputs: List[Any], outputs: List[Any]) -> typing.Counter[str]:

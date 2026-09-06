@@ -1,0 +1,54 @@
+--- a/safety/scan/ecosystems/python/dependencies.py
++++ b/safety/scan/ecosystems/python/dependencies.py
+@@ -121,24 +121,33 @@
+     return path.endswith(supported_types)
+ 
+ 
+-def parse_requirement(dep: str, found: Optional[str]) -> PythonSpecification:
+-    """
+-    Parses a requirement and creates a PythonSpecification object.
+-
+-    Args:
+-        dep (str): The dependency string.
+-        found (Optional[str]): The found path.
+-
+-    Returns:
+-        PythonSpecification: The parsed requirement.
+-    """
+-    req = PythonSpecification(dep)
+-    req.found = Path(found).resolve() if found else None
+-
+-    if req.specifier == SpecifierSet(''):
+-        req.specifier = SpecifierSet('>=0')
+-
+-    return req
++PythonSpecification(f"{dep_name}=={dep_version}", found=site_pkgs_path)
++
++def parse_requirement(dep: str, found: Optional[str]) ->PythonSpecification:
++    specs_str = ""
++    if dep.specs:
++        specs_str = "".join([f"{op}{ver}" for op, ver in dep.specs])
++    
++    extras_str = ""
++    if dep.extras:
++        extras_str = f"[{','.join(dep.extras)}]"
++    
++    spec_string = f"{dep.name}{extras_str}{specs_str}" if specs_str else f"{dep.name}{extras_str}"
++    
++    return PythonSpecification(spec_string, found=found)
++
++def parse_requirement(dep: str, found: Optional[str]) ->PythonSpecification:
++    specs_str = ""
++    if hasattr(dep, 'specs') and dep.specs:
++        specs_str = "".join([f"{op}{ver}" for op, ver in dep.specs])
++    
++    extras_str = ""
++    if hasattr(dep, 'extras') and dep.extras:
++        extras_str = f"[{','.join(dep.extras)}]"
++    
++    spec_string = f"{dep.name}{extras_str}{specs_str}" if specs_str else f"{dep.name}{extras_str}"
++    
++    return PythonSpecification(spec_string, found=found)
+ 
+ 
+ def read_requirements(fh, resolve: bool = True) -> Generator[PythonDependency, None, None]:

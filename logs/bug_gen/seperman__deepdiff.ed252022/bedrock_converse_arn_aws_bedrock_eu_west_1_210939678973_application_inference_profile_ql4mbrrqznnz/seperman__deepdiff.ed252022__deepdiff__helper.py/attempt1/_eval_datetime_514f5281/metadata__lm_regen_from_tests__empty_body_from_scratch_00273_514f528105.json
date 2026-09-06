@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the code, I need to implement `_eval_datetime` which is used in `LITERAL_EVAL_PRE_PROCESS` to parse datetime strings.\n\nThe function receives `params` which is the content inside `datetime.datetime(...)` with quotes stripped. For example, for `datetime.datetime(2022, 4, 10, 0, 40, 41, 357857)`, params would be `2022, 4, 10, 0, 40, 41, 357857`.\n\nLooking at `_eval_date` for reference - it wraps params in parentheses, uses `literal_eval` to get a tuple, then unpacks into the constructor.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the code, I need to implement `_eval_datetime` which is used in `LITERAL_EVAL_PRE_PROCESS` to parse datetime strings.\n\nThe function receives `params` which is the content inside `datetime.datetime(...)` with quotes stripped. For example, for `datetime.datetime(2022, 4, 10, 0, 40, 41, 357857)`, params would be `2022, 4, 10, 0, 40, 41, 357857`.\n\nLooking at `_eval_date` for reference - it wraps params in parentheses, uses `literal_eval` to get a tuple, then unpacks into the constructor.\n\n```python\ndef _eval_datetime(params):\n    params = f'({params})'\n    params = literal_eval(params)\n    return datetime.datetime(*params)\n```",
+  "rewrite": "def _eval_datetime(params):\n    params = f'({params})'\n    params = literal_eval(params)\n    return datetime.datetime(*params)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

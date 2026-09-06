@@ -1,0 +1,44 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -40,18 +40,34 @@
+     def __init__(self, s: str="") -> None:
+         self.offset = 0
+         if s and len(s) >= 2:
++            # Handle different timezone formats
+             if s[0] in ('−', '-'):
+                 mult = -1
+                 s = s[1:]
++            elif s[0] == '+':
++                mult = 1
++                s = s[1:]
+             else:
+-                if s[0] == '+':
+-                    s = s[1:]
+                 mult = 1
+-            hour = int(s[:2]) if s[:2].isdigit() else 0
+-            if len(s) >= 4:
+-                minute = int(s[-2:]) if s[-2:].isdigit() else 0
+-            else:
+-                minute = 0
++            
++            # Parse hours and minutes
++            hour = 0
++            minute = 0
++        
++            if len(s) >= 2:
++                # Try to parse hours (first 2 characters)
++                if s[:2].isdigit():
++                    hour = int(s[:2])
++                    # If there are more characters, try to parse minutes
++                    if len(s) >= 4 and s[2] == ':' and s[3:5].isdigit():
++                        minute = int(s[3:5])
++                    elif len(s) >= 4 and s[2] != ':' and s[2:4].isdigit():
++                        minute = int(s[2:4])
++                    elif len(s) >= 4 and s[2] == '0' and s[3:5].isdigit():
++                        minute = int(s[3:5])
++                    elif len(s) >= 2 and s[2:].isdigit():
++                        minute = int(s[2:])
++        
+             self.offset = mult * (hour * 60 + minute)
+ 
+     def utcoffset(self, dt: Optional[mod_datetime.datetime]) -> mod_datetime.timedelta:

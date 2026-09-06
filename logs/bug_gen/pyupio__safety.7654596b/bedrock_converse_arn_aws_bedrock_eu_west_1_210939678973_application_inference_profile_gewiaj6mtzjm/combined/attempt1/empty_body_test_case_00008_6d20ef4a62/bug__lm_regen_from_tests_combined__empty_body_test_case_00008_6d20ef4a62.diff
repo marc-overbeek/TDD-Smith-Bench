@@ -1,0 +1,28 @@
+--- a/safety/cli_util.py
++++ b/safety/cli_util.py
+@@ -776,14 +776,23 @@
+     """
+     @wraps(func)
+     def inner(ctx, output: Optional[ScanOutput], *args, **kwargs):
++        """
++        Handle command execution with output processing.
++
++        Args:
++            ctx: Click context.
++            output (Optional[ScanOutput]): Output format specification.
++            *args: Variable length argument list.
++            **kwargs: Arbitrary keyword arguments.
++        """
+         if output:
+             kwargs.update({"output": output})
+ 
+             if output is ScanOutput.NONE:
+-                return func(ctx, *args, **kwargs)
++                return ctx.invoke(ctx.command, *args, **kwargs)
+ 
+         try:
+-            return func(ctx, *args, **kwargs)
++            return ctx.invoke(ctx.command, *args, **kwargs)
+         except click.ClickException as e:
+             raise e
+         except SafetyError as e:

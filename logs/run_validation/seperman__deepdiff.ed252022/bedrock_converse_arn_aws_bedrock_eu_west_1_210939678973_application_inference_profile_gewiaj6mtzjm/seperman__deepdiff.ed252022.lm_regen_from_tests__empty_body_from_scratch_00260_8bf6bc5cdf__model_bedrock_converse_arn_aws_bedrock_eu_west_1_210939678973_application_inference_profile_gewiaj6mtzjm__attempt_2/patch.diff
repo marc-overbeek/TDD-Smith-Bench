@@ -1,0 +1,55 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -318,27 +318,33 @@
+ 
+ 
+ def add_root_to_paths(paths):
+-    """
+-    Sometimes the users want to just pass
+-    [key] instead of root[key] for example.
+-    Here we automatically add all sorts of variations that might match
+-    the path they were supposed to pass. 
+-    """
+-    if paths is None:
+-        return
+-    result = SetOrdered()
++    if not paths:
++        return set()
++    
++    if isinstance(paths, str):
++        paths = {paths}
++    elif not isinstance(paths, (set, list, tuple)):
++        paths = set(paths)
++    else:
++        paths = set(paths)
++    
++    result = set()
+     for path in paths:
+-        if path.startswith('root'):
++        if isinstance(path, str):
++            # If path doesn't start with 'root' or 'root[' or 'root.'
++            if not (path.startswith('root[') or path.startswith('root.') or path.startswith('root')):
++                # Add root prefix
++                if path.startswith('[') or path.startswith('.'):
++                    # Path starts with bracket or dot, so we need to add 'root' before it
++                    result.add('root' + path)
++                else:
++                    # Regular path, add 'root.' prefix
++                    result.add('root.' + path)
++            else:
++                result.add(path)
++        else:
+             result.add(path)
+-        else:
+-            if path.isdigit():
+-                result.add(f"root['{path}']")
+-                result.add(f"root[{path}]")
+-            elif path[0].isdigit():
+-                result.add(f"root['{path}']")
+-            else:
+-                result.add(f"root.{path}")
+-                result.add(f"root['{path}']")
++    
+     return result
+ 
+ 

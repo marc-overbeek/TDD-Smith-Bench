@@ -1,0 +1,30 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1521,18 +1521,15 @@
+ 
+ 
+ def _s_first_magic(scope, key, _t):
+-    """
+-    enable S.a to do S['a'] or S['a'].val as a special
+-    case for accessing user defined string variables
+-    """
+-    err = None
+-    try:
+-        cur = scope[key]
+-    except KeyError as e:
+-        err = PathAccessError(e, Path(_t), 0)  # always only one level depth, hence 0
+-    if err:
+-        raise err
+-    return cur
++    # Handle the first magic lookup for S expressions
++    # This is called when processing S expressions like S.key or S['key']
++    if key in scope:
++        return scope[key]
++    # If not found in scope, check if it's a special scope variable
++    if key == 'globals':
++        return scope.get('globals', ScopeVars({}, {}))
++    # For other cases, return the scope itself to allow further processing
++    return scope
+ 
+ 
+ def _t_eval(target, _t, scope):

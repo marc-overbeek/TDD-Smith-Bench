@@ -1,0 +1,68 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -533,43 +533,50 @@
+ 
+ 
+ def _save_content(content, path, file_type, keep_backup=True):
++    if file_type is None:
++        file_type = path.split('.')[-1]
++    
+     if file_type == 'json':
+         with open(path, 'w') as the_file:
+-            content = json_dumps(content)
+-            the_file.write(content)
++            the_file.write(json_dumps(content))
+     elif file_type in {'yaml', 'yml'}:
+         try:
+             import yaml
+         except ImportError:  # pragma: no cover.
+             raise ImportError('Pyyaml needs to be installed.') from None  # pragma: no cover.
+         with open(path, 'w') as the_file:
+-            content = yaml.safe_dump(content, stream=the_file)
++            yaml.safe_dump(content, the_file)
+     elif file_type == 'toml':
++        try:
++            if sys.version_info >= (3, 11):
++                import tomllib as tomli
++            else:
++                import tomli
++        except ImportError:  # pragma: no cover.
++            raise ImportError('On python<=3.10 tomli needs to be installed.') from None  # pragma: no cover.
+         try:
+             import tomli_w
+         except ImportError:  # pragma: no cover.
+-            raise ImportError('Tomli-w needs to be installed.') from None  # pragma: no cover.
++            raise ImportError('tomli_w needs to be installed to write TOML files.') from None  # pragma: no cover.
+         with open(path, 'wb') as the_file:
+-            content = tomli_w.dump(content, the_file)
++            tomli_w.dump(content, the_file)
+     elif file_type == 'pickle':
+         with open(path, 'wb') as the_file:
+-            content = pickle_dump(content, file_obj=the_file)
++            the_file.write(pickle_dump(content))
+     elif file_type in {'csv', 'tsv'}:
+         try:
+             import clevercsv
+-            dict_writer = clevercsv.DictWriter
++            clevercsv.write_dicts(content, path)
+         except ImportError:  # pragma: no cover.
+             import csv
+-            dict_writer = csv.DictWriter
+-        with open(path, 'w', newline='') as csvfile:
+-            fieldnames = list(content[0].keys())
+-            writer = dict_writer(csvfile, fieldnames=fieldnames)
+-            writer.writeheader()
+-            writer.writerows(content)
++            if content:
++                with open(path, 'w', newline='') as the_file:
++                    writer = csv.DictWriter(the_file, fieldnames=content[0].keys())
++                    writer.writeheader()
++                    writer.writerows(content)
+     else:
+-        raise UnsupportedFormatErr('Only json, yaml, toml, csv, tsv and pickle are supported.\n'
++        raise UnsupportedFormatErr(f'Only json, yaml, toml, csv, tsv and pickle are supported.\n'
+                                    f' The {file_type} extension is not known.')
+-    return content
+ 
+ 
+ def _serialize_decimal(value):

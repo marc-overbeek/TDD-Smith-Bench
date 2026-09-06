@@ -1,0 +1,131 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -765,34 +765,101 @@
+     return results
+ 
+ 
+-def compute_sec_ver_for_user(
+-    package: Package,
+-    secure_vulns_by_user: set,
+-    db_full: Dict[str, Any]
+-) -> List[str]:
+-    """
+-    Computes the secure versions for the user.
+-
+-    Args:
+-        package (Package): The package.
+-        secure_vulns_by_user (set): The set of vulnerabilities secured by the user.
++if not secure_vulns_by_user:
++    secure_v = sorted(secure_versions, key=lambda ver: parse_version(ver), reverse=True)
++else:
++    secure_v = compute_sec_ver_for_user(package=pkg, secure_vulns_by_user=secure_vulns_by_user, db_full=db_full)
++
++def compute_sec_ver_for_user(package: Package, secure_vulns_by_user: set,
++    db_full: Dict[str, Any]) ->List[str]:
++    """
++    Computes secure versions for a user by filtering out versions that only have
++    vulnerabilities that the user has already secured.
++    
++    Args:
++        package (Package): The package to compute secure versions for.
++        secure_vulns_by_user (set): Set of vulnerability IDs secured by the user.
+         db_full (Dict[str, Any]): The full database.
+-
+-    Returns:
+-        List[str]: The list of secure versions.
+-    """
+-    versions = package.get_versions(db_full)
+-    affected_versions = []
+-
+-    for vuln in db_full.get('vulnerable_packages', {}).get(package.name, []):
+-        vuln_id: str = str(next(filter(lambda i: i.get('type', None) == 'pyup', vuln.get('ids', []))).get('id', ''))
+-        if vuln_id and vuln_id not in secure_vulns_by_user:
+-            affected_versions += vuln.get('affected_versions', [])
+-
+-    affected_v = set(affected_versions)
+-    sec_ver_for_user = list(versions.difference(affected_v))
+-
+-    return sorted(sec_ver_for_user, key=lambda ver: parse_version(ver), reverse=True)
++    
++    Returns:
++        List[str]: List of secure versions sorted in descending order.
++    """
++    if not package or not package.secure_versions:
++        return []
++    
++    secure_versions = package.secure_versions
++    pkg_name = canonicalize_name(package.name)
++    
++    # Get all vulnerabilities for this package from db_full
++    vulnerable_packages = db_full.get('vulnerable_packages', {})
++    
++    if pkg_name not in vulnerable_packages:
++        # No vulnerabilities in db, all secure versions are valid
++        return sorted(secure_versions, key=lambda ver: parse_version(ver), reverse=True)
++    
++    # Build a map of version -> set of vulnerability IDs that affect it
++    version_to_vulns = {}
++    for specifier in vulnerable_packages[pkg_name]:
++        spec_set = SpecifierSet(specifiers=specifier)
++        for data in vulnerable_packages[pkg_name][specifier] if isinstance(vulnerable_packages[pkg_name][specifier], list) else []:
++            try:
++                vuln_id: str = str(next(filter(lambda i: i.get('type', None) == 'pyup', data.get('ids', []))).get('id', ''))
++            except (StopIteration, TypeError, KeyError):
++                vuln_id: str = ''
++            
++            if vuln_id:
++                affected_versions = data.get('affected_versions', [])
++                for affected_ver in affected_versions:
++                    if affected_ver not in version_to_vulns:
++                        version_to_vulns[affected_ver] = set()
++                    version_to_vulns[affected_ver].add(vuln_id)
++    
++    # Filter secure versions: keep only those that don't have non-secured vulnerabilities
++    filtered_versions = []
++    for ver in secure_versions:
++        vulns_for_version = version_to_vulns.get(ver, set())
++        # Check if all vulnerabilities for this version are in secure_vulns_by_user
++        non_secured_vulns = vulns_for_version - secure_vulns_by_user
++        if not non_secured_vulns:
++            # All vulnerabilities (if any) are secured by user, so this version is ok
++            filtered_versions.append(ver)
++    
++    return sorted(filtered_versions, key=lambda ver: parse_version(ver), reverse=True)
++
++def compute_sec_ver_for_user(package: Package, secure_vulns_by_user: set,
++    db_full: Dict[str, Any]) ->List[str]:
++    if not package or not package.secure_versions:
++        return []
++    
++    secure_versions = package.secure_versions
++    pkg_name = canonicalize_name(package.name)
++    
++    vulnerable_packages = db_full.get('vulnerable_packages', {})
++    
++    if pkg_name not in vulnerable_packages:
++        return sorted(secure_versions, key=lambda ver: parse_version(ver), reverse=True)
++    
++    # Build map of version -> vulnerabilities affecting it
++    version_to_vulns = defaultdict(set)
++    for specifier_key in vulnerable_packages[pkg_name]:
++        for vuln_data in vulnerable_packages[pkg_name][specifier_key]:
++            try:
++                vuln_id: str = str(next(filter(lambda i: i.get('type', None) == 'pyup', vuln_data.get('ids', []))).get('id', ''))
++            except (StopIteration, TypeError, KeyError):
++                continue
++            
++            affected_versions = vuln_data.get('affected_versions', [])
++            for affected_ver in affected_versions:
++                version_to_vulns[affected_ver].add(vuln_id)
++    
++    # Keep versions where all vulnerabilities are secured by user
++    filtered = []
++    for ver in secure_versions:
++        vulns = version_to_vulns.get(ver, set())
++        if not (vulns - secure_vulns_by_user):  # All vulns are in secure_vulns_by_user
++            filtered.append(ver)
++    
++    return sorted(filtered, key=lambda ver: parse_version(ver), reverse=True)
+ 
+ 
+ def compute_sec_ver(

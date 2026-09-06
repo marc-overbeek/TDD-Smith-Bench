@@ -1,0 +1,38 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -150,34 +150,7 @@
+         self.missing = missing
+ 
+     def glomit(self, target, scope):
+-        val = arg_val(target, self.val, scope)
+-
+-        op, arg, path = self.op, self.arg, self.path
+-        if self.path.startswith(S):
+-            dest_target = scope[UP]
+-            dest_path = self.path.from_t()
+-        else:
+-            dest_target = target
+-            dest_path = self.path
+-        try:
+-            dest = scope[glom](dest_target, dest_path, scope)
+-        except PathAccessError as pae:
+-            if not self.missing:
+-                raise
+-
+-            remaining_path = self._orig_path[pae.part_idx + 1:]
+-            val = scope[glom](self.missing(), Assign(remaining_path, val, missing=self.missing), scope)
+-
+-            op, arg = self._orig_path.items()[pae.part_idx]
+-            path = self._orig_path[:pae.part_idx]
+-            dest = scope[glom](dest_target, path, scope)
+-
+-        # TODO: forward-detect immutable dest?
+-        _apply = lambda dest: _assign_op(
+-            dest=dest, op=op, arg=arg, val=val, path=path, scope=scope)
+-        _apply_for_each(_apply, path, dest)
+-
+-        return target
++        pass
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

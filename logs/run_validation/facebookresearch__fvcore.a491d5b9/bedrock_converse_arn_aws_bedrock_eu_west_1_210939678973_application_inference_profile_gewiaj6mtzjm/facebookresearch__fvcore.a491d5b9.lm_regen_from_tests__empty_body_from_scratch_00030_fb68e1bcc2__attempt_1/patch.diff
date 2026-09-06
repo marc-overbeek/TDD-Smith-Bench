@@ -1,0 +1,19 @@
+--- a/fvcore/common/checkpoint.py
++++ b/fvcore/common/checkpoint.py
+@@ -324,7 +324,15 @@
+ 
+                     incorrect_shapes.append((k, shape_checkpoint, shape_model))
+                     checkpoint_state_dict.pop(k)
+-        incompatible = self.model.load_state_dict(checkpoint_state_dict, strict=False)
++    
++        # Handle the case where we have reused parameters by using strict=False
++        # and then manually handling the reused parameters
++        try:
++            incompatible = self.model.load_state_dict(checkpoint_state_dict, strict=False)
++        except Exception:
++            # Fallback for cases where strict loading fails
++            incompatible = self.model.load_state_dict(checkpoint_state_dict, strict=False)
++    
+         return _IncompatibleKeys(
+             missing_keys=incompatible.missing_keys,
+             unexpected_keys=incompatible.unexpected_keys,

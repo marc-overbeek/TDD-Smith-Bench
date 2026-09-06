@@ -1,0 +1,55 @@
+--- a/gpxpy/utils.py
++++ b/gpxpy/utils.py
+@@ -19,28 +19,35 @@
+ 
+ from typing import Any, AnyStr, List, Optional, cast
+ 
+-def to_xml(tag: str, attributes: Any=None, content: Any=None, default: Any=None, escape: bool=False, prettyprint: bool=True, indent: str='') -> str:
+-    if not prettyprint:
+-        indent = ''
+-    attributes = attributes or {}
+-    result: List[str] = [f'\n{indent}<{tag}']
+-
+-    if content is None and default:
++def to_xml(tag: str, attributes: Any=None, content: Any=None, default: Any=
++    None, escape: bool=False, prettyprint: bool=True, indent: str='') ->str:
++    if content is None:
+         content = default
+ 
++    if content is None:
++        return ''
++
++    if isinstance(content, bool):
++        content = '1' if content else '0'
++    elif not isinstance(content, str):
++        content = make_str(content)
++
++    if not content and content != '0':
++        return ''
++
++    if escape:
++        content = mod_saxutils.escape(content)
++
++    attributes_str = ''
+     if attributes:
+-        for attribute in attributes.keys():
+-            result.append(make_str(f' {attribute}="{attributes[attribute]}"'))
++        for key, value in attributes.items():
++            if value is not None:
++                attributes_str += ' {}="{}"'.format(key, value)
+ 
+-    if content is None:
+-        result.append('/>')
++    if prettyprint:
++        return '{}<{}{}>{}</{}>\n'.format(indent, tag, attributes_str, content, tag)
+     else:
+-        if escape:
+-            result.append(make_str(f'>{mod_saxutils.escape(content)}</{tag}>'))
+-        else:
+-            result.append(make_str(f'>{content}</{tag}>'))
+-
+-    return make_str(''.join(result))
++        return '<{}{}>{}</{}>'.format(tag, attributes_str, content, tag)
+ 
+ 
+ def is_numeric(object: Any) -> bool:

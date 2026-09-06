@@ -1,0 +1,15 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -185,6 +185,12 @@
+         return self._add_op(
+             'chunked', args, lambda it, scope: chunked_iter(it, **kw))
+ 
++    def test_windowed():
++        int_list = list(range(5))
++        spec = Iter().windowed(3)
++        out = glom(int_list, spec)
++        assert list(out) == [(0, 1, 2), (1, 2, 3), (2, 3, 4)]
++
+     def windowed(self, size):
+         """Return a new :class:`Iter()` spec which will yield a sliding window of
+         adjacent elements in the iterable. Each tuple yielded will be

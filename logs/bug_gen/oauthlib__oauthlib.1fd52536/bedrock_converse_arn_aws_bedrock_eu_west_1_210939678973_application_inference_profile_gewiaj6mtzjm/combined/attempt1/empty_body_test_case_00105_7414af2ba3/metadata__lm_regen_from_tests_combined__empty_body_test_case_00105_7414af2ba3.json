@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef generate_signed_token(private_pem, request):\n    import jwt\n    import time\n    now = int(time.time())\n    payload = {\n        'scope': request.scope,\n        'user_id': request.user_id,\n        'iat': now,\n        'exp': now + 3600\n    }\n    return jwt.encode(payload, private_pem, algorithm='RS256')\n\n\ndef verify_signed_token(public_pem, token):\n    import jwt\n    return jwt.decode(token, public_pem, algorithms=['RS256'])\n```",
+  "rewrite": "def generate_signed_token(private_pem, request):\n    import jwt\n    import time\n    now = int(time.time())\n    payload = {\n        'scope': request.scope,\n        'user_id': request.user_id,\n        'iat': now,\n        'exp': now + 3600\n    }\n    return jwt.encode(payload, private_pem, algorithm='RS256')\n\n\ndef verify_signed_token(public_pem, token):\n    import jwt\n    return jwt.decode(token, public_pem, algorithms=['RS256'])",
+  "strategy": "lm_regen_from_tests_combined"
+}

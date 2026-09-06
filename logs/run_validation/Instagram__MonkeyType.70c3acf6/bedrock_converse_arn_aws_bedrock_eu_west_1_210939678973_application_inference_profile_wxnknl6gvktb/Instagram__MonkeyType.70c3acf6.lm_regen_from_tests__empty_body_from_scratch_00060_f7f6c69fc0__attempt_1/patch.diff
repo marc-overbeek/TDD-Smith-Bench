@@ -1,0 +1,15 @@
+--- a/monkeytype/type_checking_imports_transformer.py
++++ b/monkeytype/type_checking_imports_transformer.py
+@@ -62,7 +62,11 @@
+     def _get_import_module(self) -> Module:
+         empty_code = libcst.parse_module("")
+         context = CodemodContext()
+-        context.scratch[AddImportsVisitor.CONTEXT_KEY] = self.import_items_to_be_moved
++        for import_item in self.import_items_to_be_moved:
++            if import_item.obj_name:
++                AddImportsVisitor.add_needed_import(context, import_item.module_name, import_item.obj_name)
++            else:
++                AddImportsVisitor.add_needed_import(context, import_item.module_name)
+         transformer = AddImportsVisitor(context)
+         transformed_source_module = transformer.transform_module(empty_code)
+         return transformed_source_module

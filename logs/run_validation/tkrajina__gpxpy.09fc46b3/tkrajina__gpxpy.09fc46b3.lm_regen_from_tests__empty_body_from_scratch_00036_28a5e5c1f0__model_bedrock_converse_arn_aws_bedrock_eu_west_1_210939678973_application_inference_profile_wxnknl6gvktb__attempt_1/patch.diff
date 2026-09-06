@@ -1,0 +1,33 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -96,8 +96,28 @@
+     raise mod_gpx.GPXException(f'Invalid time: {string}')
+ 
+ 
+-def format_time(time: mod_datetime.datetime) -> str:
+-    return time.isoformat().replace('+00:00', 'Z')
++def format_time(time: mod_datetime.datetime) ->str:
++    if time is None:
++        return ''
++    
++    # Format the base datetime
++    result = time.strftime('%Y-%m-%dT%H:%M:%S')
++    
++    # Add microseconds if present
++    if time.microsecond:
++        # Format microseconds, removing trailing zeros
++        microsecond_str = f'{time.microsecond:06d}'.rstrip('0')
++        result += f'.{microsecond_str}'
++    
++    # Add timezone information
++    if time.tzinfo is not None:
++        tz_name = time.tzinfo.tzname(time)
++        if tz_name == 'Z':
++            result += 'Z'
++        else:
++            result += tz_name
++    
++    return result
+ 
+ 
+ 

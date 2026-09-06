@@ -1,0 +1,17 @@
+--- a/starlette/config.py
++++ b/starlette/config.py
+@@ -15,6 +15,14 @@
+ 
+ 
+ class Environ(typing.MutableMapping[str, str]):
++    def test_environ() ->None:
++        environ = Environ()
++        environ['TESTING'] = 'True'
++        environ['GONE'] = '123'
++        del environ['GONE']
++        assert environ['TESTING'] == 'True'
++        assert 'GONE' not in environ
++
+     def __init__(self, environ: typing.MutableMapping[str, str] = os.environ):
+         self._environ = environ
+         self._has_been_read: set[str] = set()

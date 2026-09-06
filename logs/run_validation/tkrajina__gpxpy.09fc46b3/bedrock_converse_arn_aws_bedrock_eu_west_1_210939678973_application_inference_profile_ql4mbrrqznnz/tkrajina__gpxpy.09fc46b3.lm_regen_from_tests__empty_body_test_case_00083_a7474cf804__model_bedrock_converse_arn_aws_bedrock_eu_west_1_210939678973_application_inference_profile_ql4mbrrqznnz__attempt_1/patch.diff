@@ -1,0 +1,94 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2672,44 +2672,44 @@
+             track.move(location_delta)
+ 
+     def to_xml(self, version: Optional[str]=None, prettyprint: bool=True) -> str:
+-        """
+-        FIXME: Note, this method will change self.version
+-        """
+-        if not version:
+-            if self.version:
+-                version = self.version
+-            else:
+-                version = '1.1'
+-
+-        if version != '1.0' and version != '1.1':
+-            raise GPXException(f'Invalid version {version}')
+-
+-        self.version = version
+-        if not self.creator:
+-            self.creator = 'gpx.py -- https://github.com/tkrajina/gpxpy'
+-
+-        self.nsmap['xsi'] = 'http://www.w3.org/2001/XMLSchema-instance'
+-
+-        version_path = version.replace('.', '/')
+-
+-        self.nsmap['defaultns'] = f'http://www.topografix.com/GPX/{version_path}'
+-
+-        if not self.schema_locations:
+-            self.schema_locations = [
+-                f'http://www.topografix.com/GPX/{version_path}',
+-                f'http://www.topografix.com/GPX/{version_path}/gpx.xsd',
+-            ]
+-
+-        content = mod_gpxfield.gpx_fields_to_xml(
+-            self, 'gpx', version,
+-            custom_attributes={
+-                'xsi:schemaLocation': ' '.join(self.schema_locations)
+-            },
+-            nsmap=self.nsmap,
+-            prettyprint=prettyprint
+-        )
+-
+-        return f'<?xml version="1.0" encoding="UTF-8"?>\n{content.strip()}'
++            """
++            FIXME: Note, this method will change self.version
++            """
++            if not version:
++                if self.version:
++                    version = self.version
++                else:
++                    version = '1.1'
++
++            if version != '1.0' and version != '1.1':
++                raise GPXException(f'Invalid version {version}')
++
++            self.version = version
++            if not self.creator:
++                self.creator = 'gpx.py -- https://github.com/tkrajina/gpxpy'
++
++            self.nsmap['xsi'] = 'http://www.w3.org/2001/XMLSchema-instance'
++
++            version_path = version.replace('.', '/')
++
++            self.nsmap['defaultns'] = f'http://www.topografix.com/GPX/{version_path}'
++
++            if not self.schema_locations:
++                self.schema_locations = [
++                    f'http://www.topografix.com/GPX/{version_path}',
++                    f'http://www.topografix.com/GPX/{version_path}/gpx.xsd',
++                ]
++
++            content = mod_gpxfield.gpx_fields_to_xml(
++                self, 'gpx', version,
++                custom_attributes={
++                    'xsi:schemaLocation': ' '.join(self.schema_locations)
++                },
++                nsmap=self.nsmap,
++                prettyprint=prettyprint
++            )
++
++            return f'<?xml version="1.0" encoding="UTF-8"?>\n{content.strip()}'
+ 
+     def has_times(self) -> bool:
+         """ See GPXTrackSegment.has_times() """
+@@ -2742,7 +2742,7 @@
+         return f'GPX({", ".join(parts)})'
+ 
+     def clone(self) -> "GPX":
+-        return mod_copy.deepcopy(self)
++            return mod_copy.deepcopy(self)
+ 
+ # Add attributes and fill default values (lists or None) for all GPX elements:
+ for var_name in dir():

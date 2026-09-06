@@ -1,0 +1,149 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -423,48 +423,41 @@
+ 
+     return req.url
+ 
+-def get_processed_options(policy_file: Dict[str, Any], ignore: Dict[str, Any], ignore_severity_rules: Dict[str, Any],
+-    exit_code: bool, ignore_unpinned_requirements: Optional[bool] = None,
+-    project: Optional[str] = None) -> Tuple[Dict[str, Any], Dict[str, Any], bool, Optional[bool], Optional[str]]:
+-    """
+-    Get processed options from the policy file.
+-
+-    Args:
+-        policy_file (Dict[str, Any]): The policy file.
+-        ignore (Dict[str, Any]): The ignore settings.
+-        ignore_severity_rules (Dict[str, Any]): The ignore severity rules.
+-        exit_code (bool): The exit code setting.
+-        ignore_unpinned_requirements (Optional[bool]): The ignore unpinned requirements setting.
+-        project (Optional[str]): The project setting.
+-
+-    Returns:
+-        Tuple[Dict[str, Any], Dict[str, Any], bool, Optional[bool], Optional[str]]: The processed options.
+-    """
++def get_processed_options(policy_file: Dict[str, Any], ignore: Dict[str,
++    Any], ignore_severity_rules: Dict[str, Any], exit_code: bool,
++    ignore_unpinned_requirements: Optional[bool]=None, project: Optional[
++    str]=None) ->Tuple[Dict[str, Any], Dict[str, Any], bool, Optional[bool],
++    Optional[str]]:
++    processed_ignore = ignore
++    processed_ignore_severity_rules = ignore_severity_rules
++    processed_exit_code = exit_code
++    processed_ignore_unpinned_requirements = ignore_unpinned_requirements
++    processed_project = project
++    
+     if policy_file:
+-        project_config = policy_file.get('project', {})
+         security = policy_file.get('security', {})
+-        ctx = click.get_current_context()
+-        source = ctx.get_parameter_source("exit_code")
+-
+-        if not project:
+-            project_id = project_config.get('id', None)
+-            if not project_id:
+-                project_id = None
+-            project = project_id
+-
+-        if ctx.get_parameter_source("ignore_unpinned_requirements") == click.core.ParameterSource.DEFAULT:
+-            ignore_unpinned_requirements = security.get('ignore-unpinned-requirements', None)
+-
++        
+         if not ignore:
+-            ignore = security.get('ignore-vulnerabilities', {})
+-        if source == click.core.ParameterSource.DEFAULT:
+-            exit_code = not security.get('continue-on-vulnerability-error', False)
+-        ignore_cvss_below = security.get('ignore-cvss-severity-below', 0.0)
+-        ignore_cvss_unknown = security.get('ignore-cvss-unknown-severity', False)
+-        ignore_severity_rules = {'ignore-cvss-severity-below': ignore_cvss_below,
+-                                 'ignore-cvss-unknown-severity': ignore_cvss_unknown}
+-
+-    return ignore, ignore_severity_rules, exit_code, ignore_unpinned_requirements, project
++            processed_ignore = security.get('ignore-vulnerabilities', {})
++        
++        if not ignore_severity_rules:
++            processed_ignore_severity_rules = {
++                'ignore-cvss-severity-below': security.get('ignore-cvss-severity-below', 0.0),
++                'ignore-cvss-unknown-severity': security.get('ignore-cvss-unknown-severity', False)
++            }
++        
++        if not isinstance(security.get('continue-on-vulnerability-error', None), bool):
++            processed_exit_code = security.get('continue-on-vulnerability-error', False)
++        else:
++            processed_exit_code = security.get('continue-on-vulnerability-error', False)
++            
++        if ignore_unpinned_requirements is None:
++            processed_ignore_unpinned_requirements = security.get('ignore-unpinned-requirements', None)
++            
++        if project is None:
++            processed_project = security.get('project-id', None)
++    
++    return processed_ignore, processed_ignore_severity_rules, processed_exit_code, processed_ignore_unpinned_requirements, processed_project
+ 
+ 
+ def get_fix_options(policy_file: Dict[str, Any], auto_remediation_limit: int) -> int:
+@@ -731,30 +724,19 @@
+     return input_string
+ 
+ 
+-def validate_expiration_date(expiration_date: str) -> Optional[datetime]:
+-    """
+-    Validate an expiration date string.
+-
+-    Args:
+-        expiration_date (str): The expiration date string.
+-
+-    Returns:
+-        Optional[datetime]: The validated expiration date if valid, None otherwise.
+-    """
+-    d = None
+-
+-    if expiration_date:
++def validate_expiration_date(expiration_date: str) ->Optional[datetime]:
++    if not expiration_date:
++        return None
++        
++    formats = ["%Y-%m-%d", "%Y-%m-%d %H:%M:%S"]
++    
++    for fmt in formats:
+         try:
+-            d = datetime.strptime(expiration_date, '%Y-%m-%d')
+-        except ValueError as e:
+-            pass
+-
+-        try:
+-            d = datetime.strptime(expiration_date, '%Y-%m-%d %H:%M:%S')
+-        except ValueError as e:
+-            pass
+-
+-    return d
++            return datetime.strptime(expiration_date, fmt)
++        except ValueError:
++            continue
++            
++    return None
+ 
+ 
+ class SafetyPolicyFile(click.ParamType):
+@@ -765,18 +747,14 @@
+     name = "filename"
+     envvar_list_splitter = os.path.pathsep
+ 
+-    def __init__(
+-        self,
+-        mode: str = "r",
+-        encoding: Optional[str] = None,
+-        errors: str = "strict",
+-        pure: bool = os.environ.get('SAFETY_PURE_YAML', 'false').lower() == 'true'
+-    ) -> None:
++    def __init__(self, mode: str='r', encoding: Optional[str]=None, errors: str
++        ='strict', pure: bool=os.environ.get('SAFETY_PURE_YAML', 'false').lower
++        () == 'true') ->None:
+         self.mode = mode
+         self.encoding = encoding
+         self.errors = errors
++        self.pure = pure
+         self.basic_msg = '\n' + click.style('Unable to load the Safety Policy file "{name}".', fg='red')
+-        self.pure = pure
+ 
+     def to_info_dict(self) -> Dict[str, Any]:
+         """

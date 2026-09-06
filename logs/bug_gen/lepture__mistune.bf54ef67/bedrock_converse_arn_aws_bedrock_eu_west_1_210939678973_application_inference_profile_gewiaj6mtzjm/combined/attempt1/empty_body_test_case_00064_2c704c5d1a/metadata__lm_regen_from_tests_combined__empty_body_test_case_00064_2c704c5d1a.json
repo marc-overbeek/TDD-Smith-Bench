@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef _get_fenced_marker(code: str) ->str:\n    match = fenced_re.search(code)\n    if match:\n        return match.group(0)\n    return '```'\n\ndef render_referrences(self, state: BlockState) ->Iterable[str]:\n    ref_links = state.env['ref_links']\n    for key in ref_links:\n        attrs = ref_links[key]\n        text = '[' + attrs['label'] + ']: ' + attrs['url']\n        title = attrs.get('title')\n        if title:\n            text += ' \"' + title + '\"'\n        yield text\n\ndef block_code(self, token: Dict[str, Any], state: BlockState) ->str:\n    attrs = token.get(\"attrs\", {})\n    info = cast(str, attrs.get(\"info\", \"\"))\n    code = cast(str, token[\"raw\"])\n    if code and code[-1] != \"\\n\":\n        code += \"\\n\"\n\n    marker = token.get('marker')\n    if not marker:\n        marker = _get_fenced_marker(code)\n    marker2 = cast(str, marker)\n    return marker2 + info + \"\\n\" + code + marker2 + \"\\n\\n\"\n```",
+  "rewrite": "def _get_fenced_marker(code: str) ->str:\n    match = fenced_re.search(code)\n    if match:\n        return match.group(0)\n    return '",
+  "strategy": "lm_regen_from_tests_combined"
+}

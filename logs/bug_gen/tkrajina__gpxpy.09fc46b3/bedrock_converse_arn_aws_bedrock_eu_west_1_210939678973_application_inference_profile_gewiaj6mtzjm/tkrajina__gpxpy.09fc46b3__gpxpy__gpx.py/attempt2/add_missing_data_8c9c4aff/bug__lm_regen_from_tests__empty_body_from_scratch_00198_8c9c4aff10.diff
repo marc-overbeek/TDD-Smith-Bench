@@ -1,0 +1,52 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2532,11 +2532,44 @@
+         for track in self.tracks:
+             track.add_elevation(delta)
+ 
+-    def add_missing_data(self,
+-                         get_data_function: Callable[[GPXTrackPoint], Any],
+-                         add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint, GPXTrackPoint, List[float]], None]) -> None:
+-        for track in self.tracks:
+-            track.add_missing_data(get_data_function, add_missing_function)
++    def add_missing_data(self, get_data_function: Callable[[GPXTrackPoint], Any
++        ], add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint,
++        GPXTrackPoint, List[float]], None]) ->None:
++        if not get_data_function:
++            raise GPXException(f'Invalid get_data_function: {get_data_function}')
++        if not add_missing_function:
++            raise GPXException(f'Invalid add_missing_function: {add_missing_function}')
++
++        # Points (*without* data) between two points (*with* data):
++        interval: List[GPXTrackPoint] = []
++        # Point (*with* data) before and after the interval:
++        start_point = None
++
++        previous_point = None
++        for track_point in self.points:
++            data = get_data_function(track_point)
++            if data is None and previous_point:
++                if not start_point:
++                    start_point = previous_point
++                interval.append(track_point)
++            else:
++                if interval and start_point:
++                    distances_ratios = self._get_interval_distances_ratios(interval, start_point, track_point)
++                    add_missing_function(interval, start_point, track_point, distances_ratios)
++                    start_point = None
++                    interval = []
++            previous_point = track_point
++    
++        # Handle the case where the last interval extends to the end of the segment
++        if interval and start_point:
++            # For the final interval, we need to handle the case where there's no "end_point"
++            # In this case, we should still process the interval, but we need to be careful
++            # about how we determine the end point - it's the last point in the segment
++            if len(self.points) > 0:
++                end_point = self.points[-1]
++                if end_point != start_point:
++                    distances_ratios = self._get_interval_distances_ratios(interval, start_point, end_point)
++                    add_missing_function(interval, start_point, end_point, distances_ratios)
+ 
+     def add_missing_elevations(self) -> None:
+         def _add(interval: List[GPXTrackPoint], start: GPXTrackPoint, end: GPXTrackPoint, distances_ratios: List[float]) -> None:

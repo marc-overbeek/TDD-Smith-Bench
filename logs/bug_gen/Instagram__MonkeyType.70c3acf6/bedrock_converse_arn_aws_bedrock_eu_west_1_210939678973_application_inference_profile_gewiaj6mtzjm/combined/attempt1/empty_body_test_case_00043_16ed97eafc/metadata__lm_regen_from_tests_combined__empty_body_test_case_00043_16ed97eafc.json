@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef typed_dict_from_dict(d: TypeDict) ->type:\n    module = d[\"module\"]\n    qualname = d[\"qualname\"]\n    elem_types = d[\"elem_types\"]\n    name_in_module = get_name_in_module(module, qualname)\n    annotations = {k: type_from_dict(v) for k, v in elem_types.items()}\n    return name_in_module(**annotations)\n\n\ndef type_from_dict(d: TypeDict) ->type:\n    module = d[\"module\"]\n    qualname = d[\"qualname\"]\n    elem_types = d.get(\"elem_types\")\n    name_in_module = get_name_in_module(module, qualname)\n    if elem_types is not None:\n        args = tuple(type_from_dict(t) for t in elem_types)\n        return name_in_module[args]\n    return name_in_module\n```",
+  "rewrite": "def typed_dict_from_dict(d: TypeDict) ->type:\n    module = d[\"module\"]\n    qualname = d[\"qualname\"]\n    elem_types = d[\"elem_types\"]\n    name_in_module = get_name_in_module(module, qualname)\n    annotations = {k: type_from_dict(v) for k, v in elem_types.items()}\n    return name_in_module(**annotations)\n\n\ndef type_from_dict(d: TypeDict) ->type:\n    module = d[\"module\"]\n    qualname = d[\"qualname\"]\n    elem_types = d.get(\"elem_types\")\n    name_in_module = get_name_in_module(module, qualname)\n    if elem_types is not None:\n        args = tuple(type_from_dict(t) for t in elem_types)\n        return name_in_module[args]\n    return name_in_module",
+  "strategy": "lm_regen_from_tests_combined"
+}

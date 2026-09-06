@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef escape(s: t.Any, /) ->Markup:\n    if hasattr(s, \"__html__\"):\n        return Markup(s.__html__())\n\n    return Markup(_escape_inner(str(s)))\n```\n\n```\ndef unescape(self, /) ->str:\n    from html import unescape\n\n    return unescape(str(self))\n```\n\n```\ndef striptags(self, /) ->str:\n    value = str(self)\n\n    while (start := value.find(\"<!--\")) != -1:\n        if (end := value.find(\"-->\", start)) == -1:\n            break\n\n        value = f\"{value[:start]}{value[end + 3:]}\"\n\n    while (start := value.find(\"<\")) != -1:\n        if (end := value.find(\">\", start)) == -1:\n            break\n\n        value = f\"{value[:start]}{value[end + 1:]}\"\n\n    value = \" \".join(value.split())\n    return self.__class__(value).unescape()\n```",
+  "rewrite": "def escape(s: t.Any, /) ->Markup:\n    if hasattr(s, \"__html__\"):\n        return Markup(s.__html__())\n\n    return Markup(_escape_inner(str(s)))\n\ndef unescape(self, /) ->str:\n    from html import unescape\n\n    return unescape(str(self))\n\ndef striptags(self, /) ->str:\n    value = str(self)\n\n    while (start := value.find(\"<!--\")) != -1:\n        if (end := value.find(\"-->\", start)) == -1:\n            break\n\n        value = f\"{value[:start]}{value[end + 3:]}\"\n\n    while (start := value.find(\"<\")) != -1:\n        if (end := value.find(\">\", start)) == -1:\n            break\n\n        value = f\"{value[:start]}{value[end + 1:]}\"\n\n    value = \" \".join(value.split())\n    return self.__class__(value).unescape()",
+  "strategy": "lm_regen_from_tests_combined"
+}

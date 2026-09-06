@@ -1,0 +1,132 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -499,6 +499,18 @@
+         """The main hash method"""
+         counts = 1
+ 
++        # Check if object is already hashed
++        try:
++            result, counts = self.hashes[obj]
++            return result, counts
++        except (TypeError, KeyError):
++            pass
++
++        # Skip this object if it should be excluded
++        if self._skip_this(obj, parent):
++            return None, 0
++
++        # Handle different object types
+         if isinstance(obj, booleanTypes):
+             obj = self._prep_bool(obj)
+             result = None
+@@ -506,19 +518,12 @@
+             obj = obj.value
+         else:
+             result = not_hashed
+-        try:
+-            result, counts = self.hashes[obj]
+-        except (TypeError, KeyError):
+-            pass
+-        else:
+-            return result, counts
+-
+-        if self._skip_this(obj, parent):
+-            return None, 0
+-
+-        elif obj is None:
++
++        # Handle None
++        if obj is None:
+             result = 'NONE'
+ 
++        # Handle strings
+         elif isinstance(obj, strings):
+             result = prepare_string_for_hashing(
+                 obj,
+@@ -528,30 +533,39 @@
+                 ignore_encoding_errors=self.ignore_encoding_errors,
+             )
+ 
++        # Handle Path objects
+         elif isinstance(obj, Path):
+             result = self._prep_path(obj)
+ 
++        # Handle datetime objects
+         elif isinstance(obj, times):
+             result = self._prep_datetime(obj)
+ 
++        # Handle date objects
+         elif isinstance(obj, datetime.date):
+             result = self._prep_date(obj)
+ 
++        # Handle numbers
+         elif isinstance(obj, numbers):
+             result = self._prep_number(obj)
+ 
++        # Handle mutable mappings (dict-like)
+         elif isinstance(obj, MutableMapping):
+             result, counts = self._prep_dict(obj=obj, parent=parent, parents_ids=parents_ids)
+ 
++        # Handle tuples
+         elif isinstance(obj, tuple):
+             result, counts = self._prep_tuple(obj=obj, parent=parent, parents_ids=parents_ids)
+ 
++        # Handle pandas DataFrames
+         elif (pandas and isinstance(obj, pandas.DataFrame)):
+             def gen():
+                 yield ('dtype', obj.dtypes)
+                 yield ('index', obj.index)
+-                yield from obj.items()  # which contains (column name, series tuples)
++                yield from obj.items()
+             result, counts = self._prep_iterable(obj=gen(), parent=parent, parents_ids=parents_ids)
++
++        # Handle polars DataFrames
+         elif (polars and isinstance(obj, polars.DataFrame)):
+             def gen():
+                 yield from obj.columns
+@@ -559,23 +573,31 @@
+                 yield from obj.rows()
+             result, counts = self._prep_iterable(obj=gen(), parent=parent, parents_ids=parents_ids)
+ 
++        # Handle iterables
+         elif isinstance(obj, Iterable):
+             result, counts = self._prep_iterable(obj=obj, parent=parent, parents_ids=parents_ids)
+ 
++        # Handle boolean objects
+         elif obj == BoolObj.TRUE or obj == BoolObj.FALSE:
+             result = 'bool:true' if obj is BoolObj.TRUE else 'bool:false'
++
++        # Handle Pydantic models
+         elif isinstance(obj, PydanticBaseModel):
+             result, counts = self._prep_obj(obj=obj, parent=parent, parents_ids=parents_ids, is_pydantic_object=True)
++
++        # Handle everything else as an object
+         else:
+             result, counts = self._prep_obj(obj=obj, parent=parent, parents_ids=parents_ids)
+ 
++        # Apply hashing if needed
+         if result is not_hashed:  # pragma: no cover
+             self.hashes[UNPROCESSED_KEY].append(obj)
++            return unprocessed, 0
+ 
+         elif result is unprocessed:
+-            pass
+-
+-        elif self.apply_hash:
++            return unprocessed, 0
++
++        elif self.apply_hash and result is not None:
+             if isinstance(obj, strings):
+                 result_cleaned = result
+             else:
+@@ -584,9 +606,7 @@
+                     ignore_string_case=self.ignore_string_case)
+             result = self.hasher(result_cleaned)
+ 
+-        # It is important to keep the hash of all objects.
+-        # The hashes will be later used for comparing the objects.
+-        # Object to hash when possible otherwise ObjectID to hash
++        # Cache the result
+         try:
+             self.hashes[obj] = (result, counts)
+         except TypeError:

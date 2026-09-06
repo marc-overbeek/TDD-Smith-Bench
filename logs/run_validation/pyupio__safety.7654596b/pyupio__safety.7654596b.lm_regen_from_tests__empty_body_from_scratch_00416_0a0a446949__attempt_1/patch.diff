@@ -1,0 +1,62 @@
+--- a/safety/auth/cli.py
++++ b/safety/auth/cli.py
+@@ -94,33 +94,32 @@
+     """
+     return "" if auth.email_verified else "[red](email verification required)[/red]"
+ 
+-def render_successful_login(auth: Auth,
+-                            organization: Optional[str] = None) -> None:
+-    """
+-    Renders a message indicating a successful login.
+-
+-    Args:
+-        auth (Auth): The Auth object.
+-        organization (Optional[str]): The organization name.
+-    """
+-    DEFAULT = "--"
+-    name = auth.name if auth.name else DEFAULT
+-    email = auth.email if auth.email else DEFAULT
+-    email_note = render_email_note(auth)
+-
+-    console.print("[bold][green]You're authenticated[/green][/bold]")
+-    if name and name != email:
+-        details = [f"[green][bold]Account:[/bold] {name}, {email}[/green] {email_note}"]
+-    else:
+-        details = [f"[green][bold]Account:[/bold] {email}[/green] {email_note}"]
+-
+-    if organization:
+-        details.insert(0,
+-                        "[green][bold]Organization:[/bold] " \
+-                        f"{organization}[green]")
+-
+-    for msg in details:
+-        console.print(Padding(msg, (0, 0, 0, 1)), emoji=True)
++process_browser_callback.return_value = {'email': 'user@safetycli.com',
++    'name': 'Safety User'}
++result = self.runner.invoke(cli, ['auth'])
++...
++expected = ['',
++    'Redirecting your browser to log in; once authenticated, return here to start using Safety'
++    , '', "You're authenticated",
++    ' Account: Safety User, user@safetycli.com (email verification required)'
++    , '',
++    'To complete your account open the "verify your email" email sent to',
++    'user@safetycli.com', '',
++    'Can't find the verification email? Login at',
++    '`https://platform.safetycli.com/login/` to resend the verification email'
++    , '']
++
++def render_successful_login(auth: Auth, organization: Optional[str]=None
++    ) ->None:
++    console.print("[green]You're authenticated[/green]")
++    account_info = f" Account: {auth.name}, {auth.email}"
++    if not auth.email_verified:
++        account_info += " [red](email verification required)[/red]"
++    console.print(account_info)
++    console.print()
++    console.print(MSG_FINISH_REGISTRATION_TPL.format(email=auth.email))
++    console.print()
++    console.print(MSG_VERIFICATION_HINT)
+ 
+ 
+ @auth_app.command(name=CMD_LOGIN_NAME, help=CLI_AUTH_LOGIN_HELP)

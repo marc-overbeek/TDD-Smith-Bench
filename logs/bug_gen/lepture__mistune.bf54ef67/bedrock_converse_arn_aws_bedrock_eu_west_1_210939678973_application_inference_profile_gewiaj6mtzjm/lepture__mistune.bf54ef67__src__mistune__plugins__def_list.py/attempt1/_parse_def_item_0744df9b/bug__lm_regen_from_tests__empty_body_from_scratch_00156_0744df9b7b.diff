@@ -1,0 +1,66 @@
+--- a/src/mistune/plugins/def_list.py
++++ b/src/mistune/plugins/def_list.py
+@@ -44,42 +44,30 @@
+     return pos
+ 
+ 
+-def _parse_def_item(block: "BlockParser", m: Match[str]) -> Iterable[Dict[str, Any]]:
+-    head = m.group("def_list_head")
+-    for line in head.splitlines():
++def _parse_def_item(block: 'BlockParser', m: Match[str]) ->Iterable[Dict[
++    str, Any]]:
++    head = m.group('def_list_head')
++    # Split the head into individual terms
++    terms = [term for term in head.strip().split('\n') if term.strip()]
++    
++    # Process each term
++    for term in terms:
+         yield {
+-          'type': 'def_list_head',
+-          'text': line,
++            'type': 'def_list_head',
++            'children': _process_text(block, term, False),
+         }
+-
++    
++    # Find all definition descriptions following the terms
+     src = m.group(0)
+-    end = len(head)
+-
+-    m2 = DD_START_RE.search(src, end)
+-    assert m2 is not None
+-    start = m2.start()
+-    prev_blank_line = src[end:start] == '\n'
+-    while m2:
+-        m2 = DD_START_RE.search(src, start + 1)
+-        if not m2:
+-            break
+-
+-        end = m2.start()
+-        text = src[start:end].replace(':', ' ', 1)
+-        children = _process_text(block, text, prev_blank_line)
+-        prev_blank_line = bool(HAS_BLANK_LINE_RE.search(text))
+-        yield {
+-          'type': 'def_list_item',
+-          'children': children,
+-        }
+-        start = end
+-
+-    text = src[start:].replace(':', ' ', 1)
+-    children = _process_text(block, text, prev_blank_line)
+-    yield {
+-      'type': 'def_list_item',
+-      'children': children,
+-    }
++    dd_matches = DD_START_RE.split(src)
++    # Skip the first element which is the header part
++    if len(dd_matches) > 1:
++        for dd_content in dd_matches[1:]:
++            if dd_content.strip():
++                yield {
++                    'type': 'def_list_item',
++                    'children': _process_text(block, dd_content, False),
++                }
+ 
+ 
+ def _process_text(block: "BlockParser", text: str, loose: bool) -> List[Any]:

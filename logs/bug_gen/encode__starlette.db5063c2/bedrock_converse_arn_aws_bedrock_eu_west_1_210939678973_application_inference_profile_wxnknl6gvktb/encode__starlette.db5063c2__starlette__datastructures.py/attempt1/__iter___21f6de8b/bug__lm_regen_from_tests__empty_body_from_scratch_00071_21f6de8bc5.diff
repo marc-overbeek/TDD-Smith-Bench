@@ -1,0 +1,21 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -545,6 +545,18 @@
+                 return True
+         return False
+ 
++    def test_headers() ->None:
++        h = Headers(raw=[(b'a', b'123'), (b'a', b'456'), (b'b', b'789')])
++        # ...
++        assert h.keys() == ['a', 'a', 'b']
++        assert list(h) == ['a', 'a', 'b']
++
++    def keys(self) -> list[str]:  # type: ignore[override]
++        return [key.decode("latin-1") for key, value in self._list]
++
++    def __iter__(self) -> typing.Iterator[typing.Any]:
++        return iter(self.keys())
++
+     def __iter__(self) -> typing.Iterator[typing.Any]:
+         return iter(self.keys())
+ 

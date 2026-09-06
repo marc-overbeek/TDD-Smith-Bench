@@ -1,0 +1,18 @@
+--- a/starlette/middleware/authentication.py
++++ b/starlette/middleware/authentication.py
+@@ -14,12 +14,9 @@
+ 
+ 
+ class AuthenticationMiddleware:
+-    def __init__(
+-        self,
+-        app: ASGIApp,
+-        backend: AuthenticationBackend,
+-        on_error: typing.Callable[[HTTPConnection, AuthenticationError], Response] | None = None,
+-    ) -> None:
++    def __init__(self, app: ASGIApp, backend: AuthenticationBackend, on_error:
++        (typing.Callable[[HTTPConnection, AuthenticationError], Response] |
++        None)=None) ->None:
+         self.app = app
+         self.backend = backend
+         self.on_error: typing.Callable[[HTTPConnection, AuthenticationError], Response] = (

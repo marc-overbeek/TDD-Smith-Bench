@@ -1,0 +1,24 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -480,11 +480,16 @@
+ 
+ 
+ class AttributeStub(Stub):
+-    def __init__(
+-        self,
+-        name: str,
+-        typ: type,
+-    ) -> None:
++    AttributeStub('foo', int)
++    AttributeStub('bar', str)
++
++    def render(self, prefix: str = "") -> str:
++        return f"{prefix}{self.name}: {render_annotation(self.typ)}"
++
++    def __repr__(self) -> str:
++        return f"AttributeStub({self.name}, {self.typ})"
++
++    def __init__(self, name: str, typ: type) -> None:
+         self.name = name
+         self.typ = typ
+ 

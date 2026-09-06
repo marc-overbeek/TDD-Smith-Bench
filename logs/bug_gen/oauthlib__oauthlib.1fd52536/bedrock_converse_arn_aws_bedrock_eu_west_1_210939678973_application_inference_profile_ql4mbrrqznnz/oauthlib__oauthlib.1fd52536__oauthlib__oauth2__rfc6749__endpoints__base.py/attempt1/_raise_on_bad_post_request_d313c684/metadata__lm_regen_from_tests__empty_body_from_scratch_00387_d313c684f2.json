@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, they expect that when a POST request is made with URL query parameters, an `InvalidRequestError` should be raised with a description containing 'URL query parameters are not allowed'.\n\nThe current implementation has the correct logic but the function body is just `pass`. I need to restore the proper implementation:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing tests, they expect that when a POST request is made with URL query parameters, an `InvalidRequestError` should be raised with a description containing 'URL query parameters are not allowed'.\n\nThe current implementation has the correct logic but the function body is just `pass`. I need to restore the proper implementation:\n\n```\ndef _raise_on_bad_post_request(self, request):\n    \"\"\"Raise if invalid POST request received\n    \"\"\"\n    if request.http_method.upper() == 'POST':\n        query_params = request.uri_query or \"\"\n        if query_params:\n            raise InvalidRequestError(request=request,\n                                      description=('URL query parameters are not allowed'))\n```",
+  "rewrite": "def _raise_on_bad_post_request(self, request):\n    \"\"\"Raise if invalid POST request received\n    \"\"\"\n    if request.http_method.upper() == 'POST':\n        query_params = request.uri_query or \"\"\n        if query_params:\n            raise InvalidRequestError(request=request,\n                                      description=('URL query parameters are not allowed'))\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

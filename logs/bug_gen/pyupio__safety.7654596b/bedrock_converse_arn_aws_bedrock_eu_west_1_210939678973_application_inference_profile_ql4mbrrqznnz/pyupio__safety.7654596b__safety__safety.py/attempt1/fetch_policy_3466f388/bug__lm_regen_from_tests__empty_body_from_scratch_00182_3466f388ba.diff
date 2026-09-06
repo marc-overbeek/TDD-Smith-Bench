@@ -1,0 +1,54 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -207,27 +207,33 @@
+     return data
+ 
+ 
+-def fetch_policy(session: requests.Session) -> Dict[str, Any]:
+-    """
+-    Fetches the policy from the server.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-
+-    Returns:
+-        Dict[str, Any]: The fetched policy.
+-    """
++def fetch_policy(session: requests.Session) ->Dict[str, Any]:
+     url = f"{DATA_API_BASE_URL}policy/"
+-
++    
+     try:
+-        LOG.debug(f'Getting policy')
+         r = session.get(url=url, timeout=REQUEST_TIMEOUT)
+-        LOG.debug(r.text)
+-        return r.json()
+-    except Exception:
+-        LOG.exception("Error fetching policy")
+-
+-        return {"safety_policy": "", "audit_and_monitor": False}
++    except requests.exceptions.ConnectionError:
++        raise NetworkConnectionError()
++    except requests.exceptions.Timeout:
++        raise RequestTimeoutError()
++    except requests.exceptions.RequestException:
++        raise DatabaseFetchError()
++    
++    if r.status_code == 403:
++        raise InvalidCredentialError(credential=session.get_credential(), reason=r.text)
++    
++    if r.status_code == 429:
++        raise TooManyRequestsError(reason=r.text)
++    
++    if r.status_code != 200:
++        return {"audit_and_monitor": False, "safety_policy": ""}
++    
++    try:
++        data = r.json()
++    except json.JSONDecodeError:
++        return {"audit_and_monitor": False, "safety_policy": ""}
++    
++    return data
+ 
+ 
+ def post_results(session: requests.Session, safety_json: str, policy_file: str) -> Dict[str, Any]:

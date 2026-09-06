@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef join_gpxs(xmls: Iterable[AnyStr]) ->str:\n    result_dom = None\n    result_gpx_node = None\n    \n    for xml in xmls:\n        dom = mod_minidom.parseString(xml)\n        gpx_node = _find_gpx_node(dom)\n        \n        if gpx_node is None:\n            continue\n        \n        if result_dom is None:\n            result_dom = dom\n            result_gpx_node = gpx_node\n        else:\n            for child_node in list(gpx_node.childNodes):\n                if child_node.nodeName in ('trk', 'rte', 'wpt'):\n                    imported_node = result_dom.importNode(child_node, True)\n                    result_gpx_node.appendChild(imported_node)\n    \n    if result_dom is None:\n        return ''\n    \n    return result_dom.toxml()\n```",
+  "rewrite": "def join_gpxs(xmls: Iterable[AnyStr]) ->str:\n    result_dom = None\n    result_gpx_node = None\n    \n    for xml in xmls:\n        dom = mod_minidom.parseString(xml)\n        gpx_node = _find_gpx_node(dom)\n        \n        if gpx_node is None:\n            continue\n        \n        if result_dom is None:\n            result_dom = dom\n            result_gpx_node = gpx_node\n        else:\n            for child_node in list(gpx_node.childNodes):\n                if child_node.nodeName in ('trk', 'rte', 'wpt'):\n                    imported_node = result_dom.importNode(child_node, True)\n                    result_gpx_node.appendChild(imported_node)\n    \n    if result_dom is None:\n        return ''\n    \n    return result_dom.toxml()",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,76 @@
+--- a/starlette/staticfiles.py
++++ b/starlette/staticfiles.py
+@@ -55,34 +55,45 @@
+         if check_dir and directory is not None and not os.path.isdir(directory):
+             raise RuntimeError(f"Directory '{directory}' does not exist")
+ 
+-    def get_directories(
+-        self,
+-        directory: PathLike | None = None,
+-        packages: list[str | tuple[str, str]] | None = None,
+-    ) -> list[PathLike]:
+-        """
+-        Given `directory` and `packages` arguments, return a list of all the
+-        directories that should be used for serving static files from.
+-        """
+-        directories = []
+-        if directory is not None:
+-            directories.append(directory)
+-
+-        for package in packages or []:
+-            if isinstance(package, tuple):
+-                package, statics_dir = package
+-            else:
+-                statics_dir = "statics"
+-            spec = importlib.util.find_spec(package)
+-            assert spec is not None, f"Package {package!r} could not be found."
+-            assert spec.origin is not None, f"Package {package!r} could not be found."
+-            package_directory = os.path.normpath(os.path.join(spec.origin, "..", statics_dir))
+-            assert os.path.isdir(
+-                package_directory
+-            ), f"Directory '{statics_dir!r}' in package {package!r} could not be found."
+-            directories.append(package_directory)
+-
+-        return directories
++    def test_staticfiles_prevents_breaking_out_of_directory(tmpdir: Path) ->None:
++        directory = os.path.join(tmpdir, 'foo')
++        os.mkdir(directory)
++        path = os.path.join(tmpdir, 'example.txt')
++        with open(path, 'w') as file:
++            file.write('outside root dir')
++        app = StaticFiles(directory=directory)
++        path = app.get_path({'path': '/../example.txt'})  # This line calls get_path
++        scope = {'method': 'GET'}
++        with pytest.raises(HTTPException) as exc_info:
++            anyio.run(app.get_response, path, scope)
++        assert exc_info.value.status_code == 404
++        assert exc_info.value.detail == 'Not Found'
++
++    def get_directories(self, directory: (PathLike | None)=None, packages: (
++        list[str | tuple[str, str]] | None)=None) ->list[PathLike]:
++            """
++            Given `directory` and `packages` arguments, return a list of all the
++            directories that should be used for serving static files from.
++            """
++            directories = []
++            if directory is not None:
++                directories.append(directory)
++
++            for package in packages or []:
++                if isinstance(package, tuple):
++                    package, statics_dir = package
++                else:
++                    statics_dir = "statics"
++                spec = importlib.util.find_spec(package)
++                assert spec is not None, f"Package {package!r} could not be found."
++                assert spec.origin is not None, f"Package {package!r} could not be found."
++                package_directory = os.path.normpath(os.path.join(spec.origin, "..", statics_dir))
++                assert os.path.isdir(
++                    package_directory
++                ), f"Directory '{statics_dir!r}' in package {package!r} could not be found."
++                directories.append(package_directory)
++
++            return directories
+ 
+     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+         """

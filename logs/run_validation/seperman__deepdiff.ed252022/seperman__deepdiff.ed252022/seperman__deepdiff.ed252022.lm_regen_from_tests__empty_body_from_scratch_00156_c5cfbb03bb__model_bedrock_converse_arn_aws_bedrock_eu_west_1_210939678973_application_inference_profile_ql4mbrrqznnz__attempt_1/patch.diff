@@ -1,0 +1,31 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -243,13 +243,23 @@
+     return signed_log_values
+ 
+ 
++distance = logarithmic_distance(num1, num2)
++if distance < logarithmic_distance:  # BUG: should be threshold
++    return 0
++return distance
++
+ def logarithmic_similarity(a: numbers, b: numbers, threshold: float=0.1):
+     """
+-    A threshold of 0.1 translates to about 10.5% difference.
+-    A threshold of 0.5 translates to about 65% difference.
+-    A threshold of 0.05 translates to about 5.1% difference.
+-    """
+-    return logarithmic_distance(a, b) < threshold
++    Compute the logarithmic distance between two numbers.
++    Returns 0 if the distance is below the threshold (numbers are considered similar),
++    otherwise returns the logarithmic distance.
++    """
++    if a == b:
++        return 0
++    distance = logarithmic_distance(a, b)
++    if distance < threshold:
++        return 0
++    return distance
+ 
+ 
+ def logarithmic_distance(a: numbers, b: numbers):

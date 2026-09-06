@@ -1,0 +1,143 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -544,34 +544,7 @@
+ 
+ # TODO: push this back up to boltons with repr kwarg
+ def format_invocation(name='', args=(), kwargs=None, **kw):
+-    """Given a name, positional arguments, and keyword arguments, format
+-    a basic Python-style function call.
+-
+-    >>> print(format_invocation('func', args=(1, 2), kwargs={'c': 3}))
+-    func(1, 2, c=3)
+-    >>> print(format_invocation('a_func', args=(1,)))
+-    a_func(1)
+-    >>> print(format_invocation('kw_func', kwargs=[('a', 1), ('b', 2)]))
+-    kw_func(a=1, b=2)
+-
+-    """
+-    _repr = kw.pop('repr', bbrepr)
+-    if kw:
+-        raise TypeError('unexpected keyword args: %r' % ', '.join(kw.keys()))
+-    kwargs = kwargs or {}
+-    a_text = ', '.join([_repr(a) for a in args])
+-    if isinstance(kwargs, dict):
+-        kwarg_items = [(k, kwargs[k]) for k in sorted(kwargs)]
+-    else:
+-        kwarg_items = kwargs
+-    kw_text = ', '.join([f'{k}={_repr(v)}' for k, v in kwarg_items])
+-
+-    all_args_text = a_text
+-    if all_args_text and kw_text:
+-        all_args_text += ', '
+-    all_args_text += kw_text
+-
+-    return f'{name}({all_args_text})'
++    pass
+ 
+ 
+ class Path:
+@@ -755,27 +728,7 @@
+ 
+ 
+ def _format_path(t_path):
+-    path_parts, cur_t_path = [], []
+-    i = 0
+-    while i < len(t_path):
+-        op, arg = t_path[i], t_path[i + 1]
+-        i += 2
+-        if op == 'P':
+-            if cur_t_path:
+-                path_parts.append(cur_t_path)
+-                cur_t_path = []
+-            path_parts.append(arg)
+-        else:
+-            cur_t_path.append(op)
+-            cur_t_path.append(arg)
+-    if path_parts and cur_t_path:
+-        path_parts.append(cur_t_path)
+-
+-    if path_parts or not cur_t_path:
+-        return 'Path(%s)' % ', '.join([_format_t(part)
+-                                       if type(part) is list else repr(part)
+-                                       for part in path_parts])
+-    return _format_t(cur_t_path)
++    pass
+ 
+ 
+ class Spec:
+@@ -1437,19 +1390,13 @@
+         return _t_child(self, '[', item)
+ 
+     def __call__(self, *args, **kwargs):
+-        if self is S:
+-            if args:
+-                raise TypeError(f'S() takes no positional arguments, got: {args!r}')
+-            if not kwargs:
+-                raise TypeError('S() expected at least one kwarg, got none')
+-            # TODO: typecheck kwarg vals?
+-        return _t_child(self, '(', (args, kwargs))
++        pass
+ 
+     def __star__(self):
+-        return _t_child(self, 'x', None)
++        pass
+ 
+     def __starstar__(self):
+-        return _t_child(self, 'X', None)
++        pass
+ 
+     def __stars__(self):
+         """how many times the result will be wrapped in extra lists"""
+@@ -1713,50 +1660,11 @@
+ 
+ 
+ def _format_slice(x):
+-    if type(x) is not slice:
+-        return bbrepr(x)
+-    fmt = lambda v: "" if v is None else bbrepr(v)
+-    if x.step is None:
+-        return fmt(x.start) + ":" + fmt(x.stop)
+-    return fmt(x.start) + ":" + fmt(x.stop) + ":" + fmt(x.step)
++    pass
+ 
+ 
+ def _format_t(path, root=T):
+-    prepr = [{T: 'T', S: 'S', A: 'A'}[root]]
+-    i = 0
+-    while i < len(path):
+-        op, arg = path[i], path[i + 1]
+-        if op == '.':
+-            prepr.append('.' + arg)
+-        elif op == '[':
+-            if type(arg) is tuple:
+-                index = ", ".join([_format_slice(x) for x in arg])
+-            else:
+-                index = _format_slice(arg)
+-            prepr.append(f"[{index}]")
+-        elif op == '(':
+-            args, kwargs = arg
+-            prepr.append(format_invocation(args=args, kwargs=kwargs, repr=bbrepr))
+-        elif op == 'P':
+-            return _format_path(path)
+-        elif op == 'x':
+-            prepr.append(".__star__()")
+-        elif op == 'X':
+-            prepr.append(".__starstar__()")
+-        elif op in ('_', '~'):  # unary arithmetic operators
+-            if any([o in path[:i] for o in '+-/%:&|^~_']):
+-                prepr = ['('] + prepr + [')']
+-            prepr = ['-' if op == '_' else op] + prepr
+-        else:  # binary arithmetic operators
+-            formatted_arg = bbrepr(arg)
+-            if type(arg) is TType:
+-                arg_path = arg.__ops__
+-                if any([o in arg_path for o in '+-/%:&|^~_']):
+-                    formatted_arg = '(' + formatted_arg + ')'
+-            prepr.append(' ' + ('**' if op == ':' else op) + ' ')
+-            prepr.append(formatted_arg)
+-        i += 2
+-    return "".join(prepr)
++    pass
+ 
+ 
+ class Val:

@@ -1,0 +1,27 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -576,11 +576,19 @@
+         segmentation = self.apply_image(segmentation, interp="nearest")
+         return segmentation
+ 
+-    def inverse(self) -> Transform:
+-        """
+-        The inverse is to resize it back.
+-        """
+-        return ScaleTransform(self.new_h, self.new_w, self.h, self.w, self.interp)
++    def inverse(self) -> "Transform":
++        """
++        Create a transform that inverts the geometric changes (i.e. change of
++        coordinates) of this transform.
++
++        Note that the inverse is meant for geometric changes only.
++        The inverse of photometric transforms that do not change coordinates
++        is defined to be a no-op, even if they may be invertible.
++
++        Returns:
++            Transform:
++        """
++        raise NotImplementedError
+ 
+ 
+ class GridSampleTransform(Transform):

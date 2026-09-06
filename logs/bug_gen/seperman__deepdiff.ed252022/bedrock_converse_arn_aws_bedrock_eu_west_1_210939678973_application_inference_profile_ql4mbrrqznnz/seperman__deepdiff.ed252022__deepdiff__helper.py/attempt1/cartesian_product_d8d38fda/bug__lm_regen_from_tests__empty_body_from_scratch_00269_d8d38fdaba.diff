@@ -1,0 +1,33 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -470,19 +470,18 @@
+     pass
+ 
+ 
++result = list(cartesian_product_of_shape([2, 1, 3]))
++assert [(0, 0, 0), (0, 0, 1), (0, 0, 2), (1, 0, 0), (1, 0, 1), (1, 0, 2)] == result
++
++def cartesian_product_of_shape(dimentions, result=None):
++    if result is None:
++        result = ((),)  # a tuple with an empty tuple
++    for dimension in dimentions:
++        result = cartesian_product(result, range(dimension))
++    return result
++
+ def cartesian_product(a, b):
+-    """
+-    Get the Cartesian product of two iterables
+-
+-    **parameters**
+-
+-    a: list of lists
+-    b: iterable to do the Cartesian product
+-    """
+-
+-    for i in a:
+-        for j in b:
+-            yield i + (j,)
++    return ((*tup, item) for tup in a for item in b)
+ 
+ 
+ def cartesian_product_of_shape(dimentions, result=None):

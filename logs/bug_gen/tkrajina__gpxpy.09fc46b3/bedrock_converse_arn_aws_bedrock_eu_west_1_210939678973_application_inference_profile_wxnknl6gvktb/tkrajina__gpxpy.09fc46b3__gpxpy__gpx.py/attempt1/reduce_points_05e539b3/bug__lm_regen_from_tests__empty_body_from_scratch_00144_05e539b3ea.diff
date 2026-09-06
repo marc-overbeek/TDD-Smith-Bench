@@ -1,0 +1,28 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1439,16 +1439,21 @@
+ 
+     def reduce_points(self, min_distance: float) -> None:
+         """
+-        Reduces the number of points in the track. Segment points will be
+-        updated in place.
++        Reduces the number of points. Points will be updated in place.
+ 
+         Parameters
+         ----------
+         min_distance : float
+             The minimum separation in meters between points
+         """
+-        for segment in self.segments:
+-            segment.reduce_points(min_distance)
++        for track in self.tracks:
++            track.reduce_points(min_distance)
++
++    gpx.reduce_points(max_reduced_points_no)
++
++    def reduce_points(self, min_distance: float) -> None:
++        for track in self.tracks:
++            track.reduce_points(min_distance)
+ 
+     def adjust_time(self, delta: mod_datetime.timedelta) -> None:
+         """

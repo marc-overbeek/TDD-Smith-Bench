@@ -1,0 +1,21 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -48,8 +48,16 @@
+ # file live in typing.pyi.
+ 
+ 
+-def is_list(typ: type) -> bool:
+-    return is_generic(typ) and name_of_generic(typ) == "List"
++if all(is_list(typ) for typ in types):
++    annotation = shrink_types(
++        (getattr(typ, "__args__")[0] for typ in types), max_typed_dict_size
++    )
++    return List[annotation]
++
++if not is_generic_of(e, Dict):
++
++def is_list(typ: type) ->bool:
++    return is_generic_of(typ, List)
+ 
+ 
+ def make_typed_dict(*, required_fields=None, optional_fields=None) -> type:

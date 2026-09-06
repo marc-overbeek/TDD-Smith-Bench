@@ -1,0 +1,15 @@
+--- a/starlette/middleware/base.py
++++ b/starlette/middleware/base.py
+@@ -92,9 +92,9 @@
+ 
+ 
+ class BaseHTTPMiddleware:
+-    def __init__(self, app: ASGIApp, dispatch: DispatchFunction | None = None) -> None:
+-        self.app = app
+-        self.dispatch_func = self.dispatch if dispatch is None else dispatch
++    def __init__(self, app: ASGIApp, dispatch: (DispatchFunction | None)=None
++        ) ->None:
++        pass
+ 
+     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+         if scope["type"] != "http":

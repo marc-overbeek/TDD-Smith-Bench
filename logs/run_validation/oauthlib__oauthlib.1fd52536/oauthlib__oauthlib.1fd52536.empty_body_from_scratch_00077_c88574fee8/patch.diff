@@ -1,0 +1,33 @@
+--- a/oauthlib/oauth1/rfc5849/signature.py
++++ b/oauthlib/oauth1/rfc5849/signature.py
+@@ -508,29 +508,7 @@
+ 
+ 
+ def sign_hmac_sha256(base_string, client_secret, resource_owner_secret):
+-    """
+-    Deprecated function for calculating a HMAC-SHA256 signature.
+-
+-    This function has been replaced by invoking ``sign_hmac`` with "SHA-256"
+-    as the hash algorithm name.
+-
+-    This function was invoked by sign_hmac_sha256_with_client and
+-    test_signatures.py, but does any application invoke it directly? If not,
+-    it can be removed.
+-    """
+-    warnings.warn(
+-        'use sign_hmac_sha256_with_client instead of sign_hmac_sha256',
+-        DeprecationWarning)
+-
+-    # For some unknown reason, the original implementation assumed base_string
+-    # could either be bytes or str. The signature base string calculating
+-    # function always returned a str, so the new ``sign_rsa`` only expects that.
+-
+-    base_string = base_string.decode('ascii') \
+-        if isinstance(base_string, bytes) else base_string
+-
+-    return _sign_hmac('SHA-256', base_string,
+-                      client_secret, resource_owner_secret)
++    pass
+ 
+ 
+ # ==== HMAC-SHA512 ===============================================

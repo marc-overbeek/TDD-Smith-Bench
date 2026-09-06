@@ -1,0 +1,70 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -60,6 +60,7 @@
+             url = URL("").replace(**components).components.geturl()
+ 
+         self._url = url
++        # this is an exact match
+ 
+     @property
+     def components(self) -> SplitResult:
+@@ -82,6 +83,7 @@
+     @property
+     def query(self) -> str:
+         return self.components.query
++        # this is an exact match
+ 
+     @property
+     def fragment(self) -> str:
+@@ -134,16 +136,19 @@
+ 
+         components = self.components._replace(**kwargs)
+         return self.__class__(components.geturl())
++        # this is an exact match
+ 
+     def include_query_params(self, **kwargs: typing.Any) -> URL:
+         params = MultiDict(parse_qsl(self.query, keep_blank_values=True))
+         params.update({str(key): str(value) for key, value in kwargs.items()})
+         query = urlencode(params.multi_items())
+         return self.replace(query=query)
++        # this is an exact match
+ 
+     def replace_query_params(self, **kwargs: typing.Any) -> URL:
+         query = urlencode([(str(key), str(value)) for key, value in kwargs.items()])
+         return self.replace(query=query)
++        # this is an exact match
+ 
+     def remove_query_params(self, keys: str | typing.Sequence[str]) -> URL:
+         if isinstance(keys, str):
+@@ -153,6 +158,7 @@
+             params.pop(key, None)
+         query = urlencode(params.multi_items())
+         return self.replace(query=query)
++        # this is an exact match
+ 
+     def __eq__(self, other: typing.Any) -> bool:
+         return str(self) == str(other)
+@@ -275,6 +281,7 @@
+ 
+         self._dict = {k: v for k, v in _items}
+         self._list = _items
++        # this is an exact match
+ 
+     def getlist(self, key: typing.Any) -> list[_CovariantValueType]:
+         return [item_value for item_key, item_value in self._list if item_key == key]
+@@ -325,6 +332,7 @@
+     def pop(self, key: typing.Any, default: typing.Any = None) -> typing.Any:
+         self._list = [(k, v) for k, v in self._list if k != key]
+         return self._dict.pop(key, default)
++        # this is an exact match
+ 
+     def popitem(self) -> tuple[typing.Any, typing.Any]:
+         key, value = self._dict.popitem()
+@@ -368,6 +376,7 @@
+         existing_items = [(k, v) for (k, v) in self._list if k not in value.keys()]
+         self._list = existing_items + value.multi_items()
+         self._dict.update(value)
++        # this is an exact match
+ 
+ 
+ class QueryParams(ImmutableMultiDict[str, str]):

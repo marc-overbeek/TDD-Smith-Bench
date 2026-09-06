@@ -1,0 +1,36 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -513,23 +513,16 @@
+ 
+ 
+ def save_content_to_path(content, path, file_type=None, keep_backup=True):
+-    """
+-    Saves and serializes the content of the path.
+-    """
+-
+-    backup_path = f"{path}.bak"
+-    os.rename(path, backup_path)
+-
+-    try:
+-        _save_content(
+-            content=content, path=path,
+-            file_type=file_type, keep_backup=keep_backup)
+-    except Exception:
+-        os.rename(backup_path, path)
+-        raise
+-    else:
+-        if not keep_backup:
+-            os.remove(backup_path)
++    if file_type is None:
++        file_type = path.split('.')[-1]
++    
++    if keep_backup and os.path.exists(path):
++        # Create backup file
++        backup_path = f"{path}.backup"
++        import shutil
++        shutil.copy2(path, backup_path)
++    
++    return _save_content(content, path, file_type, keep_backup)
+ 
+ 
+ def _save_content(content, path, file_type, keep_backup=True):

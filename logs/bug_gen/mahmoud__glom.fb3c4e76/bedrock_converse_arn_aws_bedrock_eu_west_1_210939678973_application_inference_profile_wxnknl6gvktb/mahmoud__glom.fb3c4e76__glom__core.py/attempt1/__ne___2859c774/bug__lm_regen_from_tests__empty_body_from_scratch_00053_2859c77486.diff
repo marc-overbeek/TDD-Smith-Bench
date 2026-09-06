@@ -1,0 +1,28 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -681,6 +681,25 @@
+         elif type(other) is TType:
+             return self.path_t.__ops__ == other.__ops__
+         return False
++
++    def test_path_eq():
++        assert Path('a', 'b') == Path('a', 'b')
++        assert Path('a') != Path('b')
++        assert Path() != object()
++
++    def test_path_eq_t():
++        assert Path(T.a.b) == T.a.b
++        assert Path(T.a.b.c) != T.a.b
++
++    def __eq__(self, other):
++        if type(other) is Path:
++            return self.path_t.__ops__ == other.path_t.__ops__
++        elif type(other) is TType:
++            return self.path_t.__ops__ == other.__ops__
++        return False
++
++    def __ne__(self, other):
++        return not self == other
+ 
+     def __ne__(self, other):
+         return not self == other

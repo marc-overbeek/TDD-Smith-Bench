@@ -1,0 +1,13 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1500,6 +1500,10 @@
+     def __repr__(self):
+         t_path = self.__ops__
+         return _format_t(t_path[1:], t_path[0])
++
++    def __getstate__(self):
++        t_path = self.__ops__
++        return tuple(({T: 'T', S: 'S', A: 'A'}[t_path[0]],) + t_path[1:])
+ 
+     def __getstate__(self):
+         t_path = self.__ops__

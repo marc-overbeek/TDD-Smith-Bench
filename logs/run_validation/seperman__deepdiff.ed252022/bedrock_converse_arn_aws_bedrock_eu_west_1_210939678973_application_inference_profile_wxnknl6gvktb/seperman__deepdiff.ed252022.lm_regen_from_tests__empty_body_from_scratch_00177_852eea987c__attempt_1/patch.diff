@@ -1,0 +1,22 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -267,6 +267,19 @@
+             result = get_id(obj) in self.hashes
+         return result
+ 
++    @staticmethod
++    def get_key(hashes, key, default=None, extract_index=0, use_enum_value=False):
++        """
++        get_key method for the hashes dictionary.
++        It can extract the hash for a given key that is already calculated when extract_index=0
++        or the count of items that went to building the object whenextract_index=1.
++        """
++        try:
++            result = DeepHash._getitem(hashes, key, extract_index=extract_index, use_enum_value=use_enum_value)
++        except KeyError:
++            result = default
++        return result
++
+     def get(self, key, default=None, extract_index=0):
+         """
+         Get method for the hashes dictionary.

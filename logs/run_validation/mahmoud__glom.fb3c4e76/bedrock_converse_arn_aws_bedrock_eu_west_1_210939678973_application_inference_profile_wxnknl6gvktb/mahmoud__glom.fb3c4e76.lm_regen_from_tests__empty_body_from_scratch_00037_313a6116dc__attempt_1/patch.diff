@@ -1,0 +1,23 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -378,6 +378,20 @@
+     def get_message(self):
+         return ('could not assign %r on object at %r, got error: %r'
+                 % (self.dest_name, self.path, self.exc))
++
++    def get_message(self):
++        path_part = Path(self.path).values()[self.part_idx]
++        return ('could not access %r, part %r of %r, got error: %r'
++                % (path_part, self.part_idx, self.path, self.exc))
++
++    def get_message(self):
++        return str(self)
++
++    def get_message(self):
++        return super().__str__()
++
++    def get_message(self):
++        return super().__str__()
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the code, I can see the issue. The `BaseRoute.matches` method has a duplicate/broken definition:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the code, I can see the issue. The `BaseRoute.matches` method has a duplicate/broken definition:\n\n```python\ndef matches(self, scope: Scope) ->tuple[Match, Scope]:\n    pass\n\ndef matches(self, scope: Scope) -> tuple[Match, Scope]:\n    raise NotImplementedError()  # pragma: no cover\n```\n\nThe first definition with `pass` (returning `None`) overrides the second one. The target function is `BaseRoute.matches`, and it should raise `NotImplementedError()` to indicate subclasses must implement it.\n\n```python\ndef matches(self, scope: Scope) -> tuple[Match, Scope]:\n    raise NotImplementedError()  # pragma: no cover\n```",
+  "rewrite": "def matches(self, scope: Scope) ->tuple[Match, Scope]:\n    pass\n\ndef matches(self, scope: Scope) -> tuple[Match, Scope]:\n    raise NotImplementedError()  # pragma: no cover\n\ndef matches(self, scope: Scope) -> tuple[Match, Scope]:\n    raise NotImplementedError()  # pragma: no cover",
+  "strategy": "lm_regen_from_tests"
+}

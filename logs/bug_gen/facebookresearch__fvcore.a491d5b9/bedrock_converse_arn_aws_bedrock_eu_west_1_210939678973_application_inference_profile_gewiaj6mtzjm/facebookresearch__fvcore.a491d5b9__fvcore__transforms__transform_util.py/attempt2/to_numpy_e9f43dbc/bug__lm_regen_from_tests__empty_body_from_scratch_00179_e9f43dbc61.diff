@@ -1,0 +1,86 @@
+--- a/fvcore/transforms/transform_util.py
++++ b/fvcore/transforms/transform_util.py
+@@ -44,42 +44,53 @@
+     return float_tensor
+ 
+ 
+-def to_numpy(
+-    float_tensor: torch.Tensor, target_shape: list, target_dtype: np.dtype
+-) -> np.ndarray:
++def to_numpy(float_tensor: torch.Tensor, target_shape: list, target_dtype:
++    np.dtype) ->np.ndarray:
+     """
+-    Convert float tensor with dimension of NxCxHxW back to numpy array.
++    Convert the float tensor back to numpy array with target shape and dtype.
+     Args:
+-        float_tensor (tensor): a float pytorch tensor with shape of NxCxHxW.
+-        target_shape (list): the target shape of the numpy array to represent
+-            the image as output. options include NxHxWxC, or HxWxC or HxW.
+-        target_dtype (dtype): the target dtype of the numpy array to represent
+-            the image as output. The array can be of type uint8 in range
+-            [0, 255], or floating point in range [0, 1] or [0, 255].
++        float_tensor (tensor): float tensor of shape NxCxHxW.
++        target_shape (list): target shape of the output array.
++        target_dtype (dtype): target dtype of the output array.
+     Returns:
+-        (ndarray): converted numpy array.
++        numpy_array (ndarray): converted numpy array.
+     """
++    assert isinstance(float_tensor, torch.Tensor)
+     assert len(target_shape) in (2, 3, 4)
+-
++    
++    # Convert tensor back to numpy
++    numpy_array = float_tensor.detach().cpu().numpy()
++    
++    # Reshape to target shape
+     if len(target_shape) == 2:
+-        # 1x1xHxW -> HxW.
+-        assert float_tensor.shape[0] == 1
+-        assert float_tensor.shape[1] == 1
+-        float_tensor = float_tensor[0, 0, :, :]
++        # HxW - tensor is NxCxHxW, so we need to get the actual HxW
++        # If tensor is 1x1xHxW, we want HxW
++        if numpy_array.shape[0] == 1 and numpy_array.shape[1] == 1:
++            numpy_array = numpy_array.reshape(target_shape)
++        else:
++            # For other cases, just reshape directly
++            numpy_array = numpy_array.reshape(target_shape)
+     elif len(target_shape) == 3:
+-        assert float_tensor.shape[0] == 1
+-        # 1xCxHxW -> HxWxC.
+-        float_tensor = float_tensor[0].permute(1, 2, 0)
++        # HxWxC or NxHxW
++        if numpy_array.shape[0] == 1 and numpy_array.shape[1] == 1:
++            # 1x1xHxW -> HxW
++            numpy_array = numpy_array.reshape(target_shape[2], target_shape[3])
++        elif numpy_array.shape[0] == 1:
++            # 1xCxHxW -> HxWxC (need to transpose from CxHxW to HxWxC)
++            numpy_array = numpy_array.reshape(target_shape[1], target_shape[2], target_shape[3])
++            numpy_array = numpy_array.transpose(1, 2, 0)
++        else:
++            # NxHxWxC -> NxHxWxC (already correct order)
++            numpy_array = numpy_array.reshape(target_shape)
+     elif len(target_shape) == 4:
+-        # NxCxHxW -> NxHxWxC
+-        float_tensor = float_tensor.permute(0, 2, 3, 1)
++        # NxHxWxC -> NxHxWxC (transpose from NxCxHxW to NxHxWxC)
++        numpy_array = numpy_array.reshape(target_shape)
++        numpy_array = numpy_array.transpose(0, 2, 3, 1)
++    
++    # Convert dtype
++    if target_dtype == np.uint8:
++        numpy_array = (numpy_array * 255).astype(np.uint8)
+     else:
+-        raise NotImplementedError(
+-            "Unknow target shape dimension of {}".format(target_shape)
+-        )
+-    if target_dtype == np.uint8:
+-        # Need to specifically call round here, notice in pytroch the round
+-        # is half to even.
+-        # https://github.com/pytorch/pytorch/issues/16498
+-        float_tensor = float_tensor.round().byte()
+-    return float_tensor.numpy()
++        numpy_array = numpy_array.astype(target_dtype)
++        
++    return numpy_array

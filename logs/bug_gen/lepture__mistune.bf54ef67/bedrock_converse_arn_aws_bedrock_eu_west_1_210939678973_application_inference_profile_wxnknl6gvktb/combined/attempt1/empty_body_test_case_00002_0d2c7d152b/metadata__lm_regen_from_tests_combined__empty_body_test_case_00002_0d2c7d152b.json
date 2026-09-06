@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef parse_auto_email(self, m: Match[str], state: InlineState) -> int:\n    text = m.group(0)\n    pos = m.end()\n    if state.in_link:\n        self.process_text(text, state)\n        return pos\n\n    text = text[1:-1]\n    url = 'mailto:' + text\n    self._add_auto_link(url, text, state)\n    return pos\n```\n\n```python\ndef _add_auto_link(self, url: str, text: str, state: InlineState) -> None:\n    state.append_token({\n        'type': 'link',\n        'children': [{'type': 'text', 'raw': text}],\n        'attrs': {'url': escape_url(url)},\n    })\n```",
+  "rewrite": "def parse_auto_email(self, m: Match[str], state: InlineState) -> int:\n    text = m.group(0)\n    pos = m.end()\n    if state.in_link:\n        self.process_text(text, state)\n        return pos\n\n    text = text[1:-1]\n    url = 'mailto:' + text\n    self._add_auto_link(url, text, state)\n    return pos\n\ndef _add_auto_link(self, url: str, text: str, state: InlineState) -> None:\n    state.append_token({\n        'type': 'link',\n        'children': [{'type': 'text', 'raw': text}],\n        'attrs': {'url': escape_url(url)},\n    })",
+  "strategy": "lm_regen_from_tests_combined"
+}

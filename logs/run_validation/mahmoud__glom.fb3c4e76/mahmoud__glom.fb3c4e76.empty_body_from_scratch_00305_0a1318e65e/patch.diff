@@ -1,0 +1,26 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -301,22 +301,7 @@
+                     raise PathDeleteError(e, self.path, arg)
+ 
+     def glomit(self, target, scope):
+-        op, arg, path = self.op, self.arg, self.path
+-        if self.path.startswith(S):
+-            dest_target = scope[UP]
+-            dest_path = self.path.from_t()
+-        else:
+-            dest_target = target
+-            dest_path = self.path
+-        try:
+-            dest = scope[glom](dest_target, dest_path, scope)
+-        except PathAccessError as pae:
+-            if not self.ignore_missing:
+-                raise
+-        else:
+-            _apply_for_each(lambda dest: self._del_one(dest, op, arg, scope), path, dest)
+-
+-        return target
++        pass
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

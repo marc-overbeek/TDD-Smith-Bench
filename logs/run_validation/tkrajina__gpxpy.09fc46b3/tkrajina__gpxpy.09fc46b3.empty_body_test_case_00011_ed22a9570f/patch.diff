@@ -1,0 +1,75 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1090,31 +1090,9 @@
+                     interval = []
+             previous_point = track_point
+ 
+-    def _get_interval_distances_ratios(self, interval: List[GPXTrackPoint], start: GPXTrackPoint, end: GPXTrackPoint) -> List[float]:
+-        assert start, start
+-        assert end, end
+-        assert interval, interval
+-        assert len(interval) > 0, interval
+-
+-        distances = []
+-        distance_from_start: float = 0
+-        previous_point = start
+-        for point in interval:
+-            dist = point.distance_3d(previous_point)
+-            if dist is not None:
+-                distance_from_start += dist
+-                distances.append(distance_from_start)
+-                previous_point = point
+-
+-        dist = interval[-1].distance_3d(end)
+-        from_start_to_end = None
+-        if dist:
+-            from_start_to_end = distances[-1] + dist
+-
+-        assert len(interval) == len(distances)
+-
+-        return [(distance / from_start_to_end) if from_start_to_end else 0
+-                for distance in distances]
++    def _get_interval_distances_ratios(self, interval: List[GPXTrackPoint],
++        start: GPXTrackPoint, end: GPXTrackPoint) ->List[float]:
++        pass
+ 
+     def get_duration(self) -> Optional[float]:
+         """
+@@ -2298,35 +2276,8 @@
+                 result += length
+         return result
+ 
+-    def walk(self, only_points: bool=False) -> Iterator[Any]:
+-        """
+-        Generator used to iterates through points in GPX file
+-
+-        Parameters
+-        ----------
+-        only_point s: boolean
+-            Only yield points while walking
+-
+-        Yields
+-        ----------
+-        point : GPXTrackPoint
+-            Point in the track
+-        track_no : integer
+-            Index of track containing point. This is suppressed if only_points
+-            is True.
+-        segment_no : integer
+-            Index of segment containing point. This is suppressed if only_points
+-            is True.
+-        point_no : integer
+-            Index of point. This is suppressed if only_points is True.
+-        """
+-        for track_no, track in enumerate(self.tracks if self.tracks else [] ):
+-            for segment_no, segment in enumerate(track.segments if track.segments else []):
+-                for point_no, point in enumerate(segment.points if segment.points else []):
+-                    if only_points:
+-                        yield point
+-                    else:
+-                        yield point, track_no, segment_no, point_no
++    def walk(self, only_points: bool=False) ->Iterator[Any]:
++        pass
+ 
+     def get_track_points_no(self) -> int:
+         """ Number of track points, *without* route and waypoints """

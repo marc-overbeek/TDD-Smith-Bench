@@ -1,0 +1,23 @@
+--- a/src/mistune/plugins/math.py
++++ b/src/mistune/plugins/math.py
+@@ -57,9 +57,17 @@
+         md.renderer.register('inline_math', render_inline_math)
+ 
+ 
+-def math_in_quote(md: "Markdown") -> None:
+-    """Enable block math plugin in block quote."""
+-    md.block.insert_rule(md.block.block_quote_rules, 'block_math', before='list')
++def math_in_quote(md: 'Markdown') ->None:
++    """Enable block math plugin in quote."""
++    def parse_block_math_in_quote(block: "BlockParser", m: Match[str], state: "BlockState") -> int:
++        text = m.group("math_text")
++        state.append_token({"type": "block_math", "raw": text})
++        return m.end() + 1
++    
++    # Modify the block math pattern to work in quotes
++    # Original pattern requires 0-3 spaces at start of line
++    # We need to allow it to work after > characters too
++    md.block.register('block_math', BLOCK_MATH_PATTERN, parse_block_math_in_quote, before='list')
+ 
+ 
+ def math_in_list(md: "Markdown") -> None:

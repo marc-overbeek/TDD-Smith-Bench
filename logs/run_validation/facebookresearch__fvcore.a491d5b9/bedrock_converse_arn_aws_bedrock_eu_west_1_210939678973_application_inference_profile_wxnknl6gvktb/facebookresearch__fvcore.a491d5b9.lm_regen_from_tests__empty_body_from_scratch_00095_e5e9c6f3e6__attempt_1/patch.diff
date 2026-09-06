@@ -1,0 +1,179 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -213,77 +213,105 @@
+ ### Model String Printing ###
+ 
+ 
+-def _model_stats_str(model: nn.Module, statistics: Dict[str, Dict[str, str]]) -> str:
+-    """
+-    This produces a representation of the model much like 'str(model)'
+-    would, except the provided statistics are written out as additional
+-    information for each submodule.
+-
+-    Args:
+-        model (nn.Module) : the model to form a representation of.
+-        statistics (dict(str, dict(str, str))) : the statistics to
+-            include in the model representations. Organized as a dictionary
+-            over module names, which are each a dictionary over statistics.
+-            The statistics are assumed to be formatted already to the
+-            desired string format for printing.
+-
+-    Returns:
+-        str : the string representation of the model with the statistics
+-            inserted.
+-    """
+-
+-    # Copied from nn.Module._addindent
+-    def _addindent(s_: str, numSpaces: int) -> str:
+-        s = s_.split("\n")
+-        # don't do anything for single-line stuff
+-        if len(s) == 1:
+-            return s_
+-        first = s.pop(0)
+-        s = [(numSpaces * " ") + line for line in s]
+-        s = "\n".join(s)
+-        s = first + "\n" + s
+-        return s
+-
+-    def print_statistics(name: str) -> str:
+-        if name not in statistics:
+-            return ""
+-        printed_stats = ["{}: {}".format(k, v) for k, v in statistics[name].items()]
+-        return ", ".join(printed_stats)
+-
+-    # This comes directly from nn.Module.__repr__ with small changes
+-    # to include the statistics.
+-    def repr_with_statistics(module: nn.Module, name: str) -> str:
+-        # We treat the extra repr like the sub-module, one item per line
+-        extra_lines = []
+-        extra_repr = module.extra_repr()
+-        printed_stats = print_statistics(name)
+-        # empty string will be split into list ['']
+-        if extra_repr:
+-            extra_lines.extend(extra_repr.split("\n"))
+-        if printed_stats:
+-            extra_lines.extend(printed_stats.split("\n"))
+-        child_lines = []
+-        for key, submod in module._modules.items():
+-            submod_name = name + ("." if name else "") + key
+-            # pyre-fixme[6]: Expected `Module` for 1st param but got
+-            #  `Optional[nn.modules.module.Module]`.
+-            submod_str = repr_with_statistics(submod, submod_name)
+-            submod_str = _addindent(submod_str, 2)
+-            child_lines.append("(" + key + "): " + submod_str)
+-        lines = extra_lines + child_lines
+-
+-        main_str = module._get_name() + "("
+-        if lines:
+-            # simple one-liner info, which most builtin Modules will use
+-            if len(extra_lines) == 1 and not child_lines:
+-                main_str += extra_lines[0]
+-            else:
+-                main_str += "\n  " + "\n  ".join(lines) + "\n"
+-
+-        main_str += ")"
+-        return main_str
+-
+-    return repr_with_statistics(model, "")
++def _model_stats_str(model: nn.Module, statistics: Dict[str, Dict[str, str]]
++    ) ->str:
++    """
++    Recursively builds a string representation of the model with statistics.
++    
++    Args:
++        model (nn.Module): The model to represent
++        statistics (dict(str, dict(str, str))): Statistics organized by module name,
++            then by statistic type. Statistics should already be formatted as strings.
++    
++    Returns:
++        str: A string representation of the model with statistics
++    """
++    def _recursive_repr(module: nn.Module, prefix: str = "") -> str:
++        # Get the module's class name and basic representation
++        module_str = module.__class__.__name__ + "("
++        
++        # Get statistics for this module (empty string prefix means root)
++        mod_stats = statistics.get(prefix, {})
++        
++        # Get child modules
++        children = list(module.named_children())
++        
++        if not children:
++            # Leaf module - put stats inline if they exist
++            if mod_stats:
++                stats_str = ", ".join(f"{k}: {v}" for k, v in mod_stats.items())
++                module_str += stats_str
++            module_str += ")"
++            return module_str
++        else:
++            # Has children - put stats on new line, then children
++            lines = [module_str]
++            
++            # Add statistics on separate lines
++            for stat_name, stat_val in mod_stats.items():
++                lines.append(f"  {stat_name}: {stat_val}")
++            
++            # Add children
++            for child_name, child_module in children:
++                child_prefix = prefix + ("." if prefix else "") + child_name
++                child_str = _recursive_repr(child_module, child_prefix)
++                
++                # Indent child representation
++                child_lines = child_str.split("\n")
++                indented_child = f"  ({child_name}): {child_lines[0]}"
++                lines.append(indented_child)
++                
++                for child_line in child_lines[1:]:
++                    lines.append("  " + child_line)
++            
++            lines.append(")")
++            return "\n".join(lines)
++    
++    return _recursive_repr(model, "")
++
++def _model_stats_str(model: nn.Module, statistics: Dict[str, Dict[str, str]]
++    ) ->str:
++    """
++    Recursively builds a string representation of the model with statistics.
++    """
++    def _recursive_repr(module: nn.Module, prefix: str = "", indent: int = 0) -> str:
++        indent_str = "  " * indent
++        next_indent_str = "  " * (indent + 1)
++        
++        # Get module class name
++        module_repr = module.__class__.__name__ + "("
++        
++        # Get statistics for this module
++        mod_stats = statistics.get(prefix, {})
++        
++        # Get child modules
++        children = list(module.named_children())
++        
++        if not children:
++            # Leaf module
++            if mod_stats:
++                stats_str = ", ".join(f"{k}: {v}" for k, v in mod_stats.items())
++                module_repr += "\n" + next_indent_str + stats_str + "\n" + indent_str
++            module_repr += ")"
++            return indent_str + module_repr
++        else:
++            # Has children
++            lines = [indent_str + module_repr]
++            
++            # Add statistics
++            for stat_name, stat_val in mod_stats.items():
++                lines.append(next_indent_str + f"{stat_name}: {stat_val}")
++            
++            # Add children
++            for child_name, child_module in children:
++                child_prefix = prefix + ("." if prefix else "") + child_name
++                child_str = _recursive_repr(child_module, child_prefix, indent + 1)
++                lines.append(next_indent_str + f"({child_name}): {child_str.lstrip()}")
++            
++            lines.append(indent_str + ")")
++            return "\n".join(lines)
++    
++    return _recursive_repr(model, "", 0)
+ 
+ 
+ def _get_input_sizes(iterable: Iterable[Any]) -> List[Any]:  # pyre-ignore[2,3]

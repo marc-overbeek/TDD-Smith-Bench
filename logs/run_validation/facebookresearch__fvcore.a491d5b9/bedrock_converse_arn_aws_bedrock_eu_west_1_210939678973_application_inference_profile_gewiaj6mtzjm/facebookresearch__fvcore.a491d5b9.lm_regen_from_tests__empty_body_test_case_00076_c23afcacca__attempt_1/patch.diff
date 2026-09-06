@@ -1,0 +1,70 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -45,14 +45,7 @@
+     :meth:`register_type` method.
+     """
+ 
+-    def _set_attributes(self, params: Optional[List[Any]] = None) -> None:
+-        """
+-        Set attributes from the input list of parameters.
+-
+-        Args:
+-            params (list): list of parameters.
+-        """
+-
++    def _set_attributes(self, params: Optional[List[Any]]=None) ->None:
+         if params:
+             for k, v in params.items():
+                 if k != "self" and not k.startswith("_"):
+@@ -214,10 +207,6 @@
+         raise NotImplementedError
+ 
+     def __repr__(self):
+-        """
+-        Produce something like:
+-        "MyTransform(field1={self.field1}, field2={self.field2})"
+-        """
+         try:
+             sig = inspect.signature(self.__init__)
+             classname = type(self).__name__
+@@ -259,10 +248,6 @@
+     """
+ 
+     def __init__(self, transforms: List[Transform]):
+-        """
+-        Args:
+-            transforms (list[Transform]): list of transforms to perform.
+-        """
+         super().__init__()
+         # "Flatten" the list so that TransformList do not recursively contain TransfomList.
+         # The additional hierarchy does not change semantic of the class, but cause extra
+@@ -344,7 +329,7 @@
+         """
+         return TransformList([x.inverse() for x in self.transforms[::-1]])
+ 
+-    def __repr__(self) -> str:
++    def __repr__(self) ->str:
+         msgs = [str(t) for t in self.transforms]
+         return "TransformList[{}]".format(", ".join(msgs))
+ 
+@@ -815,18 +800,8 @@
+     Transforms pixel colors with PIL enhance functions.
+     """
+ 
+-    def __init__(self, src_image: np.ndarray, src_weight: float, dst_weight: float):
+-        """
+-        Blends the input image (dst_image) with the src_image using formula:
+-        ``src_weight * src_image + dst_weight * dst_image``
+-
+-        Args:
+-            src_image (ndarray): Input image is blended with this image.
+-                The two images must have the same shape, range, channel order
+-                and dtype.
+-            src_weight (float): Blend weighting of src_image
+-            dst_weight (float): Blend weighting of dst_image
+-        """
++    def __init__(self, src_image: np.ndarray, src_weight: float, dst_weight: float
++        ):
+         super().__init__()
+         self._set_attributes(locals())
+ 

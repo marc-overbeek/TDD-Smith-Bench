@@ -1,0 +1,23 @@
+--- a/src/markupsafe/__init__.py
++++ b/src/markupsafe/__init__.py
+@@ -151,18 +151,8 @@
+     def __rmul__(self, value: t.SupportsIndex, /) -> te.Self:
+         return self.__class__(super().__mul__(value))
+ 
+-    def __mod__(self, value: t.Any, /) -> te.Self:
+-        if isinstance(value, tuple):
+-            # a tuple of arguments, each wrapped
+-            value = tuple(_MarkupEscapeHelper(x, self.escape) for x in value)
+-        elif hasattr(type(value), "__getitem__") and not isinstance(value, str):
+-            # a mapping of arguments, wrapped
+-            value = _MarkupEscapeHelper(value, self.escape)
+-        else:
+-            # a single argument, wrapped with the helper and a tuple
+-            value = (_MarkupEscapeHelper(value, self.escape),)
+-
+-        return self.__class__(super().__mod__(value))
++    def __mod__(self, value: t.Any, /) ->te.Self:
++        pass
+ 
+     def __repr__(self, /) -> str:
+         return f"{self.__class__.__name__}({super().__repr__()})"

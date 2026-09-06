@@ -1,0 +1,28 @@
+--- a/fvcore/nn/squeeze_excitation.py
++++ b/fvcore/nn/squeeze_excitation.py
+@@ -117,15 +117,17 @@
+         )
+ 
+     def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
+-        """
+-        Args:
+-            input_tensor: X, shape = (batch_size, num_channels, H, W).
+-                For 3d X, shape = (batch_size, num_channels, T, H, W).
+-            output tensor
+-        """
+-        output_tensor = torch.mul(input_tensor, self.block(input_tensor))
++            """
++            Args:
++                input_tensor: X, shape = (batch_size, num_channels, H, W)
++                    For 3d X, shape = (batch_size, num_channels, T, H, W)
++                output tensor
++            """
++            output_tensor = torch.max(
++                self.channel(input_tensor), self.spatial(input_tensor)
++            )
+ 
+-        return output_tensor
++            return output_tensor
+ 
+ 
+ class ChannelSpatialSqueezeExcitation(nn.Module):

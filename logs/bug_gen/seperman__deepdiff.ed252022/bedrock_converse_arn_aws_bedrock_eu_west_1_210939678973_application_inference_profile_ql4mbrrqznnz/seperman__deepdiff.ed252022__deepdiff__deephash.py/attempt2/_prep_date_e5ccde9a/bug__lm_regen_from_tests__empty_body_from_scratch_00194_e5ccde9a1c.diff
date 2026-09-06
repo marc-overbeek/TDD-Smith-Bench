@@ -1,0 +1,21 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -478,8 +478,17 @@
+         obj = datetime_normalize(self.truncate_datetime, obj)
+         return KEY_TO_VAL_STR.format(type_, obj)
+ 
++    <full rewritten function code including the unchanged signature>
++
+     def _prep_date(self, obj):
+-        type_ = 'datetime'  # yes still datetime but it doesn't need normalization
++        type_ = obj.__class__.__name__
++        for type_group in self.ignore_type_in_groups:
++            if self.type_check_func(type(obj), type_group):
++                type_str = ','.join(map(lambda x: x.__name__, type_group))
++                if self.significant_digits is not None:
++                    obj = self.number_to_string(obj, significant_digits=self.significant_digits,
++                                                number_format_notation=self.number_format_notation)
++                return KEY_TO_VAL_STR.format(type_str, obj)
+         return KEY_TO_VAL_STR.format(type_, obj)
+ 
+     def _prep_tuple(self, obj, parent, parents_ids):

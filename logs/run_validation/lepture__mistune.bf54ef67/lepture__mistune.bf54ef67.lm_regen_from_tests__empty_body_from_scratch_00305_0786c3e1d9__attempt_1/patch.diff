@@ -1,0 +1,25 @@
+--- a/src/mistune/directives/image.py
++++ b/src/mistune/directives/image.py
+@@ -147,6 +147,22 @@
+ 
+     def __call__(self, directive: "BaseDirective", md: "Markdown") -> None:
+         directive.register(self.NAME, self.parse)
++        assert md.renderer is not None
++        if md.renderer.NAME == 'html':
++            md.renderer.register('block_image', render_block_image)
++
++    def __call__(self, directive: "BaseDirective", md: "Markdown") -> None:
++        directive.register(self.NAME, self.parse)
++
++        assert md.renderer is not None
++        if md.renderer.NAME == 'html':
++            md.renderer.register('figure', render_figure)
++            md.renderer.register('block_image', render_block_image)
++            md.renderer.register('figcaption', render_figcaption)
++            md.renderer.register('legend', render_legend)
++
++    def __call__(self, directive: "BaseDirective", md: "Markdown") -> None:
++        directive.register(self.NAME, self.parse)
+ 
+         assert md.renderer is not None
+         if md.renderer.NAME == 'html':

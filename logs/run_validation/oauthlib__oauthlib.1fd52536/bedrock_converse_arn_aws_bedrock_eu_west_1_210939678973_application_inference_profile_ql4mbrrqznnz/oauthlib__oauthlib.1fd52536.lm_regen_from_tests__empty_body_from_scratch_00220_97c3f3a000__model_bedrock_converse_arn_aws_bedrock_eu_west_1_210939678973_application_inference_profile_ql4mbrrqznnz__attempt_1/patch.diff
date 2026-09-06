@@ -1,0 +1,208 @@
+--- a/oauthlib/oauth2/rfc6749/tokens.py
++++ b/oauthlib/oauth2/rfc6749/tokens.py
+@@ -64,109 +64,105 @@
+         return list(self._new_scope - self._old_scope)
+ 
+ 
+-def prepare_mac_header(token, uri, key, http_method,
+-                       nonce=None,
+-                       headers=None,
+-                       body=None,
+-                       ext='',
+-                       hash_algorithm='hmac-sha-1',
+-                       issue_time=None,
+-                       draft=0):
+-    """Add an `MAC Access Authentication`_ signature to headers.
+-
+-    Unlike OAuth 1, this HMAC signature does not require inclusion of the
+-    request payload/body, neither does it use a combination of client_secret
+-    and token_secret but rather a mac_key provided together with the access
+-    token.
+-
+-    Currently two algorithms are supported, "hmac-sha-1" and "hmac-sha-256",
+-    `extension algorithms`_ are not supported.
+-
+-    Example MAC Authorization header, linebreaks added for clarity
+-
+-    Authorization: MAC id="h480djs93hd8",
+-                       nonce="1336363200:dj83hs9s",
+-                       mac="bhCQXTVyfj5cmA9uKkPFx1zeOXM="
+-
+-    .. _`MAC Access Authentication`: https://tools.ietf.org/html/draft-ietf-oauth-v2-http-mac-01
+-    .. _`extension algorithms`: https://tools.ietf.org/html/draft-ietf-oauth-v2-http-mac-01#section-7.1
+-
+-    :param token:
+-    :param uri: Request URI.
+-    :param key: MAC given provided by token endpoint.
+-    :param http_method: HTTP Request method.
+-    :param nonce:
+-    :param headers: Request headers as a dictionary.
+-    :param body:
+-    :param ext:
+-    :param hash_algorithm: HMAC algorithm provided by token endpoint.
+-    :param issue_time: Time when the MAC credentials were issued (datetime).
+-    :param draft: MAC authentication specification version.
+-    :return: headers dictionary with the authorization field added.
+-    """
+-    http_method = http_method.upper()
+-    host, port = utils.host_from_uri(uri)
+-
+-    if hash_algorithm.lower() == 'hmac-sha-1':
+-        h = hashlib.sha1
+-    elif hash_algorithm.lower() == 'hmac-sha-256':
+-        h = hashlib.sha256
+-    else:
+-        raise ValueError('unknown hash algorithm')
+-
++def prepare_mac_header(token, uri, key, http_method, nonce=None, headers=
++    None, body=None, ext='', hash_algorithm='hmac-sha-1', issue_time=None,
++    draft=0):
++    """Add an `MAC Token`_ to the request authorization header.
++
++    .. _`MAC Token`: https://tools.ietf.org/html/draft-ietf-oauth-v2-http-mac-01
++    """
++    headers = headers or {}
++
++    # Generate nonce if not provided
++    if nonce is None:
++        if issue_time is not None:
++            age = utils.generate_age(issue_time)
++            nonce = '{0}:{1}'.format(age, common.generate_nonce())
++        else:
++            nonce = '{0}:{1}'.format(0, common.generate_nonce())
++
++    # Parse the URI
++    sch, net, path, par, query, fra = urlparse(uri)
++
++    # Compute the request URI (path + query)
++    if query:
++        request_uri = path + '?' + query
++    else:
++        request_uri = path
++
++    # Get the host and port
++    if ':' in net:
++        host, port = net.split(':', 1)
++    else:
++        host = net
++        port = '443' if sch == 'https' else '80'
++
++    # Compute body hash if body is present
++    body_hash = ''
++    if body:
++        if hash_algorithm == 'hmac-sha-1':
++            body_hash = b2a_base64(hashlib.sha1(body.encode('utf-8')).digest()).decode('utf-8').strip()
++        elif hash_algorithm == 'hmac-sha-256':
++            body_hash = b2a_base64(hashlib.sha256(body.encode('utf-8')).digest()).decode('utf-8').strip()
++
++    # Build the normalized request string
+     if draft == 0:
+-        nonce = nonce or '{}:{}'.format(utils.generate_age(issue_time),
+-                                          common.generate_nonce())
+-    else:
+-        ts = common.generate_timestamp()
+-        nonce = common.generate_nonce()
+-
+-    sch, net, path, par, query, fra = urlparse(uri)
+-
+-    request_uri = path + '?' + query if query else path
+-
+-    # Hash the body/payload
+-    if body is not None and draft == 0:
+-        body = body.encode('utf-8')
+-        bodyhash = b2a_base64(h(body).digest())[:-1].decode('utf-8')
+-    else:
+-        bodyhash = ''
+-
+-    # Create the normalized base string
+-    base = []
+-    if draft == 0:
+-        base.append(nonce)
+-    else:
+-        base.append(ts)
+-        base.append(nonce)
+-    base.append(http_method.upper())
+-    base.append(request_uri)
+-    base.append(host)
+-    base.append(port)
+-    if draft == 0:
+-        base.append(bodyhash)
+-    base.append(ext or '')
+-    base_string = '\n'.join(base) + '\n'
+-
+-    # hmac struggles with unicode strings - http://bugs.python.org/issue5285
++        # draft 00 format
++        base_string = '\n'.join([
++            nonce,
++            http_method.upper(),
++            request_uri,
++            host,
++            port,
++            body_hash,
++            ext or '',
++            ''  # trailing newline
++        ])
++    else:
++        # draft 01 format
++        base_string = '\n'.join([
++            nonce,
++            http_method.upper(),
++            request_uri,
++            host,
++            port,
++            body_hash,
++            ext or '',
++            ''  # trailing newline
++        ])
++
++    # Compute the HMAC signature
++    if hash_algorithm == 'hmac-sha-1':
++        digestmod = hashlib.sha1
++    elif hash_algorithm == 'hmac-sha-256':
++        digestmod = hashlib.sha256
++    else:
++        raise ValueError('Unknown hash algorithm: %s' % hash_algorithm)
++
+     if isinstance(key, str):
+         key = key.encode('utf-8')
+-    sign = hmac.new(key, base_string.encode('utf-8'), h)
+-    sign = b2a_base64(sign.digest())[:-1].decode('utf-8')
+-
+-    header = []
+-    header.append('MAC id="%s"' % token)
+-    if draft != 0:
+-        header.append('ts="%s"' % ts)
+-    header.append('nonce="%s"' % nonce)
+-    if bodyhash:
+-        header.append('bodyhash="%s"' % bodyhash)
+-    if ext:
+-        header.append('ext="%s"' % ext)
+-    header.append('mac="%s"' % sign)
+-
+-    headers = headers or {}
+-    headers['Authorization'] = ', '.join(header)
++    if isinstance(base_string, str):
++        base_string = base_string.encode('utf-8')
++
++    mac = b2a_base64(hmac.new(key, base_string, digestmod).digest()).decode('utf-8').strip()
++
++    # Build the Authorization header
++    if draft == 0:
++        header = 'MAC id="{token}", nonce="{nonce}"'.format(token=token, nonce=nonce)
++        if body_hash:
++            header += ', bodyhash="{body_hash}"'.format(body_hash=body_hash)
++        if ext:
++            header += ', ext="{ext}"'.format(ext=ext)
++        header += ', mac="{mac}"'.format(mac=mac)
++    else:
++        header = 'MAC id="{token}", nonce="{nonce}"'.format(token=token, nonce=nonce)
++        if body_hash:
++            header += ', bodyhash="{body_hash}"'.format(body_hash=body_hash)
++        if ext:
++            header += ', ext="{ext}"'.format(ext=ext)
++        header += ', mac="{mac}"'.format(mac=mac)
++
++    headers['Authorization'] = header
+     return headers
+ 
+ 

@@ -1,0 +1,33 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -880,29 +880,7 @@
+         return dict(self.diff)
+ 
+     def _flatten_iterable_opcodes(self, _parse_path):
+-        """
+-        Converts op_codes to FlatDeltaRows
+-        """
+-        result = []
+-        for path, op_codes in self.diff['_iterable_opcodes'].items():
+-            for op_code in op_codes:
+-                result.append(
+-                    FlatDeltaRow(
+-                        path=_parse_path(path),
+-                        action=OPCODE_TAG_TO_FLAT_DATA_ACTION[op_code.tag],
+-                        value=op_code.new_values,
+-                        old_value=op_code.old_values,
+-                        type=type(op_code.new_values),
+-                        old_type=type(op_code.old_values),
+-                        new_path=None,
+-                        t1_from_index=op_code.t1_from_index,
+-                        t1_to_index=op_code.t1_to_index,
+-                        t2_from_index=op_code.t2_from_index,
+-                        t2_to_index=op_code.t2_to_index,
+-
+-                    )
+-                )
+-        return result
++        pass
+ 
+     @staticmethod
+     def _get_flat_row(action, info, _parse_path, keys_and_funcs, report_type_changes=True):

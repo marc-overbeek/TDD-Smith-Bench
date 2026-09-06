@@ -1,0 +1,42 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -883,7 +883,7 @@
+                 self.fail(msg.format(name=value, hint=hint), param, ctx)
+ 
+             # Validate the structure of the safety policy
+-            if not safety_policy or not isinstance(safety_policy, dict) or not safety_policy.get('security', None):
++            if not safety_policy or not isinstance(safety_policy, dict):
+                 hint = "you are missing the security root tag"
+                 try:
+                     version = safety_policy["version"]
+@@ -896,7 +896,20 @@
+                 self.fail(
+                     msg.format(hint=hint), param, ctx)
+ 
+-            # Validate 'security' section keys
++            # Handle version 3.0 policy files
++            version = safety_policy.get('version', '2.0')
++            if version == '3.0':
++                # For v3.0, we need to validate against the new schema
++                try:
++                    from safety_schemas.models import Config
++                    config = Config(**safety_policy)
++                    return config.dict()
++                except Exception as e:
++                    self.fail(
++                        f'Unable to load the Safety Policy file ("{filename}"), this command only supports version 3.0, details: {str(e)}',
++                        param, ctx)
++        
++            # Validate 'security' section keys for v2.0
+             security_config = safety_policy.get('security', {})
+             security_keys = ['ignore-cvss-severity-below', 'ignore-cvss-unknown-severity', 'ignore-vulnerabilities',
+                              'continue-on-vulnerability-error', 'ignore-unpinned-requirements']
+@@ -905,7 +918,7 @@
+ 
+             # Validate 'ignore-cvss-severity-below' value
+             ignore_cvss_security_below = security_config.get('ignore-cvss-severity-below', None)
+-            if ignore_cvss_security_below:
++            if ignore_cvss_security_below is not None:
+                 limit = 0.0
+                 try:
+                     limit = float(ignore_cvss_security_below)

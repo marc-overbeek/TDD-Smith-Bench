@@ -1,0 +1,92 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1722,41 +1722,64 @@
+ 
+ 
+ def _format_t(path, root=T):
+-    prepr = [{T: 'T', S: 'S', A: 'A'}[root]]
++    if not path:
++        return repr(root)
++    
++    result = []
+     i = 0
+     while i < len(path):
+         op, arg = path[i], path[i + 1]
++        i += 2
+         if op == '.':
+-            prepr.append('.' + arg)
++            result.append('.' + str(arg))
+         elif op == '[':
+-            if type(arg) is tuple:
+-                index = ", ".join([_format_slice(x) for x in arg])
++            if isinstance(arg, slice):
++                result.append('[' + _format_slice(arg) + ']')
+             else:
+-                index = _format_slice(arg)
+-            prepr.append(f"[{index}]")
++                result.append('[' + bbrepr(arg) + ']')
++        elif op == 'P':
++            result.append('[' + bbrepr(arg) + ']')
+         elif op == '(':
+             args, kwargs = arg
+-            prepr.append(format_invocation(args=args, kwargs=kwargs, repr=bbrepr))
+-        elif op == 'P':
+-            return _format_path(path)
++            arg_text = ', '.join([bbrepr(a) for a in args])
++            if kwargs:
++                kwarg_text = ', '.join([f'{k}={bbrepr(v)}' for k, v in kwargs.items()])
++                if arg_text:
++                    arg_text += ', ' + kwarg_text
++                else:
++                    arg_text = kwarg_text
++            result.append('(' + arg_text + ')')
+         elif op == 'x':
+-            prepr.append(".__star__()")
++            result.append('.__star__()')
+         elif op == 'X':
+-            prepr.append(".__starstar__()")
+-        elif op in ('_', '~'):  # unary arithmetic operators
+-            if any([o in path[:i] for o in '+-/%:&|^~_']):
+-                prepr = ['('] + prepr + [')']
+-            prepr = ['-' if op == '_' else op] + prepr
+-        else:  # binary arithmetic operators
+-            formatted_arg = bbrepr(arg)
+-            if type(arg) is TType:
+-                arg_path = arg.__ops__
+-                if any([o in arg_path for o in '+-/%:&|^~_']):
+-                    formatted_arg = '(' + formatted_arg + ')'
+-            prepr.append(' ' + ('**' if op == ':' else op) + ' ')
+-            prepr.append(formatted_arg)
+-        i += 2
+-    return "".join(prepr)
++            result.append('.__starstar__()')
++        elif op == '+':
++            result.append(' + ' + _format_t([op, arg], T))
++        elif op == '-':
++            result.append(' - ' + _format_t([op, arg], T))
++        elif op == '*':
++            result.append(' * ' + _format_t([op, arg], T))
++        elif op == '/':
++            result.append(' / ' + _format_t([op, arg], T))
++        elif op == '%':
++            result.append(' % ' + _format_t([op, arg], T))
++        elif op == ':':
++            result.append(' ** ' + _format_t([op, arg], T))
++        elif op == '&':
++            result.append(' & ' + _format_t([op, arg], T))
++        elif op == '|':
++            result.append(' | ' + _format_t([op, arg], T))
++        elif op == '^':
++            result.append(' ^ ' + _format_t([op, arg], T))
++        elif op == '~':
++            result.append(' ~' + _format_t([op, arg], T))
++        elif op == '_':
++            result.append(' -' + _format_t([op, arg], T))
++        else:
++            # Handle other operations
++            result.append(' ' + op + ' ' + _format_t([op, arg], T))
++    
++    return ''.join([repr(root)] + result)
+ 
+ 
+ class Val:

@@ -1,0 +1,39 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -552,15 +552,27 @@
+     """
+     A click option that depends on other options.
+     """
+-    def __init__(self, *args, **kwargs):
+-        self.required_options = set(kwargs.pop('required_options', []))
+-        help = kwargs.get('help', '')
+-        if self.required_options:
+-            ex_str = ', '.join(self.required_options)
+-            kwargs['help'] = help + (
+-                f" Requires: [ {ex_str} ]"
+-            )
+-        super(DependentOption, self).__init__(*args, **kwargs)
++    def __init__(self):
++        self.packages = []
++        self.key = False
++        self.db_mirror = False
++        self.cached = None
++        self.ignore_vulns = None
++        self.ignore_severity_rules = None
++        self.proxy = None
++        self.include_ignored = False
++        self.telemetry = None
++        self.files = None
++        self.stdin = None
++        self.is_env_scan = None
++        self.command = None
++        self.subcommand = None
++        self.review = None
++        self.params = {}
++        self.safety_source = 'code'
++        self.local_announcements = []
++        self.scanned_full_path = []
++        self.account = None
+ 
+     def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+         """

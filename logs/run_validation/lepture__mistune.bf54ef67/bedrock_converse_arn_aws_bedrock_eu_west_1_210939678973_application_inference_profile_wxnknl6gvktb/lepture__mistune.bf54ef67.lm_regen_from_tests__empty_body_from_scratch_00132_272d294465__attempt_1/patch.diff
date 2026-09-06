@@ -1,0 +1,22 @@
+--- a/src/mistune/plugins/footnotes.py
++++ b/src/mistune/plugins/footnotes.py
+@@ -121,13 +121,13 @@
+     return '<section class="footnotes">\n<ol>\n' + text + "</ol>\n</section>\n"
+ 
+ 
+-def render_footnote_item(
+-    renderer: "BaseRenderer", text: str, key: str, index: int
+-) -> str:
++<li id="fn-1"><p>And that's the footnote.<a href="#fnref-1" class="footnote">&#8617;</a></p></li>
++
++def render_footnote_item(renderer: 'BaseRenderer', text: str, key: str,
++    index: int) ->str:
+     i = str(index)
+-    back = '<a href="#fnref-' + i + '" class="footnote">&#8617;</a>'
+-    text = text.rstrip()[:-4] + back + '</p>'
+-    return '<li id="fn-' + i + '">' + text + '</li>\n'
++    backlink = '<a href="#fnref-' + i + '" class="footnote">&#8617;</a>'
++    return '<li id="fn-' + i + '">' + text + backlink + '</li>\n'
+ 
+ 
+ def footnotes(md: "Markdown") -> None:

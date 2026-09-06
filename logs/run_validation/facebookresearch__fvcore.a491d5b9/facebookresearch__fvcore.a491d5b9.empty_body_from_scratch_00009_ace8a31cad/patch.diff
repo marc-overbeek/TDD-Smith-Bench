@@ -1,0 +1,74 @@
+--- a/fvcore/common/benchmark.py
++++ b/fvcore/common/benchmark.py
+@@ -9,68 +9,9 @@
+ import numpy as np
+ 
+ 
+-def timeit(
+-    num_iters: int = -1, warmup_iters: int = 0
+-) -> Callable[[Callable[[], Any]], Callable[[], Dict[str, float]]]:
+-    """
+-    This is intened to be used as a decorator to time any function.
+-
+-    Args:
+-        num_iters (int): number of iterations used to compute the average time
+-            (sec) required to run the function. If negative, the number of
+-            iterations is determined dynamically by running the function a few
+-            times to make sure the estimate is stable.
+-        warmup_iters (int): number of iterations used to warm up the function.
+-            This is useful for functions that exhibit poor performance during
+-            the first few times they run (due to caches, autotuning, etc).
+-    Returns:
+-        Dict[str, float]: dictionary of the aggregated timing estimates.
+-            "iterations": number of iterations used to compute the estimated
+-                          time.
+-            "mean": averate time (sec) used to run the function.
+-            "median": median time (sec) used to run the function.
+-            "min": minimal time (sec) used to run the function.
+-            "max": maximal time (sec) used to run the function.
+-            "stddev": standard deviation of the time (sec) used to run the
+-                      function.
+-    """
+-
+-    def decorator(func: Callable[[], Any]) -> Callable[[], Dict[str, float]]:
+-        def decorated(*args: Any, **kwargs: Any) -> Dict[str, float]:
+-            # Warmup phase.
+-            for _ in range(warmup_iters):
+-                func(*args, **kwargs)
+-
+-            # Estimate the run time of the function.
+-            total_time: float = 0
+-            count = 0
+-            run_times: List[float] = []
+-            max_num_iters = num_iters if num_iters > 0 else sys.maxsize
+-            for _ in range(max_num_iters):
+-                start_time = time.time()
+-                func(*args, **kwargs)
+-                run_time = time.time() - start_time
+-
+-                run_times.append(run_time)
+-                total_time += run_time
+-                count += 1
+-                if num_iters < 0 and total_time >= 0.5:
+-                    # If num_iters is negative, run the function enough times so
+-                    # that we can have a more robust estimate of the average time.
+-                    break
+-            assert count == len(run_times)
+-            ret: Dict[str, float] = {}
+-            ret["iterations"] = count
+-            ret["mean"] = total_time / count
+-            ret["median"] = np.median(run_times)
+-            ret["min"] = np.min(run_times)
+-            ret["max"] = np.max(run_times)
+-            ret["stddev"] = np.std(run_times)
+-            return ret
+-
+-        return decorated
+-
+-    return decorator
++def timeit(num_iters: int=-1, warmup_iters: int=0) ->Callable[[Callable[[],
++    Any]], Callable[[], Dict[str, float]]]:
++    pass
+ 
+ 
+ def benchmark(

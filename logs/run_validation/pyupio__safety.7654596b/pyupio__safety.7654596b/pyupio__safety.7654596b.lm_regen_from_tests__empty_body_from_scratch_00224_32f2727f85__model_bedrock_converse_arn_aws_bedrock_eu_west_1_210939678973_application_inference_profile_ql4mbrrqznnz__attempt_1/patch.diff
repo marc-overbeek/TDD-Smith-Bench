@@ -1,0 +1,41 @@
+--- a/safety/scan/main.py
++++ b/safety/scan/main.py
+@@ -197,27 +197,14 @@
+         report_file.write(report)
+ 
+ 
+-def process_files(paths: Dict[str, Set[Path]], config: Optional[ConfigModel] = None) -> Generator[Tuple[Path, InspectableFile], None, None]:
+-    """
+-    Processes the files and yields each file path along with its inspectable file.
+-
+-    Args:
+-        paths (Dict[str, Set[Path]]): A dictionary of file paths by file type.
+-        config (Optional[ConfigModel]): The configuration model (optional).
+-
+-    Yields:
+-        Tuple[Path, InspectableFile]: A tuple of file path and inspectable file.
+-    """
+-    if not config:
+-        config = ConfigModel()
+-
+-    for file_type_key, f_paths in paths.items():
+-        file_type = FileType(file_type_key)
+-        if not file_type or not file_type.ecosystem:
+-            continue
+-        for f_path in f_paths:
+-            with InspectableFileContext(f_path, file_type=file_type) as inspectable_file:
+-                if inspectable_file and inspectable_file.file_type:
+-                    inspectable_file.inspect(config=config)
+-                    inspectable_file.remediate()
+-                    yield f_path, inspectable_file
++def process_files(paths: Dict[str, Set[Path]], config: Optional[ConfigModel
++    ]=None) ->Generator[Tuple[Path, InspectableFile], None, None]:
++    for file_type, file_paths in paths.items():
++        for path in file_paths:
++            try:
++                with InspectableFileContext(path, file_type=file_type) as inspectable_file:
++                    if inspectable_file:
++                        yield path, inspectable_file
++            except Exception as e:
++                LOG.error(f"Error processing file {path}: {e}", exc_info=True)
++                continue

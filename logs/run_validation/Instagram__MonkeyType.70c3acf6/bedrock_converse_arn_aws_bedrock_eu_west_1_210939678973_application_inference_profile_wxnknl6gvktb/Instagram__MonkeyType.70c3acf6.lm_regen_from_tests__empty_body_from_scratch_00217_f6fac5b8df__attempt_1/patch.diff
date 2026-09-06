@@ -1,0 +1,28 @@
+--- a/monkeytype/tracing.py
++++ b/monkeytype/tracing.py
+@@ -285,17 +285,15 @@
+ 
+ 
+ @contextmanager
+-def trace_calls(
+-    logger: CallTraceLogger,
+-    max_typed_dict_size: int,
+-    code_filter: Optional[CodeFilter] = None,
+-    sample_rate: Optional[int] = None,
+-) -> Iterator[None]:
+-    """Enable call tracing for a block of code"""
+-    old_trace = sys.getprofile()
+-    sys.setprofile(CallTracer(logger, max_typed_dict_size, code_filter, sample_rate))
++@contextmanager
++def trace_calls(logger: CallTraceLogger, max_typed_dict_size: int,
++    code_filter: Optional[CodeFilter]=None, sample_rate: Optional[int]=None
++    ) ->Iterator[None]:
++    tracer = CallTracer(logger, max_typed_dict_size, code_filter, sample_rate)
++    old_profile = sys.getprofile()
++    sys.setprofile(tracer)
+     try:
+         yield
+     finally:
+-        sys.setprofile(old_trace)
++        sys.setprofile(old_profile)
+         logger.flush()

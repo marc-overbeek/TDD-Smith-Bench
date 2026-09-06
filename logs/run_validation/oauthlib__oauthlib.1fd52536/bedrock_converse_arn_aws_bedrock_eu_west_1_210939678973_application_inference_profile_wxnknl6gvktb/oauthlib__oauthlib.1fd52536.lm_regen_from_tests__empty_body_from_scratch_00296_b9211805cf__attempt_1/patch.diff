@@ -1,0 +1,28 @@
+--- a/oauthlib/oauth2/rfc6749/clients/base.py
++++ b/oauthlib/oauth2/rfc6749/clients/base.py
+@@ -137,6 +137,25 @@
+         self.populate_token_attributes(self.token)
+ 
+     @property
++    case_insensitive_token_types = {
++        k.lower(): v for k, v in self.token_types.items()}
++    if self.token_type.lower() not in case_insensitive_token_types:
++        raise ValueError("Unsupported token type: %s" % self.token_type)
++    ...
++    return case_insensitive_token_types[self.token_type.lower()](uri, http_method, body,
++                                                                 headers, token_placement, **kwargs)
++
++    """Supported token types and their respective methods
++
++    Additional tokens can be supported by extending this dictionary.
++
++    The Bearer token spec is stable and safe to use.
++
++    The MAC token spec is not yet stable and support for MAC tokens
++    is experimental and currently matching version 00 of the spec.
++    """
++
++    @property
+     def token_types(self):
+         """Supported token types and their respective methods
+ 

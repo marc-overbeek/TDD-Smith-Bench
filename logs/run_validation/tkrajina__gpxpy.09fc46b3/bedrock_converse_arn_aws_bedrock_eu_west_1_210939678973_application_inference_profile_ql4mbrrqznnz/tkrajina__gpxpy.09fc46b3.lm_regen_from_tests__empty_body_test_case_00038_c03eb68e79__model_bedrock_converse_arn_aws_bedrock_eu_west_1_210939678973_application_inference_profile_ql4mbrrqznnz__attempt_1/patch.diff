@@ -1,0 +1,74 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1244,7 +1244,6 @@
+         avg_distance: float = 0
+         avg_elevation_delta: float = 1
+         if remove_extremes:
+-            # compute the average distance between two points:
+             distances: List[float] = []
+             elevations_delta = []
+             for prev, cur in zip(self.points, self.points[1:]):
+@@ -1258,11 +1257,8 @@
+             if elevations_delta:
+                 avg_elevation_delta = 1.0 * sum(elevations_delta) / len(elevations_delta)
+ 
+-        # If The point moved more than this number * the average distance between two
+-        # points -- then is a candidate for deletion:
+-        # TODO: Make this a method parameter
+         remove_2d_extremes_threshold = 1.75 * avg_distance
+-        remove_elevation_extremes_threshold = avg_elevation_delta * 5  # TODO: Param
++        remove_elevation_extremes_threshold = avg_elevation_delta * 5
+ 
+         new_track_points = [self.points[0]]
+ 
+@@ -1279,17 +1275,12 @@
+                     self.points[i].elevation = new_elevation
+ 
+                 if remove_extremes:
+-                    # The point must be enough distant to *both* neighbours:
+                     d1 = abs((old_elevation or 0) - elevations[i - 1])
+                     d2 = abs((old_elevation or 0) - elevations[i + 1])
+-                    #print d1, d2, remove_2d_extremes_threshold
+-
+-                    # TODO: Remove extremes threshold is meant only for 2D, elevation must be
+-                    # computed in different way!
++
+                     if min(d1, d2) < remove_elevation_extremes_threshold and abs((old_elevation or 0) - (new_elevation or 0)) < remove_2d_extremes_threshold:
+                         new_point = self.points[i]
+                     else:
+-                        #print 'removed elevation'
+                         point_removed = True
+                 else:
+                     new_point = self.points[i]
+@@ -1310,22 +1301,15 @@
+                     self.points[i].latitude = new_latitude
+                     self.points[i].longitude = new_longitude
+ 
+-                # TODO: This is not ideal.. Because if there are points A, B and C on the same
+-                # line but B is very close to C... This would remove B (and possibly) A even though
+-                # it is not an extreme. This is the reason for this algorithm:
+                 d1 = mod_geo.distance(latitudes[i - 1], longitudes[i - 1], None, latitudes[i], longitudes[i], None)
+                 d2 = mod_geo.distance(latitudes[i + 1], longitudes[i + 1], None, latitudes[i], longitudes[i], None)
+                 dist = mod_geo.distance(latitudes[i - 1], longitudes[i - 1], None, latitudes[i + 1], longitudes[i + 1], None)
+ 
+-                #print d1, d2, d, remove_extremes
+-
+                 if d1 + d2 > dist * 1.5 and remove_extremes:
+                     dist = mod_geo.distance(old_latitude, old_longitude, None, new_latitude, new_longitude, None)
+-                    #print "d, threshold = ", d, remove_2d_extremes_threshold
+                     if dist < remove_2d_extremes_threshold:
+                         new_point = self.points[i]
+                     else:
+-                        #print 'removed 2d'
+                         point_removed = True
+                 else:
+                     new_point = self.points[i]
+@@ -1334,8 +1318,6 @@
+                 new_track_points.append(new_point)
+ 
+         new_track_points.append(self.points[- 1])
+-
+-        #print 'len=', len(new_track_points)
+ 
+         self.points = new_track_points
+ 

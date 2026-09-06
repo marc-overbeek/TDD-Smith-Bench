@@ -1,0 +1,178 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -433,157 +433,24 @@
+ ### Table Printing ###
+ 
+ 
+-def _get_single_child(
+-    name: str, statistics: Dict[str, Dict[str, str]]
+-) -> Optional[str]:
+-    """
+-    If the given module has only a single child in statistics, return it.
+-    Otherwise, return None.
+-    """
+-    prefix = name + ("." if name else "")
+-    child = None
+-    for mod in statistics:
+-        # 'if mod' excludes root = '', which is never a child
+-        if mod and mod.count(".") == prefix.count(".") and mod.startswith(prefix):
+-            if child is None:
+-                child = mod
+-            else:
+-                return None  # We found a second child, so return None
+-    return child
+-
+-
+-def _try_combine(
+-    stats1: Dict[str, str], stats2: Dict[str, str]
+-) -> Optional[Dict[str, str]]:
+-    """
+-    Try combine two statistics dict to display in one row. If they conflict,
+-    returns None.
+-    """
+-    ret = {}
+-    if set(stats1.keys()) != set(stats2.keys()):
+-        return None
+-    for k, v1 in stats1.items():
+-        v2 = stats2[k]
+-        if v1 != v2 and len(v1) and len(v2):
+-            return None
+-        ret[k] = v1 if len(v1) else v2
+-    return ret
+-
+-
+-def _fastforward(
+-    name: str, statistics: Dict[str, Dict[str, str]]
+-) -> Tuple[str, Dict[str, str]]:
+-    """
+-    If the given module has only a single child and matches statistics
+-    with that child, merge statistics and their names into one row.
+-    Then repeat until the condition isn't met.
+-
+-    Returns:
+-        str: the new name
+-        dict: the combined statistics of this row
+-    """
+-    single_child = _get_single_child(name, statistics)
+-    if single_child is None:
+-        return name, statistics[name]
+-    combined = _try_combine(statistics[name], statistics[single_child])
+-    if combined is None:
+-        return name, statistics[name]
+-    statistics[single_child] = combined
+-    return _fastforward(single_child, statistics)
+-
+-
+-def _model_stats_table(
+-    statistics: Dict[str, Dict[str, str]],
+-    max_depth: int = 3,
+-    stat_columns: Optional[List[str]] = None,
+-) -> str:
+-    """
+-    Formats the statistics obtained from a model in a nice table.
+-
+-    Args:
+-        statistics (dict(str, dict(str, str))) : The statistics to print.
+-            Organized as a dictionary over modules, then as a dictionary
+-            over statistics in the model. The statistics are assumed to
+-            already be formatted for printing.
+-        max_depth (int) : The maximum submodule depth to recurse to.
+-        stat_columns (list(str)) : Specify the order of the columns to print.
+-            If None, columns are found automatically from the provided
+-            statistics.
+-
+-    Return:
+-        str : The formatted table.
+-    """
+-    if stat_columns is None:
+-        stat_columns = set()
+-        for stats in statistics.values():
+-            stat_columns.update(stats.keys())
+-        stat_columns = list(stat_columns)
+-
+-    headers = ["module"] + stat_columns
+-    table: List[List[str]] = []
+-
+-    def build_row(name: str, stats: Dict[str, str], indent_lvl: int) -> List[str]:
+-        indent = " " * indent_lvl
+-        row = [indent + name]
+-        for stat_name in stat_columns:  # pyre-ignore[16] Is not None at this point
+-            row_str = (indent + stats[stat_name]) if stat_name in stats else ""
+-            row.append(row_str)
+-        return row
+-
+-    # pyre-fixme[53]: Captured variable `root_prefix` is not annotated.
+-    def fill(indent_lvl: int, prefix: str) -> None:
+-        if indent_lvl > max_depth:
+-            return
+-        for mod_name in statistics:
+-            # 'if mod' excludes root = '', which is never a child
+-            if (
+-                mod_name
+-                and mod_name.count(".") == prefix.count(".")
+-                and mod_name.startswith(prefix)
+-            ):
+-                mod_name, curr_stats = _fastforward(mod_name, statistics)
+-                if root_prefix and mod_name.startswith(root_prefix):
+-                    # Skip the root_prefix shared by all submodules as it carries 0 information
+-                    pretty_mod_name = mod_name[len(root_prefix) :]
+-                else:
+-                    pretty_mod_name = mod_name
+-                row = build_row(pretty_mod_name, curr_stats, indent_lvl)
+-                table.append(row)
+-                fill(indent_lvl + 1, mod_name + ".")
+-
+-    root_name, curr_stats = _fastforward("", statistics)
+-    row = build_row(root_name or "model", curr_stats, indent_lvl=0)
+-    table.append(row)
+-    root_prefix = root_name + ("." if root_name else "")
+-    fill(indent_lvl=1, prefix=root_prefix)
+-
+-    old_ws = tabulate.PRESERVE_WHITESPACE
+-    tabulate.PRESERVE_WHITESPACE = True
+-    tab = tabulate.tabulate(table, headers=headers, tablefmt="pipe")
+-    tabulate.PRESERVE_WHITESPACE = old_ws
+-    return tab
+-
+-
+-def flop_count_table(
+-    flops: FlopCountAnalysis,
+-    max_depth: int = 3,
+-    activations: Optional[ActivationCountAnalysis] = None,
+-    show_param_shapes: bool = True,
+-) -> str:
+-    """
+-    Format the per-module parameters and flops of a model in a table.
+-    It looks like this:
+-    ::
+-        | model                            | #parameters or shape   | #flops    |
+-        |:---------------------------------|:-----------------------|:----------|
+-        | model                            | 34.6M                  | 65.7G     |
+-        |  s1                              |  15.4K                 |  4.32G    |
+-        |   s1.pathway0_stem               |   9.54K                |   1.23G   |
+-        |    s1.pathway0_stem.conv         |    9.41K               |    1.23G  |
+-        |    s1.pathway0_stem.bn           |    0.128K              |           |
+-        |   s1.pathway1_stem               |   5.9K                 |   3.08G   |
+-        |    s1.pathway1_stem.conv         |    5.88K               |    3.08G  |
+-        |    s1.pathway1_stem.bn           |    16                  |           |
++def _get_single_child(name: str, statistics: Dict[str, Dict[str, str]]
++    ) ->Optional[str]:
++    pass
++
++
++def _try_combine(stats1: Dict[str, str], stats2: Dict[str, str]) ->Optional[
++    Dict[str, str]]:
++    pass
++
++
++def _fastforward(name: str, statistics: Dict[str, Dict[str, str]]) ->Tuple[
++    str, Dict[str, str]]:
++    pass
++
++
++def _model_stats_table(statistics: Dict[str, Dict[str, str]], max_depth:
++    int=3, stat_columns: Optional[List[str]]=None) ->str:
++    pass
+         |  s1_fuse                         |  0.928K                |  29.4M    |
+         |   s1_fuse.conv_f2s               |   0.896K               |   29.4M   |
+         |    s1_fuse.conv_f2s.weight       |    (16, 8, 7, 1, 1)    |           |

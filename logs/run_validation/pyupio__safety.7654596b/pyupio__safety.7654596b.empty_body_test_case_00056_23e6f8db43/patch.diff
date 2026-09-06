@@ -1,0 +1,129 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1496,117 +1496,15 @@
+     return announcements
+ 
+ 
+-def get_announcements(
+-    session: requests.Session,
+-    telemetry: bool = True,
+-    with_telemetry: Any = None
+-) -> List[Dict[str, str]]:
+-    """
+-    Retrieves announcements from the server.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        telemetry (bool): Whether to include telemetry data.
+-        with_telemetry (Optional[Dict[str, Any]]): The telemetry data.
+-
+-    Returns:
+-        List[Dict[str, str]]: The list of announcements.
+-    """
+-    LOG.info('Getting announcements')
+-
+-    announcements = []
+-
+-    url = f"{DATA_API_BASE_URL}announcements/"
+-    method = 'post'
+-    telemetry_data = with_telemetry if with_telemetry else build_telemetry_data(telemetry=telemetry)
+-    data = asdict(telemetry_data)
+-    request_kwargs = {'timeout': 3}
+-    data_keyword = 'json'
+-
+-    source = os.environ.get('SAFETY_ANNOUNCEMENTS_URL', None)
+-
+-    if source:
+-        LOG.debug(f'Getting the announcement from a different source: {source}')
+-        url = source
+-        method = 'get'
+-        data = {
+-            'telemetry': json.dumps(data)}
+-        data_keyword = 'params'
+-
+-    request_kwargs[data_keyword] = data
+-    request_kwargs['url'] = url
+-
+-    LOG.debug(f'Telemetry data sent: {data}')
+-
+-    try:
+-        request_func = getattr(session, method)
+-        r = request_func(**request_kwargs)
+-        LOG.debug(r.text)
+-    except Exception as e:
+-        LOG.info('Unexpected but HANDLED Exception happened getting the announcements: %s', e)
+-        return announcements
+-
+-    if r.status_code == 200:
+-        try:
+-            announcements = r.json()
+-            if 'announcements' in announcements.keys():
+-                announcements = announcements.get('announcements', [])
+-            else:
+-                LOG.info('There is not announcements key in the JSON response, is this a wrong structure?')
+-                announcements = []
+-
+-        except json.JSONDecodeError as e:
+-            LOG.info('Unexpected but HANDLED Exception happened decoding the announcement response: %s', e)
+-
+-    LOG.info('Announcements fetched')
+-
+-    return announcements
+-
+-
+-
+-def get_packages(files: Optional[List[str]] = None, stdin: bool = False) -> List[Package]:
+-    """
+-    Retrieves the packages from the given files or standard input.
+-
+-    Args:
+-        files (Optional[List[str]]): The list of files.
+-        stdin (bool): Whether to read from standard input.
+-
+-    Returns:
+-        List[Package]: The list of packages.
+-    """
+-    if files:
+-        return list(itertools.chain.from_iterable(read_requirements(f, resolve=True) for f in files))
+-
+-    if stdin:
+-        return list(read_requirements(sys.stdin))
+-
+-    import pkg_resources
+-
+-    def allowed_version(pkg: str, version: str) -> bool:
+-        try:
+-            parse_version(version)
+-        except Exception:
+-            SafetyContext.local_announcements.append(
+-                {'message': f'Version {version} for {pkg} is invalid and is ignored by Safety. Please See PEP 440.',
+-                 'type': 'warning', 'local': True})
+-            return False
+-
+-        return True
+-
+-    w_set = pkg_resources.working_set
+-
+-    SafetyContext().scanned_full_path.extend(w_set.entry_keys.keys())
+-
+-    return [
+-        Package(name=d.key, version=d.version,
+-                requirements=[SafetyRequirement(f'{d.key}=={d.version}', found=d.location)],
+-                found=d.location, insecure_versions=[],
+-                secure_versions=[], latest_version=None, latest_version_without_known_vulnerabilities=None,
+-                more_info_url=None) for d in
+-        w_set
+-        if d.key not in {"python", "wsgiref", "argparse"} and allowed_version(d.key, d.version)
+-    ]
++def get_announcements(session: requests.Session, telemetry: bool=True,
++    with_telemetry: Any=None) ->List[Dict[str, str]]:
++    pass
++
++
++
++def get_packages(files: Optional[List[str]]=None, stdin: bool=False) ->List[
++    Package]:
++    pass
+ 
+ 
+ def read_vulnerabilities(fh: Any) -> Dict[str, Any]:

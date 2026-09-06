@@ -1,0 +1,33 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -639,13 +639,6 @@
+ 
+     @classmethod
+     def from_text(cls, text):
+-        """Make a Path from .-delimited text:
+-
+-        >>> Path.from_text('a.b.c')
+-        Path('a', 'b', 'c')
+-
+-        This is the default behavior when :func:`~glom.glom` gets a string spec.
+-        """
+         def create():
+             segs = text.split('.')
+             if PATH_STAR:
+@@ -661,7 +654,7 @@
+                     cls._STAR_WARNED = True
+             return cls(*segs)
+ 
+-        cache = cls._CACHE[PATH_STAR]  # remove this when PATH_STAR is default
++        cache = cls._CACHE[PATH_STAR]
+         if text not in cache:
+             if len(cache) > cls._MAX_CACHE:
+                 return create()
+@@ -1442,7 +1435,6 @@
+                 raise TypeError(f'S() takes no positional arguments, got: {args!r}')
+             if not kwargs:
+                 raise TypeError('S() expected at least one kwarg, got none')
+-            # TODO: typecheck kwarg vals?
+         return _t_child(self, '(', (args, kwargs))
+ 
+     def __star__(self):

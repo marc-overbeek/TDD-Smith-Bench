@@ -1,0 +1,36 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -245,11 +245,28 @@
+ 
+ def logarithmic_similarity(a: numbers, b: numbers, threshold: float=0.1):
+     """
+-    A threshold of 0.1 translates to about 10.5% difference.
+-    A threshold of 0.5 translates to about 65% difference.
+-    A threshold of 0.05 translates to about 5.1% difference.
+-    """
+-    return logarithmic_distance(a, b) < threshold
++    Calculate logarithmic similarity between two numbers.
++    
++    Args:
++        a: First number
++        b: Second number  
++        threshold: Threshold for similarity comparison
++        
++    Returns:
++        Similarity score between 0 and 1, where 1 means identical and 0 means completely different
++    """
++    if a == b:
++        return 1.0
++    
++    # Calculate logarithmic distance
++    distance = logarithmic_distance(a, b)
++    
++    # Convert distance to similarity (inverse relationship)
++    # If distance is below threshold, similarity is high (close to 1)
++    # If distance is above threshold, similarity is low (close to 0)
++    similarity = max(0, 1 - distance / threshold)
++    
++    return similarity
+ 
+ 
+ def logarithmic_distance(a: numbers, b: numbers):

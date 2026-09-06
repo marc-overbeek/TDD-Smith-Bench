@@ -1,0 +1,19 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -347,6 +347,16 @@
+     return glom(obj, Delete(path, ignore_missing=ignore_missing))
+ 
+ 
++def test_sequence_delete():
++    target = {'alist': [0, 1, 2]}
++    delete(target, 'alist.1')
++    assert target['alist'] == [0, 2]
++    with pytest.raises(PathDeleteError, match='could not delete') as exc_info:
++        delete(target, 'alist.2')
++    exc_repr = repr(exc_info.value)
++    assert exc_repr.startswith('PathDeleteError(')
++    assert exc_repr.endswith("'2')")
++
+ def _del_sequence_item(target, idx):
+     del target[int(idx)]
+ 

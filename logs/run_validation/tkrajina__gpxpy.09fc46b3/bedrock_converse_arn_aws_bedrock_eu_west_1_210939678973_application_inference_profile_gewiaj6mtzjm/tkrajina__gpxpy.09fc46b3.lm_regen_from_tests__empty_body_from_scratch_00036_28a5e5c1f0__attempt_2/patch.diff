@@ -1,0 +1,63 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -96,8 +96,58 @@
+     raise mod_gpx.GPXException(f'Invalid time: {string}')
+ 
+ 
+-def format_time(time: mod_datetime.datetime) -> str:
+-    return time.isoformat().replace('+00:00', 'Z')
++def format_time(time: mod_datetime.datetime) ->str:
++    if time is None:
++        return ''
++    
++    # Handle timezone
++    if time.tzinfo is None:
++        # No timezone, add Z for UTC
++        tz_str = 'Z'
++    elif isinstance(time.tzinfo, SimpleTZ):
++        # Custom timezone
++        offset = time.tzinfo.offset
++        if offset == 0:
++            tz_str = 'Z'
++        else:
++            hours = offset // 60
++            minutes = abs(offset % 60)
++            if hours < 0:
++                sign = '-'
++                hours = -hours
++            else:
++                sign = '+'
++            tz_str = f'{sign}{hours:02d}:{minutes:02d}'
++    else:
++        # Other timezone types, try to get offset
++        offset = time.utcoffset()
++        if offset is None:
++            tz_str = 'Z'
++        else:
++            total_minutes = int(offset.total_seconds() // 60)
++            if total_minutes == 0:
++                tz_str = 'Z'
++            else:
++                hours = total_minutes // 60
++                minutes = abs(total_minutes % 60)
++                if hours < 0:
++                    sign = '-'
++                    hours = -hours
++                else:
++                    sign = '+'
++                tz_str = f'{sign}{hours:02d}:{minutes:02d}'
++    
++    # Format the date/time part
++    # Always include 6 digits for microseconds, even if zero
++    if time.microsecond:
++        microsecond_str = f'.{time.microsecond:06d}'
++    else:
++        microsecond_str = ''
++    
++    # Create the basic timestamp
++    timestamp = f'{time.year:04d}-{time.month:02d}-{time.day:02d}T{time.hour:02d}:{time.minute:02d}:{time.second:02d}{microsecond_str}{tz_str}'
++    
++    return timestamp
+ 
+ 
+ 

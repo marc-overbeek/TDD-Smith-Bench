@@ -1,0 +1,68 @@
+--- a/safety/cli_util.py
++++ b/safety/cli_util.py
+@@ -90,37 +90,34 @@
+     """
+     return Text(help_text)
+ 
+-def get_command_for(name: str, typer_instance: typer.Typer) -> click.Command:
+-    """
+-    Retrieve a command by name from a Typer instance.
+-
+-    Args:
+-        name (str): The name of the command.
+-        typer_instance (typer.Typer): The Typer instance.
+-
+-    Returns:
+-        click.Command: The found command.
+-    """
+-    single_command = next(
+-        (command
+-         for command in typer_instance.registered_commands
+-         if command.name == name), None)
+-
+-    if not single_command:
+-        raise ValueError("Unable to find the command name.")
+-
+-    single_command.context_settings = typer_instance.info.context_settings
+-    click_command = typer.main.get_command_from_info(
+-        single_command,
+-        pretty_exceptions_short=typer_instance.pretty_exceptions_short,
+-        rich_markup_mode=typer_instance.rich_markup_mode,
+-    )
+-    if typer_instance._add_completion:
+-        click_install_param, click_show_param = \
+-            typer.main.get_install_completion_arguments()
+-        click_command.params.append(click_install_param)
+-        click_command.params.append(click_show_param)
+-    return click_command
++login_command = get_command_for(name='login', typer_instance=auth_app)
++ctx.invoke(login_command)
++
++register_command = get_command_for(name='register', typer_instance=auth_app)
++
++def get_command_for(name: str, typer_instance: typer.Typer) ->click.Command:
++    return typer_instance.registered_commands[0].callback.__self__.commands[name]
++
++def get_command_for(name: str, typer_instance: typer.Typer) ->click.Command:
++    # Get the Click app from the Typer instance
++    click_app = typer_instance.registered_commands[0].callback.__self__ if typer_instance.registered_commands else None
++    if click_app and hasattr(click_app, 'commands'):
++        return click_app.commands.get(name)
++    return None
++
++def get_command_for(name: str, typer_instance: typer.Typer) ->click.Command:
++    # The Typer instance wraps a Click group
++    # We can get it by calling the typer instance or accessing internal structure
++    click_group = typer_instance()
++    if isinstance(click_group, click.Group):
++        return click_group.commands.get(name)
++    return None
++
++def get_command_for(name: str, typer_instance: typer.Typer) ->click.Command:
++    click_group = typer_instance()
++    if isinstance(click_group, click.Group):
++        return click_group.commands.get(name)
++    return None
+ 
+ 
+ def pass_safety_cli_obj(func):

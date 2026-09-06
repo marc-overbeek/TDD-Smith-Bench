@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the code, I can see that `save_content_to_path` should determine the file type from the path if not provided, optionally create a backup, and then call `_save_content` to actually save the file.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the code, I can see that `save_content_to_path` should determine the file type from the path if not provided, optionally create a backup, and then call `_save_content` to actually save the file.\n\n```python\ndef save_content_to_path(content, path, file_type=None, keep_backup=True):\n    if file_type is None:\n        file_type = path.split('.')[-1]\n    \n    if keep_backup and os.path.exists(path):\n        backup_path = path + '.bak'\n        os.rename(path, backup_path)\n    \n    try:\n        _save_content(content, path, file_type, keep_backup=keep_backup)\n    except Exception:\n        if keep_backup and os.path.exists(backup_path if keep_backup else ''):\n            os.rename(backup_path, path)\n        raise\n```",
+  "rewrite": "def save_content_to_path(content, path, file_type=None, keep_backup=True):\n    if file_type is None:\n        file_type = path.split('.')[-1]\n    \n    if keep_backup and os.path.exists(path):\n        backup_path = path + '.bak'\n        os.rename(path, backup_path)\n    \n    try:\n        _save_content(content, path, file_type, keep_backup=keep_backup)\n    except Exception:\n        if keep_backup and os.path.exists(backup_path if keep_backup else ''):\n            os.rename(backup_path, path)\n        raise",
+  "strategy": "lm_regen_from_tests"
+}

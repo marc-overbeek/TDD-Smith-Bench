@@ -1,0 +1,76 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -515,18 +515,23 @@
+         or the object class itself.
+         """
+         bases = []
+-
+         curr_klass = klass
+-
++    
++        # Collect all bases in order from most general to most specific
+         while curr_klass is not object:
+             bases.append(curr_klass)
+-
+             curr_bases = curr_klass.__bases__
+-
++        
++            # If multiple inheritance, stop here
+             if len(curr_bases) != 1:
+                 break
+-
++            
+             curr_klass = curr_bases[0]
++    
++        # Add the class itself
++        bases.append(klass)
++    
++        # Return from general to specific
+         return bases[::-1]
+ 
+     def _merge_common_bases(self, first_bases, second_bases):
+@@ -553,16 +558,41 @@
+         """
+         klasses = union.__args__
+ 
++        # Handle edge cases
++        if len(klasses) == 0:
++            return union
++        if len(klasses) == 1:
++            return klasses[0]
++
++        # Compute bases for each class
+         all_bases = []
+-
+         for klass in klasses:
+             klass_bases = self._compute_bases(klass)
+             all_bases.append(klass_bases)
+ 
+-        common_bases = functools.reduce(self._merge_common_bases, all_bases)
+-
++        # Find common bases by comparing all base sequences
++        common_bases = []
++    
++        # Start with the first class's bases
++        if not all_bases:
++            return union
++        
++        # Find intersection of all base sequences
++        min_length = min(len(bases) for bases in all_bases)
++    
++        # Compare bases at each level
++        for i in range(min_length):
++            base_at_level = all_bases[0][i]
++            if all(bases[i] is base_at_level for bases in all_bases):
++                common_bases.append(base_at_level)
++            else:
++                break
++    
++        # If we have common bases, return the most specific one (last in the list)
+         if common_bases:
+             return common_bases[-1]
++        
++        # If no common bases found, return the original union
+         return union
+ 
+ 

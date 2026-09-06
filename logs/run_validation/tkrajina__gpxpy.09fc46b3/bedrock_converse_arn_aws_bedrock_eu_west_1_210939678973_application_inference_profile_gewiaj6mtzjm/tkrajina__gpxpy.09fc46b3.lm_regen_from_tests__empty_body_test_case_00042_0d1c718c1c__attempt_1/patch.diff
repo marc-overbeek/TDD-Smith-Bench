@@ -1,0 +1,70 @@
+--- a/gpxpy/gpxxml.py
++++ b/gpxpy/gpxxml.py
+@@ -20,47 +20,25 @@
+         yield dom.toxml()
+         gpx_node.removeChild(gpx_track_node)
+ 
+-def join_gpxs(xmls: Iterable[AnyStr]) -> str:
+-    """
+-    Join GPX files without parsing them with gpxpy.
+-    """
+-    result = None
++def join_gpxs(xmls: Iterable[AnyStr]) ->str:
++    if not xmls:
++        return ''
++    
++    doms = [mod_minidom.parseString(xml) for xml in xmls]
++    main_dom = doms[0]
++    main_gpx = _find_gpx_node(main_dom)
++    
++    for dom in doms[1:]:
++        gpx = _find_gpx_node(dom)
++        if gpx:
++            for child in gpx.childNodes[:]:  # Use slice to avoid issues with modifying during iteration
++                if child.nodeType == child.ELEMENT_NODE:
++                    main_gpx.appendChild(main_dom.importNode(child, True))
++    
++    return main_dom.toxml()
+ 
+-    wpt_elements = []
+-    rte_elements = []
+-    trk_elements = []
+-
+-    for xml in xmls:
+-        dom = mod_minidom.parseString(xml)
+-        if not result:
+-            result = dom
+-
+-        gpx_node = _find_gpx_node(dom)
+-        if gpx_node:
+-            for child_node in gpx_node.childNodes:
+-                if child_node.nodeName == 'wpt':
+-                    wpt_elements.append(child_node)
+-                    gpx_node.removeChild(child_node)
+-                elif child_node.nodeName == 'rte':
+-                    rte_elements.append(child_node)
+-                    gpx_node.removeChild(child_node)
+-                elif child_node.nodeName == 'trk':
+-                    trk_elements.append(child_node)
+-                    gpx_node.removeChild(child_node)
+-
+-    gpx_node = _find_gpx_node(result)
+-    if gpx_node:
+-        for wpt_element in wpt_elements:
+-            gpx_node.appendChild(wpt_element)
+-        for rte_element in rte_elements:
+-            gpx_node.appendChild(rte_element)
+-        for trk_element in trk_elements:
+-            gpx_node.appendChild(trk_element)
+-
+-    return result.toxml() # type: ignore
+-
+-def _find_gpx_node(dom: Any) -> Any:
+-    for gpx_candidate_node in dom.childNodes:
+-        if gpx_candidate_node.nodeName == 'gpx':
+-            return gpx_candidate_node
++def _find_gpx_node(dom: Any) ->Any:
++    for node in dom.childNodes:
++        if node.nodeType == node.ELEMENT_NODE and node.tagName == 'gpx':
++            return node
+     return None

@@ -1,0 +1,34 @@
+--- a/monkeytype/tracing.py
++++ b/monkeytype/tracing.py
+@@ -130,10 +130,29 @@
+     return None
+ 
+ 
+-def get_previous_frames(frame: Optional[FrameType]) -> Iterator[FrameType]:
++def test_locally_defined_function_trace(self, collector):
++    with trace_calls(collector, max_typed_dict_size=0):
++        function = call_locally_defined_function(3)
++    assert len(collector.traces) == 2
++    assert collector.traces[0] == CallTrace(function, {'n': int}, int)
++
++def get_locals_from_previous_frames(frame: FrameType) -> Iterator[Any]:
++    for previous_frame in get_previous_frames(frame):
++        yield from previous_frame.f_locals.values()
++
++if func is None:
++    for v in get_locals_from_previous_frames(frame):
++        if not callable(v):
++            continue
++        func = _has_code(v, code)
++        if func is not None:
++            break
++
++def get_previous_frames(frame: Optional[FrameType]) ->Iterator[FrameType]:
+     while frame is not None:
+-        yield frame
+         frame = frame.f_back
++        if frame is not None:
++            yield frame
+ 
+ 
+ def get_locals_from_previous_frames(frame: FrameType) -> Iterator[Any]:

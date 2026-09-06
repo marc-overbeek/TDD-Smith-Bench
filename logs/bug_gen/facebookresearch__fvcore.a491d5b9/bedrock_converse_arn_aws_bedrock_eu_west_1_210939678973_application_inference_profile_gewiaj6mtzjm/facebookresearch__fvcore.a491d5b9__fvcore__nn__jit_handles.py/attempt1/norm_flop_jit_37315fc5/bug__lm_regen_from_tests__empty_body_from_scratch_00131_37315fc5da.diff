@@ -1,0 +1,16 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -241,9 +241,11 @@
+         """
+         # Inputs[0] contains the shape of the input.
+         input_shape = get_shape(inputs[0])
+-        has_affine = get_shape(inputs[affine_arg_index]) is not None
++        # Check if affine parameters exist (they're optional)
++        has_affine = get_shape(inputs[1]) is not None
+         assert 2 <= len(input_shape) <= 5, input_shape
+-        # 5 is just a rough estimate
++        # For normalization operations, typically 4-5 flops per element
++        # 4 flops for inference, 5 flops for training with affine
+         flop = prod(input_shape) * (5 if has_affine else 4)
+         return flop
+ 

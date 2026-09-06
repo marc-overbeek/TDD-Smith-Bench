@@ -1,0 +1,54 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -54,29 +54,28 @@
+     return str(x)
+ 
+ 
+-def _pretty_statistics(
+-    statistics: Dict[str, Dict[str, int]], sig_figs: int = 3, hide_zero: bool = False
+-) -> Dict[str, Dict[str, str]]:
+-    """
+-    Converts numeric statistics to strings with kilo/mega/giga/etc.
+-    labels.
+-
+-    Args:
+-        statistics (dict(str, dict(str, int))) : the statistics to
+-            format. Organized as a dictionary over modules, which are
+-            each a dictionary over statistic types.
+-        sig_figs (int) : the number of significant figures for each stat
+-        hide_zero (bool) : if True, statistics that are zero will be
+-            written as an empty string. Defaults to False.
+-
+-    Return:
+-        dict(str, dict(str, str)) : the input statistics as pretty strings
+-    """
+-    out_stats = {}
+-    for mod, stats in statistics.items():
+-        out_stats[mod] = {
+-            s: _format_size(val, sig_figs, hide_zero) for s, val in stats.items()
+-        }
++def _pretty_statistics(statistics: Dict[str, Dict[str, int]], sig_figs: int
++    =3, hide_zero: bool=False) ->Dict[str, Dict[str, str]]:
++    """
++    Converts integer statistics to formatted strings for display.
++    
++    Args:
++        statistics (dict(str, dict(str, int))): Statistics organized by module
++            and statistic type
++        sig_figs (int): Number of significant figures for formatting
++        hide_zero (bool): If True, zero values are replaced with empty strings
++    
++    Returns:
++        dict(str, dict(str, str)): Statistics with integer values converted
++            to formatted strings
++    """
++    out_stats: Dict[str, Dict[str, str]] = {}
++    for mod_name, mod_stats in statistics.items():
++        out_stats[mod_name] = {}
++        for stat_name, stat_value in mod_stats.items():
++            out_stats[mod_name][stat_name] = _format_size(
++                stat_value, sig_figs=sig_figs, hide_zero=hide_zero
++            )
+     return out_stats
+ 
+ 

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef __repr__(self):\n    base_args = ()\n    if self.subspec != T:\n        base_args = (self.subspec,)\n    base = format_invocation(self.__class__.__name__, base_args, repr=bbrepr)\n    chunks = [base]\n    for fname, args, _ in reversed(self._iter_stack):\n        meth = getattr(self, fname)\n        fb = FunctionBuilder.from_func(meth)\n        fb.args = fb.args[1:]  # drop self\n        arg_names = fb.get_arg_names()\n        # TODO: something fancier with defaults:\n        kwargs = []\n        if len(args) > 1 and arg_names:\n            args, kwargs = (), zip(arg_names, args)\n        chunks.append('.' + format_invocation(fname, args, kwargs, repr=bbrepr))\n    return ''.join(chunks)\n```",
+  "rewrite": "def __repr__(self):\n    base_args = ()\n    if self.subspec != T:\n        base_args = (self.subspec,)\n    base = format_invocation(self.__class__.__name__, base_args, repr=bbrepr)\n    chunks = [base]\n    for fname, args, _ in reversed(self._iter_stack):\n        meth = getattr(self, fname)\n        fb = FunctionBuilder.from_func(meth)\n        fb.args = fb.args[1:]  # drop self\n        arg_names = fb.get_arg_names()\n        # TODO: something fancier with defaults:\n        kwargs = []\n        if len(args) > 1 and arg_names:\n            args, kwargs = (), zip(arg_names, args)\n        chunks.append('.' + format_invocation(fname, args, kwargs, repr=bbrepr))\n    return ''.join(chunks)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

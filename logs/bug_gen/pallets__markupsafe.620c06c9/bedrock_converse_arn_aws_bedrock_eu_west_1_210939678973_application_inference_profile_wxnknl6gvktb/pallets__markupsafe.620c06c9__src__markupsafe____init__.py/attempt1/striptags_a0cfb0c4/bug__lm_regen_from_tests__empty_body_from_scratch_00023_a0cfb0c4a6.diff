@@ -1,0 +1,24 @@
+--- a/src/markupsafe/__init__.py
++++ b/src/markupsafe/__init__.py
+@@ -196,6 +196,12 @@
+ 
+         return unescape(str(self))
+ 
++    :meth:`unescape` the markup, remove tags, and normalize
++    whitespace to single spaces.
++
++    >>> Markup("Main &raquo;\t<em>About</em>").striptags()
++    'Main » About'
++
+     def striptags(self, /) -> str:
+         """:meth:`unescape` the markup, remove tags, and normalize
+         whitespace to single spaces.
+@@ -225,7 +231,7 @@
+ 
+         # collapse spaces
+         value = " ".join(value.split())
+-        return self.__class__(value).unescape()
++        return Markup(value).unescape()
+ 
+     @classmethod
+     def escape(cls, s: t.Any, /) -> te.Self:

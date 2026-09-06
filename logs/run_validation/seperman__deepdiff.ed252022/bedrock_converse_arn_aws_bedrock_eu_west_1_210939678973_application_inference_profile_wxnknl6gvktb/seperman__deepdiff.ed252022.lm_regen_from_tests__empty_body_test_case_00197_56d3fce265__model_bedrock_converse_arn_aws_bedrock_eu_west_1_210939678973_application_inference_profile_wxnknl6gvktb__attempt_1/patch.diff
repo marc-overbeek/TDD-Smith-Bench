@@ -1,0 +1,49 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -478,10 +478,6 @@
+         )
+ 
+     def _skip_this(self, level):
+-        """
+-        Check whether this comparison should be skipped because one of the objects to compare meets exclusion criteria.
+-        :rtype: bool
+-        """
+         level_path = level.path()
+         skip = False
+         if self.exclude_paths and level_path in self.exclude_paths:
+@@ -748,23 +744,9 @@
+                 zip_longest(
+                     t1_chunk, t2_chunk, fillvalue=ListItemRemovedOrAdded))]
+ 
+-    def _get_matching_pairs(
+-        self, level,
+-        t1_from_index=None, t1_to_index=None,
+-        t2_from_index=None, t2_to_index=None
+-    ):
+-        """
+-        Given a level get matching pairs. This returns list of two tuples in the form:
+-        [
+-          (t1 index, t2 index), (t1 item, t2 item)
+-        ]
+-
+-        This will compare using the passed in `iterable_compare_func` if available.
+-        Default it to compare in order
+-        """
+-
++    def _get_matching_pairs(self, level, t1_from_index=None, t1_to_index=None,
++        t2_from_index=None, t2_to_index=None):
+         if self.iterable_compare_func is None:
+-            # Match in order if there is no compare function provided
+             return self._compare_in_order(
+                 level,
+                 t1_from_index=t1_from_index, t1_to_index=t1_to_index,
+@@ -779,9 +761,6 @@
+                 for j, y in enumerate(level.t2):
+ 
+                     if(j in y_index_matched):
+-                        # This ensures a one-to-one relationship of matches from t1 to t2.
+-                        # If y this index in t2 has already been matched to another x
+-                        # it cannot have another match, so just continue.
+                         continue
+ 
+                     if(self.iterable_compare_func(x, y, level)):

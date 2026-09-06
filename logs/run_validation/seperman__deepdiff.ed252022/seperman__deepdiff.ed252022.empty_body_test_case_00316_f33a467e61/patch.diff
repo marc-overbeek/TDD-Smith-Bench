@@ -1,0 +1,129 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -311,18 +311,7 @@
+ class _RestrictedUnpickler(pickle.Unpickler):
+ 
+     def __init__(self, *args, **kwargs):
+-        self.safe_to_import = kwargs.pop('safe_to_import', None)
+-        if self.safe_to_import:
+-            if isinstance(self.safe_to_import, strings):
+-                self.safe_to_import = set([self.safe_to_import])
+-            elif isinstance(self.safe_to_import, (set, frozenset)):
+-                pass
+-            else:
+-                self.safe_to_import = set(self.safe_to_import)
+-            self.safe_to_import = self.safe_to_import | SAFE_TO_IMPORT
+-        else:
+-            self.safe_to_import = SAFE_TO_IMPORT
+-        super().__init__(*args, **kwargs)
++        pass
+ 
+     def find_class(self, module, name):
+         # Only allow safe classes from self.safe_to_import.
+@@ -372,40 +361,7 @@
+ 
+ 
+ def pickle_load(content=None, file_obj=None, safe_to_import=None):
+-    """
+-    **pickle_load**
+-    Load the pickled content. content should be a bytes object.
+-
+-    **Parameters**
+-
+-    content : Bytes of pickled object. 
+-
+-    file_obj : A file object to load the content from
+-
+-    safe_to_import : A set of modules that needs to be explicitly allowed to be loaded.
+-        Example: {'mymodule.MyClass', 'decimal.Decimal'}
+-        Note that this set will be added to the basic set of modules that are already allowed.
+-        The set of what is already allowed can be found in deepdiff.serialization.SAFE_TO_IMPORT
+-
+-    **Returns**
+-
+-        A delta object that can be added to t1 to recreate t2.
+-
+-    **Examples**
+-
+-    Importing
+-        >>> from deepdiff import DeepDiff, Delta
+-        >>> from pprint import pprint
+-
+-
+-    """
+-    if not content and not file_obj:
+-        raise ValueError('Please either pass the content or the file_obj to pickle_load.') 
+-    if isinstance(content, str):
+-        content = content.encode('utf-8')
+-    if content:
+-        file_obj = io.BytesIO(content)
+-    return _RestrictedUnpickler(file_obj, safe_to_import=safe_to_import).load()
++    pass
+ 
+ 
+ def _get_pretty_form_text(verbose_level):
+@@ -453,63 +409,7 @@
+ 
+ 
+ def load_path_content(path, file_type=None):
+-    """
+-    Loads and deserializes the content of the path.
+-    """
+-
+-    if file_type is None:
+-        file_type = path.split('.')[-1]
+-    if file_type == 'json':
+-        with open(path, 'r') as the_file:
+-            content = json_loads(the_file.read())
+-    elif file_type in {'yaml', 'yml'}:
+-        try:
+-            import yaml
+-        except ImportError:  # pragma: no cover.
+-            raise ImportError('Pyyaml needs to be installed.') from None  # pragma: no cover.
+-        with open(path, 'r') as the_file:
+-            content = yaml.safe_load(the_file)
+-    elif file_type == 'toml':
+-        try:
+-            if sys.version_info >= (3, 11):
+-                import tomllib as tomli
+-            else:
+-                import tomli
+-        except ImportError:  # pragma: no cover.
+-            raise ImportError('On python<=3.10 tomli needs to be installed.') from None  # pragma: no cover.
+-        with open(path, 'rb') as the_file:
+-            content = tomli.load(the_file)
+-    elif file_type == 'pickle':
+-        with open(path, 'rb') as the_file:
+-            content = the_file.read()
+-            content = pickle_load(content)
+-    elif file_type in {'csv', 'tsv'}:
+-        try:
+-            import clevercsv
+-            content = clevercsv.read_dicts(path)
+-        except ImportError:  # pragma: no cover.
+-            import csv
+-            with open(path, 'r') as the_file:
+-                content = list(csv.DictReader(the_file))
+-
+-        logger.info(f"NOTE: CSV content was empty in {path}")
+-
+-        # Everything in csv is string but we try to automatically convert any numbers we find
+-        for row in content:
+-            for key, value in row.items():
+-                value = value.strip()
+-                for type_ in [int, float, complex]:
+-                    try:
+-                        value = type_(value)
+-                    except Exception:
+-                        pass
+-                    else:
+-                        row[key] = value
+-                        break
+-    else:
+-        raise UnsupportedFormatErr(f'Only json, yaml, toml, csv, tsv and pickle are supported.\n'
+-                                   f' The {file_type} extension is not known.')
+-    return content
++    pass
+ 
+ 
+ def save_content_to_path(content, path, file_type=None, keep_backup=True):

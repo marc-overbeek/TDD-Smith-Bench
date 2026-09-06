@@ -1,0 +1,54 @@
+--- a/starlette/responses.py
++++ b/starlette/responses.py
+@@ -277,7 +277,7 @@
+ 
+ 
+ class RangeNotSatisfiable(Exception):
+-    def __init__(self, max_size: int) -> None:
++    def __init__(self, max_size: int) ->None:
+         self.max_size = max_size
+ 
+ 
+@@ -287,18 +287,11 @@
+ class FileResponse(Response):
+     chunk_size = 64 * 1024
+ 
+-    def __init__(
+-        self,
+-        path: str | os.PathLike[str],
+-        status_code: int = 200,
+-        headers: typing.Mapping[str, str] | None = None,
+-        media_type: str | None = None,
+-        background: BackgroundTask | None = None,
+-        filename: str | None = None,
+-        stat_result: os.stat_result | None = None,
+-        method: str | None = None,
+-        content_disposition_type: str = "attachment",
+-    ) -> None:
++    def __init__(self, path: (str | os.PathLike[str]), status_code: int=200,
++        headers: (typing.Mapping[str, str] | None)=None, media_type: (str |
++        None)=None, background: (BackgroundTask | None)=None, filename: (str |
++        None)=None, stat_result: (os.stat_result | None)=None, method: (str |
++        None)=None, content_disposition_type: str='attachment') ->None:
+         self.path = path
+         self.status_code = status_code
+         self.filename = filename
+@@ -442,7 +435,8 @@
+         return http_if_range == self.headers["last-modified"] or http_if_range == self.headers["etag"]
+ 
+     @staticmethod
+-    def _parse_range_header(http_range: str, file_size: int) -> list[tuple[int, int]]:
++    def _parse_range_header(http_range: str, file_size: int) ->list[tuple[int, int]
++        ]:
+         ranges: list[tuple[int, int]] = []
+         try:
+             units, range_ = http_range.split("=", 1)
+@@ -483,7 +477,7 @@
+                 if start > p_end:
+                     continue
+                 elif end < p_start:
+-                    result.insert(p, (start, end))  # THIS IS NOT REACHED!
++                    result.insert(p, (start, end))
+                     break
+                 else:
+                     result[p] = (min(start, p_start), max(end, p_end))

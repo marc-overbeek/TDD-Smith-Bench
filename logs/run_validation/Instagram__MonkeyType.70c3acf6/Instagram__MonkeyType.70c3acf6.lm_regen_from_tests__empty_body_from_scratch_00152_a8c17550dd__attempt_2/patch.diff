@@ -1,0 +1,24 @@
+--- a/monkeytype/config.py
++++ b/monkeytype/config.py
+@@ -30,6 +30,7 @@
+         pass
+ 
+     @contextmanager
++    @contextmanager
+     def cli_context(self, command: str) -> Iterator[None]:
+         """Lifecycle hook that is called once right after the CLI
+         starts.
+@@ -37,7 +38,12 @@
+         `command` is the name of the command passed to monkeytype
+         ('run', 'apply', etc).
+         """
+-        yield
++        store = self.trace_store()
++        try:
++            yield
++        finally:
++            if hasattr(store, 'close'):
++                store.close()
+ 
+     def trace_logger(self) -> CallTraceLogger:
+         """Return the CallTraceLogger for logging call traces.

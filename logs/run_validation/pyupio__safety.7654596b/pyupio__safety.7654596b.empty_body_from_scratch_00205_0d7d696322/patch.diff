@@ -1,0 +1,89 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1336,83 +1336,9 @@
+ 
+ 
+ @sync_safety_context
+-def review(
+-    *,
+-    report: Optional[Dict[str, Any]] = None,
+-    params: Optional[Dict[str, Any]] = None
+-) -> tuple:
+-    """
+-    Reviews the report and returns the vulnerabilities and remediations.
+-
+-    Args:
+-        report (Optional[Dict[str, Any]]): The report.
+-        params (Optional[Dict[str, Any]]): Additional parameters.
+-
+-    Returns:
+-        tuple: A tuple containing the list of vulnerabilities, the remediations, and the found packages.
+-    """
+-    SafetyContext().command = 'review'
+-    vulnerable = []
+-    vulnerabilities = report.get('vulnerabilities', []) + report.get('ignored_vulnerabilities', [])
+-    remediations = defaultdict(dict)
+-
+-    for key, pkg_rem in report.get('remediations', {}).items():
+-        analyzed = set(pkg_rem['requirements'].keys())
+-
+-        for req in analyzed:
+-            req_rem = pkg_rem['requirements'][req]
+-            recommended = req_rem.get('recommended_version', None)
+-            secure_v = req_rem.get('other_recommended_versions', [])
+-
+-            remediations[key][req] = {'vulnerabilities_found': req_rem.get('vulnerabilities_found', 0),
+-                                      'version': req_rem.get('version'),
+-                                      'requirement': SafetyRequirement(req_rem['requirement']['raw']),
+-                                      'other_recommended_versions': secure_v,
+-                                      'recommended_version': parse_version(recommended) if recommended else None,
+-                                      # minor isn't supported in review
+-                                      'more_info_url': req_rem.get('more_info_url')}
+-
+-    packages = report.get('scanned_packages', [])
+-    pkgs = {}
+-
+-    for name, values in packages.items():
+-        requirements = [SafetyRequirement(r['raw']) for r in values.get('requirements', [])]
+-        values.update({'requirements': requirements})
+-        pkgs[name] = Package(**values)
+-
+-    ctx = SafetyContext()
+-    found_packages = list(pkgs.values())
+-    ctx.packages = found_packages
+-    ctx.review = report.get('report_meta', [])
+-    ctx.key = ctx.review.get('api_key', False)
+-    cvssv2 = None
+-    cvssv3 = None
+-
+-    for vuln in vulnerabilities:
+-        vuln['pkg'] = pkgs.get(vuln.get('package_name', None))
+-        XVE_ID = vuln.get('CVE', None)  # Trying to get first the CVE ID
+-
+-        severity = vuln.get('severity', None)
+-        if severity and severity.get('source', False):
+-            cvssv2 = severity.get('cvssv2', None)
+-            cvssv3 = severity.get('cvssv3', None)
+-            # Trying to get the PVE ID if it exists, otherwise it will be the same CVE ID of above
+-            XVE_ID = severity.get('source', False)
+-            vuln['severity'] = Severity(source=XVE_ID, cvssv2=cvssv2, cvssv3=cvssv3)
+-        else:
+-            vuln['severity'] = None
+-
+-        ignored_expires = vuln.get('ignored_expires', None)
+-
+-        if ignored_expires:
+-            vuln['ignored_expires'] = validate_expiration_date(ignored_expires)
+-
+-        vuln['CVE'] = CVE(name=XVE_ID, cvssv2=cvssv2, cvssv3=cvssv3) if XVE_ID else None
+-        vuln['analyzed_requirement'] = SafetyRequirement(vuln['analyzed_requirement']['raw'])
+-
+-        vulnerable.append(Vulnerability(**vuln))
+-
+-    return vulnerable, remediations, found_packages
++def review(*, report: Optional[Dict[str, Any]]=None, params: Optional[Dict[
++    str, Any]]=None) ->tuple:
++    pass
+ 
+ 
+ @sync_safety_context

@@ -1,0 +1,34 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -165,8 +165,30 @@
+         self.min_longitude = min_longitude
+         self.max_longitude = max_longitude
+ 
++    self.assertEqual(tuple(original_gpx.bounds), tuple(gpx.bounds))
++
++    class GPXBounds:
++        ...
++        __slots__ = ('min_latitude', 'max_latitude', 'min_longitude', 'max_longitude')
++
++        def __init__(self, min_latitude: Optional[float] = None, max_latitude: Optional[float] = None,
++                     min_longitude: Optional[float] = None, max_longitude: Optional[float] = None) -> None:
++            self.min_latitude = min_latitude
++            self.max_latitude = max_latitude
++            self.min_longitude = min_longitude
++            self.max_longitude = max_longitude
++
++        def __iter__(self) -> Iterator[Any]:
++            pass
++
++    def max_bounds(self, bounds: "GPXBounds") -> "GPXBounds":
++        return GPXBounds(self._min(self.min_latitude, bounds.min_latitude),
++            self._max(self.max_latitude, bounds.max_latitude),
++            self._min(self.min_longitude, bounds.min_longitude),
++            self._max(self.max_longitude, bounds.max_longitude))
++
+     def __iter__(self) -> Iterator[Any]:
+-        return (self.min_latitude, self.max_latitude, self.min_longitude, self.max_longitude,).__iter__()
++        return iter((self.min_latitude, self.max_latitude, self.min_longitude, self.max_longitude))
+ 
+     def _min(self, a: Optional[float], b: Optional[float]) -> Optional[float]:
+         if a is not None and b is not None:

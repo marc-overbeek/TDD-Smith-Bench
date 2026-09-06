@@ -1,0 +1,72 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1931,22 +1931,63 @@
+ 
+ 
+ def _handle_list(target, spec, scope):
++    if not spec:
++        # empty list spec - iterate target and collect with T
++        subspec = T
++        iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
++        try:
++            iterator = iterate(target)
++        except Exception as e:
++            raise TypeError('failed to iterate on %r, got error: %r' % (target, e))
++        ret = []
++        for item in iterator:
++            val = scope[glom](item, subspec, scope)
++            if val is STOP:
++                break
++            if val is SKIP:
++                continue
++            ret.append(val)
++        return ret
++    
+     subspec = spec[0]
+     iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
+     try:
+         iterator = iterate(target)
+     except Exception as e:
+-        raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+-                        % (target.__class__.__name__, Path(*scope[Path]), e))
++        raise TypeError('failed to iterate on %r, got error: %r' % (target, e))
++    
+     ret = []
+-    base_path = scope[Path]
+-    for i, t in enumerate(iterator):
+-        scope[Path] = base_path + [i]
+-        val = scope[glom](t, subspec, scope)
++    for item in iterator:
++        if isinstance(subspec, tuple):
++            val = _handle_tuple(item, subspec, scope)
++        else:
++            val = scope[glom](item, subspec, scope)
++        if val is STOP:
++            break
+         if val is SKIP:
+             continue
++        ret.append(val)
++    return ret
++
++def _handle_list(target, spec, scope):
++    iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
++    try:
++        iterator = iterate(target)
++    except Exception as e:
++        raise TypeError('failed to iterate on %r, got error: %r' % (target, e))
++    
++    if not spec:
++        subspec = T
++    else:
++        subspec = spec[0]
++    
++    ret = []
++    for item in iterator:
++        val = scope[glom](item, subspec, scope)
+         if val is STOP:
+             break
++        if val is SKIP:
++            continue
+         ret.append(val)
+     return ret
+ 

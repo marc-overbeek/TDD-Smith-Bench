@@ -1,0 +1,24 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -339,7 +339,7 @@
+         if is_namedtuple:
+             obj_to_dict_strategies.append(lambda o: o._asdict())
+         elif is_pydantic_object:
+-            obj_to_dict_strategies.append(lambda o: {k: v for (k, v) in o.__dict__.items() if v !="model_fields_set"})
++            obj_to_dict_strategies.append(lambda o: {k: v for (k, v) in o.__dict__.items() if v != "model_fields_set"})
+         else:
+             obj_to_dict_strategies.append(lambda o: o.__dict__)
+ 
+@@ -353,10 +353,11 @@
+                 d = get_dict(obj)
+                 break
+             except AttributeError:
+-                pass
++                continue
+         else:
+             self.hashes[UNPROCESSED_KEY].append(obj)
+             return (unprocessed, 0)
++    
+         obj = d
+ 
+         result, counts = self._prep_dict(obj, parent=parent, parents_ids=parents_ids,

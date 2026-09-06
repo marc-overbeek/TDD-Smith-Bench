@@ -1,0 +1,24 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -801,6 +801,21 @@
+         route = WebSocketRoute(path, endpoint=endpoint, name=name)
+         self.routes.append(route)
+ 
++    def test_decorator_deprecations() ->None:
++        router = Router()
++        with pytest.deprecated_call():
++            router.route('/')(homepage)
++        with pytest.deprecated_call():
++            router.websocket_route('/ws')(websocket_endpoint)
++        with pytest.deprecated_call():
++            async def startup() ->None:
++                ...
++            router.on_event('startup')(startup)
++
++    def route(self, path: str, methods: list[str] | None, name: str | None, include_in_schema: bool)
++
++    def route(self, path: str, methods: (list[str] | None)=None, name: (str | None)=None, include_in_schema: bool=True) ->typing.Callable:
++
+     def route(
+         self,
+         path: str,

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, I need to understand what the `available` setter should do.\n\nFrom the test `test_default_config`:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "Looking at the failing tests, I need to understand what the `available` setter should do.\n\nFrom the test `test_default_config`:\n```python\nendpoint = BaseEndpoint()\nself.assertFalse(endpoint.catch_errors)\nself.assertTrue(endpoint.available)\nendpoint.catch_errors = True\nself.assertTrue(endpoint.catch_errors)\nendpoint.available = False\nself.assertFalse(endpoint.available)\n```\n\nThis shows that:\n1. `endpoint.available` should be readable (property getter exists)\n2. `endpoint.available = False` should set it to False (property setter needed)\n3. The setter should update the internal `_available` attribute\n\nLooking at the current code, I can see:\n- There's already a `@property` for `available` that returns `self._available`\n- The setter is defined but has only `pass` in the body\n- The setter needs to set `self._available = available`\n\nThe setter signature shows `def available(self, available):` which is the setter method that needs to be implemented.\n\n```python\n@available.setter\ndef available(self, available):\n    self._available = available\n```",
+  "rewrite": "endpoint = BaseEndpoint()\nself.assertFalse(endpoint.catch_errors)\nself.assertTrue(endpoint.available)\nendpoint.catch_errors = True\nself.assertTrue(endpoint.catch_errors)\nendpoint.available = False\nself.assertFalse(endpoint.available)\n\n@available.setter\ndef available(self, available):\n    self._available = available",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,198 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1537,122 +1537,83 @@
+ 
+ def _t_eval(target, _t, scope):
+     t_path = _t.__ops__
+-    i = 1
+-    fetch_till = len(t_path)
+-    root = t_path[0]
+-    if root is T:
+-        cur = target
+-    elif root is S or root is A:
+-        # A is basically the same as S, but last step is assign
+-        if root is A:
+-            fetch_till -= 2
+-            if fetch_till < 1:
+-                raise BadSpec('cannot assign without destination')
+-        cur = scope
+-        if fetch_till > 1 and t_path[1] in ('.', 'P'):
+-            cur = _s_first_magic(cur, t_path[2], _t)
+-            i += 2
+-        elif root is S and fetch_till > 1 and t_path[1] == '(':
+-            # S(var='spec') style assignment
+-            _, kwargs = t_path[2]
+-            scope.update({
+-                k: arg_val(target, v, scope) for k, v in kwargs.items()})
+-            return target
+-
+-    else:
+-        raise ValueError('TType instance with invalid root')  # pragma: no cover
+-    pae = None
+-    while i < fetch_till:
++    cur = target
++    path = scope[Path]
++    for i in range(1, len(t_path), 2):
+         op, arg = t_path[i], t_path[i + 1]
+-        arg = arg_val(target, arg, scope)
+-        if op == '.':
+-            try:
++        try:
++            if op == '.':
+                 cur = getattr(cur, arg)
+-            except AttributeError as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        elif op == '[':
+-            try:
+-                cur = cur[arg]
+-            except (KeyError, IndexError, TypeError) as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        elif op == 'P':
+-            # Path type stuff (fuzzy match)
+-            get = scope[TargetRegistry].get_handler('get', cur, path=t_path[2:i+2:2])
+-            try:
+-                cur = get(cur, arg)
+-            except Exception as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        elif op in 'xX':
+-            nxt = []
+-            get_handler = scope[TargetRegistry].get_handler
+-            if op == 'x':  # increases arity of cur each time through
+-                # TODO: so many try/except -- could scope[TargetRegistry] stuff be cached on type?
+-                _extend_children(nxt, cur, get_handler)
++            elif op == '[':
++                if type(arg) is tuple:
++                    cur = cur[arg]
++                else:
++                    cur = cur[arg]
++            elif op == '(':
++                args, kwargs = arg
++                cur = cur(*args, **kwargs)
++            elif op == 'P':
++                # This is a path operation that should be handled by the target registry
++                get_handler = scope[TargetRegistry].get_handler
++                try:
++                    get = get_handler('get', cur, path=path)
++                    cur = get(cur, arg)
++                except Exception as e:
++                    raise PathAccessError(e, Path(*path), len(path))
++            elif op == 'x':
++                # Star operation - iterate over the current target
++                iterate = scope[TargetRegistry].get_handler('iterate', cur, path=path)
++                try:
++                    cur = list(iterate(cur))
++                except Exception as e:
++                    raise PathAccessError(e, Path(*path), len(path))
+             elif op == 'X':
+-                sofar = set()
+-                _extend_children(nxt, cur, get_handler)
+-                for item in nxt:
+-                    if id(item) not in sofar:
+-                        sofar.add(id(item))
+-                        _extend_children(nxt, item, get_handler)
+-                nxt.insert(0, cur)
+-            # handle the rest of the t_path in recursive calls
+-            cur = []
+-            todo = TType()
+-            todo.__ops__ = (root,) + t_path[i+2:]
+-            for child in nxt:
++                # Double star operation - iterate over keys and values
+                 try:
+-                    cur.append(_t_eval(child, todo, scope))
+-                except PathAccessError:
+-                    pass
+-            break  # we handled the rest in recursive call, break loop
+-        elif op == '(':
+-            args, kwargs = arg
+-            scope[Path] += t_path[2:i+2:2]
+-            cur = scope[glom](
+-                target, Call(cur, args, kwargs), scope)
+-            # call with target rather than cur,
+-            # because it is probably more intuitive
+-            # if args to the call "reset" their path
+-            # e.g. "T.a" should mean the same thing
+-            # in both of these specs: T.a and T.b(T.a)
+-        else:  # arithmetic operators
+-            try:
+-                if op == '+':
+-                    cur = cur + arg
+-                elif op == '-':
+-                    cur = cur - arg
+-                elif op == '*':
+-                    cur = cur * arg
+-                #elif op == '#':
+-                #    cur = cur // arg  # TODO: python 2 friendly approach?
+-                elif op == '/':
+-                    cur = cur / arg
+-                elif op == '%':
+-                    cur = cur % arg
+-                elif op == ':':
+-                    cur = cur ** arg
+-                elif op == '&':
+-                    cur = cur & arg
+-                elif op == '|':
+-                    cur = cur | arg
+-                elif op == '^':
+-                    cur = cur ^ arg
+-                elif op == '~':
+-                    cur = ~cur
+-                elif op == '_':
+-                    cur = -cur
+-            except (TypeError, ZeroDivisionError) as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        if pae:
+-            raise pae
+-        i += 2
+-    if root is A:
+-        op, arg = t_path[-2:]
+-        if cur is scope:
+-            op = '['  # all assignment on scope is setitem
+-        _assign_op(dest=cur, op=op, arg=arg, val=target, path=_t, scope=scope)
+-        return target  # A should not change the target
++                    keys = scope[TargetRegistry].get_handler('keys', cur, path=path)
++                    get = scope[TargetRegistry].get_handler('get', cur, path=path)
++                    cur = []
++                    for key in keys(cur):
++                        try:
++                            cur.append(get(cur, key))
++                        except Exception:
++                            pass
++                except Exception as e:
++                    raise PathAccessError(e, Path(*path), len(path))
++            elif op == '+':
++                cur = cur + arg
++            elif op == '-':
++                cur = cur - arg
++            elif op == '*':
++                cur = cur * arg
++            elif op == '/':
++                if arg == 0:
++                    raise PathAccessError(ZeroDivisionError('division by zero'), Path(*path), len(path))
++                cur = cur / arg
++            elif op == '#':
++                if arg == 0:
++                    raise PathAccessError(ZeroDivisionError('division by zero'), Path(*path), len(path))
++                cur = cur // arg
++            elif op == '%':
++                if arg == 0:
++                    raise PathAccessError(ZeroDivisionError('division by zero'), Path(*path), len(path))
++                cur = cur % arg
++            elif op == ':':
++                cur = cur ** arg
++            elif op == '&':
++                cur = cur & arg
++            elif op == '|':
++                cur = cur | arg
++            elif op == '^':
++                cur = cur ^ arg
++            elif op == '~':
++                cur = ~cur
++            elif op == '_':
++                cur = -cur
++        except Exception as e:
++            if isinstance(e, PathAccessError):
++                raise
++            raise PathAccessError(e, Path(*path), len(path))
+     return cur
+ 
+ 

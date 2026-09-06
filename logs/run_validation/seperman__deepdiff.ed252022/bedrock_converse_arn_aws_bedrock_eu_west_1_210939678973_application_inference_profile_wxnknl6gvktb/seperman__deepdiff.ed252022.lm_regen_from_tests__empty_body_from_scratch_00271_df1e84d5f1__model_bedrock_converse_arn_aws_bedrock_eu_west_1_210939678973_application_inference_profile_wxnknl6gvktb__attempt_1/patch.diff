@@ -1,0 +1,37 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -500,18 +500,24 @@
+ 
+ 
+ def get_numpy_ndarray_rows(obj, shape=None):
+-    """
+-    Convert a multi dimensional numpy array to list of rows
+-    """
+     if shape is None:
+         shape = obj.shape
+-
+-    dimentions = shape[:-1]
+-    for path_tuple in cartesian_product_of_shape(dimentions):
+-        result = obj
+-        for index in path_tuple:
+-            result = result[index]
+-        yield path_tuple, result
++    
++    # If the array is 1D, just yield the whole array
++    if len(shape) == 1:
++        yield ((), obj)
++        return
++    
++    # For multi-dimensional arrays, iterate through all combinations of indices
++    # except the last dimension
++    preceding_dimensions = shape[:-1]
++    
++    # Generate all index combinations for dimensions except the last one
++    for index_combo in cartesian_product_of_shape(preceding_dimensions):
++        # index_combo is a tuple of indices for all dimensions except the last
++        # Use it to index into the array to get the row (last dimension)
++        row = obj[index_combo]
++        yield (index_combo, row)
+ 
+ 
+ class _NotFound:

@@ -1,0 +1,35 @@
+--- a/src/mistune/directives/_base.py
++++ b/src/mistune/directives/_base.py
+@@ -39,9 +39,7 @@
+         raise NotImplementedError()
+ 
+     @classmethod
+-    def parse_tokens(
+-        cls, block: "BlockParser", text: str, state: "BlockState"
+-    ) -> Iterable[Dict[str, Any]]:
++    def parse_tokens(cls, block: 'BlockParser', text: str, state: 'BlockState') -> Iterable[Dict[str, Any]]:
+         if state.depth() >= block.max_nested_level - 1 and cls.name in block.rules:
+             rules = list(block.rules)
+             rules.remove(cls.name)
+@@ -93,9 +91,7 @@
+     ) -> None:
+         self._methods[name] = fn
+ 
+-    def parse_method(
+-        self, block: "BlockParser", m: Match[str], state: "BlockState"
+-    ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
++    def parse_method(self, block: 'BlockParser', m: Match[str], state: 'BlockState') -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+         _type = self.parser.parse_type(m)
+         method = self._methods.get(_type)
+         if method:
+@@ -123,9 +119,7 @@
+     ) -> Optional[int]:
+         raise NotImplementedError()
+ 
+-    def register_block_parser(
+-        self, md: "Markdown", before: Optional[str] = None
+-    ) -> None:
++    def register_block_parser(self, md: 'Markdown', before: Optional[str] = None) -> None:
+         md.block.register(
+             self.parser.name,
+             self.directive_pattern,

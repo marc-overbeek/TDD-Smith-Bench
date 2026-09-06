@@ -1,0 +1,76 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -794,42 +794,43 @@
+     return brief_info
+ 
+ 
++using_sentence = build_using_sentence(None,
++                                         report_from_file.get('api_key', None),
++                                         report_from_file.get('local_database_path_used', None))
++
++using_sentence = build_using_sentence(account, key, db)
++   sentence_array = []
++   for section in using_sentence:
++       sentence_array.append(section['value'])
++   brief_using_sentence = ' '.join(sentence_array)
++
+ def build_using_sentence(account: Optional[str], key: Optional[str], db: Optional[str]) -> List[Dict[str, Any]]:
+     """
+-    Build the sentence for the used components.
+-
+-    Args:
+-        account (Optional[str]): The account details.
++    Build the sentence describing which database/API is being used.
++    
++    Args:
++        account (Optional[str]): The account name.
+         key (Optional[str]): The API key.
+-        db (Optional[str]): The database details.
+-
+-    Returns:
+-        List[Dict[str, Any]]: Sentence for the used components.
+-    """
+-    key_sentence = []
+-    custom_integration = os.environ.get('SAFETY_CUSTOM_INTEGRATION',
+-                                        'false').lower() == 'true'
+-
++        db (Optional[str]): The local database path.
++    
++    Returns:
++        List[Dict[str, Any]]: List of styled text segments.
++    """
++    result = []
++    
+     if key or account:
+-        t = {'style': True, 'value': 'an API KEY'}
+-        if not key:
+-            t = {'style': True, 'value': f'the account {account}'}
+-        key_sentence = [t,
+-                        {'style': False, 'value': ' and the '}]
+-        db_name = 'Safety Commercial'
++        result.append({'style': False, 'value': 'Using '})
++        result.append({'style': True, 'value': 'API key'})
+     elif db:
+-        if is_a_remote_mirror(db):
+-            if custom_integration:
+-                return []
+-            db_name = f"remote URL {db}"
+-        else:
+-            db_name = f"local file {db}"
++        result.append({'style': False, 'value': 'Using local database at '})
++        result.append({'style': True, 'value': db})
+     else:
+-        db_name = 'open-source vulnerability'
+-
+-    database_sentence = [{'style': True, 'value': db_name + ' database'}]
+-
+-    return [{'style': False, 'value': 'Using '}] + key_sentence + database_sentence
++        result.append({'style': False, 'value': 'Using the default '})
++        result.append({'style': True, 'value': 'online database'})
++    
++    result.append({'style': False, 'value': '.'})
++    
++    return result
+ 
+ 
+ def build_scanned_count_sentence(packages: List[Package]) -> List[Dict[str, Any]]:

@@ -1,0 +1,35 @@
+--- a/oauthlib/oauth2/rfc6749/grant_types/implicit.py
++++ b/oauthlib/oauth2/rfc6749/grant_types/implicit.py
+@@ -307,9 +307,6 @@
+ 
+         # Then check for normal errors.
+ 
+-        request_info = self._run_custom_validators(request,
+-                                                   self.custom_validators.all_pre)
+-
+         # If the resource owner denies the access request or if the request
+         # fails for reasons other than a missing or invalid redirection URI,
+         # the authorization server informs the client by adding the following
+@@ -340,22 +337,6 @@
+         # OPTIONAL. The scope of the access request as described by Section 3.3
+         # https://tools.ietf.org/html/rfc6749#section-3.3
+         self.validate_scopes(request)
+-
+-        request_info.update({
+-            'client_id': request.client_id,
+-            'redirect_uri': request.redirect_uri,
+-            'response_type': request.response_type,
+-            'state': request.state,
+-            'request': request,
+-        })
+-
+-        request_info = self._run_custom_validators(
+-            request,
+-            self.custom_validators.all_post,
+-            request_info
+-        )
+-
+-        return request.scopes, request_info
+ 
+     def _run_custom_validators(self,
+                                request,

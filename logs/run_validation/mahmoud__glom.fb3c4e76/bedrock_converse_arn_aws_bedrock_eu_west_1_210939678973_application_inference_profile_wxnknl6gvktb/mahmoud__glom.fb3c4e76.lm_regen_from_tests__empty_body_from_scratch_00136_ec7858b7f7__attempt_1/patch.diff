@@ -1,0 +1,25 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -2465,7 +2465,21 @@
+     def __init__(self, **kwargs):
+         register_default_types = kwargs.pop('register_default_types', True)
+         scope = kwargs.pop('scope', _DEFAULT_SCOPE)
+-
++    
++        if kwargs:
++            raise TypeError('unexpected keyword args: %r' % sorted(kwargs.keys()))
++    
++        # this "freezes" the scope in at the time of construction
++        self.scope = ChainMap(dict(scope))
++        self.scope[TargetRegistry] = TargetRegistry(register_default_types=register_default_types)
++
++    def __init__(self, **kwargs):
++        register_default_types = kwargs.pop('register_default_types', True)
++        scope = kwargs.pop('scope', _DEFAULT_SCOPE)
++    
++        if kwargs:
++            raise TypeError('unexpected keyword args: %r' % sorted(kwargs.keys()))
++    
+         # this "freezes" the scope in at the time of construction
+         self.scope = ChainMap(dict(scope))
+         self.scope[TargetRegistry] = TargetRegistry(register_default_types=register_default_types)

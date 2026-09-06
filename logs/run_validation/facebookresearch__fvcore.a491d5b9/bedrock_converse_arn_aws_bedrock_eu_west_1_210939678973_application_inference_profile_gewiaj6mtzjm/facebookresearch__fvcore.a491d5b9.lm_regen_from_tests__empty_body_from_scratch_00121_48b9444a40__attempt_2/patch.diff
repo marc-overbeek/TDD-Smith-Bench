@@ -1,0 +1,34 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -98,17 +98,21 @@
+     return flops
+ 
+ 
+-def linear_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-    """
+-    Count flops for the aten::linear operator.
+-    """
+-    # Inputs is a list of length 3; unlike aten::addmm, it is the first
+-    # two elements that are relevant.
++def linear_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:
++    """
++    Count flops for fully connected layers.
++    """
++    # Count flop for nn.Linear
++    # inputs is a list where the first element is the input tensor,
++    # second is the weight tensor, third is the bias tensor (optional)
+     input_shapes = [get_shape(v) for v in inputs[0:2]]
+-    # input_shapes[0]: [dim0, dim1, ..., input_feature_dim]
+-    # input_shapes[1]: [output_feature_dim, input_feature_dim]
+-    assert input_shapes[0][-1] == input_shapes[1][-1]
+-    flops = prod(input_shapes[0]) * input_shapes[1][0]
++    # input_shapes[0]: [batch size, input feature dimension]
++    # input_shapes[1]: [output feature dimension, input feature dimension]
++    assert len(input_shapes[0]) == 2, input_shapes[0]
++    assert len(input_shapes[1]) == 2, input_shapes[1]
++    batch_size, input_dim = input_shapes[0]
++    output_dim = input_shapes[1][0]
++    flops = batch_size * input_dim * output_dim
+     return flops
+ 
+ 

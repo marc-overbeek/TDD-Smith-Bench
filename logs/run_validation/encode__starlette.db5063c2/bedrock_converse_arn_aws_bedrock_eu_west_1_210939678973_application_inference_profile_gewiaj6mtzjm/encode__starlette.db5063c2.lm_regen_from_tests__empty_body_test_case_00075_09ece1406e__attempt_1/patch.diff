@@ -1,0 +1,47 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -101,17 +101,15 @@
+     return getattr(endpoint, "__name__", endpoint.__class__.__name__)
+ 
+ 
+-def replace_params(
+-    path: str,
+-    param_convertors: dict[str, Convertor[typing.Any]],
+-    path_params: dict[str, str],
+-) -> tuple[str, dict[str, str]]:
+-    for key, value in list(path_params.items()):
+-        if "{" + key + "}" in path:
+-            convertor = param_convertors[key]
+-            value = convertor.to_string(value)
+-            path = path.replace("{" + key + "}", value)
+-            path_params.pop(key)
++def replace_params(path: str, param_convertors: dict[str, Convertor[typing.
++    Any]], path_params: dict[str, str]) ->tuple[str, dict[str, str]]:
++    for param_name, convertor in param_convertors.items():
++        if param_name in path_params:
++            param_value = path_params[param_name]
++            if not isinstance(param_value, str):
++                param_value = convertor.to_string(param_value)
++            path = path.replace(f"{{{param_name}}}", param_value)
++            del path_params[param_name]
+     return path, path_params
+ 
+ 
+@@ -469,7 +467,7 @@
+ 
+ 
+ class Host(BaseRoute):
+-    def __init__(self, host: str, app: ASGIApp, name: str | None = None) -> None:
++    def __init__(self, host: str, app: ASGIApp, name: (str | None)=None) ->None:
+         assert not host.startswith("/"), "Host must not start with '/'"
+         self.host = host
+         self.app = app
+@@ -495,7 +493,7 @@
+                 return Match.FULL, child_scope
+         return Match.NONE, {}
+ 
+-    def url_path_for(self, name: str, /, **path_params: typing.Any) -> URLPath:
++    def url_path_for(self, name: str, /, **path_params: typing.Any) ->URLPath:
+         if self.name is not None and name == self.name and "path" in path_params:
+             # 'name' matches "<mount_name>".
+             path = path_params.pop("path")

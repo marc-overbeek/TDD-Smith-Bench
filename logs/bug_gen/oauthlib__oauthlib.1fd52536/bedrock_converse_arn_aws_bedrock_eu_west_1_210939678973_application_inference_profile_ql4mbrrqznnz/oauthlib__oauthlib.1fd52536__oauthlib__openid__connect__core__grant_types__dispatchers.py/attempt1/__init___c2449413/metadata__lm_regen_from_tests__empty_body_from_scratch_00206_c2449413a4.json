@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, I need to understand what the `__init__` method should do for `AuthorizationTokenGrantDispatcher`. The current implementation has `pass` which doesn't set any attributes.\n\nLooking at the class, it needs to set `self.default_grant`, `self.oidc_grant`, and `self.request_validator`.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing tests, I need to understand what the `__init__` method should do for `AuthorizationTokenGrantDispatcher`. The current implementation has `pass` which doesn't set any attributes.\n\nLooking at the class, it needs to set `self.default_grant`, `self.oidc_grant`, and `self.request_validator`.\n\n```\ndef __init__(self, request_validator, default_grant=None, oidc_grant=None):\n    self.default_grant = default_grant\n    self.oidc_grant = oidc_grant\n    self.request_validator = request_validator\n```",
+  "rewrite": "def __init__(self, request_validator, default_grant=None, oidc_grant=None):\n    self.default_grant = default_grant\n    self.oidc_grant = oidc_grant\n    self.request_validator = request_validator\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

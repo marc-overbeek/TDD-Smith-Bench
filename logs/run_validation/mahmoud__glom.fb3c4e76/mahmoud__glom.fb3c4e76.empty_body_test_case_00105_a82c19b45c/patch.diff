@@ -1,0 +1,55 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -639,34 +639,7 @@
+ 
+     @classmethod
+     def from_text(cls, text):
+-        """Make a Path from .-delimited text:
+-
+-        >>> Path.from_text('a.b.c')
+-        Path('a', 'b', 'c')
+-
+-        This is the default behavior when :func:`~glom.glom` gets a string spec.
+-        """
+-        def create():
+-            segs = text.split('.')
+-            if PATH_STAR:
+-                segs = [
+-                    _T_STAR if seg == '*' else
+-                    _T_STARSTAR if seg == '**' else seg
+-                    for seg in segs]
+-            elif not cls._STAR_WARNED:
+-                if '*' in segs or '**' in segs:
+-                    warnings.warn(
+-                        "'*' and '**' have changed behavior in glom version 23.1."
+-                        " Recommend switch to T['*'] or T['**'].")
+-                    cls._STAR_WARNED = True
+-            return cls(*segs)
+-
+-        cache = cls._CACHE[PATH_STAR]  # remove this when PATH_STAR is default
+-        if text not in cache:
+-            if len(cache) > cls._MAX_CACHE:
+-                return create()
+-            cache[text] = create()
+-        return cache[text]
++        pass
+ 
+     def glomit(self, target, scope):
+         # The entrypoint for the Path extension
+@@ -696,15 +669,7 @@
+         return cur_t_path[2::2]
+ 
+     def items(self):
+-        """
+-        Returns a tuple of (operation, value) pairs.
+-
+-        >>> Path(T.a.b, 'c', T['d']).items()
+-        (('.', 'a'), ('.', 'b'), ('P', 'c'), ('[', 'd'))
+-
+-        """
+-        cur_t_path = self.path_t.__ops__
+-        return tuple(zip(cur_t_path[1::2], cur_t_path[2::2]))
++        pass
+ 
+     def startswith(self, other):
+         if isinstance(other, basestring):

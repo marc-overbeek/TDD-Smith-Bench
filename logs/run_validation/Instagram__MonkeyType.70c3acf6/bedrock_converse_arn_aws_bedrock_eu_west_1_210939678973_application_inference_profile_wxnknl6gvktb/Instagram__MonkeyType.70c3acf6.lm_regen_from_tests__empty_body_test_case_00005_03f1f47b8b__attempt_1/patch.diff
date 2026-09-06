@@ -1,0 +1,61 @@
+--- a/demo/models.py
++++ b/demo/models.py
+@@ -18,9 +18,7 @@
+ 
+ class FeedEntry:
+ 
+-    def __init__(
+-        self, id: FeedEntryId, user_id: UserId, caption: str, published: datetime
+-    ) -> None:
++    def __init__(self, id: FeedEntryId, user_id: UserId, caption: str, published: datetime) -> None:
+         self.id = id
+         self.user_id = user_id
+         self.caption = caption
+@@ -53,15 +51,7 @@
+ class CommentedEvent(InboxEvent):
+     type = EventType.COMMENTED
+ 
+-    def __init__(
+-        self,
+-        id: InboxEventId,
+-        user_id: UserId,
+-        published: datetime,
+-        feedentry_id: FeedEntryId,
+-        commenter_id: UserId,
+-        comment_text: str,
+-    ) -> None:
++    def __init__(self, id: InboxEventId, user_id: UserId, published: datetime, feedentry_id: FeedEntryId, commenter_id: UserId, comment_text: str) -> None:
+         super().__init__(id, user_id, published)
+         self.feedentry_id = feedentry_id
+         self.commenter_id = commenter_id
+@@ -71,14 +61,7 @@
+ class LikedEvent(InboxEvent):
+     type = EventType.LIKED
+ 
+-    def __init__(
+-        self,
+-        id: InboxEventId,
+-        user_id: UserId,
+-        published: datetime,
+-        feedentry_id: FeedEntryId,
+-        liker_id: UserId,
+-    ) -> None:
++    def __init__(self, id: InboxEventId, user_id: UserId, published: datetime, feedentry_id: FeedEntryId, liker_id: UserId) -> None:
+         super().__init__(id, user_id, published)
+         self.feedentry_id = feedentry_id
+         self.liker_id = liker_id
+@@ -87,13 +70,7 @@
+ class FollowedEvent(InboxEvent):
+     type = EventType.FOLLOWED
+ 
+-    def __init__(
+-        self,
+-        id: InboxEventId,
+-        user_id: UserId,
+-        published: datetime,
+-        follower_id: UserId,
+-    ) -> None:
++    def __init__(self, id: InboxEventId, user_id: UserId, published: datetime, follower_id: UserId) -> None:
+         super().__init__(id, user_id, published)
+         self.follower_id = follower_id
+ 

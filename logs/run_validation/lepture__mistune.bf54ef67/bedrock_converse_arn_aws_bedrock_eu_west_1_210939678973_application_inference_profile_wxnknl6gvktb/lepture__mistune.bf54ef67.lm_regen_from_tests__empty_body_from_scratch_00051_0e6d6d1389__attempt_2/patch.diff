@@ -1,0 +1,87 @@
+--- a/src/mistune/list_parser.py
++++ b/src/mistune/list_parser.py
+@@ -17,59 +17,37 @@
+ _LINE_HAS_TEXT = re.compile(r'(\s*)\S')
+ 
+ 
+-def parse_list(block: "BlockParser", m: Match[str], state: "BlockState") -> int:
+-    """Parse tokens for ordered and unordered list."""
+-    text = m.group('list_3')
+-    if not text.strip():
+-        # Example 285
+-        # an empty list item cannot interrupt a paragraph
+-        end_pos = state.append_paragraph()
+-        if end_pos:
+-            return end_pos
+-
++def parse_list(block: 'BlockParser', m: Match[str], state: 'BlockState') -> int:
++    """Parse a list (ordered or unordered)."""
+     marker = m.group('list_2')
+-    ordered = len(marker) > 1
+-    depth = state.depth()
++    
++    # Determine list type
++    if marker[0] in '+-*':
++        list_type = 'bullet_list'
++    else:
++        list_type = 'ordered_list'
++    
++    # Create list token
+     token: Dict[str, Any] = {
+-        'type': 'list',
++        'type': list_type,
+         'children': [],
+         'tight': True,
+-        'bullet': marker[-1],
+-        'attrs': {
+-            'depth': depth,
+-            'ordered': ordered,
+-        },
+     }
+-    if ordered:
+-        start = int(marker[:-1])
+-        if start != 1:
+-            # Example 304
+-            # we allow only lists starting with 1 to interrupt paragraphs
+-            end_pos = state.append_paragraph()
+-            if end_pos:
+-                return end_pos
+-            token['attrs']['start'] = start
+-
+-    state.cursor = m.end() + 1
+-    groups: Optional[Tuple[str, str, str]] = (m.group("list_1"), marker, text)
+-
+-    if depth >= block.max_nested_level - 1:
+-        rules = list(block.list_rules)
+-        rules.remove('list')
+-    else:
+-        rules = block.list_rules
+-
+-    bullet = _get_list_bullet(marker[-1])
+-    while groups:
+-        groups = _parse_list_item(block, bullet, groups, token, state, rules)
+-
+-    end_pos = token.pop('_end_pos', None)
++    
++    # Get parsing rules
++    rules = block.rules[:]
++    
++    # Parse first list item
++    groups = (m.group('list_1'), m.group('list_2'), m.group('list_3'))
++    next_group = _parse_list_item(block, marker, groups, token, state, rules)
++    
++    # Parse subsequent list items
++    while next_group:
++        next_group = _parse_list_item(block, marker, next_group, token, state, rules)
++    
++    # Transform tight lists
+     _transform_tight_list(token)
+-    if end_pos:
+-        index = token.pop('_tok_index')
+-        state.tokens.insert(index, token)
+-        return end_pos
+-
++    
+     state.append_token(token)
+     return state.cursor
+ 

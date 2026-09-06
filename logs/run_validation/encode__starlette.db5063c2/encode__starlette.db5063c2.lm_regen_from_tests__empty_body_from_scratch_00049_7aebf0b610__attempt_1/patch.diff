@@ -1,0 +1,18 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -335,6 +335,15 @@
+         values = [v for k, v in self._list if k == key]
+         self.pop(key)
+         return values
++
++    q = MultiDict([('a', '123'), ('a', '456'), ('b', '789')])
++    q.clear()
++    assert q.get('a') is None
++    assert repr(q) == 'MultiDict([])'
++
++    def clear(self) -> None:
++        self._dict.clear()
++        self._list.clear()
+ 
+     def clear(self) -> None:
+         self._dict.clear()

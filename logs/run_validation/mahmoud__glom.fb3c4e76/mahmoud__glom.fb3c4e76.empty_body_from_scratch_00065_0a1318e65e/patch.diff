@@ -1,0 +1,28 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -917,24 +917,7 @@
+             raise TypeError(f'unexpected keyword args: {sorted(kwargs.keys())!r}')
+ 
+     def glomit(self, target, scope):
+-        skipped = []
+-        for subspec in self.subspecs:
+-            try:
+-                ret = scope[glom](target, subspec, scope)
+-                if not self.skip_func(ret):
+-                    break
+-                skipped.append(ret)
+-            except self.skip_exc as e:
+-                skipped.append(e)
+-                continue
+-        else:
+-            if self.default is not _MISSING:
+-                ret = arg_val(target, self.default, scope)
+-            elif self.default_factory is not _MISSING:
+-                ret = self.default_factory()
+-            else:
+-                raise CoalesceError(self, skipped, scope[Path])
+-        return ret
++        pass
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

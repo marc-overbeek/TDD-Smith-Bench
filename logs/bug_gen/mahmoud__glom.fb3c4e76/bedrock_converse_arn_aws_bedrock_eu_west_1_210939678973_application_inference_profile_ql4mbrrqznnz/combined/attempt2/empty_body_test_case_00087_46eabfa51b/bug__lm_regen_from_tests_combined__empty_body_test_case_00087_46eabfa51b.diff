@@ -1,0 +1,121 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -274,7 +274,7 @@
+         return And(self, other)
+ 
+     def __or__(self, other):
+-        return Or(self, other)
++        return Or(*(self.children + (other,)))
+ 
+     def __invert__(self):
+         return Not(self)
+@@ -314,8 +314,7 @@
+     __slots__ = ('children',)
+ 
+     def _glomit(self, target, scope):
+-        # all children must match without exception
+-        result = target  # so that And() == True, similar to all([]) == True
++        result = target
+         for child in self.children:
+             result = scope[glom](target, child, scope)
+         return result
+@@ -336,7 +335,7 @@
+ 
+     def _glomit(self, target, scope):
+         for child in self.children[:-1]:
+-            try:  # one child must match without exception
++            try:
+                 return scope[glom](target, child, scope)
+             except GlomError:
+                 pass
+@@ -428,7 +427,7 @@
+         self.lhs, self.op, self.rhs = lhs, op, rhs
+ 
+     def __and__(self, other):
+-        return And(self, other)
++        return And(*(self.children + (other,)))
+ 
+     __rand__ = __and__
+ 
+@@ -715,50 +714,41 @@
+     if isinstance(spec, type):
+         if not isinstance(target, spec):
+             raise TypeMatchError(type(target), spec)
+-    elif isinstance(spec, dict):
++        return target
++    if hasattr(spec, 'glomit'):
++        return scope[glom](target, spec, scope)
++    if isinstance(spec, dict):
+         return _handle_dict(target, spec, scope)
+-    elif isinstance(spec, (list, set, frozenset)):
++    if isinstance(spec, (list, tuple, set, frozenset)):
+         if not isinstance(target, type(spec)):
+             raise TypeMatchError(type(target), type(spec))
+-        result = []
+-        for item in target:
+-            for child in spec:
+-                try:
+-                    result.append(scope[glom](item, child, scope))
+-                    break
+-                except GlomError as e:
+-                    last_error = e
+-            else:  # did not break, something went wrong
+-                if target and not spec:
+-                    raise MatchError(
+-                        "{0!r} does not match empty {1}", target, type(spec).__name__)
+-                # NOTE: unless error happens above, break will skip else branch
+-                # so last_error will have been assigned
+-                raise last_error
+-        if type(spec) is not list:
+-            return type(spec)(result)
+-        return result
+-    elif isinstance(spec, tuple):
+-        if not isinstance(target, tuple):
+-            raise TypeMatchError(type(target), tuple)
+-        if len(target) != len(spec):
+-            raise MatchError("{0!r} does not match {1!r}", target, spec)
+-        result = []
+-        for sub_target, sub_spec in zip(target, spec):
+-            result.append(scope[glom](sub_target, sub_spec, scope))
+-        return tuple(result)
+-    elif callable(spec):
+-        try:
+-            if spec(target):
++        if isinstance(spec, (set, frozenset)):
++            if len(spec) == 0:
++                if len(target) != 0:
++                    raise MatchError("{0!r} does not match {1!r}", target, spec)
+                 return target
+-        except Exception as e:
+-            raise MatchError(
+-                "{0}({1!r}) did not validate (got exception {2!r})", spec.__name__, target, e)
+-        raise MatchError(
+-            "{0}({1!r}) did not validate (non truthy return)", spec.__name__, target)
+-    elif target != spec:
+-        raise MatchError("{0!r} does not match {1!r}", target, spec)
+-    return target
++            if len(spec) == 1:
++                pattern = next(iter(spec))
++                for item in target:
++                    scope[glom](item, pattern, scope)
++                return target
++            raise ValueError("set/frozenset specs must have 0 or 1 elements")
++        if isinstance(spec, list):
++            if len(spec) == 0:
++                if len(target) != 0:
++                    raise MatchError("{0!r} does not match {1!r}", target, spec)
++                return target
++            if len(spec) == 1:
++                pattern = spec[0]
++                return [scope[glom](item, pattern, scope) for item in target]
++            raise ValueError("list specs must have 0 or 1 elements")
++        if isinstance(spec, tuple):
++            if len(spec) != len(target):
++                raise MatchError("{0!r} does not match {1!r}", target, spec)
++            return type(spec)(scope[glom](t, s, scope) for t, s in zip(target, spec))
++    if target == spec:
++        return target
++    raise MatchError("{0!r} does not match {1!r}", target, spec)
+ 
+ 
+ class Switch:

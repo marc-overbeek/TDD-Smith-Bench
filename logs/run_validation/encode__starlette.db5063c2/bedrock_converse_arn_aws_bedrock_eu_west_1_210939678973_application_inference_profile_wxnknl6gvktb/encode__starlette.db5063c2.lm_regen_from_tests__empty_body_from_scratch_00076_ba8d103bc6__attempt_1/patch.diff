@@ -1,0 +1,29 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -587,17 +587,24 @@
+         else:
+             self._list.append((set_key, set_value))
+ 
++    def test_mutable_headers() ->None:
++        h = MutableHeaders()
++        # ... other operations ...
++        del h['a']
++        assert dict(h) == {'b': '4'}
++        assert h.raw == [(b'b', b'4')]
++
+     def __delitem__(self, key: str) -> None:
+         """
+         Remove the header `key`.
+         """
+         del_key = key.lower().encode("latin-1")
+-
++    
+         pop_indexes: list[int] = []
+         for idx, (item_key, item_value) in enumerate(self._list):
+             if item_key == del_key:
+                 pop_indexes.append(idx)
+-
++    
+         for idx in reversed(pop_indexes):
+             del self._list[idx]
+ 

@@ -1,0 +1,60 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -286,11 +286,7 @@
+     epochs 30-59, 0.001 for epoch 60-89, 0.0001 for epochs 90-119.
+     """
+ 
+-    def __init__(
+-        self,
+-        num_updates: Union[int, float],
+-        values: List[float],
+-    ) -> None:
++    def __init__(self, num_updates: Union[int, float], values: List[float]) ->None:
+         if num_updates <= 0:
+             raise ValueError("Number of updates must be larger than 0")
+         if not (isinstance(values, Sequence) and len(values) > 0):
+@@ -298,8 +294,13 @@
+                 "Step scheduler requires a list of at least one param value"
+             )
+         self._param_schedule = values
+-
+-    def __call__(self, where: float) -> float:
++        self._num_updates = num_updates
++
++    def __call__(self, where: float) ->float:
++        if where >= 1.0:
++            raise RuntimeError(
++                f"where in ParamScheduler must be in [0, 1]: got {where}"
++            )
+         ind = int((where + self.WHERE_EPSILON) * len(self._param_schedule))
+         return self._param_schedule[ind]
+ 
+@@ -320,13 +321,8 @@
+     epochs 30-59, 0.001 for epoch 60-89, 0.0001 for epochs 90-119.
+     """
+ 
+-    def __init__(
+-        self,
+-        base_value: float,
+-        num_decays: int,
+-        gamma: float,
+-        num_updates: int,
+-    ) -> None:
++    def __init__(self, base_value: float, num_decays: int, gamma: float,
++        num_updates: int) ->None:
+         for k in [base_value, gamma]:
+             if not (isinstance(k, (int, float)) and k > 0):
+                 raise ValueError("base_value and gamma must be positive numbers")
+@@ -346,7 +342,11 @@
+             num_updates=num_updates, values=values
+         )
+ 
+-    def __call__(self, where: float) -> float:
++    def __call__(self, where: float) ->float:
++        if where >= 1.0:
++            raise RuntimeError(
++                f"where in ParamScheduler must be in [0, 1]: got {where}"
++            )
+         return self._step_param_scheduler(where)
+ 
+ 

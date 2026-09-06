@@ -1,0 +1,35 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -456,29 +456,9 @@
+     )
+ 
+ 
+-def get_cve_from(data: Dict[str, Any], db_full: Dict[str, Any]) -> Optional[CVE]:
+-    """
+-    Retrieves the CVE object from the provided data.
+-
+-    Args:
+-        data (Dict[str, Any]): The vulnerability data.
+-        db_full (Dict[str, Any]): The full database.
+-
+-    Returns:
+-        Optional[CVE]: The CVE object if found, otherwise None.
+-    """
+-    try:
+-        xve_id: str = str(
+-            next(filter(lambda i: i.get('type', None) in ['cve', 'pve'], data.get('ids', []))).get('id', ''))
+-    except StopIteration:
+-        xve_id: str = ''
+-
+-    if not xve_id:
+-        return None
+-
+-    cve_meta = db_full.get("meta", {}).get("severities", {}).get(xve_id, {})
+-    return CVE(name=xve_id, cvssv2=cve_meta.get("cvssv2", None),
+-               cvssv3=cve_meta.get("cvssv3", None))
++def get_cve_from(data: Dict[str, Any], db_full: Dict[str, Any]) ->Optional[CVE
++    ]:
++    pass
+ 
+ 
+ def ignore_vuln_if_needed(

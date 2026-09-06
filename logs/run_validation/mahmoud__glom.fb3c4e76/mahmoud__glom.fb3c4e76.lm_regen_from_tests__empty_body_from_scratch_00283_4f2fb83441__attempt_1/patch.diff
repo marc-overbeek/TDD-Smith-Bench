@@ -1,0 +1,19 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -334,6 +334,16 @@
+         """
+         return Pipe(self, list)
+ 
++    def test_first():
++        spec = Iter().first(T.imag)
++        target = iter([1, 2, 3.0j, 4])
++        out = glom(target, spec)
++        assert out == 3.0j
++        assert next(target) == 4
++
++    def first(self, key=T, default=None):
++        return (self, First(key=key, default=default))
++
+     def first(self, key=T, default=None):
+         """A convenience method for lazily yielding a single truthy item from
+         an iterable.

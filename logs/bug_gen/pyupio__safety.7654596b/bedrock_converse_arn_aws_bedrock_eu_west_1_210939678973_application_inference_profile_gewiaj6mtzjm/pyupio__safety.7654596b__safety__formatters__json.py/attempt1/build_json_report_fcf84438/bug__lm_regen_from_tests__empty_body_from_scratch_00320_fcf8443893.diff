@@ -1,0 +1,176 @@
+--- a/safety/formatters/json.py
++++ b/safety/formatters/json.py
+@@ -13,50 +13,130 @@
+ LOG = logging.getLogger(__name__)
+ 
+ 
+-def build_json_report(announcements: List[Dict], vulnerabilities: List[Dict], remediations: Dict[str, Any],
+-                      packages: List[Any]) -> Dict[str, Any]:
+-    """
+-    Build a JSON report for vulnerabilities, remediations, and packages.
+-
+-    Args:
+-        announcements (List[Dict]): List of announcements.
+-        vulnerabilities (List[Dict]): List of vulnerabilities.
+-        remediations (Dict[str, Any]): Remediation data.
+-        packages (List[Any]): List of packages.
+-
+-    Returns:
+-        Dict[str, Any]: JSON report.
+-    """
+-    vulns_ignored = [vuln.to_dict() for vuln in vulnerabilities if vuln.ignored]
+-    vulns = [vuln.to_dict() for vuln in vulnerabilities if not vuln.ignored]
+-
+-    report = get_report_brief_info(as_dict=True, report_type=1, vulnerabilities_found=len(vulns),
+-                                   vulnerabilities_ignored=len(vulns_ignored),
+-                                   remediations_recommended=remediations)
+-
+-    if 'using_sentence' in report:
+-        del report['using_sentence']
+-
+-    remed = {}
+-    for k, v in remediations.items():
+-        if k not in remed:
+-            remed[k] = {'requirements': v}
+-
+-        remed[k]['current_version'] = None
+-        remed[k]['vulnerabilities_found'] = None
+-        remed[k]['recommended_version'] = None
+-        remed[k]['other_recommended_versions'] = []
+-        remed[k]['more_info_url'] = None
+-
++def build_json_report(announcements: List[Dict], vulnerabilities: List[Dict
++    ], remediations: Dict[str, Any], packages: List[Any]) ->Dict[str, Any]:
++    report_meta = get_report_brief_info(as_dict=True)
++    scanned_packages = {}
++    affected_packages = {}
++    
++    for package in packages:
++        package_data = {
++            'name': package.name,
++            'version': str(package.version),
++            'requirements': [
++                {
++                    'raw': req.raw,
++                    'extras': req.extras,
++                    'marker': req.marker,
++                    'name': req.name,
++                    'specifier': str(req.specifier),
++                    'url': req.url,
++                    'found': req.found
++                } for req in package.requirements
++            ]
++        }
++        
++        if hasattr(package, 'found'):
++            package_data['found'] = package.found
++            
++        if hasattr(package, 'insecure_versions'):
++            package_data['insecure_versions'] = package.insecure_versions
++            
++        if hasattr(package, 'secure_versions'):
++            package_data['secure_versions'] = package.secure_versions
++            
++        if hasattr(package, 'latest_version_without_known_vulnerabilities'):
++            package_data['latest_version_without_known_vulnerabilities'] = package.latest_version_without_known_vulnerabilities
++            
++        if hasattr(package, 'latest_version'):
++            package_data['latest_version'] = package.latest_version
++            
++        if hasattr(package, 'more_info_url'):
++            package_data['more_info_url'] = package.more_info_url
++            
++        scanned_packages[package.name] = package_data
++        
++        # Add affected packages separately
++        if hasattr(package, 'insecure_versions') and package.insecure_versions:
++            affected_packages[package.name] = package_data
++    
++    vulnerabilities_data = []
++    for vuln in vulnerabilities:
++        vuln_data = {
++            'vulnerability_id': vuln.get('vulnerability_id'),
++            'package_name': vuln.get('package_name'),
++            'ignored': vuln.get('ignored'),
++            'ignored_reason': vuln.get('ignored_reason'),
++            'ignored_expires': vuln.get('ignored_expires'),
++            'vulnerable_spec': vuln.get('vulnerable_spec'),
++            'all_vulnerable_specs': vuln.get('all_vulnerable_specs'),
++            'analyzed_version': vuln.get('analyzed_version'),
++            'analyzed_requirement': {
++                'raw': vuln['analyzed_requirement'].raw,
++                'extras': vuln['analyzed_requirement'].extras,
++                'marker': vuln['analyzed_requirement'].marker,
++                'name': vuln['analyzed_requirement'].name,
++                'specifier': str(vuln['analyzed_requirement'].specifier),
++                'url': vuln['analyzed_requirement'].url,
++                'found': vuln['analyzed_requirement'].found
++            } if 'analyzed_requirement' in vuln and vuln['analyzed_requirement'] else None,
++            'advisory': vuln.get('advisory'),
++            'is_transitive': vuln.get('is_transitive'),
++            'published_date': vuln.get('published_date'),
++            'fixed_versions': vuln.get('fixed_versions'),
++            'closest_versions_without_known_vulnerabilities': vuln.get('closest_versions_without_known_vulnerabilities'),
++            'resources': vuln.get('resources'),
++            'CVE': vuln.get('CVE'),
++            'severity': vuln.get('severity'),
++            'affected_versions': vuln.get('affected_versions'),
++            'more_info_url': vuln.get('more_info_url')
++        }
++        vulnerabilities_data.append(vuln_data)
++    
++    remediations_data = {}
++    for package_name, package_remediations in remediations.items():
++        remediations_data[package_name] = {
++            'requirements': {},
++            'current_version': package_remediations.get('current_version'),
++            'vulnerabilities_found': package_remediations.get('vulnerabilities_found'),
++            'recommended_version': package_remediations.get('recommended_version'),
++            'other_recommended_versions': package_remediations.get('other_recommended_versions'),
++            'more_info_url': package_remediations.get('more_info_url')
++        }
++        
++        if 'requirements' in package_remediations:
++            for req_spec, req_data in package_remediations['requirements'].items():
++                remediations_data[package_name]['requirements'][req_spec] = {
++                    'vulnerabilities_found': req_data.get('vulnerabilities_found'),
++                    'version': req_data.get('version'),
++                    'requirement': {
++                        'raw': req_data['requirement'].raw,
++                        'extras': req_data['requirement'].extras,
++                        'marker': req_data['requirement'].marker,
++                        'name': req_data['requirement'].name,
++                        'specifier': str(req_data['requirement'].specifier),
++                        'url': req_data['requirement'].url,
++                        'found': req_data['requirement'].found
++                    } if 'requirement' in req_data and req_data['requirement'] else None,
++                    'recommended_version': str(req_data.get('recommended_version')) if req_data.get('recommended_version') else None,
++                    'other_recommended_versions': req_data.get('other_recommended_versions'),
++                    'closest_secure_version': req_data.get('closest_secure_version'),
++                    'more_info_url': req_data.get('more_info_url')
++                }
++    
+     return {
+-        "report_meta": report,
+-        "scanned_packages": {p.name: p.to_dict(short_version=True) for p in packages},
+-        "affected_packages": {v.pkg.name: v.pkg.to_dict() for v in vulnerabilities},
+-        "announcements": [{'type': item.get('type'), 'message': item.get('message')} for item in
+-                          get_basic_announcements(announcements)],
+-        "vulnerabilities": vulns,
+-        "ignored_vulnerabilities": vulns_ignored,
+-        "remediations": remed
++        "report_meta": report_meta,
++        "scanned_packages": scanned_packages,
++        "affected_packages": affected_packages,
++        "announcements": get_basic_announcements(announcements),
++        "vulnerabilities": vulnerabilities_data,
++        "ignored_vulnerabilities": [],
++        "remediations": remediations_data,
++        "remediations_results": {
++            "vulnerabilities_fixed": [],
++            "remediations_applied": {},
++            "remediations_skipped": {}
++        }
+     }
+ 
+ 

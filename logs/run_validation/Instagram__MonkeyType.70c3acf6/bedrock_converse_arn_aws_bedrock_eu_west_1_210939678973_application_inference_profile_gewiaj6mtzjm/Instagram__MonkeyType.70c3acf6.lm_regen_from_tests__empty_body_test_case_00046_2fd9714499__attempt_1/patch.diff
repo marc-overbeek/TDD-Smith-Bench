@@ -1,0 +1,92 @@
+--- a/monkeytype/encoding.py
++++ b/monkeytype/encoding.py
+@@ -37,51 +37,52 @@
+ TypeDict = Dict[str, Any]
+ 
+ 
+-def typed_dict_to_dict(typ: type) -> TypeDict:
+-    elem_types: Dict[str, Any] = {}
+-    for k, v in typ.__annotations__.items():
+-        elem_types[k] = type_to_dict(v)
++def typed_dict_to_dict(typ: type) ->TypeDict:
++    if not is_typed_dict(typ):
++        raise ValueError(f"{typ!r} is not a TypedDict")
++    elem_types = {}
++    for key, val in typ.__annotations__.items():
++        elem_types[key] = type_to_dict(val)
+     return {
+-        "module": typ.__module__,
+-        "qualname": typ.__qualname__,
+-        "elem_types": elem_types,
+-        "is_typed_dict": True,
++        'module': typ.__module__,
++        'qualname': typ.__name__,
++        'elem_types': elem_types,
++        'is_typed_dict': True,
+     }
+ 
+ 
+-def type_to_dict(typ: type) -> TypeDict:
+-    """Convert a type into a dictionary representation that we can store.
+-
+-    The dictionary must:
+-        1. Be encodable as JSON
+-        2. Contain enough information to let us reify the type
+-    """
++def type_to_dict(typ: type) ->TypeDict:
+     if is_typed_dict(typ):
+         return typed_dict_to_dict(typ)
+-
+-    # Union and Any are special cases that aren't actually types.
++    if is_any(typ):
++        return {'module': 'typing', 'qualname': 'Any'}
+     if is_union(typ):
+-        qualname = "Union"
+-    elif is_any(typ):
+-        qualname = "Any"
+-    elif is_generic(typ):
+-        qualname = qualname_of_generic(typ)
+-    else:
+-        qualname = typ.__qualname__
+-    d: TypeDict = {
+-        "module": typ.__module__,
+-        "qualname": qualname,
++        args = typ.__args__ if hasattr(typ, '__args__') else ()
++        elem_types = [type_to_dict(arg) for arg in args]
++        return {
++            'module': 'typing',
++            'qualname': 'Union',
++            'elem_types': elem_types,
++        }
++    if is_generic(typ):
++        if hasattr(typ, '__origin__'):
++            origin = typ.__origin__
++        elif hasattr(typ, '__extra__'):
++            origin = typ.__extra__
++        else:
++            raise ValueError(f"Cannot determine origin of generic type {typ!r}")
++        elem_types = []
++        if hasattr(typ, '__args__') and typ.__args__ is not None:
++            elem_types = [type_to_dict(arg) for arg in typ.__args__]
++        return {
++            'module': origin.__module__,
++            'qualname': qualname_of_generic(origin),
++            'elem_types': elem_types,
++        }
++    return {
++        'module': typ.__module__,
++        'qualname': typ.__qualname__,
+     }
+-    elem_types = getattr(typ, "__args__", None)
+-    # In Python < 3.9, bare generics still have args
+-    is_bare_generic = typ in {Dict, List, Tuple}
+-    if not is_bare_generic and elem_types is not None and is_generic(typ):
+-        # empty typing.Tuple is weird; the spec says it should be Tuple[()],
+-        # which results in __args__ of `((),)` pre-Python 3.11
+-        if elem_types == ((),):
+-            elem_types = ()
+-        d["elem_types"] = [type_to_dict(t) for t in elem_types]
+-    return d
+ 
+ 
+ _HIDDEN_BUILTIN_TYPES: Dict[str, type] = {

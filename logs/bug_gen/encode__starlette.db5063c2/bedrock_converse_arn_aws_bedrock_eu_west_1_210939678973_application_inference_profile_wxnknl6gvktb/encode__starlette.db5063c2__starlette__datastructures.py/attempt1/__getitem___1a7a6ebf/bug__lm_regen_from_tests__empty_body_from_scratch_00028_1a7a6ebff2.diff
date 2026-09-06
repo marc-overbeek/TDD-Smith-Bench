@@ -1,0 +1,15 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -229,6 +229,12 @@
+ 
+     def __len__(self) -> int:
+         return len(self._items)
++
++    csv = CommaSeparatedStrings('"localhost", "127.0.0.1", 0.0.0.0')
++    assert csv[0] == 'localhost'
++
++    def __getitem__(self, index: (int | slice)) ->typing.Any:
++        pass
+ 
+     def __getitem__(self, index: int | slice) -> typing.Any:
+         return self._items[index]

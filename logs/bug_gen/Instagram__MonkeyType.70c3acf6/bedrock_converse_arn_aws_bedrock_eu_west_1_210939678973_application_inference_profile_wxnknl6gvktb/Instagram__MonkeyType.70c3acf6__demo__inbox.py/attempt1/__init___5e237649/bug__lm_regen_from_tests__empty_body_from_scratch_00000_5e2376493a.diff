@@ -1,0 +1,22 @@
+--- a/demo/inbox.py
++++ b/demo/inbox.py
+@@ -26,10 +26,15 @@
+ class CommentsAggregator(AggregatorInterface[CommentedEvent]):
+     type = EventType.COMMENTED
+ 
+-    def __init__(self, repo: RepoInterface) -> None:
+-        self.events: List[CommentedEvent] = []
+-        self.user_ids: Set[UserId] = set()
+-        super().__init__(repo)
++    def __init__(self, user: User, repo: RepoInterface) -> None:
++        self.user = user
++        self.repo = repo
++        self.events = self.repo.get_inbox_events_for_user_id(self.user.id)
++
++    def __init__(self, user: User, repo: RepoInterface) -> None:
++        self.user = user
++        self.repo = repo
++        self.events = self.repo.get_inbox_events_for_user_id(self.user.id)
+ 
+     def add(self, event):
+         self.events.append(event)

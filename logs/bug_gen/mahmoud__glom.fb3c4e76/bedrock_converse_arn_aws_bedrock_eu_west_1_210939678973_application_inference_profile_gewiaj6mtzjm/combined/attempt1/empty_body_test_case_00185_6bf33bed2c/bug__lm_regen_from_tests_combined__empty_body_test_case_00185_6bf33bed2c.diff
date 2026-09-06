@@ -1,0 +1,47 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -199,44 +199,12 @@
+             'windowed', (size,), lambda it, scope: windowed_iter(it, size))
+ 
+     def split(self, sep=None, maxsplit=None):
+-        """Return a new :class:`Iter()` spec which will lazily split an iterable based
+-        on a separator (or list of separators), *sep*. Like
+-        :meth:`str.split()`, but for all iterables.
+-
+-        ``split_iter()`` yields lists of non-separator values. A separator will
+-        never appear in the output.
+-
+-        >>> target = [1, 2, None, None, 3, None, 4, None]
+-        >>> list(glom(target, Iter().split()))
+-        [[1, 2], [3], [4]]
+-
+-        Note that ``split_iter`` is based on :func:`str.split`, so if
+-        *sep* is ``None``, ``split()`` **groups** separators. If empty lists
+-        are desired between two contiguous ``None`` values, simply use
+-        ``sep=[None]``:
+-
+-        >>> list(glom(target, Iter().split(sep=[None])))
+-        [[1, 2], [], [3], [4], []]
+-
+-        A max number of splits may also be set:
+-
+-        >>> list(glom(target, Iter().split(maxsplit=2)))
+-        [[1, 2], [3], [4, None]]
+-
+-        """
+         return self._add_op(
+             'split',
+             (sep, maxsplit),
+             lambda it, scope: split_iter(it, sep=sep, maxsplit=maxsplit))
+ 
+     def flatten(self):
+-        """Returns a new :class:`Iter()` instance which combines iterables into a
+-        single iterable.
+-
+-        >>> target = [[1, 2], [3, 4], [5]]
+-        >>> list(glom(target, Iter().flatten()))
+-        [1, 2, 3, 4, 5]
+-        """
+         return self._add_op(
+             'flatten',
+             (),

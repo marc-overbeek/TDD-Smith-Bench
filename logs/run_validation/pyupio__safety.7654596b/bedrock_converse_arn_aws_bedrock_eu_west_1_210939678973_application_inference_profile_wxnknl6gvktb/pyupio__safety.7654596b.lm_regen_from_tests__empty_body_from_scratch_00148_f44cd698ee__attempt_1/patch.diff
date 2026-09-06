@@ -1,0 +1,30 @@
+--- a/safety/cli_util.py
++++ b/safety/cli_util.py
+@@ -65,17 +65,16 @@
+     """
+     return Text(text)
+ 
+-def custom_get_help_text(obj: Any) -> Text:
+-    """
+-    Get the help text for an object.
+-
+-    Args:
+-        obj (Any): The object to get help text for.
+-
+-    Returns:
+-        Text: The formatted help text.
+-    """
+-    return Text(obj.help)
++console.print(
++    Padding(
++        Align(custom_get_help_text(obj=obj), pad=False),
++        (0, 1, 0, 1)
++    )
++)
++
++def custom_get_help_text(obj: Any) ->Text:
++    help_text = obj.help or ""
++    return Text(help_text)
+ 
+ def custom_make_command_help(help_text: str) -> Text:
+     """

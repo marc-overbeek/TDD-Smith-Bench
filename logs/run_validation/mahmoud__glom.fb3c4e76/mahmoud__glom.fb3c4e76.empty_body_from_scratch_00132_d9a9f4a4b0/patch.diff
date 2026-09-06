@@ -1,0 +1,40 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -2060,36 +2060,7 @@
+         self.register(_ObjStyleKeys, keys=_ObjStyleKeys.get_keys)
+ 
+     def _register_fuzzy_type(self, op, new_type, _type_tree=None):
+-        """Build a "type tree", an OrderedDict mapping registered types to
+-        their subtypes
+-
+-        The type tree's invariant is that a key in the mapping is a
+-        valid parent type of all its children.
+-
+-        Order is preserved such that non-overlapping parts of the
+-        subtree take precedence by which was most recently added.
+-        """
+-        if _type_tree is None:
+-            try:
+-                _type_tree = self._op_type_tree[op]
+-            except KeyError:
+-                _type_tree = self._op_type_tree[op] = OrderedDict()
+-
+-        registered = False
+-        for cur_type, sub_tree in list(_type_tree.items()):
+-            if issubclass(cur_type, new_type):
+-                sub_tree = _type_tree.pop(cur_type)  # mutation for recursion brevity
+-                try:
+-                    _type_tree[new_type][cur_type] = sub_tree
+-                except KeyError:
+-                    _type_tree[new_type] = OrderedDict({cur_type: sub_tree})
+-                registered = True
+-            elif issubclass(new_type, cur_type):
+-                _type_tree[cur_type] = self._register_fuzzy_type(op, new_type, _type_tree=sub_tree)
+-                registered = True
+-        if not registered:
+-            _type_tree[new_type] = OrderedDict()
+-        return _type_tree
++        pass
+ 
+     def register(self, target_type, **kwargs):
+         if not isinstance(target_type, type):

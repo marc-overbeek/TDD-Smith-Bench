@@ -1,0 +1,15 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/metadata.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/metadata.py
+@@ -58,6 +58,12 @@
+             'Access-Control-Allow-Origin': '*',
+         }
+         return headers, json.dumps(self.claims), 200
++
++    def test_metadata_validate_issuer(self):
++        with self.assertRaises(ValueError):
++            endpoint = TokenEndpoint(None, None, grant_types={'password': None})
++            metadata = MetadataEndpoint([endpoint], {'issuer': 'http://foo.bar',
++                'token_endpoint': 'https://foo.bar/token'})
+ 
+     def validate_metadata(self, array, key, is_required=False, is_list=False, is_url=False, is_issuer=False):
+         if not self.raise_errors:

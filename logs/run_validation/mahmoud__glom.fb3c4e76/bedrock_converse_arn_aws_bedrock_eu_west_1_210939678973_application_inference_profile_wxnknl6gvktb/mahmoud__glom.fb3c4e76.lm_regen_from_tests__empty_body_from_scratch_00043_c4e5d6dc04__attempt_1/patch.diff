@@ -1,0 +1,19 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -475,6 +475,16 @@
+         self.type_map = type_map
+         self.path = path
+         super().__init__(op, target_type, type_map, path)
++
++    assert repr(exc_info.value
++        ) == "UnregisteredTarget('get', <type 'object'>, OrderedDict(), ('__class__',))"
++
++    def __repr__(self):
++        cn = self.__class__.__name__
++        # <type %r> is because Python 3 inexplicably changed the type
++        # repr from <type *> to <class *>
++        return ('%s(%r, <type %r>, %r, %r)'
++                % (cn, self.op, self.target_type.__name__, self.type_map, self.path))
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

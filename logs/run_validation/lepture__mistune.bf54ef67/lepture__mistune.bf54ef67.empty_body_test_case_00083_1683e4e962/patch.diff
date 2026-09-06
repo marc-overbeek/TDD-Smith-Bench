@@ -1,0 +1,90 @@
+--- a/src/mistune/renderers/rst.py
++++ b/src/mistune/renderers/rst.py
+@@ -21,17 +21,9 @@
+     }
+     INLINE_IMAGE_PREFIX = 'img-'
+ 
+-    def iter_tokens(
+-        self, tokens: Iterable[Dict[str, Any]], state: BlockState
+-    ) -> Iterable[str]:
+-        prev = None
+-        for tok in tokens:
+-            # ignore blank line
+-            if tok['type'] == 'blank_line':
+-                continue
+-            tok['prev'] = prev
+-            prev = tok
+-            yield self.render_token(tok, state)
++    def iter_tokens(self, tokens: Iterable[Dict[str, Any]], state: BlockState
++        ) ->Iterable[str]:
++        pass
+ 
+     def __call__(self, tokens: Iterable[Dict[str, Any]], state: BlockState) -> str:
+         state.env['inline_images'] = []
+@@ -40,13 +32,8 @@
+         out += '\n\n'.join(self.render_referrences(state)) + '\n'
+         return strip_end(out)
+ 
+-    def render_referrences(self, state: BlockState) -> Iterable[str]:
+-        images = state.env['inline_images']
+-        for index, token in enumerate(images):
+-            attrs = token['attrs']
+-            alt = self.render_children(token, state)
+-            ident = self.INLINE_IMAGE_PREFIX + str(index)
+-            yield '.. |' + ident + '| image:: ' + attrs['url'] + '\n   :alt: ' + alt
++    def render_referrences(self, state: BlockState) ->Iterable[str]:
++        pass
+ 
+     def render_children(self, token: Dict[str, Any], state: BlockState) -> str:
+         children = token['children']
+@@ -56,8 +43,8 @@
+         text = cast(str, token["raw"])
+         return text.replace("|", r"\|")
+ 
+-    def emphasis(self, token: Dict[str, Any], state: BlockState) -> str:
+-        return '*' + self.render_children(token, state) + '*'
++    def emphasis(self, token: Dict[str, Any], state: BlockState) ->str:
++        pass
+ 
+     def strong(self, token: Dict[str, Any], state: BlockState) -> str:
+         return '**' + self.render_children(token, state) + '**'
+@@ -67,11 +54,8 @@
+         text = self.render_children(token, state)
+         return "`" + text + " <" + cast(str, attrs["url"]) + ">`__"
+ 
+-    def image(self, token: Dict[str, Any], state: BlockState) -> str:
+-        refs: List[Dict[str, Any]] = state.env["inline_images"]
+-        index = len(refs)
+-        refs.append(token)
+-        return '|' + self.INLINE_IMAGE_PREFIX + str(index) + '|'
++    def image(self, token: Dict[str, Any], state: BlockState) ->str:
++        pass
+ 
+     def codespan(self, token: Dict[str, Any], state: BlockState) -> str:
+         return "``" + cast(str, token["raw"]) + "``"
+@@ -86,23 +70,8 @@
+         # rst does not support inline html
+         return ''
+ 
+-    def paragraph(self, token: Dict[str, Any], state: BlockState) -> str:
+-        children = token['children']
+-        if len(children) == 1 and children[0]['type'] == 'image':
+-            image = children[0]
+-            attrs = image["attrs"]
+-            title = cast(str, attrs.get("title"))
+-            alt = self.render_children(image, state)
+-            text = ".. figure:: " + cast(str, attrs["url"])
+-            if title:
+-                text += '\n   :alt: ' + title
+-            text += '\n\n' + indent(alt, '   ')
+-        else:
+-            text = self.render_tokens(children, state)
+-            lines = text.split('<linebreak>')
+-            if len(lines) > 1:
+-                text = '\n'.join('| ' + line for line in lines)
+-        return text + '\n\n'
++    def paragraph(self, token: Dict[str, Any], state: BlockState) ->str:
++        pass
+ 
+     def heading(self, token: Dict[str, Any], state: BlockState) -> str:
+         attrs = token['attrs']

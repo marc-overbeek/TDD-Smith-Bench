@@ -1,0 +1,14 @@
+--- a/oauthlib/oauth2/rfc6749/grant_types/base.py
++++ b/oauthlib/oauth2/rfc6749/grant_types/base.py
+@@ -229,11 +229,6 @@
+             if not is_absolute_uri(request.redirect_uri):
+                 raise errors.InvalidRedirectURIError(request=request)
+ 
+-            # The authorization server MUST verify that the redirection URI
+-            # to which it will redirect the access token matches a
+-            # redirection URI registered by the client as described in
+-            # Section 3.1.2.
+-            # https://tools.ietf.org/html/rfc6749#section-3.1.2
+             if not self.request_validator.validate_redirect_uri(
+                     request.client_id, request.redirect_uri, request):
+                 raise errors.MismatchingRedirectURIError(request=request)

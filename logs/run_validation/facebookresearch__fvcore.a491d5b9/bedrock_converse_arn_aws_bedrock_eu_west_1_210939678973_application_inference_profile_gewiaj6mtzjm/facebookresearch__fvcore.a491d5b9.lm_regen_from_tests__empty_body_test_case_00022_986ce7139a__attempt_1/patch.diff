@@ -1,0 +1,55 @@
+--- a/fvcore/common/checkpoint.py
++++ b/fvcore/common/checkpoint.py
+@@ -53,14 +53,8 @@
+     objects.
+     """
+ 
+-    def __init__(
+-        self,
+-        model: nn.Module,
+-        save_dir: str = "",
+-        *,
+-        save_to_disk: bool = True,
+-        **checkpointables: Any,
+-    ) -> None:
++    def __init__(self, model: nn.Module, save_dir: str='', *, save_to_disk:
++        bool=True, **checkpointables: Any) ->None:
+         """
+         Args:
+             model (nn.Module): model.
+@@ -103,7 +97,7 @@
+             )
+         self.checkpointables[key] = checkpointable
+ 
+-    def save(self, name: str, **kwargs: Any) -> None:
++    def save(self, name: str, **kwargs: Any) ->None:
+         """
+         Dump model and checkpointables to a file.
+ 
+@@ -384,14 +378,9 @@
+         checkpointer (Checkpointer): the underlying checkpointer object
+     """
+ 
+-    def __init__(
+-        self,
+-        checkpointer: Checkpointer,
+-        period: int,
+-        max_iter: Optional[int] = None,
+-        max_to_keep: Optional[int] = None,
+-        file_prefix: str = "model",
+-    ) -> None:
++    def __init__(self, checkpointer: Checkpointer, period: int, max_iter:
++        Optional[int]=None, max_to_keep: Optional[int]=None, file_prefix: str=
++        'model') ->None:
+         """
+         Args:
+             checkpointer: the checkpointer object used to save checkpoints.
+@@ -412,7 +401,7 @@
+         self.path_manager: PathManager = checkpointer.path_manager
+         self.file_prefix = file_prefix
+ 
+-    def step(self, iteration: int, **kwargs: Any) -> None:
++    def step(self, iteration: int, **kwargs: Any) ->None:
+         """
+         Perform the appropriate action at the given iteration.
+ 

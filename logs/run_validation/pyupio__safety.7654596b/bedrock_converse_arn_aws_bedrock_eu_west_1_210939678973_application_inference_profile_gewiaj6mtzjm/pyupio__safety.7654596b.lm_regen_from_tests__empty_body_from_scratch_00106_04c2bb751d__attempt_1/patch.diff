@@ -1,0 +1,63 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -794,42 +794,25 @@
+     return brief_info
+ 
+ 
+-def build_using_sentence(account: Optional[str], key: Optional[str], db: Optional[str]) -> List[Dict[str, Any]]:
+-    """
+-    Build the sentence for the used components.
+-
+-    Args:
+-        account (Optional[str]): The account details.
+-        key (Optional[str]): The API key.
+-        db (Optional[str]): The database details.
+-
+-    Returns:
+-        List[Dict[str, Any]]: Sentence for the used components.
+-    """
+-    key_sentence = []
+-    custom_integration = os.environ.get('SAFETY_CUSTOM_INTEGRATION',
+-                                        'false').lower() == 'true'
+-
+-    if key or account:
+-        t = {'style': True, 'value': 'an API KEY'}
+-        if not key:
+-            t = {'style': True, 'value': f'the account {account}'}
+-        key_sentence = [t,
+-                        {'style': False, 'value': ' and the '}]
+-        db_name = 'Safety Commercial'
+-    elif db:
+-        if is_a_remote_mirror(db):
+-            if custom_integration:
+-                return []
+-            db_name = f"remote URL {db}"
+-        else:
+-            db_name = f"local file {db}"
++def build_using_sentence(account: Optional[str], key: Optional[str], db:
++    Optional[str]) ->List[Dict[str, Any]]:
++    result = []
++    
++    if account:
++        result.append({'style': True, 'value': f'using account {account}'})
++    elif key:
++        result.append({'style': True, 'value': 'using API key'})
++        
++    if db:
++        result.append({'style': True, 'value': f'with local database {db}'})
++        
++    if result:
++        result.insert(0, {'style': False, 'value': 'Using '})
++        result.append({'style': False, 'value': '.'})
+     else:
+-        db_name = 'open-source vulnerability'
+-
+-    database_sentence = [{'style': True, 'value': db_name + ' database'}]
+-
+-    return [{'style': False, 'value': 'Using '}] + key_sentence + database_sentence
++        result.append({'style': False, 'value': 'Using default settings.'})
++        
++    return result
+ 
+ 
+ def build_scanned_count_sentence(packages: List[Package]) -> List[Dict[str, Any]]:

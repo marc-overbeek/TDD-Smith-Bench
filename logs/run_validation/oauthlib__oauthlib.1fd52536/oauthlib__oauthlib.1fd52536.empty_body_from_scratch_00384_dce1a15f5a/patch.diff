@@ -1,0 +1,18 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/base.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/base.py
+@@ -56,14 +56,7 @@
+             raise InvalidRequestError(request=request,
+                                       description='Missing token parameter.')
+     def _raise_on_invalid_client(self, request):
+-        """Raise on failed client authentication."""
+-        if self.request_validator.client_authentication_required(request):
+-            if not self.request_validator.authenticate_client(request):
+-                log.debug('Client authentication failed, %r.', request)
+-                raise InvalidClientError(request=request)
+-        elif not self.request_validator.authenticate_client_id(request.client_id, request):
+-            log.debug('Client authentication failed, %r.', request)
+-            raise InvalidClientError(request=request)
++        pass
+ 
+     def _raise_on_unsupported_token(self, request):
+         """Raise on unsupported tokens."""

@@ -1,0 +1,24 @@
+--- a/starlette/responses.py
++++ b/starlette/responses.py
+@@ -439,7 +439,20 @@
+                 )
+ 
+     def _should_use_range(self, http_if_range: str) -> bool:
+-        return http_if_range == self.headers["last-modified"] or http_if_range == self.headers["etag"]
++        # Check if If-Range header matches the ETag or Last-Modified
++        # If it matches either, we should use range requests
++        last_modified = self.headers.get("last-modified")
++        etag = self.headers.get("etag")
++    
++        if last_modified is not None and http_if_range == last_modified:
++            return True
++        if etag is not None and http_if_range == etag:
++            return True
++    
++        # If If-Range doesn't match ETag or Last-Modified, 
++        # check if it's a valid HTTP date that's before the last modified time
++        # This handles cases where If-Range is a date instead of ETag/Last-Modified
++        return False
+ 
+     @staticmethod
+     def _parse_range_header(http_range: str, file_size: int) -> list[tuple[int, int]]:

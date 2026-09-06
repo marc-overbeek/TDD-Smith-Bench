@@ -1,0 +1,300 @@
+--- a/src/mistune/list_parser.py
++++ b/src/mistune/list_parser.py
+@@ -17,61 +17,55 @@
+ _LINE_HAS_TEXT = re.compile(r'(\s*)\S')
+ 
+ 
+-def parse_list(block: "BlockParser", m: Match[str], state: "BlockState") -> int:
+-    """Parse tokens for ordered and unordered list."""
+-    text = m.group('list_3')
+-    if not text.strip():
+-        # Example 285
+-        # an empty list item cannot interrupt a paragraph
+-        end_pos = state.append_paragraph()
+-        if end_pos:
+-            return end_pos
+-
+-    marker = m.group('list_2')
+-    ordered = len(marker) > 1
+-    depth = state.depth()
+-    token: Dict[str, Any] = {
++def parse_list(block: 'BlockParser', m: Match[str], state: 'BlockState') ->int:
++    """Parse a list block."""
++    text = state.src[m.start():m.end()]
++    if not text:
++        return 0
++    
++    # Get the list bullet and its position
++    bullet = m.group('list_2')
++    leading_spaces = m.group('list_1')
++    
++    # Create a new token for the list
++    token = {
+         'type': 'list',
+         'children': [],
+         'tight': True,
+-        'bullet': marker[-1],
+-        'attrs': {
+-            'depth': depth,
+-            'ordered': ordered,
+-        },
++        'bullet': bullet,
++        'start': m.start(),
++        'end': m.end()
+     }
+-    if ordered:
+-        start = int(marker[:-1])
+-        if start != 1:
+-            # Example 304
+-            # we allow only lists starting with 1 to interrupt paragraphs
+-            end_pos = state.append_paragraph()
+-            if end_pos:
+-                return end_pos
+-            token['attrs']['start'] = start
+-
+-    state.cursor = m.end() + 1
+-    groups: Optional[Tuple[str, str, str]] = (m.group("list_1"), marker, text)
+-
+-    if depth >= block.max_nested_level - 1:
+-        rules = list(block.list_rules)
+-        rules.remove('list')
+-    else:
+-        rules = block.list_rules
+-
+-    bullet = _get_list_bullet(marker[-1])
+-    while groups:
+-        groups = _parse_list_item(block, bullet, groups, token, state, rules)
+-
+-    end_pos = token.pop('_end_pos', None)
+-    _transform_tight_list(token)
+-    if end_pos:
+-        index = token.pop('_tok_index')
+-        state.tokens.insert(index, token)
+-        return end_pos
+-
+-    state.append_token(token)
+-    return state.cursor
++    
++    # Parse list items
++    pos = m.end()
++    last_pos = pos
++    while pos < len(state.src):
++        # Check if we have another list item
++        next_match = block.list_item_re.match(state.src, pos)
++        if not next_match:
++            break
++            
++        # Parse the list item
++        item_result = _parse_list_item(
++            block, bullet, 
++            (next_match.group('listitem_1'), 
++             next_match.group('listitem_2'), 
++             next_match.group('listitem_3')),
++            token, state, block.rules
++        )
++        
++        if item_result is None:
++            break
++            
++        pos = item_result[2]  # Update position
++        if pos <= last_pos:
++            break
++        last_pos = pos
++        
++    # Add the token to the state
++    state.add_token(token)
++    return pos
+ 
+ 
+ def _transform_tight_list(token: Dict[str, Any]) -> None:
+@@ -85,109 +79,61 @@
+                     _transform_tight_list(tok)
+ 
+ 
+-def _parse_list_item(
+-    block: "BlockParser",
+-    bullet: str,
+-    groups: Tuple[str, str, str],
+-    token: Dict[str, Any],
+-    state: "BlockState",
+-    rules: List[str],
+-) -> Optional[Tuple[str, str, str]]:
+-    spaces, marker, text = groups
+-
+-    leading_width = len(spaces) + len(marker)
+-    text, continue_width = _compile_continue_width(text, leading_width)
+-    item_pattern = _compile_list_item_pattern(bullet, leading_width)
+-    pairs = [
+-        ('thematic_break', block.specification['thematic_break']),
+-        ('fenced_code', block.specification['fenced_code']),
+-        ('atx_heading', block.specification['atx_heading']),
+-        ('block_quote', block.specification['block_quote']),
+-        ('block_html', block.specification['block_html']),
+-        ('list', block.specification['list']),
+-    ]
+-    if leading_width < 3:
+-        _repl_w = str(leading_width)
+-        pairs = [(n, p.replace('3', _repl_w, 1)) for n, p in pairs]
+-
+-    pairs.insert(1, ('list_item', item_pattern))
+-    regex = '|'.join(r'(?P<%s>(?<=\n)%s)' % pair for pair in pairs)
+-    sc = re.compile(regex, re.M)
+-
+-    src = ''
+-    next_group = None
+-    prev_blank_line = False
+-    pos = state.cursor
+-
+-    continue_space = ' ' * continue_width
+-    while pos < state.cursor_max:
+-        pos = state.find_line_end()
+-        line = state.get_text(pos)
+-        if block.BLANK_LINE.match(line):
+-            src += '\n'
+-            prev_blank_line = True
+-            state.cursor = pos
+-            continue
+-
+-        line = expand_leading_tab(line)
+-        if line.startswith(continue_space):
+-            if prev_blank_line and not text and not src.strip():
+-                # Example 280
+-                # A list item can begin with at most one blank line
+-                break
+-
+-            src += line
+-            prev_blank_line = False
+-            state.cursor = pos
+-            continue
+-
+-        m = sc.match(state.src, state.cursor)
+-        if m:
+-            tok_type = m.lastgroup
+-            if tok_type == 'list_item':
+-                if prev_blank_line:
+-                    token['tight'] = False
+-                next_group = (
+-                    m.group('listitem_1'),
+-                    m.group('listitem_2'),
+-                    m.group('listitem_3')
+-                )
+-                state.cursor = m.end() + 1
+-                break
+-
+-            if tok_type == 'list':
+-                break
+-
+-            tok_index = len(state.tokens)
+-            end_pos = block.parse_method(m, state)
+-            if end_pos:
+-                token['_tok_index'] = tok_index
+-                token['_end_pos'] = end_pos
+-                break
+-
+-        if prev_blank_line and not line.startswith(continue_space):
+-            # not a continue line, and previous line is blank
+-            break
+-
+-        src += line
+-        state.cursor = pos
+-
+-    text += _clean_list_item_text(src, continue_width)
+-    child = state.child_state(strip_end(text))
+-
+-    block.parse(child, rules)
+-
+-    if token['tight'] and _is_loose_list(child.tokens):
+-        token['tight'] = False
+-
+-    token['children'].append({
++def _parse_list_item(block: 'BlockParser', bullet: str, groups: Tuple[str,
++    str, str], token: Dict[str, Any], state: 'BlockState', rules: List[str]
++    ) ->Optional[Tuple[str, str, str]]:
++    """Parse a single list item."""
++    leading_spaces, item_bullet, content = groups
++    
++    # Check if this is actually a valid list item
++    if item_bullet != bullet:
++        return None
++        
++    # Determine the width of leading spaces
++    leading_width = len(leading_spaces)
++    
++    # Find the actual start position of this item
++    item_start = state.src.find(leading_spaces + item_bullet)
++    if item_start == -1:
++        return None
++        
++    # Create a new token for the list item
++    item_token = {
+         'type': 'list_item',
+-        'children': child.tokens,
+-    })
+-    if next_group:
+-        return next_group
+-
+-    return None
++        'children': [],
++        'tight': True,
++        'bullet': bullet,
++        'start': item_start,
++        'end': item_start + len(leading_spaces + item_bullet)
++    }
++    
++    # Process the content
++    if content:
++        # Remove leading whitespace
++        content = content.lstrip()
++        if content:
++            # Create a paragraph token for the content
++            para_token = {
++                'type': 'paragraph',
++                'children': [],
++                'text': content,
++                'start': state.src.find(content, item_start),
++                'end': state.src.find(content, item_start) + len(content)
++            }
++            item_token['children'].append(para_token)
++    
++    # Add the item token to the list
++    token['children'].append(item_token)
++    
++    # Find where this item ends
++    end_pos = state.src.find('\n', item_start)
++    if end_pos == -1:
++        end_pos = len(state.src)
++    else:
++        end_pos += 1  # Include the newline
++        
++    # Return the position after this item
++    return (leading_spaces, item_bullet, end_pos)
+ 
+ 
+ def _get_list_bullet(c: str) -> str:
+@@ -253,13 +199,17 @@
+     return '\n'.join(rv)
+ 
+ 
+-def _is_loose_list(tokens: Iterable[Dict[str, Any]]) -> bool:
+-    paragraph_count = 0
+-    for tok in tokens:
+-        if tok['type'] == 'blank_line':
+-            return True
+-        if tok['type'] == 'paragraph':
+-            paragraph_count += 1
+-            if paragraph_count > 1:
+-                return True
++def _is_loose_list(tokens: Iterable[Dict[str, Any]]) ->bool:
++    """Check if a list is loose (has blank lines between items)."""
++    # A list is loose if any of its items has a blank line
++    # Check if there are blank lines between consecutive list items
++    prev_end = None
++    for token in tokens:
++        if token.get('type') == 'list_item':
++            if prev_end is not None:
++                # Check if there's a blank line between previous item and this one
++                # This is a simplified check - in practice, you'd need to examine
++                # the actual content of each list item to determine if it's loose
++                pass
++            prev_end = token.get('end')
+     return False

@@ -1,0 +1,55 @@
+--- a/demo/inbox.py
++++ b/demo/inbox.py
+@@ -29,7 +29,7 @@
+     def __init__(self, repo: RepoInterface) -> None:
+         self.events: List[CommentedEvent] = []
+         self.user_ids: Set[UserId] = set()
+-        super().__init__(repo)
++        self.repo = repo
+ 
+     def add(self, event):
+         self.events.append(event)
+@@ -54,7 +54,7 @@
+     def __init__(self, repo: RepoInterface) -> None:
+         self.events_by_feedentry_id: Dict[FeedEntryId, List[LikedEvent]] = {}
+         self.user_ids: Set[UserId] = set()
+-        super().__init__(repo)
++        self.repo = repo
+ 
+     def add(self, event):
+         self.events_by_feedentry_id.setdefault(event.feedentry_id, []).append(event)
+@@ -97,7 +97,7 @@
+     def __init__(self, repo: RepoInterface) -> None:
+         self.events: List[FollowedEvent] = []
+         self.user_ids: Set[UserId] = set()
+-        super().__init__(repo)
++        self.repo = repo
+ 
+     def add(self, event):
+         self.events.append(event)
+@@ -148,7 +148,7 @@
+         clauses: List[str] = []
+         likes = counter[EventType.LIKED]
+         if likes:
+-            clauses.append(f"{likes} new like{self._pluralize(likes)}")
++            clauses.append(f"You have {likes} new like{self._pluralize(likes)}")
+         follows = counter[EventType.FOLLOWED]
+         if follows:
+             clauses.append(f"{follows} new follower{self._pluralize(follows)}")
+@@ -156,13 +156,12 @@
+         if comments:
+             clauses.append(f"{comments} new comment{self._pluralize(comments)}")
+         if not clauses:
+-            combined = "no new activity"
++            return "You have no new activity."
+         elif len(clauses) == 1:
+-            combined = clauses[0]
++            return clauses[0] + "."
+         else:
+             initial = ", ".join(clauses[:-1])
+-            combined = f"{initial} and {clauses[-1]}"
+-        return f"You have {combined}."
++            return f"{initial} and {clauses[-1]}."
+ 
+     def _pluralize(self, count):
+         return "" if count == 1 else "s"

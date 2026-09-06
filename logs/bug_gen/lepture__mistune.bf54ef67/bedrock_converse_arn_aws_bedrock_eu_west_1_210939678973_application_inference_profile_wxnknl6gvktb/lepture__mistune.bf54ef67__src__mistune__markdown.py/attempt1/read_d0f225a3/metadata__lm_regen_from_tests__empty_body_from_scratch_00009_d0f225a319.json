@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef read(\n    self, filepath: str, encoding: str = \"utf-8\", state: Optional[BlockState] = None\n) -> Tuple[Union[str, List[Dict[str, Any]]], BlockState]:\n    if state is None:\n        state = self.block.state_cls()\n\n    state.env['__file__'] = filepath\n    with open(filepath, 'rb') as f:\n        s = f.read()\n\n    s2 = s.decode(encoding)\n    return self.parse(s2, state)\n```",
+  "rewrite": "def read(\n    self, filepath: str, encoding: str = \"utf-8\", state: Optional[BlockState] = None\n) -> Tuple[Union[str, List[Dict[str, Any]]], BlockState]:\n    if state is None:\n        state = self.block.state_cls()\n\n    state.env['__file__'] = filepath\n    with open(filepath, 'rb') as f:\n        s = f.read()\n\n    s2 = s.decode(encoding)\n    return self.parse(s2, state)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

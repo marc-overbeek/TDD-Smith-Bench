@@ -1,0 +1,135 @@
+--- a/src/mistune/plugins/table.py
++++ b/src/mistune/plugins/table.py
+@@ -67,73 +67,18 @@
+     return pos
+ 
+ 
+-def parse_nptable(
+-    block: "BlockParser", m: Match[str], state: "BlockState"
+-) -> Optional[int]:
+-    header = m.group("nptable_head")
+-    align = m.group("nptable_align")
+-    thead, aligns = _process_thead(header, align)
+-    if not thead:
+-        return None
+-    assert aligns is not None
+-
+-    rows = []
+-    body = m.group('nptable_body')
+-    for text in body.splitlines():
+-        row = _process_row(text, aligns)
+-        if not row:
+-            return None
+-        rows.append(row)
+-
+-    children = [thead, {'type': 'table_body', 'children': rows}]
+-    state.append_token({'type': 'table', 'children': children})
+-    return m.end()
++def parse_nptable(block: 'BlockParser', m: Match[str], state: 'BlockState'
++    ) ->Optional[int]:
++    pass
+ 
+ 
+-def _process_thead(
+-    header: str, align: str
+-) -> Union[Tuple[None, None], Tuple[Dict[str, Any], List[str]]]:
+-    headers = CELL_SPLIT.split(header)
+-    aligns = CELL_SPLIT.split(align)
+-    if len(headers) != len(aligns):
+-      return None, None
+-
+-    for i, v in enumerate(aligns):
+-        if ALIGN_CENTER.match(v):
+-            aligns[i] = 'center'
+-        elif ALIGN_LEFT.match(v):
+-            aligns[i] = 'left'
+-        elif ALIGN_RIGHT.match(v):
+-            aligns[i] = 'right'
+-        else:
+-            aligns[i] = None
+-
+-    children = [
+-        {
+-            'type': 'table_cell',
+-            'text': text.strip(),
+-            'attrs': {'align': aligns[i], 'head': True}
+-        }
+-        for i, text in enumerate(headers)
+-    ]
+-    thead = {'type': 'table_head', 'children': children}
+-    return thead, aligns
++def _process_thead(header: str, align: str) ->Union[Tuple[None, None],
++    Tuple[Dict[str, Any], List[str]]]:
++    pass
+ 
+ 
+-def _process_row(text: str, aligns: List[str]) -> Optional[Dict[str, Any]]:
+-    cells = CELL_SPLIT.split(text)
+-    if len(cells) != len(aligns):
+-        return None
+-
+-    children = [
+-        {
+-            'type': 'table_cell',
+-            'text': text.strip(),
+-            'attrs': {'align': aligns[i], 'head': False}
+-        }
+-        for i, text in enumerate(cells)
+-    ]
+-    return {'type': 'table_row', 'children': children}
++def _process_row(text: str, aligns: List[str]) ->Optional[Dict[str, Any]]:
++    pass
+ 
+ 
+ def render_table(renderer: "BaseRenderer", text: str) -> str:
+@@ -152,45 +97,13 @@
+     return "<tr>\n" + text + "</tr>\n"
+ 
+ 
+-def render_table_cell(
+-    renderer: "BaseRenderer", text: str, align: Optional[str] = None, head: bool = False
+-) -> str:
+-    if head:
+-        tag = 'th'
+-    else:
+-        tag = 'td'
+-
+-    html = '  <' + tag
+-    if align:
+-        html += ' style="text-align:' + align + '"'
+-
+-    return html + '>' + text + '</' + tag + '>\n'
++def render_table_cell(renderer: 'BaseRenderer', text: str, align: Optional[
++    str]=None, head: bool=False) ->str:
++    pass
+ 
+ 
+-def table(md: "Markdown") -> None:
+-    """A mistune plugin to support table, spec defined at
+-    https://michelf.ca/projects/php-markdown/extra/#table
+-
+-    Here is an example:
+-
+-    .. code-block:: text
+-
+-        First Header  | Second Header
+-        ------------- | -------------
+-        Content Cell  | Content Cell
+-        Content Cell  | Content Cell
+-
+-    :param md: Markdown instance
+-    """
+-    md.block.register('table', TABLE_PATTERN, parse_table, before='paragraph')
+-    md.block.register('nptable', NP_TABLE_PATTERN, parse_nptable, before='paragraph')
+-
+-    if md.renderer and md.renderer.NAME == 'html':
+-        md.renderer.register('table', render_table)
+-        md.renderer.register('table_head', render_table_head)
+-        md.renderer.register('table_body', render_table_body)
+-        md.renderer.register('table_row', render_table_row)
+-        md.renderer.register('table_cell', render_table_cell)
++def table(md: 'Markdown') ->None:
++    pass
+ 
+ 
+ def table_in_quote(md: "Markdown") -> None:

@@ -1,0 +1,20 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -684,6 +684,17 @@
+ 
+     def __ne__(self, other):
+         return not self == other
++
++    >>> Path(T.a.b, 'c', T['d']).values()
++    ('a', 'b', 'c', 'd')
++
++    path = Path(T.a.b, 1, 2, T(test='yes'))
++    assert path.values() == ('a', 'b', 1, 2, ((), {'test': 'yes'}))
++    assert Path().values() == ()
++
++    def items(self):
++        cur_t_path = self.path_t.__ops__
++        return tuple(zip(cur_t_path[1::2], cur_t_path[2::2]))
+ 
+     def values(self):
+         """

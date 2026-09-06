@@ -1,0 +1,105 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -79,18 +79,11 @@
+           CosineParamScheduler(start_value=0.1, end_value=0.0001)
+     """
+ 
+-    def __init__(
+-        self,
+-        start_value: float,
+-        end_value: float,
+-    ) -> None:
+-        self._start_value = start_value
+-        self._end_value = end_value
+-
+-    def __call__(self, where: float) -> float:
+-        return self._end_value + 0.5 * (self._start_value - self._end_value) * (
+-            1 + math.cos(math.pi * where)
+-        )
++    def __init__(self, start_value: float, end_value: float) ->None:
++        pass
++
++    def __call__(self, where: float) ->float:
++        pass
+ 
+ 
+ class ExponentialParamScheduler(ParamScheduler):
+@@ -286,22 +279,11 @@
+     epochs 30-59, 0.001 for epoch 60-89, 0.0001 for epochs 90-119.
+     """
+ 
+-    def __init__(
+-        self,
+-        num_updates: Union[int, float],
+-        values: List[float],
+-    ) -> None:
+-        if num_updates <= 0:
+-            raise ValueError("Number of updates must be larger than 0")
+-        if not (isinstance(values, Sequence) and len(values) > 0):
+-            raise ValueError(
+-                "Step scheduler requires a list of at least one param value"
+-            )
+-        self._param_schedule = values
+-
+-    def __call__(self, where: float) -> float:
+-        ind = int((where + self.WHERE_EPSILON) * len(self._param_schedule))
+-        return self._param_schedule[ind]
++    def __init__(self, num_updates: Union[int, float], values: List[float]) ->None:
++        pass
++
++    def __call__(self, where: float) ->float:
++        pass
+ 
+ 
+ class StepWithFixedGammaParamScheduler(ParamScheduler):
+@@ -381,44 +363,9 @@
+     training.
+     """
+ 
+-    def __init__(
+-        self,
+-        schedulers: Sequence[ParamScheduler],
+-        lengths: List[float],
+-        interval_scaling: Sequence[str],
+-    ) -> None:
+-        if len(schedulers) != len(lengths):
+-            raise ValueError("Schedulers and lengths must be same length")
+-        if len(schedulers) == 0:
+-            raise ValueError(
+-                "There must be at least one scheduler in the composite scheduler"
+-            )
+-        if abs(sum(lengths) - 1.0) >= 1e-3:
+-            raise ValueError("The sum of all values in lengths must be 1")
+-        if sum(lengths) != 1.0:
+-            lengths[-1] = 1.0 - sum(lengths[:-1])
+-        for s in interval_scaling:
+-            if s not in ["rescaled", "fixed"]:
+-                raise ValueError(f"Unsupported interval_scaling: {s}")
+-
+-        self._lengths = lengths
+-        self._schedulers = schedulers
+-        self._interval_scaling = interval_scaling
+-
+-    def __call__(self, where: float) -> float:
+-        # Find scheduler corresponding to where
+-        i = 0
+-        running_total = self._lengths[i]
+-        while (where + self.WHERE_EPSILON) > running_total and i < len(
+-            self._schedulers
+-        ) - 1:
+-            i += 1
+-            running_total += self._lengths[i]
+-        scheduler = self._schedulers[i]
+-        scheduler_where = where
+-        interval_scale = self._interval_scaling[i]
+-        if interval_scale == "rescaled":
+-            # Calculate corresponding where % for scheduler
+-            scheduler_start = running_total - self._lengths[i]
+-            scheduler_where = (where - scheduler_start) / self._lengths[i]
+-        return scheduler(scheduler_where)
++    def __init__(self, schedulers: Sequence[ParamScheduler], lengths: List[
++        float], interval_scaling: Sequence[str]) ->None:
++        pass
++
++    def __call__(self, where: float) ->float:
++        pass

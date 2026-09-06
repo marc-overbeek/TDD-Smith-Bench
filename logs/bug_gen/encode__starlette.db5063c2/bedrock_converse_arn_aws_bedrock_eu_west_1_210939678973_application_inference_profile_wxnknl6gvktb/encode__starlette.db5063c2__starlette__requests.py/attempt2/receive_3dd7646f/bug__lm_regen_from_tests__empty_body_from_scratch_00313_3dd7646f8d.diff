@@ -1,0 +1,16 @@
+--- a/starlette/requests.py
++++ b/starlette/requests.py
+@@ -212,8 +212,11 @@
+         return typing.cast(str, self.scope["method"])
+ 
+     @property
+-    def receive(self) -> Receive:
+-        return self._receive
++    async def receive(self) -> Message:
++        return await self._receive()
++
++    async def receive(self) -> Message:
++        return await self._receive()
+ 
+     async def stream(self) -> typing.AsyncGenerator[bytes, None]:
+         if hasattr(self, "_body"):

@@ -1,0 +1,27 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -141,6 +141,24 @@
+     """
+     __slots__ = ()
+ 
++    def test_agg():
++        t = list(range(10))
++        assert glom(t, Group(First())) == 0
++        assert glom(t, Group(T)) == 9
++        assert glom(t, Group(Avg())) == sum(t) / len(t)
++        assert glom(t, Group(Sum())) == sum(t)
++        assert glom([0, 1, 0], Group(Max())) == 1
++        assert glom([1, 0, 1], Group(Min())) == 0
++        # ... repr tests ...
++        assert glom(range(10), Group({(lambda t: t % 2): Count()})) == {(0): 5, (1): 5}
++
++    class Count(Fold):
++        __slots__ = ()
++
++        def __init__(self):
++            super().__init__(
++                subspec=T, init=int, op=lambda cur, val: cur + 1)
++
+     def __init__(self):
+         super().__init__(
+             subspec=T, init=int, op=lambda cur, val: cur + 1)

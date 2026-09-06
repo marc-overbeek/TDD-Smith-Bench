@@ -1,0 +1,14 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -58,6 +58,11 @@
+      - Spec: int
+     TypeMatchError: expected type int, not str
+     """
++
++    def __copy__(self):
++        # __init__ args = (actual, expected)
++        # self.args = (fmt_str, expected, actual)
++        return TypeMatchError(self.args[2], self.args[1])
+ 
+     def __init__(self, actual, expected):
+         super().__init__(

@@ -1,0 +1,35 @@
+--- a/oauthlib/oauth1/rfc5849/request_validator.py
++++ b/oauthlib/oauth1/rfc5849/request_validator.py
+@@ -166,6 +166,32 @@
+         return (set(request_token) <= self.safe_characters and
+                 lower <= len(request_token) <= upper)
+ 
++    def test_check_length(self):
++        v = RequestValidator()
++        for method in (v.check_client_key, v.check_request_token, v.
++            check_access_token, v.check_nonce, v.check_verifier):
++            for not_valid in ('tooshort', 'invalid?characters!',
++                'thisclientkeyisalittlebittoolong'):
++                self.assertFalse(method(not_valid))
++            for valid in ('itsjustaboutlongenough',):
++                self.assertTrue(method(valid))
++
++    def check_access_token(self, request_token):
++        """Checks that the token contains only safe characters
++        and is no shorter than lower and no longer than upper.
++        """
++        lower, upper = self.access_token_length
++        return (set(request_token) <= self.safe_characters and
++                lower <= len(request_token) <= upper)
++
++    def check_access_token(self, request_token):
++        """Checks that the token contains only safe characters
++        and is no shorter than lower and no longer than upper.
++        """
++        lower, upper = self.access_token_length
++        return (set(request_token) <= self.safe_characters and
++                lower <= len(request_token) <= upper)
++
+     def check_access_token(self, request_token):
+         """Checks that the token contains only safe characters
+         and is no shorter than lower and no longer than upper.

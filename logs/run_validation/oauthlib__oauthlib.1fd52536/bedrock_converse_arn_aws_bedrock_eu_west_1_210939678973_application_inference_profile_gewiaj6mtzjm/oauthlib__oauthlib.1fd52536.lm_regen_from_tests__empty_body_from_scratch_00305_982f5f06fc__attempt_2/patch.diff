@@ -1,0 +1,62 @@
+--- a/oauthlib/oauth2/rfc6749/clients/base.py
++++ b/oauthlib/oauth2/rfc6749/clients/base.py
+@@ -422,8 +422,59 @@
+         .. _`Section 5.2`: https://tools.ietf.org/html/rfc6749#section-5.2
+         .. _`Section 7.1`: https://tools.ietf.org/html/rfc6749#section-7.1
+         """
++        from oauthlib.oauth2.rfc6749.parameters import parse_token_response
++        from oauthlib.oauth2.rfc6749 import signals
++        import os
++        import warnings
++    
+         scope = self.scope if scope is None else scope
+         self.token = parse_token_response(body, scope=scope)
++    
++        # Handle scope changes and warnings
++        if 'scope' in self.token and scope is not None:
++            if isinstance(scope, str):
++                scope = [scope] if scope else []
++            if isinstance(self.token['scope'], str):
++                token_scope = [self.token['scope']] if self.token['scope'] else []
++            else:
++                token_scope = self.token['scope']
++        
++            if scope and token_scope and set(scope) != set(token_scope):
++                # Check if we should allow relaxed scope
++                relax_scope = os.environ.get('OAUTHLIB_RELAX_TOKEN_SCOPE')
++                if relax_scope:
++                    # Create a warning about scope change
++                    warnings.warn("Scope has changed from {} to {}.".format(scope, token_scope), UserWarning)
++                    self.token['scope_changed'] = True
++                    # Emit signal for scope change
++                    signals.scope_changed.send(self.__class__, message="Scope has changed from {} to {}.".format(scope, token_scope), old=scope, new=token_scope)
++                else:
++                    # Raise warning for scope change
++                    warnings.warn("Scope has changed from {} to {}.".format(scope, token_scope), UserWarning)
++    
++        # Convert expires_at to int if it exists and is numeric
++        if 'expires_at' in self.token:
++            try:
++                expires_at = self.token['expires_at']
++                if isinstance(expires_at, (int, float)):
++                    self.token['expires_at'] = int(expires_at)
++                    self._expires_at = int(expires_at)
++                elif isinstance(expires_at, str):
++                    # Try to convert string to float then to int
++                    self.token['expires_at'] = int(float(expires_at))
++                    self._expires_at = int(float(expires_at))
++                else:
++                    self._expires_at = None
++            except (ValueError, TypeError):
++                self._expires_at = None
++        elif 'expires_in' in self.token:
++            # Generate expires_at from expires_in
++            try:
++                expires_in = int(self.token['expires_in'])
++                self._expires_at = round(time.time()) + expires_in
++            except (ValueError, TypeError):
++                self._expires_at = None
++    
+         self.populate_token_attributes(self.token)
+         return self.token
+ 

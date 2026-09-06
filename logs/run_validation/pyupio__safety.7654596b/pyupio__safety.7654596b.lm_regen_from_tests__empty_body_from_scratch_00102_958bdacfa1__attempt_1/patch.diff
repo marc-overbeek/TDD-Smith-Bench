@@ -1,0 +1,131 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -590,50 +590,85 @@
+     return format_long_text("{0}".format(licenses_text), start_line_decorator=' ', **kwargs)
+ 
+ 
+-def format_long_text(text: str, color: str = '', columns: int = get_terminal_size().columns, start_line_decorator: str = ' ', end_line_decorator: str = ' ', max_lines: Optional[int] = None, styling: Optional[Dict[str, Any]] = None, indent: str = '', sub_indent: str = '') -> str:
+-    """
+-    Format long text with wrapping and styling.
+-
+-    Args:
+-        text (str): The text to format.
+-        color (str, optional): Color for the text. Defaults to ''.
+-        columns (int, optional): Number of columns for formatting. Defaults to terminal size.
+-        start_line_decorator (str, optional): Starting line decorator. Defaults to ' '.
+-        end_line_decorator (str, optional): Ending line decorator. Defaults to ' '.
+-        max_lines (Optional[int], optional): Maximum number of lines. Defaults to None.
+-        styling (Optional[Dict[str, Any]], optional): Additional styling options. Defaults to None.
+-        indent (str, optional): Indentation for the text. Defaults to ''.
+-        sub_indent (str, optional): Sub-indentation for the text. Defaults to ''.
+-
+-    Returns:
+-        str: Formatted text.
+-    """
+-    if not styling:
+-        styling = {}
+-
++def format_long_text(text: str, color: str='', columns: int=
++    get_terminal_size().columns, start_line_decorator: str=' ',
++    end_line_decorator: str=' ', max_lines: Optional[int]=None, styling:
++    Optional[Dict[str, Any]]=None, indent: str='', sub_indent: str='') ->str:
++    """
++    Format long text with wrapping, indentation, and styling.
++    
++    Args:
++        text: The text to format
++        color: Color to apply to the text
++        columns: Number of columns for wrapping
++        start_line_decorator: Decorator for the start of each line
++        end_line_decorator: Decorator for the end of each line
++        max_lines: Maximum number of lines to display
++        styling: Additional styling options
++        indent: Indentation for the first line
++        sub_indent: Indentation for subsequent lines
++    
++    Returns:
++        Formatted text string
++    """
++    if not text:
++        return ''
++    
++    # Calculate available width for text
++    decorator_width = len(start_line_decorator) + len(end_line_decorator)
++    indent_width = len(indent)
++    sub_indent_width = len(sub_indent)
++    
++    # Available width for first line
++    first_line_width = columns - decorator_width - indent_width
++    # Available width for subsequent lines
++    subsequent_line_width = columns - decorator_width - sub_indent_width
++    
++    if first_line_width <= 0:
++        first_line_width = columns - decorator_width
++    if subsequent_line_width <= 0:
++        subsequent_line_width = columns - decorator_width
++    
++    # Wrap text
++    wrapper = textwrap.TextWrapper(
++        width=first_line_width,
++        subsequent_indent='',
++        break_long_words=False,
++        break_on_hyphens=False
++    )
++    
++    lines = wrapper.wrap(text)
++    
++    # Apply max_lines limit
++    if max_lines is not None and len(lines) > max_lines:
++        lines = lines[:max_lines]
++    
++    # Format each line
++    formatted_lines = []
++    for i, line in enumerate(lines):
++        current_indent = indent if i == 0 else sub_indent
++        current_width = first_line_width if i == 0 else subsequent_line_width
++        
++        # Pad line to column width
++        padded_line = line.ljust(current_width)
++        
++        # Build the full line with decorators and indentation
++        full_line = start_line_decorator + current_indent + padded_line + end_line_decorator
++        
++        formatted_lines.append(full_line)
++    
++    # Join lines
++    result = '\n'.join(formatted_lines)
++    
++    # Apply color styling if provided
+     if color:
+-        styling.update({'fg': color})
+-
+-    columns -= len(start_line_decorator) + len(end_line_decorator)
+-    formatted_lines = []
+-    lines = text.replace('\r', '').splitlines()
+-
+-    for line in lines:
+-        base_format = "{:" + str(columns) + "}"
+-        if line == '':
+-            empty_line = base_format.format(" ")
+-            formatted_lines.append("{0}{1}{2}".format(start_line_decorator, empty_line, end_line_decorator))
+-        wrapped_lines = textwrap.wrap(line, width=columns, max_lines=max_lines, initial_indent=indent,
+-                                      subsequent_indent=sub_indent, placeholder='...')
+-        for wrapped_line in wrapped_lines:
+-            new_line = f'{wrapped_line}'
+-
+-            if styling:
+-                new_line = click.style(new_line, **styling)
+-
+-            formatted_lines.append(f"{start_line_decorator}{new_line}{end_line_decorator}")
+-
+-    return "\n".join(formatted_lines)
++        result = click.style(result, fg=color)
++    
++    # Apply additional styling if provided
++    if styling:
++        result = click.style(result, **styling)
++    
++    return result
+ 
+ 
+ def get_printable_list_of_scanned_items(scanning_target: str) -> Tuple[List[Dict[str, Any]], List[str]]:

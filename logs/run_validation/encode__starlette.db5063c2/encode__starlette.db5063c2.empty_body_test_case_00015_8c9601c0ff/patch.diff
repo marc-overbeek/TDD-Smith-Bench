@@ -1,0 +1,83 @@
+--- a/starlette/staticfiles.py
++++ b/starlette/staticfiles.py
+@@ -55,34 +55,9 @@
+         if check_dir and directory is not None and not os.path.isdir(directory):
+             raise RuntimeError(f"Directory '{directory}' does not exist")
+ 
+-    def get_directories(
+-        self,
+-        directory: PathLike | None = None,
+-        packages: list[str | tuple[str, str]] | None = None,
+-    ) -> list[PathLike]:
+-        """
+-        Given `directory` and `packages` arguments, return a list of all the
+-        directories that should be used for serving static files from.
+-        """
+-        directories = []
+-        if directory is not None:
+-            directories.append(directory)
+-
+-        for package in packages or []:
+-            if isinstance(package, tuple):
+-                package, statics_dir = package
+-            else:
+-                statics_dir = "statics"
+-            spec = importlib.util.find_spec(package)
+-            assert spec is not None, f"Package {package!r} could not be found."
+-            assert spec.origin is not None, f"Package {package!r} could not be found."
+-            package_directory = os.path.normpath(os.path.join(spec.origin, "..", statics_dir))
+-            assert os.path.isdir(
+-                package_directory
+-            ), f"Directory '{statics_dir!r}' in package {package!r} could not be found."
+-            directories.append(package_directory)
+-
+-        return directories
++    def get_directories(self, directory: (PathLike | None)=None, packages: (
++        list[str | tuple[str, str]] | None)=None) ->list[PathLike]:
++        pass
+ 
+     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+         """
+@@ -148,37 +123,12 @@
+                 return FileResponse(full_path, stat_result=stat_result, status_code=404)
+         raise HTTPException(status_code=404)
+ 
+-    def lookup_path(self, path: str) -> tuple[str, os.stat_result | None]:
+-        for directory in self.all_directories:
+-            joined_path = os.path.join(directory, path)
+-            if self.follow_symlink:
+-                full_path = os.path.abspath(joined_path)
+-            else:
+-                full_path = os.path.realpath(joined_path)
+-                directory = os.path.realpath(directory)
+-            if os.path.commonpath([full_path, directory]) != directory:
+-                # Don't allow misbehaving clients to break out of the static files
+-                # directory.
+-                continue
+-            try:
+-                return full_path, os.stat(full_path)
+-            except (FileNotFoundError, NotADirectoryError):
+-                continue
+-        return "", None
++    def lookup_path(self, path: str) ->tuple[str, os.stat_result | None]:
++        pass
+ 
+-    def file_response(
+-        self,
+-        full_path: PathLike,
+-        stat_result: os.stat_result,
+-        scope: Scope,
+-        status_code: int = 200,
+-    ) -> Response:
+-        request_headers = Headers(scope=scope)
+-
+-        response = FileResponse(full_path, status_code=status_code, stat_result=stat_result)
+-        if self.is_not_modified(response.headers, request_headers):
+-            return NotModifiedResponse(response.headers)
+-        return response
++    def file_response(self, full_path: PathLike, stat_result: os.stat_result,
++        scope: Scope, status_code: int=200) ->Response:
++        pass
+ 
+     async def check_config(self) -> None:
+         """

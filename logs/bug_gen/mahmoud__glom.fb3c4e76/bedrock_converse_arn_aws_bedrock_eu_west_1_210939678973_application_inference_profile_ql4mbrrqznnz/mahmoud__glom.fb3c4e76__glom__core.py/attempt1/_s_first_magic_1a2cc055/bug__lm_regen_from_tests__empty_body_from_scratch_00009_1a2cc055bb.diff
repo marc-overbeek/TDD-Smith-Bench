@@ -1,0 +1,28 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1520,19 +1520,15 @@
+     return t
+ 
+ 
++if fetch_till > 1 and t_path[1] in ('.', 'P'):
++    cur = _s_first_magic(cur, t_path[2], _t)
++    i += 2
++
+ def _s_first_magic(scope, key, _t):
+-    """
+-    enable S.a to do S['a'] or S['a'].val as a special
+-    case for accessing user defined string variables
+-    """
+-    err = None
+     try:
+-        cur = scope[key]
++        return scope[key]
+     except KeyError as e:
+-        err = PathAccessError(e, Path(_t), 0)  # always only one level depth, hence 0
+-    if err:
+-        raise err
+-    return cur
++        raise PathAccessError(e, Path(_t), 1)
+ 
+ 
+ def _t_eval(target, _t, scope):

@@ -1,0 +1,748 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -148,25 +148,20 @@
+         self.__wrapped = exc
+ 
+     def _finalize(self, scope):
+-        # careful when changing how this functionality works; pytest seems to mess with
+-        # the traceback module or sys.exc_info(). we saw different stacks when originally
+-        # developing this in June 2020.
+-        etype, evalue, _ = sys.exc_info()
+-        tb_lines = traceback.format_exc().strip().splitlines()
+-        limit = 0
+-        for line in reversed(tb_lines):
+-            if _PKG_DIR_PATH in line:
+-                limit -= 1
+-                break
+-            limit += 1
+-        self._tb_lines = tb_lines[-limit:]
+-        # if the first line is trying to put a caret at a byte-code location on a line that
+-        # isn't being displayed, skip it
+-        if set(self._tb_lines[0]) <= {' ', '^', '~'}:
+-            self._tb_lines = self._tb_lines[1:]
++        # finalize a glom error
++        # this is a bit of a hack to avoid having to import
++        # the entire traceback module just for this
++        # we want to add the stack trace to the error
++        # and then return the error
+         self._scope = scope
++        return self
+ 
+     def __str__(self):
++        # string representation of a glom error
++        # this is a bit of a hack to avoid having to import
++        # the entire traceback module just for this
++        # we want to return a string representation of the error
++        # that includes the stack trace
+         if getattr(self, '_finalized_str', None):
+             return self._finalized_str
+         elif getattr(self, '_scope', None) is not None:
+@@ -177,7 +172,6 @@
+             parts.extend(self._tb_lines)
+             self._finalized_str = "\n".join(parts)
+             return self._finalized_str
+-
+         # else, not finalized
+         try:
+             exc_get_message = self.get_message
+@@ -187,96 +181,71 @@
+ 
+ 
+ def _unpack_stack(scope, only_errors=True):
+-    """
+-    convert scope to [[scope, spec, target, error, [children]]]
+-
+-    this is a convenience method for printing stacks
+-
+-    only_errors=True means ignore branches which may still be hanging around
+-    which were not involved in the stack trace of the error
+-
+-    only_errors=False could be useful for debugger / introspection (similar
+-    to traceback.print_stack())
+-    """
+-    stack = []
+-    scope = scope.maps[0]
+-    while LAST_CHILD_SCOPE in scope:
+-        child = scope[LAST_CHILD_SCOPE]
+-        branches = scope[CHILD_ERRORS]
+-        if branches == [child]:
+-            branches = []  # if there's only one branch, count it as linear
+-        stack.append([scope, scope[Spec], scope[T], scope.get(CUR_ERROR), branches])
+-
+-        # NB: this id() business is necessary to avoid a
+-        # nondeterministic bug in abc's __eq__ see #189 for details
+-        if id(child) in [id(b) for b in branches]:
+-            break  # if child already covered by branches, stop the linear descent
+-
+-        scope = child.maps[0]
+-    else:  # if break executed above, cur scope was already added
+-        stack.append([scope, scope[Spec], scope[T], scope.get(CUR_ERROR), []])
+-    # push errors "down" to where they were first raised / first observed
+-    for i in range(len(stack) - 1):
+-        cur, nxt = stack[i], stack[i + 1]
+-        if cur[3] == nxt[3]:
+-            cur[3] = None
+-    if only_errors:  # trim the stack to the last error
+-        # leave at least 1 to not break formatting func below
+-        # TODO: make format_target_spec_trace() tolerate an "empty" stack cleanly
+-        while len(stack) > 1 and stack[-1][3] is None:
+-            stack.pop()
+-    return stack
++    # walk up the scope chain and collect all the relevant info
++    # for the stack trace
++    ret = []
++    while scope:
++        if scope[Path] is not None:
++            # we're only interested in scopes that have a path
++            # (i.e. that were actually involved in the glom)
++            error = scope.get(CUR_ERROR)
++            if not only_errors or error:
++                ret.append((scope, scope[Spec], scope[T], error, scope.get(CHILD_ERRORS, [])))
++        scope = scope[UP]
++    return ret
+ 
+ 
+ def _format_trace_value(value, maxlen):
+-    s = bbrepr(value).replace("\\'", "'")
+-    if len(s) > maxlen:
+-        try:
+-            suffix = '... (len=%s)' % len(value)
+-        except Exception:
+-            suffix = '...'
+-        s = s[:maxlen - len(suffix)] + suffix
+-    return s
+-
+-
+-def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0, prev_target=_MISSING, last_branch=True):
+-    """
+-    unpack a scope into a multi-line but short summary
+-    """
+-    segments = []
+-    indent = " " + "|" * depth
+-    tick = "| " if depth else "- "
+-    def mk_fmt(label, t=None):
+-        pre = indent + (t or tick) + label + ": "
+-        fmt_width = width - len(pre)
+-        return lambda v: pre + _format_trace_value(v, fmt_width)
+-    fmt_t = mk_fmt("Target")
+-    fmt_s = mk_fmt("Spec")
+-    fmt_b = mk_fmt("Spec", "+ ")
+-    recurse = lambda s, last=False: format_target_spec_trace(s, root_error, width, depth + 1, prev_target, last)
+-    tb_exc_line = lambda e: "".join(traceback.format_exception_only(type(e), e))[:-1]
+-    fmt_e = lambda e: indent + tick + tb_exc_line(e)
+-    for scope, spec, target, error, branches in _unpack_stack(scope):
+-        if target is not prev_target:
+-            segments.append(fmt_t(target))
+-        prev_target = target
++    # format a value for display in the stack trace
++    # this is a bit of a hack to avoid having to import
++    # the entire pprint module just for this
++    if maxlen < 10:
++        return '...'
++    try:
++        # try to use the repr
++        r = bbrepr(value)
++    except Exception:
++        # if that fails, fall back to str
++        r = str(value)
++    if len(r) > maxlen:
++        r = r[:maxlen - 3] + '...'
++    return r
++
++
++def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0,
++    prev_target=_MISSING, last_branch=True):
++    # format a stack trace for a glom error
++    # this is a bit of a hack to avoid having to import
++    # the entire traceback module just for this
++    lines = []
++    stack = _unpack_stack(scope, only_errors=False)
++    # we want to show the most recent error first
++    stack.reverse()
++    for i, (scope, spec, target, error, branches) in enumerate(stack):
++        if i == 0:
++            # the first line is the root error
++            lines.append(' - Target: ' + _format_trace_value(target, width - 12))
++        else:
++            # subsequent lines are the path
++            lines.append(' - Target: ' + _format_trace_value(target, width - 12))
++        if spec is not None:
++            lines.append(' - Spec: ' + _format_trace_value(spec, width - 10))
++        if error is not None:
++            lines.append(' - Error: ' + str(error))
+         if branches:
+-            segments.append(fmt_b(spec))
+-            segments.extend([recurse(s) for s in branches[:-1]])
+-            segments.append(recurse(branches[-1], last_branch))
+-        else:
+-            segments.append(fmt_s(spec))
+-        if error is not None and error is not root_error:
+-            last_line_error = True
+-            segments.append(fmt_e(error))
+-        else:
+-            last_line_error = False
+-    if depth:  # \ on first line, X on last line
+-        remark = lambda s, m: s[:depth + 1] + m + s[depth + 2:]
+-        segments[0] = remark(segments[0], "\\")
+-        if not last_branch or last_line_error:
+-            segments[-1] = remark(segments[-1], "X")
+-    return "\n".join(segments)
++            # if there are branches, we want to show them
++            # but only if we're not at the root error
++            if i == 0:
++                # the root error is the last one, so we don't want to show it
++                continue
++            # show the branches
++            for branch in branches:
++                # we want to show the branch as a separate line
++                # but we don't want to show the same error twice
++                # so we check if the error is the same as the root error
++                if branch.get(CUR_ERROR) is not root_error:
++                    lines.append(' + Branch: ' + _format_trace_value(branch[Spec], width - 12))
++    return '\n'.join(lines)
+ 
+ 
+ # TODO: not used (yet)
+@@ -345,9 +314,12 @@
+         self.part_idx = part_idx
+ 
+     def get_message(self):
+-        path_part = Path(self.path).values()[self.part_idx]
+-        return ('could not access %r, part %r of %r, got error: %r'
+-                % (path_part, self.part_idx, self.path, self.exc))
++        # get the message for a glom error
++        # this is a bit of a hack to avoid having to import
++        # the entire traceback module just for this
++        # we want to return a string representation of the error
++        # that includes the stack trace
++        return str(self)
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__
+@@ -416,6 +388,11 @@
+ 
+     """
+     def __init__(self, coal_obj, skipped, path):
++        # initialize a coalesce error
++        # this is a bit of a hack to avoid having to import
++        # the entire traceback module just for this
++        # we want to store the coalesce object, the skipped values,
++        # and the path
+         self.coal_obj = coal_obj
+         self.skipped = skipped
+         self.path = path
+@@ -425,6 +402,11 @@
+         return f'{cn}({self.coal_obj!r}, {self.skipped!r}, {self.path!r})'
+ 
+     def get_message(self):
++        # get the message for a coalesce error
++        # this is a bit of a hack to avoid having to import
++        # the entire traceback module just for this
++        # we want to return a string representation of the error
++        # that includes the stack trace
+         missed_specs = tuple(self.coal_obj.subspecs)
+         skipped_vals = [v.__class__.__name__
+                         if isinstance(v, self.coal_obj.skip_exc)
+@@ -544,34 +526,24 @@
+ 
+ # TODO: push this back up to boltons with repr kwarg
+ def format_invocation(name='', args=(), kwargs=None, **kw):
+-    """Given a name, positional arguments, and keyword arguments, format
+-    a basic Python-style function call.
+-
+-    >>> print(format_invocation('func', args=(1, 2), kwargs={'c': 3}))
+-    func(1, 2, c=3)
+-    >>> print(format_invocation('a_func', args=(1,)))
+-    a_func(1)
+-    >>> print(format_invocation('kw_func', kwargs=[('a', 1), ('b', 2)]))
+-    kw_func(a=1, b=2)
+-
+-    """
+-    _repr = kw.pop('repr', bbrepr)
+-    if kw:
+-        raise TypeError('unexpected keyword args: %r' % ', '.join(kw.keys()))
+-    kwargs = kwargs or {}
+-    a_text = ', '.join([_repr(a) for a in args])
+-    if isinstance(kwargs, dict):
+-        kwarg_items = [(k, kwargs[k]) for k in sorted(kwargs)]
++    # format a function call for display in the stack trace
++    # this is a bit of a hack to avoid having to import
++    # the entire inspect module just for this
++    if kwargs is None:
++        kwargs = {}
++    if args:
++        args_str = ', '.join([bbrepr(a) for a in args])
+     else:
+-        kwarg_items = kwargs
+-    kw_text = ', '.join([f'{k}={_repr(v)}' for k, v in kwarg_items])
+-
+-    all_args_text = a_text
+-    if all_args_text and kw_text:
+-        all_args_text += ', '
+-    all_args_text += kw_text
+-
+-    return f'{name}({all_args_text})'
++        args_str = ''
++    if kwargs:
++        kwargs_str = ', '.join([f'{k}={bbrepr(v)}' for k, v in kwargs.items()])
++    else:
++        kwargs_str = ''
++    if args_str and kwargs_str:
++        all_args_str = args_str + ', ' + kwargs_str
++    else:
++        all_args_str = args_str + kwargs_str
++    return f'{name}({all_args_str})'
+ 
+ 
+ class Path:
+@@ -639,13 +611,10 @@
+ 
+     @classmethod
+     def from_text(cls, text):
+-        """Make a Path from .-delimited text:
+-
+-        >>> Path.from_text('a.b.c')
+-        Path('a', 'b', 'c')
+-
+-        This is the default behavior when :func:`~glom.glom` gets a string spec.
+-        """
++        # create a path from text
++        # this is a bit of a hack to avoid having to import
++        # the entire traceback module just for this
++        # we want to create a path from the text
+         def create():
+             segs = text.split('.')
+             if PATH_STAR:
+@@ -686,12 +655,10 @@
+         return not self == other
+ 
+     def values(self):
+-        """
+-        Returns a tuple of values referenced in this path.
+-
+-        >>> Path(T.a.b, 'c', T['d']).values()
+-        ('a', 'b', 'c', 'd')
+-        """
++        # get the values of a path
++        # this is a bit of a hack to avoid having to import
++        # the entire traceback module just for this
++        # we want to return the values of the path
+         cur_t_path = self.path_t.__ops__
+         return cur_t_path[2::2]
+ 
+@@ -755,27 +722,39 @@
+ 
+ 
+ def _format_path(t_path):
+-    path_parts, cur_t_path = [], []
++    # format a path for display in the stack trace
++    # this is a bit of a hack to avoid having to import
++    # the entire pprint module just for this
++    if not t_path:
++        return 'Path()'
++    # we want to format the path as a series of path components
++    # separated by dots
++    parts = []
+     i = 0
+     while i < len(t_path):
+         op, arg = t_path[i], t_path[i + 1]
++        if op == 'P':
++            parts.append(repr(arg))
++        elif op == '.':
++            parts.append(f'.{arg}')
++        elif op == '[':
++            if type(arg) is tuple:
++                index = ", ".join([_format_slice(x) for x in arg])
++            else:
++                index = _format_slice(arg)
++            parts.append(f'[{index}]')
++        elif op == 'x':
++            parts.append('.__star__()')
++        elif op == 'X':
++            parts.append('.__starstar__()')
++        elif op == '(':
++            args, kwargs = arg
++            parts.append(format_invocation(args=args, kwargs=kwargs, repr=bbrepr))
++        else:
++            # for other operations, we just append the operation
++            parts.append(f'.{op}{arg}')
+         i += 2
+-        if op == 'P':
+-            if cur_t_path:
+-                path_parts.append(cur_t_path)
+-                cur_t_path = []
+-            path_parts.append(arg)
+-        else:
+-            cur_t_path.append(op)
+-            cur_t_path.append(arg)
+-    if path_parts and cur_t_path:
+-        path_parts.append(cur_t_path)
+-
+-    if path_parts or not cur_t_path:
+-        return 'Path(%s)' % ', '.join([_format_t(part)
+-                                       if type(part) is list else repr(part)
+-                                       for part in path_parts])
+-    return _format_t(cur_t_path)
++    return 'Path(' + ', '.join(parts) + ')'
+ 
+ 
+ class Spec:
+@@ -897,6 +876,10 @@
+ 
+     """
+     def __init__(self, *subspecs, **kwargs):
++        # initialize a coalesce object
++        # this is a bit of a hack to avoid having to import
++        # the entire traceback module just for this
++        # we want to store the subspecs and the kwargs
+         self.subspecs = subspecs
+         self._orig_kwargs = dict(kwargs)
+         self.default = kwargs.pop('default', _MISSING)
+@@ -917,6 +900,10 @@
+             raise TypeError(f'unexpected keyword args: {sorted(kwargs.keys())!r}')
+ 
+     def glomit(self, target, scope):
++        # glomit a coalesce object
++        # this is a bit of a hack to avoid having to import
++        # the entire traceback module just for this
++        # we want to try each subspec in turn and return the first one that works
+         skipped = []
+         for subspec in self.subspecs:
+             try:
+@@ -937,6 +924,10 @@
+         return ret
+ 
+     def __repr__(self):
++        # get the repr of a coalesce object
++        # this is a bit of a hack to avoid having to import
++        # the entire traceback module just for this
++        # we want to return a string representation of the coalesce object
+         cn = self.__class__.__name__
+         return format_invocation(cn, self.subspecs, self._orig_kwargs, repr=bbrepr)
+ 
+@@ -1536,123 +1527,81 @@
+ 
+ 
+ def _t_eval(target, _t, scope):
++    # evaluate a T expression
++    # this is a bit of a hack to avoid having to import
++    # the entire inspect module just for this
+     t_path = _t.__ops__
+-    i = 1
+-    fetch_till = len(t_path)
+-    root = t_path[0]
+-    if root is T:
+-        cur = target
+-    elif root is S or root is A:
+-        # A is basically the same as S, but last step is assign
+-        if root is A:
+-            fetch_till -= 2
+-            if fetch_till < 1:
+-                raise BadSpec('cannot assign without destination')
+-        cur = scope
+-        if fetch_till > 1 and t_path[1] in ('.', 'P'):
+-            cur = _s_first_magic(cur, t_path[2], _t)
+-            i += 2
+-        elif root is S and fetch_till > 1 and t_path[1] == '(':
+-            # S(var='spec') style assignment
+-            _, kwargs = t_path[2]
+-            scope.update({
+-                k: arg_val(target, v, scope) for k, v in kwargs.items()})
+-            return target
+-
+-    else:
+-        raise ValueError('TType instance with invalid root')  # pragma: no cover
+-    pae = None
+-    while i < fetch_till:
+-        op, arg = t_path[i], t_path[i + 1]
+-        arg = arg_val(target, arg, scope)
+-        if op == '.':
+-            try:
++    # we want to walk the path and evaluate each component
++    # we start with the target
++    cur = target
++    path = []
++    for i in range(1, len(t_path), 2):
++        op = t_path[i]
++        arg = t_path[i + 1]
++        path.append(arg)
++        try:
++            if op == '.':
+                 cur = getattr(cur, arg)
+-            except AttributeError as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        elif op == '[':
+-            try:
++            elif op == '[':
+                 cur = cur[arg]
+-            except (KeyError, IndexError, TypeError) as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        elif op == 'P':
+-            # Path type stuff (fuzzy match)
+-            get = scope[TargetRegistry].get_handler('get', cur, path=t_path[2:i+2:2])
+-            try:
+-                cur = get(cur, arg)
+-            except Exception as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        elif op in 'xX':
+-            nxt = []
+-            get_handler = scope[TargetRegistry].get_handler
+-            if op == 'x':  # increases arity of cur each time through
+-                # TODO: so many try/except -- could scope[TargetRegistry] stuff be cached on type?
+-                _extend_children(nxt, cur, get_handler)
++            elif op == 'P':
++                # P is for path, which means we're looking up a path
++                # in the scope
++                cur = scope[arg]
++            elif op == '(':
++                # ( is for function call
++                args, kwargs = arg
++                cur = cur(*args, **kwargs)
++            elif op == 'x':
++                # x is for star
++                # we want to iterate over the current value
++                # and apply the rest of the path to each element
++                # but we need to be careful about the path
++                # since we're iterating, we need to make sure
++                # we're not going to get an error
++                # so we'll just return the current value
++                # and let the caller handle the iteration
++                return cur
+             elif op == 'X':
+-                sofar = set()
+-                _extend_children(nxt, cur, get_handler)
+-                for item in nxt:
+-                    if id(item) not in sofar:
+-                        sofar.add(id(item))
+-                        _extend_children(nxt, item, get_handler)
+-                nxt.insert(0, cur)
+-            # handle the rest of the t_path in recursive calls
+-            cur = []
+-            todo = TType()
+-            todo.__ops__ = (root,) + t_path[i+2:]
+-            for child in nxt:
+-                try:
+-                    cur.append(_t_eval(child, todo, scope))
+-                except PathAccessError:
+-                    pass
+-            break  # we handled the rest in recursive call, break loop
+-        elif op == '(':
+-            args, kwargs = arg
+-            scope[Path] += t_path[2:i+2:2]
+-            cur = scope[glom](
+-                target, Call(cur, args, kwargs), scope)
+-            # call with target rather than cur,
+-            # because it is probably more intuitive
+-            # if args to the call "reset" their path
+-            # e.g. "T.a" should mean the same thing
+-            # in both of these specs: T.a and T.b(T.a)
+-        else:  # arithmetic operators
+-            try:
+-                if op == '+':
+-                    cur = cur + arg
+-                elif op == '-':
+-                    cur = cur - arg
+-                elif op == '*':
+-                    cur = cur * arg
+-                #elif op == '#':
+-                #    cur = cur // arg  # TODO: python 2 friendly approach?
+-                elif op == '/':
+-                    cur = cur / arg
+-                elif op == '%':
+-                    cur = cur % arg
+-                elif op == ':':
+-                    cur = cur ** arg
+-                elif op == '&':
+-                    cur = cur & arg
+-                elif op == '|':
+-                    cur = cur | arg
+-                elif op == '^':
+-                    cur = cur ^ arg
+-                elif op == '~':
+-                    cur = ~cur
+-                elif op == '_':
+-                    cur = -cur
+-            except (TypeError, ZeroDivisionError) as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        if pae:
+-            raise pae
+-        i += 2
+-    if root is A:
+-        op, arg = t_path[-2:]
+-        if cur is scope:
+-            op = '['  # all assignment on scope is setitem
+-        _assign_op(dest=cur, op=op, arg=arg, val=target, path=_t, scope=scope)
+-        return target  # A should not change the target
++                # X is for starstar
++                # we want to iterate over the current value
++                # and apply the rest of the path to each element
++                # but we need to be careful about the path
++                # since we're iterating, we need to make sure
++                # we're not going to get an error
++                # so we'll just return the current value
++                # and let the caller handle the iteration
++                return cur
++            elif op == '+':
++                cur = cur + arg
++            elif op == '-':
++                cur = cur - arg
++            elif op == '*':
++                cur = cur * arg
++            elif op == '/':
++                cur = cur / arg
++            elif op == '#':
++                cur = cur // arg
++            elif op == '%':
++                cur = cur % arg
++            elif op == ':':
++                cur = cur ** arg
++            elif op == '&':
++                cur = cur & arg
++            elif op == '|':
++                cur = cur | arg
++            elif op == '^':
++                cur = cur ^ arg
++            elif op == '~':
++                cur = ~cur
++            elif op == '_':
++                cur = -cur
++            else:
++                raise ValueError('unknown operation: %r' % op)
++        except Exception as e:
++            # if we get an error, we want to raise a PathAccessError
++            # with the path and the error
++            raise PathAccessError(e, Path(*path), len(path) - 1)
+     return cur
+ 
+ 
+@@ -2184,116 +2133,23 @@
+ 
+ 
+ def glom(target, spec, **kwargs):
+-    """Access or construct a value from a given *target* based on the
+-    specification declared by *spec*.
+-
+-    Accessing nested data, aka deep-get:
+-
+-    >>> target = {'a': {'b': 'c'}}
+-    >>> glom(target, 'a.b')
+-    'c'
+-
+-    Here the *spec* was just a string denoting a path,
+-    ``'a.b'``. As simple as it should be. You can also use 
+-    :mod:`glob`-like wildcard selectors:
+-
+-    >>> target = {'a': [{'k': 'v1'}, {'k': 'v2'}]}
+-    >>> glom(target, 'a.*.k')
+-    ['v1', 'v2']
+-
+-    In addition to ``*``, you can also use ``**`` for recursive access:
+-
+-    >>> target = {'a': [{'k': 'v3'}, {'k': 'v4'}], 'k': 'v0'}
+-    >>> glom(target, '**.k')
+-    ['v0', 'v3', 'v4']
+-    
+-    The next example shows how to use nested data to 
+-    access many fields at once, and make a new nested structure.
+-
+-    Constructing, or restructuring more-complicated nested data:
+-
+-    >>> target = {'a': {'b': 'c', 'd': 'e'}, 'f': 'g', 'h': [0, 1, 2]}
+-    >>> spec = {'a': 'a.b', 'd': 'a.d', 'h': ('h', [lambda x: x * 2])}
+-    >>> output = glom(target, spec)
+-    >>> pprint(output)
+-    {'a': 'c', 'd': 'e', 'h': [0, 2, 4]}
+-
+-    ``glom`` also takes a keyword-argument, *default*. When set,
+-    if a ``glom`` operation fails with a :exc:`GlomError`, the
+-    *default* will be returned, very much like
+-    :meth:`dict.get()`:
+-
+-    >>> glom(target, 'a.xx', default='nada')
+-    'nada'
+-
+-    The *skip_exc* keyword argument controls which errors should
+-    be ignored.
+-
+-    >>> glom({}, lambda x: 100.0 / len(x), default=0.0, skip_exc=ZeroDivisionError)
+-    0.0
+-
+-    Args:
+-       target (object): the object on which the glom will operate.
+-       spec (object): Specification of the output object in the form
+-         of a dict, list, tuple, string, other glom construct, or
+-         any composition of these.
+-       default (object): An optional default to return in the case
+-         an exception, specified by *skip_exc*, is raised.
+-       skip_exc (Exception): An optional exception or tuple of
+-         exceptions to ignore and return *default* (None if
+-         omitted). If *skip_exc* and *default* are both not set,
+-         glom raises errors through.
+-       scope (dict): Additional data that can be accessed
+-         via S inside the glom-spec. Read more: :ref:`scope`.
+-
+-    It's a small API with big functionality, and glom's power is
+-    only surpassed by its intuitiveness. Give it a whirl!
+-
+-    """
+-    # TODO: check spec up front
+-    default = kwargs.pop('default', None if 'skip_exc' in kwargs else _MISSING)
+-    skip_exc = kwargs.pop('skip_exc', () if default is _MISSING else GlomError)
+-    glom_debug = kwargs.pop('glom_debug', GLOM_DEBUG)
+-    scope = _DEFAULT_SCOPE.new_child({
+-        Path: kwargs.pop('path', []),
+-        Inspect: kwargs.pop('inspector', None),
+-        MODE: AUTO,
+-        MIN_MODE: None,
+-        CHILD_ERRORS: [],
+-        'globals': ScopeVars({}, {}),
+-    })
+-    scope[UP] = scope
+-    scope[ROOT] = scope
+-    scope[T] = target
+-    scope.update(kwargs.pop('scope', {}))
+-    err = None
++    # main glom function
++    # this is a bit of a hack to avoid having to import
++    # the entire inspect module just for this
++    scope = kwargs.pop('scope', _DEFAULT_SCOPE)
+     if kwargs:
+-        raise TypeError('unexpected keyword args: %r' % sorted(kwargs.keys()))
++        raise TypeError('unexpected keyword arguments: %r' % list(kwargs.keys()))
+     try:
+-        try:
+-            ret = _glom(target, spec, scope)
+-        except skip_exc:
+-            if default is _MISSING:
+-                raise
+-            ret = default  # should this also be arg_val'd?
++        return scope[glom](target, spec, scope)
+     except Exception as e:
+-        if glom_debug:
+-            raise
+-        if isinstance(e, GlomError):
+-            # need to change id or else py3 seems to not let us truncate the
+-            # stack trace with the explicit "raise err" below
+-            err = copy.copy(e)
+-            err._set_wrapped(e)
+-        else:
+-            err = GlomError.wrap(e)
+-        if isinstance(err, GlomError):
+-            err._finalize(scope[LAST_CHILD_SCOPE])
+-        else:  # wrapping failed, fall back to default behavior
+-            raise
+-
+-    if err:
+-        raise err
+-    return ret
++        # if we get an error, we want to finalize it
++        # and then re-raise it
++        if not isinstance(e, GlomError):
++            # if it's not already a GlomError, wrap it
++            e = GlomError.wrap(e)
++        # finalize the error
++        e._finalize(scope)
++        raise
+ 
+ 
+ def chain_child(scope):

@@ -1,0 +1,36 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1103,18 +1103,25 @@
+             dist = point.distance_3d(previous_point)
+             if dist is not None:
+                 distance_from_start += dist
+-                distances.append(distance_from_start)
+-                previous_point = point
+-
+-        dist = interval[-1].distance_3d(end)
++            else:
++                distance_from_start += point.distance_2d(previous_point) or 0
++            distances.append(distance_from_start)
++            previous_point = point
++
++        dist_to_end = interval[-1].distance_3d(end)
++        if dist_to_end is None:
++            dist_to_end = interval[-1].distance_2d(end)
++    
+         from_start_to_end = None
+-        if dist:
+-            from_start_to_end = distances[-1] + dist
++        if dist_to_end is not None:
++            from_start_to_end = distances[-1] + dist_to_end
+ 
+         assert len(interval) == len(distances)
+ 
+-        return [(distance / from_start_to_end) if from_start_to_end else 0
+-                for distance in distances]
++        if from_start_to_end and from_start_to_end > 0:
++            return [distance / from_start_to_end for distance in distances]
++        else:
++            return [0 for _ in distances]
+ 
+     def get_duration(self) -> Optional[float]:
+         """

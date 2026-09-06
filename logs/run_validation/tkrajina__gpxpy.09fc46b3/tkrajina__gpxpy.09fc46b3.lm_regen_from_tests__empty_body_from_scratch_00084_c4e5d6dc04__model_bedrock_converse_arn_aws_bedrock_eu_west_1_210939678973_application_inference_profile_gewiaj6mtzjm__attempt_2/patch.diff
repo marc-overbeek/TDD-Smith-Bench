@@ -1,0 +1,28 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -238,13 +238,20 @@
+         return f'[wpt{{{self.name}}}:{self.latitude},{self.longitude}@{self.elevation}]'
+ 
+     def __repr__(self) -> str:
+-        parts = [f'{self.latitude}, {self.longitude}']
+-        for attribute in 'elevation', 'time', 'name', 'description', 'symbol', 'type', 'comment', \
+-                'horizontal_dilution', 'vertical_dilution', 'position_dilution':
++        parts = []
++        for attribute in 'waypoints', 'routes', 'tracks':
+             value = getattr(self, attribute)
+-            if value is not None:
++            if value:
+                 parts.append(f'{attribute}={value!r}')
+-        return f'GPXWaypoint({", ".join(parts)})'
++        return f'GPX({", ".join(parts)})'
++
++    def __repr__(self) -> str:
++        parts = []
++        for attribute in 'waypoints', 'routes', 'tracks':
++            value = getattr(self, attribute)
++            if value is not None and (not isinstance(value, list) or len(value) > 0):
++                parts.append(f'{attribute}={value!r}')
++        return f'GPX({", ".join(parts)})'
+ 
+     def adjust_time(self, delta: mod_datetime.timedelta) -> None:
+         """

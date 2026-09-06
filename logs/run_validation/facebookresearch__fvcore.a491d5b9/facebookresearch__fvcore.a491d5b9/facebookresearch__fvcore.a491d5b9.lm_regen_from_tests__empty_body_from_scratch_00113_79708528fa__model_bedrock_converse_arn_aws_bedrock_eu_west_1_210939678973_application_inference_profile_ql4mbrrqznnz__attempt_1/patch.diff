@@ -1,0 +1,23 @@
+--- a/fvcore/nn/parameter_count.py
++++ b/fvcore/nn/parameter_count.py
+@@ -102,6 +102,20 @@
+         if lvl >= max_depth:
+             return
+         for name, v in count.items():
++            if name.count(".") == lvl and name.startswith(prefix) and (
++                lvl == 0 or name[len(prefix) - 1 :].startswith(name[len(prefix) - 1])
++            ):
++                indent = " " * (lvl + 1)
++                if name in param_shape:
++                    table.append((indent + name, indent + str(param_shape[name])))
++                else:
++                    table.append((indent + name, indent + format_size(v)))
++                    fill(lvl + 1, name + ".")
++
++    def fill(lvl: int, prefix: str) -> None:
++        if lvl >= max_depth:
++            return
++        for name, v in count.items():
+             if name.count(".") == lvl and name.startswith(prefix):
+                 indent = " " * (lvl + 1)
+                 if name in param_shape:

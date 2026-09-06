@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef prepare_headers(oauth_params, headers=None, realm=None):\n    if headers is None:\n        headers = {}\n    \n    # Build the Authorization header\n    auth_parts = []\n    for key, value in oauth_params:\n        if key == 'oauth_signature':\n            # OAuth signature should be URL encoded\n            auth_parts.append(f'{key}=\"{value}\"')\n        else:\n            auth_parts.append(f'{key}=\"{value}\"')\n    \n    # Add realm if provided\n    if realm is not None:\n        auth_parts.insert(0, f'realm=\"{realm}\"')\n    \n    # Join all parts with commas\n    auth_header = 'OAuth ' + ', '.join(auth_parts)\n    \n    # Set the Authorization header\n    headers['Authorization'] = auth_header\n    \n    return headers\n```",
+  "rewrite": "def prepare_headers(oauth_params, headers=None, realm=None):\n    if headers is None:\n        headers = {}\n    \n    # Build the Authorization header\n    auth_parts = []\n    for key, value in oauth_params:\n        if key == 'oauth_signature':\n            # OAuth signature should be URL encoded\n            auth_parts.append(f'{key}=\"{value}\"')\n        else:\n            auth_parts.append(f'{key}=\"{value}\"')\n    \n    # Add realm if provided\n    if realm is not None:\n        auth_parts.insert(0, f'realm=\"{realm}\"')\n    \n    # Join all parts with commas\n    auth_header = 'OAuth ' + ', '.join(auth_parts)\n    \n    # Set the Authorization header\n    headers['Authorization'] = auth_header\n    \n    return headers",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,130 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -564,123 +564,7 @@
+     return tab
+ 
+ 
+-def flop_count_table(
+-    flops: FlopCountAnalysis,
+-    max_depth: int = 3,
+-    activations: Optional[ActivationCountAnalysis] = None,
+-    show_param_shapes: bool = True,
+-) -> str:
+-    """
+-    Format the per-module parameters and flops of a model in a table.
+-    It looks like this:
+-    ::
+-        | model                            | #parameters or shape   | #flops    |
+-        |:---------------------------------|:-----------------------|:----------|
+-        | model                            | 34.6M                  | 65.7G     |
+-        |  s1                              |  15.4K                 |  4.32G    |
+-        |   s1.pathway0_stem               |   9.54K                |   1.23G   |
+-        |    s1.pathway0_stem.conv         |    9.41K               |    1.23G  |
+-        |    s1.pathway0_stem.bn           |    0.128K              |           |
+-        |   s1.pathway1_stem               |   5.9K                 |   3.08G   |
+-        |    s1.pathway1_stem.conv         |    5.88K               |    3.08G  |
+-        |    s1.pathway1_stem.bn           |    16                  |           |
+-        |  s1_fuse                         |  0.928K                |  29.4M    |
+-        |   s1_fuse.conv_f2s               |   0.896K               |   29.4M   |
+-        |    s1_fuse.conv_f2s.weight       |    (16, 8, 7, 1, 1)    |           |
+-        |   s1_fuse.bn                     |   32                   |           |
+-        |    s1_fuse.bn.weight             |    (16,)               |           |
+-        |    s1_fuse.bn.bias               |    (16,)               |           |
+-        |  s2                              |  0.226M                |  7.73G    |
+-        |   s2.pathway0_res0               |   80.1K                |   2.58G   |
+-        |    s2.pathway0_res0.branch1      |    20.5K               |    0.671G |
+-        |    s2.pathway0_res0.branch1_bn   |    0.512K              |           |
+-        |    s2.pathway0_res0.branch2      |    59.1K               |    1.91G  |
+-        |   s2.pathway0_res1.branch2       |   70.4K                |   2.28G   |
+-        |    s2.pathway0_res1.branch2.a    |    16.4K               |    0.537G |
+-        |    s2.pathway0_res1.branch2.a_bn |    0.128K              |           |
+-        |    s2.pathway0_res1.branch2.b    |    36.9K               |    1.21G  |
+-        |    s2.pathway0_res1.branch2.b_bn |    0.128K              |           |
+-        |    s2.pathway0_res1.branch2.c    |    16.4K               |    0.537G |
+-        |    s2.pathway0_res1.branch2.c_bn |    0.512K              |           |
+-        |   s2.pathway0_res2.branch2       |   70.4K                |   2.28G   |
+-        |    s2.pathway0_res2.branch2.a    |    16.4K               |    0.537G |
+-        |    s2.pathway0_res2.branch2.a_bn |    0.128K              |           |
+-        |    s2.pathway0_res2.branch2.b    |    36.9K               |    1.21G  |
+-        |    s2.pathway0_res2.branch2.b_bn |    0.128K              |           |
+-        |    s2.pathway0_res2.branch2.c    |    16.4K               |    0.537G |
+-        |    s2.pathway0_res2.branch2.c_bn |    0.512K              |           |
+-        |    ............................. |    ......              |    ...... |
+-
+-    Args:
+-        flops (FlopCountAnalysis): the flop counting object
+-        max_depth (int) : The max depth of submodules to include in the
+-            table. Defaults to 3.
+-        activations (ActivationCountAnalysis or None) : If given, include
+-            activation counts as an additional column in the table.
+-        show_param_shapes (bool) : If true, shapes for parameters will be
+-            included in the table. Defaults to True.
+-
+-    Returns:
+-        str : The formatted table.
+-
+-    Examples:
+-    ::
+-        print(flop_count_table(FlopCountAnalysis(model, inputs)))
+-    """
+-    params_header = "#parameters" + (" or shape" if show_param_shapes else "")
+-    flops_header, acts_header = "#flops", "#activations"
+-
+-    model = flops._model
+-    # cast to dict since pyre doesn't like the implicit defaultdict->dict
+-    params = dict(parameter_count(model))
+-
+-    flops.unsupported_ops_warnings(False)
+-    flops.uncalled_modules_warnings(False)
+-    flops.tracer_warnings("none")
+-
+-    stats = {params_header: params, flops_header: flops.by_module()}
+-    stat_columns = [params_header, flops_header]
+-
+-    if activations is not None:
+-        activations.unsupported_ops_warnings(False)
+-        activations.uncalled_modules_warnings(False)
+-        activations.tracer_warnings("none")
+-        stats[acts_header] = activations.by_module()
+-        stat_columns += [acts_header]
+-
+-    stats = _group_by_module(stats)
+-    stats = _remove_zero_statistics(stats, require_trivial_children=True)
+-    stats = _pretty_statistics(stats, hide_zero=False)
+-    stats = _indicate_uncalled_modules(
+-        stats,
+-        flops_header,
+-        flops.uncalled_modules() & stats.keys(),
+-        uncalled_indicator="",
+-    )
+-    if activations:
+-        stats = _indicate_uncalled_modules(
+-            stats,
+-            acts_header,
+-            activations.uncalled_modules() & stats.keys(),
+-            uncalled_indicator="",
+-        )
+-
+-    # Swap in shapes for parameters or delete shapes from dict
+-    param_shapes: Dict[str, Tuple[int, ...]] = {
+-        k: tuple(v.shape) for k, v in model.named_parameters()
+-    }
+-    to_delete = []
+-    for mod in stats:
+-        if mod in param_shapes:
+-            if show_param_shapes:
+-                stats[mod][params_header] = str(param_shapes[mod])
+-            else:
+-                to_delete.append(mod)
+-    for mod in to_delete:
+-        del stats[mod]
+-
+-    return _model_stats_table(
+-        statistics=stats,
+-        max_depth=max_depth,
+-        stat_columns=stat_columns,
+-    )
++def flop_count_table(flops: FlopCountAnalysis, max_depth: int=3,
++    activations: Optional[ActivationCountAnalysis]=None, show_param_shapes:
++    bool=True) ->str:
++    pass

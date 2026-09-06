@@ -1,0 +1,35 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -101,10 +101,28 @@
+ 
+ 
+ def display_sample_count(traces: List[CallTrace], stderr: IO[str]) -> None:
+-    """Print to stderr the number of traces each stub is based on."""
+-    sample_counter = collections.Counter([t.funcname for t in traces])
+-    for name, count in sample_counter.items():
+-        print(f"Annotation for {name} based on {count} call trace(s).", file=stderr)
++    # Group traces by function
++    traces_by_func = collections.defaultdict(int)
++    for trace in traces:
++        func = trace.func
++        # Get the fully qualified name of the function
++        func_module = func.__module__
++        func_name = func.__qualname__
++        func_key = f"{func_module}.{func_name}"
++        traces_by_func[func_key] += 1
++    
++    # Print in order of first appearance
++    seen = set()
++    for trace in traces:
++        func = trace.func
++        func_module = func.__module__
++        func_name = func.__qualname__
++        func_key = f"{func_module}.{func_name}"
++        
++        if func_key not in seen:
++            seen.add(func_key)
++            count = traces_by_func[func_key]
++            print(f"Annotation for {func_key} based on {count} call trace(s).", file=stderr)
+ 
+ 
+ def get_stub(

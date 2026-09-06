@@ -1,0 +1,23 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -77,17 +77,11 @@
+         scope[CUR_AGG] = None  # reset aggregation tripwire for sub-specs
+         scope[ACC_TREE] = {}
+ 
+-        # handle the basecase where the spec stops immediately
+-        # TODO: something smarter
+-        if type(self.spec) in (dict, list):
+-            ret = type(self.spec)()
+-        else:
+-            ret = None
+-
++        ret = None
+         for t in target_iter(target, scope):
+-            last, ret = ret, scope[glom](t, self.spec, scope)
++            ret = scope[glom](t, self.spec, scope)
+             if ret is STOP:
+-                return last
++                break
+         return ret
+ 
+     def __repr__(self):

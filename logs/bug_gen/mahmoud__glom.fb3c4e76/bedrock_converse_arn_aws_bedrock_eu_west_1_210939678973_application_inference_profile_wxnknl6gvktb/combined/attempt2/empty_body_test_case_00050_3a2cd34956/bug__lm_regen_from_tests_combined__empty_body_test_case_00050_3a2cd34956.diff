@@ -1,0 +1,18 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -253,11 +253,10 @@
+ 
+ #TODO: combine this with other functionality elsewhere?
+ def _bool_child_repr(child):
+-    if child is M:
+-        return repr(child)
+-    elif isinstance(child, _MExpr):
+-        return "(" + bbrepr(child) + ")"
+-    return bbrepr(child)
++    child_repr = bbrepr(child)
++    if type(child) in (And, Or):
++        return f"({child_repr})"
++    return child_repr
+ 
+ 
+ class _Bool:

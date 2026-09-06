@@ -1,0 +1,37 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -320,31 +320,9 @@
+     epochs 30-59, 0.001 for epoch 60-89, 0.0001 for epochs 90-119.
+     """
+ 
+-    def __init__(
+-        self,
+-        base_value: float,
+-        num_decays: int,
+-        gamma: float,
+-        num_updates: int,
+-    ) -> None:
+-        for k in [base_value, gamma]:
+-            if not (isinstance(k, (int, float)) and k > 0):
+-                raise ValueError("base_value and gamma must be positive numbers")
+-        for k in [num_decays, num_updates]:
+-            if not (isinstance(k, int) and k > 0):
+-                raise ValueError("num_decays and num_updates must be positive integers")
+-
+-        self.base_value = base_value
+-        self.num_decays = num_decays
+-        self.gamma = gamma
+-        self.num_updates = num_updates
+-        values = [base_value]
+-        for _ in range(num_decays):
+-            values.append(values[-1] * gamma)
+-
+-        self._step_param_scheduler = StepParamScheduler(
+-            num_updates=num_updates, values=values
+-        )
++    def __init__(self, base_value: float, num_decays: int, gamma: float,
++        num_updates: int) ->None:
++        pass
+ 
+     def __call__(self, where: float) -> float:
+         return self._step_param_scheduler(where)

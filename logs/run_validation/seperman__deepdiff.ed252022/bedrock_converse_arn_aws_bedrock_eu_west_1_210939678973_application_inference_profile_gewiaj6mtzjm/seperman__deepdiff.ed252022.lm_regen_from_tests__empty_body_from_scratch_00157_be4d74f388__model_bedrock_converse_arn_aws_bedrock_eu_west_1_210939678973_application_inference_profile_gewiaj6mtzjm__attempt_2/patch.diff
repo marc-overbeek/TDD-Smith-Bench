@@ -1,0 +1,37 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -252,14 +252,27 @@
+     return logarithmic_distance(a, b) < threshold
+ 
+ 
++if distance < logarithmic_distance:
++
+ def logarithmic_distance(a: numbers, b: numbers):
+-    # Apply logarithm to the absolute values and consider the sign
+-    a = float(a)
+-    b = float(b)
+-    log_a = math.copysign(math.log(abs(a) + MATH_LOG_OFFSET), a)
+-    log_b = math.copysign(math.log(abs(b) + MATH_LOG_OFFSET), b)
+-
+-    return abs(log_a - log_b)
++    """
++    Calculate the logarithmic distance between two numbers.
++    This is used for scaling distances in a logarithmic manner.
++    """
++    # Handle special cases
++    if a == b:
++        return 0
++    
++    # Apply logarithmic transformation with offset to avoid log(0)
++    # Using the same offset as in numpy_apply_log_keep_sign
++    offset = 1e-10
++    log_a = math.log(abs(a) + offset) if a != 0 else math.log(offset)
++    log_b = math.log(abs(b) + offset) if b != 0 else math.log(offset)
++    
++    # Calculate the absolute difference of logarithms
++    distance = abs(log_a - log_b)
++    
++    return distance
+ 
+ 
+ def _get_numpy_array_distance(num1, num2, max_=1, use_log_scale=False, log_scale_similarity_threshold=0.1):

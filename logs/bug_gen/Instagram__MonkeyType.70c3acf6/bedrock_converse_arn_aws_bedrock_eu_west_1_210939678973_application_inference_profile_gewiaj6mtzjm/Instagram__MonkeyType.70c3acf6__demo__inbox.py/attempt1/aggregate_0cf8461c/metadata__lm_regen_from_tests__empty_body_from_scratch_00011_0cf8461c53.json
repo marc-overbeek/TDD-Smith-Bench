@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef aggregate(self):\n        aggregators: List[AggregatorInterface] = [\n            CommentsAggregator(self.repo),\n            LikesAggregator(self.repo),\n            FollowersAggregator(self.repo),\n        ]\n        aggregators_by_type: Dict[EventType, List[AggregatorInterface]] = {}\n        for agg in aggregators:\n            aggregators_by_type.setdefault(agg.type, []).append(agg)\n\n        for event in self.events:\n            for aggregator in aggregators_by_type.get(event.type, []):\n                aggregator.add(event)\n\n        items = chain.from_iterable(\n            agg.aggregate() for agg in chain.from_iterable(aggregators_by_type.values())\n        )\n\n        return sorted(items, key=attrgetter(\"published\"), reverse=True)\n```",
+  "rewrite": "def aggregate(self):\n        aggregators: List[AggregatorInterface] = [\n            CommentsAggregator(self.repo),\n            LikesAggregator(self.repo),\n            FollowersAggregator(self.repo),\n        ]\n        aggregators_by_type: Dict[EventType, List[AggregatorInterface]] = {}\n        for agg in aggregators:\n            aggregators_by_type.setdefault(agg.type, []).append(agg)\n\n        for event in self.events:\n            for aggregator in aggregators_by_type.get(event.type, []):\n                aggregator.add(event)\n\n        items = chain.from_iterable(\n            agg.aggregate() for agg in chain.from_iterable(aggregators_by_type.values())\n        )\n\n        return sorted(items, key=attrgetter(\"published\"), reverse=True)",
+  "strategy": "lm_regen_from_tests"
+}

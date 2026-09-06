@@ -1,0 +1,25 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1834,12 +1834,17 @@
+     def glomit(self, target, spec):
+         return ScopeVars(self.base, self.defaults)
+ 
++    assert repr(Vars(a=1, b=2)) in ('Vars(a=1, b=2)', 'Vars(b=2, a=1)')
++    assert repr(Vars(a=1, b=2).glomit(None, None)) in (
++        "ScopeVars({'a': 1, 'b': 2})", "Vars({'b': 2, 'a': 1})")
++
+     def __repr__(self):
+-        ret = format_invocation(self.__class__.__name__,
+-                                args=(self.base,) if self.base else (),
+-                                kwargs=self.defaults,
+-                                repr=bbrepr)
+-        return ret
++        return f"{self.__class__.__name__}({bbrepr(self.__dict__)})"
++
++    assert repr(Vars(a=1, b=2)) in ('Vars(a=1, b=2)', 'Vars(b=2, a=1)')
++
++    def __repr__(self):
++        return f"{self.__class__.__name__}({bbrepr(self.__dict__)})"
+ 
+ 
+ class Let:

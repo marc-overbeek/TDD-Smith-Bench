@@ -1,0 +1,25 @@
+--- a/src/mistune/plugins/table.py
++++ b/src/mistune/plugins/table.py
+@@ -120,18 +120,18 @@
+     return thead, aligns
+ 
+ 
+-def _process_row(text: str, aligns: List[str]) -> Optional[Dict[str, Any]]:
++def _process_row(text: str, aligns: List[str]) ->Optional[Dict[str, Any]]:
+     cells = CELL_SPLIT.split(text)
+     if len(cells) != len(aligns):
+         return None
+-
++    
+     children = [
+         {
+             'type': 'table_cell',
+-            'text': text.strip(),
++            'text': cell.strip(),
+             'attrs': {'align': aligns[i], 'head': False}
+         }
+-        for i, text in enumerate(cells)
++        for i, cell in enumerate(cells)
+     ]
+     return {'type': 'table_row', 'children': children}
+ 

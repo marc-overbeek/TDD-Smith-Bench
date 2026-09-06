@@ -1,0 +1,146 @@
+--- a/safety/cli_util.py
++++ b/safety/cli_util.py
+@@ -361,40 +361,31 @@
+         )
+ 
+ # The help output for the main safety root command: `safety --help`
+-def format_main_help(obj: Union[click.Command, click.Group],
+-                       ctx: click.Context, markup_mode: MarkupMode) -> None:
+-    """
+-    Format the main help output for the safety root command.
+-
+-    Args:
+-        obj (Union[click.Command, click.Group]): The Click command or group.
+-        ctx (click.Context): The Click context.
+-        markup_mode (MarkupMode): The markup mode.
+-    """
+-    from typer.rich_utils import highlighter, STYLE_USAGE_COMMAND, \
+-        ARGUMENTS_PANEL_TITLE, OPTIONS_PANEL_TITLE, \
+-            COMMANDS_PANEL_TITLE
+-
++def format_main_help(obj: Union[click.Command, click.Group], ctx: click.
++    Context, markup_mode: MarkupMode) ->None:
++    from collections import defaultdict
+     from rich.align import Align
+     from rich.padding import Padding
+     from rich.console import Console
+     from rich.theme import Theme
+-
+-    typer_console = Console()
+-
+-    with typer_console.use_theme(Theme(styles=CONSOLE_HELP_THEME)) as theme_context:
++    from typer.rich_utils import highlighter, STYLE_USAGE_COMMAND, \
++        ARGUMENTS_PANEL_TITLE, OPTIONS_PANEL_TITLE, \
++        COMMANDS_PANEL_TITLE
++
++    from safety.scan.constants import CONSOLE_HELP_THEME
++
++    console = Console()
++
++    with console.use_theme(Theme(styles=CONSOLE_HELP_THEME)) as theme_context:
+         console = theme_context.console
+ 
+         # Print command / group help if we have some
+         if obj.help:
+             console.print()
+-            # Print with some padding
+             console.print(
+                 Padding(
+-                    Align(custom_get_help_text(obj=obj),
+-                        pad=False,
+-                    ),
+-                    (0, 1, 0, 1),
++                    Align(custom_get_help_text(obj=obj), pad=False),
++                    (0, 1, 0, 1)
+                 )
+             )
+ 
+@@ -404,18 +395,16 @@
+         )
+ 
+         if isinstance(obj, click.MultiCommand):
+-            UTILITY_COMMANDS_PANEL_TITLE = "Commands cont."
+-
+             panel_to_commands: DefaultDict[str, List[click.Command]] = defaultdict(list)
+             for command_name in obj.list_commands(ctx):
+                 command = obj.get_command(ctx, command_name)
+                 if command and not command.hidden:
+                     panel_name = (
+-                        UTILITY_COMMANDS_PANEL_TITLE if command.utility_command else COMMANDS_PANEL_TITLE
++                        getattr(command, "rich_help_panel", None)
++                        or COMMANDS_PANEL_TITLE
+                     )
+                     panel_to_commands[panel_name].append(command)
+ 
+-            # Print each command group panel
+             default_commands = panel_to_commands.get(COMMANDS_PANEL_TITLE, [])
+             print_main_command_panels(
+                 name=COMMANDS_PANEL_TITLE,
+@@ -425,7 +414,6 @@
+             )
+             for panel_name, commands in panel_to_commands.items():
+                 if panel_name == COMMANDS_PANEL_TITLE:
+-                    # Already printed above
+                     continue
+                 print_main_command_panels(
+                     name=panel_name,
+@@ -434,39 +422,16 @@
+                     console=console,
+                 )
+ 
+-        panel_to_arguments: DefaultDict[str, List[click.Argument]] = defaultdict(list)
+         panel_to_options: DefaultDict[str, List[click.Option]] = defaultdict(list)
+         for param in obj.get_params(ctx):
+-            # Skip if option is hidden
+             if getattr(param, "hidden", False):
+                 continue
+-            if isinstance(param, click.Argument):
+-                panel_name = (
+-                    getattr(param, "rich_help_panel", None) or ARGUMENTS_PANEL_TITLE
+-                )
+-                panel_to_arguments[panel_name].append(param)
+-            elif isinstance(param, click.Option):
++            if isinstance(param, click.Option):
+                 panel_name = (
+                     getattr(param, "rich_help_panel", None) or OPTIONS_PANEL_TITLE
+                 )
+                 panel_to_options[panel_name].append(param)
+-        default_arguments = panel_to_arguments.get(ARGUMENTS_PANEL_TITLE, [])
+-        custom_print_options_panel(
+-            name=ARGUMENTS_PANEL_TITLE,
+-            params=default_arguments,
+-            ctx=ctx,
+-            console=console,
+-        )
+-        for panel_name, arguments in panel_to_arguments.items():
+-            if panel_name == ARGUMENTS_PANEL_TITLE:
+-                # Already printed above
+-                continue
+-            custom_print_options_panel(
+-                name=panel_name,
+-                params=arguments,
+-                ctx=ctx,
+-                console=console,
+-            )
++
+         default_options = panel_to_options.get(OPTIONS_PANEL_TITLE, [])
+         custom_print_options_panel(
+             name=OPTIONS_PANEL_TITLE,
+@@ -476,7 +441,6 @@
+         )
+         for panel_name, options in panel_to_options.items():
+             if panel_name == OPTIONS_PANEL_TITLE:
+-                # Already printed above
+                 continue
+             custom_print_options_panel(
+                 name=panel_name,
+@@ -485,9 +449,7 @@
+                 console=console,
+             )
+ 
+-        # Epilogue if we have it
+         if obj.epilog:
+-            # Remove single linebreaks, replace double with single
+             lines = obj.epilog.split("\n\n")
+             epilogue = "\n".join([x.replace("\n", " ").strip() for x in lines])
+             epilogue_text = custom_make_rich_text(text=epilogue)

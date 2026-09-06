@@ -1,0 +1,45 @@
+--- a/src/mistune/directives/image.py
++++ b/src/mistune/directives/image.py
+@@ -17,24 +17,25 @@
+ _allowed_aligns = ["top", "middle", "bottom", "left", "center", "right"]
+ 
+ 
+-def _parse_attrs(options: Dict[str, Any]) -> Dict[str, Any]:
++def _parse_attrs(options: Dict[str, Any]) ->Dict[str, Any]:
+     attrs = {}
+-    if 'alt' in options:
+-        attrs['alt'] = options['alt']
+-
+-    # validate align
+-    align = options.get('align')
+-    if align and align in _allowed_aligns:
+-        attrs['align'] = align
+-
+-    height = options.get('height')
+-    width = options.get('width')
+-    if height and _num_re.match(height):
+-        attrs['height'] = height
+-    if width and _num_re.match(width):
+-        attrs['width'] = width
+-    if 'target' in options:
+-        attrs['target'] = escape_url(options['target'])
++    for key, value in options.items():
++        if key in ('alt', 'width', 'height'):
++            attrs[key] = value
++        elif key == 'target':
++            attrs['href'] = escape_url(value)
++        elif key == 'class':
++            attrs['class'] = value
++        elif key == 'id':
++            attrs['id'] = value
++        elif key == 'align':
++            if value in _allowed_aligns:
++                if 'class' in attrs:
++                    attrs['class'] += ' align-' + value
++                else:
++                    attrs['class'] = 'align-' + value
++        else:
++            attrs[key] = value
+     return attrs
+ 
+ 

@@ -1,0 +1,44 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -52,21 +52,8 @@
+     return is_generic(typ) and name_of_generic(typ) == "List"
+ 
+ 
+-def make_typed_dict(*, required_fields=None, optional_fields=None) -> type:
+-    required_fields = required_fields or {}
+-    optional_fields = optional_fields or {}
+-    assert required_fields.keys().isdisjoint(optional_fields.keys())
+-    return TypedDict(
+-        DUMMY_TYPED_DICT_NAME,
+-        {
+-            "required_fields": TypedDict(
+-                DUMMY_REQUIRED_TYPED_DICT_NAME, required_fields
+-            ),
+-            "optional_fields": TypedDict(
+-                DUMMY_OPTIONAL_TYPED_DICT_NAME, optional_fields
+-            ),
+-        },
+-    )
++def make_typed_dict(*, required_fields=None, optional_fields=None) ->type:
++    pass
+ 
+ 
+ def field_annotations(typed_dict) -> Tuple[Dict[str, type], Dict[str, type]]:
+@@ -317,16 +304,7 @@
+         )
+ 
+     def rewrite_TypedDict(self, typed_dict):
+-        if is_anonymous_typed_dict(typed_dict):
+-            return self.rewrite_anonymous_TypedDict(typed_dict)
+-        return self.make_builtin_typed_dict(
+-            typed_dict.__name__,
+-            {
+-                name: self.rewrite(typ)
+-                for name, typ in typed_dict.__annotations__.items()
+-            },
+-            total=typed_dict.__total__,
+-        )
++        pass
+ 
+     def rewrite_Union(self, union):
+         return self._rewrite_container(Union, union)

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef apply_coords(self, coords: np.ndarray) -> np.ndarray:\n    \"\"\"\n    Flip the coordinates.\n\n    Args:\n        coords (ndarray): floating point array of shape Nx2. Each row is\n            (x, y).\n    Returns:\n        ndarray: the flipped coordinates.\n\n    Note:\n        The inputs are floating point coordinates, not pixel indices.\n        Therefore they are flipped by `(W - x, H - y)`, not\n        `(W - 1 - x, H - 1 - y)`.\n    \"\"\"\n    coords[:, 0] = self.width - coords[:, 0]\n    return coords\n```",
+  "rewrite": "def apply_coords(self, coords: np.ndarray) -> np.ndarray:\n    \"\"\"\n    Flip the coordinates.\n\n    Args:\n        coords (ndarray): floating point array of shape Nx2. Each row is\n            (x, y).\n    Returns:\n        ndarray: the flipped coordinates.\n\n    Note:\n        The inputs are floating point coordinates, not pixel indices.\n        Therefore they are flipped by `(W - x, H - y)`, not\n        `(W - 1 - x, H - 1 - y)`.\n    \"\"\"\n    coords[:, 0] = self.width - coords[:, 0]\n    return coords\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,46 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1463,10 +1463,39 @@
+         for segment in self.segments:
+             segment.adjust_time(delta)
+ 
+-    def remove_time(self) -> None:
+-        """ Removes time data for all points in all segments of track. """
+-        for segment in self.segments:
+-            segment.remove_time()
++    def remove_time(self, all: bool=False) -> None:
++        for track in self.tracks:
++            track.remove_time()
++
++        if all:
++            for waypoint in self.waypoints:
++                waypoint.remove_time()
++            for route in self.routes:
++                route.remove_time()
++
++    gpx.remove_time()
++    for point, track_no, segment_no, point_no in gpx.walk():
++        self.assertTrue(point.time is None)
++
++    def remove_time(self, all: bool=False) -> None:
++        """
++        Removes time data of all points in all of the segments of all tracks.
++
++        If all=True, time date will also be removed from waypoints and routes.
++
++        Parameters
++        ----------
++        all : bool
++            When true, also removes time data for waypoints and routes.
++        """
++        for track in self.tracks:
++            track.remove_time()
++
++        if all:
++            for waypoint in self.waypoints:
++                waypoint.remove_time()
++            for route in self.routes:
++                route.remove_time()
+ 
+     def remove_elevation(self) -> None:
+         """ Removes elevation data for all points in all segments of track. """

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the code, I can see the issue. The `client` property is defined twice - once with the `@property` decorator and once without it. The second definition (without the decorator) is overwriting the first one, which breaks the property functionality.\n\nThe test is likely failing because `request.client` is being treated as a method instead of a property, or the property decorator is missing from the actual implementation.\n\nI need to keep only one definition with the `@property` decorator:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "Looking at the code, I can see the issue. The `client` property is defined twice - once with the `@property` decorator and once without it. The second definition (without the decorator) is overwriting the first one, which breaks the property functionality.\n\nThe test is likely failing because `request.client` is being treated as a method instead of a property, or the property decorator is missing from the actual implementation.\n\nI need to keep only one definition with the `@property` decorator:\n\n```python\n@property\ndef client(self) -> Address | None:\n    # client is a 2 item tuple of (host, port), None if missing\n    host_port = self.scope.get(\"client\")\n    if host_port is not None:\n        return Address(*host_port)\n    return None\n```",
+  "rewrite": "@property\ndef client(self) -> Address | None:\n    # client is a 2 item tuple of (host, port), None if missing\n    host_port = self.scope.get(\"client\")\n    if host_port is not None:\n        return Address(*host_port)\n    return None",
+  "strategy": "lm_regen_from_tests"
+}

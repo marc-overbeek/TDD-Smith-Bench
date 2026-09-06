@@ -1,0 +1,13 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -175,6 +175,10 @@
+             return itertools.chain.from_iterable(iterator)
+         return super()._fold(iterator)
+ 
++    assert repr(Flatten()) == 'Flatten()'
++    assert repr(Flatten(init='lazy')) == "Flatten(init='lazy')"
++    assert repr(Flatten(init=tuple)) == 'Flatten(init=tuple)'
++
+     def __repr__(self):
+         cn = self.__class__.__name__
+         args = () if self.subspec is T else (self.subspec,)

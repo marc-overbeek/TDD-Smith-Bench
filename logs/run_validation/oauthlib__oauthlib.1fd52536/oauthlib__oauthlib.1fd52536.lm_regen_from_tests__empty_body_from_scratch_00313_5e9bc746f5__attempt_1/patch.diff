@@ -1,0 +1,11 @@
+--- a/oauthlib/oauth2/rfc6749/clients/base.py
++++ b/oauthlib/oauth2/rfc6749/clients/base.py
+@@ -593,7 +593,7 @@
+         if 'expires_at' in response:
+             try:
+                 self._expires_at = round(float(response.get('expires_at')))
+-            except:
++            except (ValueError, TypeError):
+                 self._expires_at = None
+ 
+         if 'mac_key' in response:

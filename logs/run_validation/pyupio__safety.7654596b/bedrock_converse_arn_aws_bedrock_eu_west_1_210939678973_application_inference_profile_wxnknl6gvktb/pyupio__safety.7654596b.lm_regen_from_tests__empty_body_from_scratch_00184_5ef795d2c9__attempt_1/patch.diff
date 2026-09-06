@@ -1,0 +1,51 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -268,26 +268,38 @@
+         return {}
+ 
+ 
+-def fetch_database_file(path: str, db_name: str, cached: int = 0, ecosystem: Optional[Ecosystem] = None) -> Dict[str, Any]:
++def fetch_database_file(path: str, db_name: str, cached: int=0, ecosystem:
++    Optional[Ecosystem]=None) ->Dict[str, Any]:
+     """
+     Fetches the database from a local file.
+ 
+     Args:
+-        path (str): The path to the local file.
+-        db_name (str): The name of the database.
++        path (str): The path to the database file or directory.
++        db_name (str): The name of the database file.
+         cached (int): The cache validity in seconds.
+         ecosystem (Optional[Ecosystem]): The ecosystem.
+ 
+     Returns:
+         Dict[str, Any]: The fetched database.
+     """
+-    full_path = (Path(path) / (ecosystem.value if ecosystem else '') / db_name).expanduser().resolve()
+-
+-    if not full_path.exists():
+-        raise DatabaseFileNotFoundError(db=path)
+-
+-    with open(full_path) as f:
+-        data = json.loads(f.read())
++    if cached:
++        cached_data = get_from_cache(db_name=db_name, cache_valid_seconds=cached, skip_time_verification=False)
++        if cached_data:
++            LOG.info('Database %s returned from cache.', db_name)
++            return cached_data
++
++    # Construct the full file path
++    file_path = os.path.join(path, db_name)
++
++    # Check if file exists
++    if not os.path.isfile(file_path):
++        raise DatabaseFileNotFoundError(path=file_path)
++
++    try:
++        with open(file_path, 'r') as f:
++            data = read_vulnerabilities(f)
++    except (IOError, OSError) as e:
++        raise DatabaseFileNotFoundError(path=file_path)
+ 
+     if cached:
+         LOG.info('Writing %s to cache because cached value was %s', db_name, cached)

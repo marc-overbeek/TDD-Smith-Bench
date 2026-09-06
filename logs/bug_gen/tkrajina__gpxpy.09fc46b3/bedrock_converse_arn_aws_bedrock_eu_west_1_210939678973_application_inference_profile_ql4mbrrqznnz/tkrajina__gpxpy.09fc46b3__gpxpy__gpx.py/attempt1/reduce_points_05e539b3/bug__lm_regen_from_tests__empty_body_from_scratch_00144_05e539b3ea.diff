@@ -1,0 +1,36 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1437,18 +1437,27 @@
+         for segment in self.segments:
+             segment.simplify(max_distance=max_distance)
+ 
+-    def reduce_points(self, min_distance: float) -> None:
+-        """
+-        Reduces the number of points in the track. Segment points will be
+-        updated in place.
++    def reduce_points(self, min_distance: float) ->None:
++        """
++        Reduces the number of points in the track segment. Segment points will
++        be updated in place.
+ 
+         Parameters
+         ----------
+         min_distance : float
+             The minimum separation in meters between points
+         """
+-        for segment in self.segments:
+-            segment.reduce_points(min_distance)
++        reduced_points: List[GPXTrackPoint] = []
++        for point in self.points:
++            if reduced_points:
++                distance = reduced_points[-1].distance_3d(point)
++                if min_distance is not None and distance is not None and distance >= min_distance:
++                    reduced_points.append(point)
++            else:
++                # Leave first point:
++                reduced_points.append(point)
++
++        self.points = reduced_points
+ 
+     def adjust_time(self, delta: mod_datetime.timedelta) -> None:
+         """

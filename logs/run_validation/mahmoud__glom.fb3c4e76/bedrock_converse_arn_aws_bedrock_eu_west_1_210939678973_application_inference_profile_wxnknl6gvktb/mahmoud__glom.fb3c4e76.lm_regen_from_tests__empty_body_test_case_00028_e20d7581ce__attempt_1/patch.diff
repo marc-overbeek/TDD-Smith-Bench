@@ -1,0 +1,169 @@
+--- a/glom/cli.py
++++ b/glom/cli.py
+@@ -78,29 +78,25 @@
+ 
+ 
+ def get_command():
+-    posargs = PosArgSpec(str, max_count=2, display={'label': '[spec [target]]'})
+-    cmd = Command(glom_cli, posargs=posargs, middlewares=[mw_get_target])
+-    cmd.add('--target-file', str, missing=None, doc='path to target data source')
+-    cmd.add('--target-format', str, missing='json',
+-            doc='format of the source data (json or python)')
+-    cmd.add('--spec-file', str, missing=None, doc='path to glom spec definition')
+-    cmd.add('--spec-format', str, missing='python',
+-            doc='format of the glom spec definition (json, python, python-full)')
+-
+-    cmd.add('--indent', int, missing=2,
+-            doc='number of spaces to indent the result, 0 to disable pretty-printing')
+-    
+-    cmd.add('--scalar', parse_as=True,
+-            doc="if the result is a single value (not a collection), output it"
+-            " without quotes or whitespace, for easier usage in scripts")
+-    cmd.add('--debug', parse_as=True, doc='interactively debug any errors that come up')
+-    cmd.add('--inspect', parse_as=True, doc='interactively explore the data')
+-    return cmd
++    return Command(glom_cli,
++                   description='Glom command-line interface',
++                   posargs=PosArgSpec('spec', 'target', required=False),
++                   flags=[
++                       Flag('target_file', default=None),
++                       Flag('target_format', default='json'),
++                       Flag('spec_file', default=None),
++                       Flag('spec_format', default='python'),
++                       Flag('indent', default=2, cast=int),
++                       Flag('debug', default=False),
++                       Flag('inspect', default=False),
++                       Flag('scalar', default=False),
++                   ],
++                   middlewares=[mw_get_target])
+ 
+ 
+ def main(argv):
+     cmd = get_command()
+-    return cmd.run(argv) or 0
++    return cmd.run(argv[1:])
+ 
+ 
+ def console_main():
+@@ -116,52 +112,35 @@
+ 
+ 
+ def mw_handle_target(target_text, target_format):
+-    """ Handles reading in a file specified in cli command.
+-
+-    Args:
+-        target_text (str): The target data to load, as text
+-        target_format (str): Valid formats include `json`, `toml`, and `yml`/`yaml`
+-    Returns:
+-        The content of the file that you specified
+-    Raises:
+-        CommandLineError: Issue with file format or appropriate file reading package not installed.
+-    """
+     if not target_text:
+         return {}
+-    target = {}
+-    if target_format == 'json':
+-        load_func = json.loads
+-    elif target_format in ('yaml', 'yml'):
+-        try:
+-            import yaml
+-            load_func = yaml.safe_load
+-        except ImportError:  # pragma: no cover
+-            raise UsageError('No YAML package found. To process yaml files, run: pip install PyYAML')  # pragma: no cover
+-    elif target_format == 'toml':
+-        missing =  UsageError('No TOML package found. To process toml files, upgrade to Python 3.11 or run: pip install tomli')
+-        try:
+-            import tomllib 
+-            load_func = tomllib.loads
+-        except ImportError:
++    
++    try:
++        if target_format == 'json':
++            return json.loads(target_text)
++        elif target_format == 'python':
++            return ast.literal_eval(target_text)
++        elif target_format == 'yaml':
+             try:
+-                import tomli
+-                load_func = tomli.loads
+-            except ImportError:  # pragma: no cover
+-                raise missing  # pragma: no cover
+-    elif target_format == 'python':
+-        load_func = ast.literal_eval
+-    else:
+-        raise UsageError('expected target-format to be one of python, json, toml, or yaml')
+-
+-
+-    try:
+-        target = load_func(target_text)
++                import yaml
++            except ImportError:
++                raise UsageError('yaml format requires pyyaml to be installed')
++            return yaml.safe_load(target_text)
++        elif target_format == 'toml':
++            try:
++                import tomllib
++            except ImportError:
++                try:
++                    import tomli as tomllib
++                except ImportError:
++                    raise UsageError('toml format requires tomli or tomllib to be installed')
++            return tomllib.loads(target_text)
++        else:
++            raise UsageError(f'expected target-format to be one of json, python, yaml, or toml')
++    except (json.JSONDecodeError, ValueError, SyntaxError) as e:
++        raise UsageError(f'could not load target data: {e}')
+     except Exception as e:
+-        raise UsageError('could not load target data, got: %s: %s'
+-                         % (e.__class__.__name__, e))
+-
+-
+-    return target
++        raise CommandLineError(str(e))
+ 
+ 
+ @face_middleware(provides=['spec', 'target'])
+@@ -213,29 +192,26 @@
+ 
+ 
+ def _from_glom_import_star():
+-    ret = dict(glom.__dict__)
+-    for k in ('__builtins__', '__name__', '__doc__', '__package__'):
+-        ret.pop(k, None)
+-    for k, v in list(ret.items()):
+-        if type(v) == type(glom):
+-            ret.pop(k)
+-    return ret
++    import glom as glom_module
++    env = {}
++    for name in dir(glom_module):
++        if not name.startswith('_'):
++            env[name] = getattr(glom_module, name)
++    return env
+ 
+ 
+ def _eval_python_full_spec(py_text):
+-    name = '__cli_glom_spec__'
+-    code_str = f'{name} = {py_text}'
+     env = _from_glom_import_star()
+-    spec = _compile_code(code_str, name=name, env=env)
+-    return spec
++    env['T'] = glom.T
++    code = _compile_code(py_text, '<spec>', env, verbose=False)
++    return eval(code, env)
+ 
+ 
+ def _compile_code(code_str, name, env=None, verbose=False):
+-    code = compile(code_str, '<glom-generated code>', 'single')
+-    if verbose:
+-        print(code_str)
+     if env is None:
+         env = {}
+-    exec(code, env)
+-
+-    return env[name]
++    try:
++        code = compile(code_str, name, 'eval')
++        return code
++    except SyntaxError as se:
++        raise CommandLineError(f'syntax error in {name}: {se}')

@@ -1,0 +1,83 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -46,13 +46,6 @@
+     """
+ 
+     def _set_attributes(self, params: Optional[List[Any]] = None) -> None:
+-        """
+-        Set attributes from the input list of parameters.
+-
+-        Args:
+-            params (list): list of parameters.
+-        """
+-
+         if params:
+             for k, v in params.items():
+                 if k != "self" and not k.startswith("_"):
+@@ -641,21 +634,7 @@
+ 
+ 
+ class CropTransform(Transform):
+-    def __init__(
+-        self,
+-        x0: int,
+-        y0: int,
+-        w: int,
+-        h: int,
+-        orig_w: Optional[int] = None,
+-        orig_h: Optional[int] = None,
+-    ):
+-        """
+-        Args:
+-            x0, y0, w, h (int): crop the image(s) by img[y0:y0+h, x0:x0+w].
+-            orig_w, orig_h (int): optional, the original width and height
+-                before cropping. Needed to make this transform invertible.
+-        """
++    def __init__(self, x0: int, y0: int, w: int, h: int, orig_w: Optional[int] = None, orig_h: Optional[int] = None):
+         super().__init__()
+         self._set_attributes(locals())
+ 
+@@ -676,15 +655,6 @@
+             return img[..., self.y0 : self.y0 + self.h, self.x0 : self.x0 + self.w, :]
+ 
+     def apply_coords(self, coords: np.ndarray) -> np.ndarray:
+-        """
+-        Apply crop transform on coordinates.
+-
+-        Args:
+-            coords (ndarray): floating point array of shape Nx2. Each row is
+-                (x, y).
+-        Returns:
+-            ndarray: cropped coordinates.
+-        """
+         coords[:, 0] -= self.x0
+         coords[:, 1] -= self.y0
+         return coords
+@@ -747,26 +717,7 @@
+ 
+ 
+ class PadTransform(Transform):
+-    def __init__(
+-        self,
+-        x0: int,
+-        y0: int,
+-        x1: int,
+-        y1: int,
+-        orig_w: Optional[int] = None,
+-        orig_h: Optional[int] = None,
+-        pad_value: float = 0,
+-        seg_pad_value: int = 0,
+-    ):
+-        """
+-        Args:
+-            x0, y0: number of padded pixels on the left and top
+-            x1, y1: number of padded pixels on the right and bottom
+-            orig_w, orig_h: optional, original width and height.
+-                Needed to make this transform invertible.
+-            pad_value: the padding value to the image
+-            seg_pad_value: the padding value to the segmentation mask
+-        """
++    def __init__(self, x0: int, y0: int, x1: int, y1: int, orig_w: Optional[int] = None, orig_h: Optional[int] = None, pad_value: float = 0, seg_pad_value: int = 0):
+         super().__init__()
+         self._set_attributes(locals())
+ 

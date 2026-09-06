@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef elevation_angle(location1: 'Location', location2: 'Location', radians:\n    float=False) ->Optional[float]:\n    if location1.elevation is None or location2.elevation is None:\n        return None\n    \n    distance_2d = location1.distance_2d(location2)\n    if not distance_2d:\n        return None\n    \n    elevation_diff = location2.elevation - location1.elevation\n    angle = mod_math.atan2(elevation_diff, distance_2d)\n    \n    if radians:\n        return angle\n    else:\n        return mod_math.degrees(angle)\n```",
+  "rewrite": "def elevation_angle(location1: 'Location', location2: 'Location', radians:\n    float=False) ->Optional[float]:\n    if location1.elevation is None or location2.elevation is None:\n        return None\n    \n    distance_2d = location1.distance_2d(location2)\n    if not distance_2d:\n        return None\n    \n    elevation_diff = location2.elevation - location1.elevation\n    angle = mod_math.atan2(elevation_diff, distance_2d)\n    \n    if radians:\n        return angle\n    else:\n        return mod_math.degrees(angle)",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,41 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1000,37 +1000,7 @@
+     to_fix_remediations =  []
+ 
+     def get_remmediation_from(spec):
+-        upper = None
+-        lower = None
+-        recommended = None
+-
+-        try:
+-            upper = Version(spec.remediation.closest_secure.upper) if spec.remediation.closest_secure.upper else None
+-        except Exception as e:
+-            LOG.error(f'Error getting upper remediation version, ignoring', exc_info=True)
+-
+-        try:
+-            lower = Version(spec.remediation.closest_secure.lower) if spec.remediation.closest_secure.lower else None
+-        except Exception as e:
+-            LOG.error(f'Error getting lower remediation version, ignoring', exc_info=True)
+-
+-        try:
+-            recommended = Version(spec.remediation.recommended)
+-        except Exception as e:
+-            LOG.error(f'Error getting recommended version for remediation, ignoring', exc_info=True)
+-
+-        return {
+-            "vulnerabilities_found": spec.remediation.vulnerabilities_found,
+-            "version": next(iter(spec.specifier)).version if spec.is_pinned() else None,
+-            "requirement": spec,
+-            "more_info_url": spec.remediation.more_info_url,
+-            "closest_secure_version": {
+-                'upper': upper,
+-                'lower': lower
+-                },
+-            "recommended_version": recommended,
+-            "other_recommended_versions": spec.remediation.other_recommended
+-        }
++        pass
+ 
+     req_remediations = iter(get_remmediation_from(spec) for spec in to_fix_spec)
+     SUPPORTED_FILE_TYPES = [FileType.REQUIREMENTS_TXT]

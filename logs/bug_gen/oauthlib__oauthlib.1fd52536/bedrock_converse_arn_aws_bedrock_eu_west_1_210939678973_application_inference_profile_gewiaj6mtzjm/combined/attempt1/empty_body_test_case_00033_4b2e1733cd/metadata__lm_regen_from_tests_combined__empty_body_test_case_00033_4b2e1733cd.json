@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef sign_plaintext_with_client(_signature_base_string, client):\n    return sign_plaintext(client.client_secret, client.resource_owner_secret)\n\n\ndef sign_plaintext(client_secret, resource_owner_secret):\n    return f\"{client_secret}&{resource_owner_secret}\"\n\n\ndef verify_plaintext(request, client_secret=None, resource_owner_secret=None):\n    if not request.signature:\n        return False\n    expected = sign_plaintext(client_secret, resource_owner_secret)\n    return safe_string_equals(request.signature, expected)\n```",
+  "rewrite": "def sign_plaintext_with_client(_signature_base_string, client):\n    return sign_plaintext(client.client_secret, client.resource_owner_secret)\n\n\ndef sign_plaintext(client_secret, resource_owner_secret):\n    return f\"{client_secret}&{resource_owner_secret}\"\n\n\ndef verify_plaintext(request, client_secret=None, resource_owner_secret=None):\n    if not request.signature:\n        return False\n    expected = sign_plaintext(client_secret, resource_owner_secret)\n    return safe_string_equals(request.signature, expected)",
+  "strategy": "lm_regen_from_tests_combined"
+}

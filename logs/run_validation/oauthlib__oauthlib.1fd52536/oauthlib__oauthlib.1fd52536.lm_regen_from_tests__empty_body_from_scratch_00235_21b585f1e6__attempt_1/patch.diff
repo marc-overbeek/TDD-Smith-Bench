@@ -1,0 +1,29 @@
+--- a/oauthlib/oauth2/rfc6749/tokens.py
++++ b/oauthlib/oauth2/rfc6749/tokens.py
+@@ -226,8 +226,26 @@
+     """
+     :param private_pem:
+     """
++    def signed_token_generator(private_pem, **kwargs):
++        """
++        :param private_pem:
++        """
++        def signed_token_generator(request):
++            request.claims = kwargs
++            return common.generate_signed_token(private_pem, request)
++
++        return signed_token_generator
++
+     def signed_token_generator(request):
+         request.claims = kwargs
++        if request.scopes:
++            request.claims['scope'] = ' '.join(request.scopes)
++        return common.generate_signed_token(private_pem, request)
++
++    def signed_token_generator(request):
++        request.claims = kwargs
++        if request.scopes:
++            request.claims['scope'] = ' '.join(request.scopes)
+         return common.generate_signed_token(private_pem, request)
+ 
+     return signed_token_generator

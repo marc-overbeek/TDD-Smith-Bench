@@ -1,0 +1,30 @@
+--- a/src/mistune/plugins/abbr.py
++++ b/src/mistune/plugins/abbr.py
+@@ -20,17 +20,16 @@
+ )
+ 
+ 
+-def parse_ref_abbr(block: "BlockParser", m: Match[str], state: "BlockState") -> int:
+-    ref = state.env.get("ref_abbrs")
+-    if not ref:
+-        ref = {}
+-    key = m.group('abbr_key')
+-    text = m.group('abbr_text')
+-    ref[key] = text.strip()
+-    state.env['ref_abbrs'] = ref
+-    # abbr definition can split paragraph
+-    state.append_token({'type': 'blank_line'})
+-    return m.end() + 1
++def parse_ref_abbr(block: 'BlockParser', m: Match[str], state: 'BlockState'
++    ) ->int:
++    abbr_key = m.group('abbr_key')
++    abbr_text = m.group('abbr_text').strip()
++    
++    if 'ref_abbrs' not in state.env:
++        state.env['ref_abbrs'] = {}
++    
++    state.env['ref_abbrs'][abbr_key] = abbr_text
++    return len(m.group(0))
+ 
+ 
+ def process_text(inline: "InlineParser", text: str, state: "InlineState") -> None:

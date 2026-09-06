@@ -1,0 +1,53 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -105,9 +105,6 @@
+             if yld is SKIP:
+                 continue
+             elif yld is self.sentinel or yld is STOP:
+-                # NB: sentinel defaults to STOP so I was torn whether
+-                # to also check for STOP, and landed on the side of
+-                # never letting STOP through.
+                 return
+             yield yld
+         return
+@@ -116,21 +113,6 @@
+         return type(self)(subspec=self.subspec, _iter_stack=[(opname, args, callback)] + self._iter_stack)
+ 
+     def map(self, subspec):
+-        """Return a new :class:`Iter()` spec which will apply the provided
+-        *subspec* to each element of the iterable.
+-
+-        >>> glom(range(5), Iter().map(lambda x: x * 2).all())
+-        [0, 2, 4, 6, 8]
+-
+-        Because a spec can be a callable, :meth:`Iter.map()` does
+-        everything the built-in :func:`map` does, but with the full
+-        power of glom specs.
+-
+-        >>> glom(['a', 'B', 'C'], Iter().map(T.islower()).all())
+-        [True, False, False]
+-        """
+-        # whatever validation you want goes here
+-        # TODO: DRY the self._add_op with a decorator?
+         return self._add_op(
+             'map',
+             (subspec,),
+@@ -165,18 +147,6 @@
+                 lambda t: scope[glom](t, check_spec, scope) is not SKIP, iterable))
+ 
+     def chunked(self, size, fill=_MISSING):
+-        """Return a new :class:`Iter()` spec which groups elements in the iterable
+-        into lists of length *size*.
+-
+-        If the optional *fill* argument is provided, iterables not
+-        evenly divisible by *size* will be padded out by the *fill*
+-        constant. Otherwise, the final chunk will be shorter than *size*.
+-
+-        >>> list(glom(range(10), Iter().chunked(3)))
+-        [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]
+-        >>> list(glom(range(10), Iter().chunked(3, fill=None)))
+-        [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, None, None]]
+-        """
+         kw = {'size': size}
+         args = size,
+         if fill is not _MISSING:

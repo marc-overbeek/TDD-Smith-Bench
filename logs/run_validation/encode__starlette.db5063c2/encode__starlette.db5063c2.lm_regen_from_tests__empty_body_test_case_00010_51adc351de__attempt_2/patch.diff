@@ -1,0 +1,39 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -51,6 +51,9 @@
+                 if port == default_port:
+                     url = f"{scheme}://{host}{path}"
+                 else:
++                    # Handle IPv6 addresses properly
++                    if ":" in host and "[" not in host:
++                        host = f"[{host}]"
+                     url = f"{scheme}://{host}:{port}{path}"
+ 
+             if query_string:
+@@ -116,14 +119,21 @@
+ 
+             if hostname is None:
+                 netloc = self.netloc
+-                _, _, hostname = netloc.rpartition("@")
+-
+-                if hostname[-1] != "]":
+-                    hostname = hostname.rsplit(":", 1)[0]
++                if "@" in netloc:
++                    userpass, _, hostname = netloc.rpartition("@")
++                    if hostname and hostname[-1] != "]":
++                        hostname = hostname.rsplit(":", 1)[0]
++                else:
++                    hostname = self.hostname
++                    if hostname and hostname[-1] != "]":
++                        hostname = hostname.rsplit(":", 1)[0]
+ 
+             netloc = hostname
+             if port is not None:
+-                netloc += f":{port}"
++                # Handle IPv6 addresses properly
++                if ":" in hostname and "[" not in hostname:
++                    hostname = f"[{hostname}]"
++                netloc = f"{hostname}:{port}"
+             if username is not None:
+                 userpass = username
+                 if password is not None:

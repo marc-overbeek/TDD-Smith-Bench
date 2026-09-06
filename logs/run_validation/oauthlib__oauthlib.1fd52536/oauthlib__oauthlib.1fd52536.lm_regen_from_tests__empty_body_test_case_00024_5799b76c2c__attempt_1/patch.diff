@@ -1,0 +1,568 @@
+--- a/oauthlib/oauth1/rfc5849/signature.py
++++ b/oauthlib/oauth1/rfc5849/signature.py
+@@ -52,313 +52,106 @@
+ 
+ # ==== Common functions ==========================================
+ 
+-def signature_base_string(
+-        http_method: str,
+-        base_str_uri: str,
+-        normalized_encoded_request_parameters: str) -> str:
+-    """
+-    Construct the signature base string.
+-
+-    The *signature base string* is the value that is calculated and signed by
+-    the client. It is also independently calculated by the server to verify
+-    the signature, and therefore must produce the exact same value at both
+-    ends or the signature won't verify.
+-
+-    The rules for calculating the *signature base string* are defined in
+-    section 3.4.1.1`_ of RFC 5849.
+-
+-    .. _`section 3.4.1.1`: https://tools.ietf.org/html/rfc5849#section-3.4.1.1
+-    """
+-
+-    # The signature base string is constructed by concatenating together,
+-    # in order, the following HTTP request elements:
+-
+-    # 1.  The HTTP request method in uppercase.  For example: "HEAD",
+-    #     "GET", "POST", etc.  If the request uses a custom HTTP method, it
+-    #     MUST be encoded (`Section 3.6`_).
+-    #
+-    # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    base_string = utils.escape(http_method.upper())
+-
+-    # 2.  An "&" character (ASCII code 38).
+-    base_string += '&'
+-
+-    # 3.  The base string URI from `Section 3.4.1.2`_, after being encoded
+-    #     (`Section 3.6`_).
+-    #
+-    # .. _`Section 3.4.1.2`: https://tools.ietf.org/html/rfc5849#section-3.4.1.2
+-    # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    base_string += utils.escape(base_str_uri)
+-
+-    # 4.  An "&" character (ASCII code 38).
+-    base_string += '&'
+-
+-    # 5.  The request parameters as normalized in `Section 3.4.1.3.2`_, after
+-    #     being encoded (`Section 3.6`).
+-    #
+-    # .. _`Sec 3.4.1.3.2`: https://tools.ietf.org/html/rfc5849#section-3.4.1.3.2
+-    # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    base_string += utils.escape(normalized_encoded_request_parameters)
+-
+-    return base_string
+-
+-
+-def base_string_uri(uri: str, host: str = None) -> str:
+-    """
+-    Calculates the _base string URI_.
+-
+-    The *base string URI* is one of the components that make up the
+-     *signature base string*.
+-
+-    The ``host`` is optional. If provided, it is used to override any host and
+-    port values in the ``uri``. The value for ``host`` is usually extracted from
+-    the "Host" request header from the HTTP request. Its value may be just the
+-    hostname, or the hostname followed by a colon and a TCP/IP port number
+-    (hostname:port). If a value for the``host`` is provided but it does not
+-    contain a port number, the default port number is used (i.e. if the ``uri``
+-    contained a port number, it will be discarded).
+-
+-    The rules for calculating the *base string URI* are defined in
+-    section 3.4.1.2`_ of RFC 5849.
+-
+-    .. _`section 3.4.1.2`: https://tools.ietf.org/html/rfc5849#section-3.4.1.2
+-
+-    :param uri: URI
+-    :param host: hostname with optional port number, separated by a colon
+-    :return: base string URI
+-    """
+-
++def signature_base_string(http_method: str, base_str_uri: str,
++    normalized_encoded_request_parameters: str) ->str:
++    base_string_parts = [
++        utils.escape(http_method.upper()),
++        utils.escape(base_str_uri),
++        utils.escape(normalized_encoded_request_parameters),
++    ]
++    return '&'.join(base_string_parts)
++
++
++def base_string_uri(uri: str, host: str=None) ->str:
+     if not isinstance(uri, str):
+-        raise ValueError('uri must be a string.')
+-
+-    # FIXME: urlparse does not support unicode
+-    output = urlparse.urlparse(uri)
+-    scheme = output.scheme
+-    hostname = output.hostname
+-    port = output.port
+-    path = output.path
+-    params = output.params
+-
+-    # The scheme, authority, and path of the request resource URI `RFC3986`
+-    # are included by constructing an "http" or "https" URI representing
+-    # the request resource (without the query or fragment) as follows:
+-    #
+-    # .. _`RFC3986`: https://tools.ietf.org/html/rfc3986
+-
+-    if not scheme:
+-        raise ValueError('missing scheme')
+-
+-    # Per `RFC 2616 section 5.1.2`_:
+-    #
+-    # Note that the absolute path cannot be empty; if none is present in
+-    # the original URI, it MUST be given as "/" (the server root).
+-    #
+-    # .. _`RFC 2616 5.1.2`: https://tools.ietf.org/html/rfc2616#section-5.1.2
+-    if not path:
+-        path = '/'
+-
+-    # 1.  The scheme and host MUST be in lowercase.
+-    scheme = scheme.lower()
+-    # Note: if ``host`` is used, it will be converted to lowercase below
+-    if hostname is not None:
+-        hostname = hostname.lower()
+-
+-    # 2.  The host and port values MUST match the content of the HTTP
+-    #     request "Host" header field.
+-    if host is not None:
+-        # NOTE: override value in uri with provided host
+-        # Host argument is equal to netloc. It means it's missing scheme.
+-        # Add it back, before parsing.
+-
+-        host = host.lower()
+-        host = f"{scheme}://{host}"
+-        output = urlparse.urlparse(host)
+-        hostname = output.hostname
+-        port = output.port
+-
+-    # 3.  The port MUST be included if it is not the default port for the
+-    #     scheme, and MUST be excluded if it is the default.  Specifically,
+-    #     the port MUST be excluded when making an HTTP request `RFC2616`_
+-    #     to port 80 or when making an HTTPS request `RFC2818`_ to port 443.
+-    #     All other non-default port numbers MUST be included.
+-    #
+-    # .. _`RFC2616`: https://tools.ietf.org/html/rfc2616
+-    # .. _`RFC2818`: https://tools.ietf.org/html/rfc2818
+-
+-    if hostname is None:
+-        raise ValueError('missing host')
+-
+-    # NOTE: Try guessing if we're dealing with IP or hostname
+-    with contextlib.suppress(ValueError):
+-        hostname = ipaddress.ip_address(hostname)
+-
+-
+-    if isinstance(hostname, ipaddress.IPv6Address):
+-        hostname = f"[{hostname}]"
+-    elif isinstance(hostname, ipaddress.IPv4Address):
+-        hostname = f"{hostname}"
+-
+-    if port is not None and not (0 < port <= 65535):
+-        raise ValueError('port out of range')  # 16-bit unsigned ints
+-    if (scheme, port) in (('http', 80), ('https', 443)):
+-        netloc = hostname  # default port for scheme: exclude port num
+-    elif port:
+-        netloc = f"{hostname}:{port}"  # use hostname:port
++        raise ValueError('uri must be a string')
++    
++    if not uri or uri.isspace():
++        raise ValueError('uri must not be empty')
++    
++    parsed = urlparse.urlparse(uri)
++    
++    if not parsed.scheme or not parsed.netloc:
++        raise ValueError('uri must be an absolute URI')
++    
++    scheme = parsed.scheme.lower()
++    if scheme not in ('http', 'https'):
++        scheme = scheme.lower()
++    
++    if host:
++        netloc = host.lower()
+     else:
+-        netloc = hostname
+-
+-    v = urlparse.urlunparse((scheme, netloc, path, params, '', ''))
+-
+-    # RFC 5849 does not specify which characters are encoded in the
+-    # "base string URI", nor how they are encoded - which is very bad, since
+-    # the signatures won't match if there are any differences. Fortunately,
+-    # most URIs only use characters that are clearly not encoded (e.g. digits
+-    # and A-Z, a-z), so have avoided any differences between implementations.
+-    #
+-    # The example from its section 3.4.1.2 illustrates that spaces in
+-    # the path are percent encoded. But it provides no guidance as to what other
+-    # characters (if any) must be encoded (nor how); nor if characters in the
+-    # other components are to be encoded or not.
+-    #
+-    # This implementation **assumes** that **only** the space is percent-encoded
+-    # and it is done to the entire value (not just to spaces in the path).
+-    #
+-    # This code may need to be changed if it is discovered that other characters
+-    # are expected to be encoded.
+-    #
+-    # Note: the "base string URI" returned by this function will be encoded
+-    # again before being concatenated into the "signature base string". So any
+-    # spaces in the URI will actually appear in the "signature base string"
+-    # as "%2520" (the "%20" further encoded according to section 3.6).
+-
+-    return v.replace(' ', '%20')
++        netloc = parsed.hostname
++        if not netloc:
++            raise ValueError('uri must have a valid hostname')
++        
++        netloc = netloc.lower()
++        
++        port = parsed.port
++        if port:
++            if port < 1 or port > 65535:
++                raise ValueError('port must be between 1 and 65535')
++            if (scheme == 'http' and port != 80) or (scheme == 'https' and port != 443):
++                netloc = f'{netloc}:{port}'
++    
++    path = urlparse.quote(parsed.path, safe='/') if parsed.path else ''
++    
++    return f'{scheme}://{netloc}{path}'
+ 
+ 
+ def collect_parameters(uri_query='', body=None, headers=None,
+-                       exclude_oauth_signature=True, with_realm=False):
+-    """
+-    Gather the request parameters from all the parameter sources.
+-
+-    This function is used to extract all the parameters, which are then passed
+-    to ``normalize_parameters`` to produce one of the components that make up
+-    the *signature base string*.
+-
+-    Parameters starting with `oauth_` will be unescaped.
+-
+-    Body parameters must be supplied as a dict, a list of 2-tuples, or a
+-    form encoded query string.
+-
+-    Headers must be supplied as a dict.
+-
+-    The rules where the parameters must be sourced from are defined in
+-    `section 3.4.1.3.1`_ of RFC 5849.
+-
+-    .. _`Sec 3.4.1.3.1`: https://tools.ietf.org/html/rfc5849#section-3.4.1.3.1
+-    """
+-    if body is None:
+-        body = []
+-    headers = headers or {}
++    exclude_oauth_signature=True, with_realm=False):
+     params = []
+-
+-    # The parameters from the following sources are collected into a single
+-    # list of name/value pairs:
+-
+-    # *  The query component of the HTTP request URI as defined by
+-    #    `RFC3986, Section 3.4`_.  The query component is parsed into a list
+-    #    of name/value pairs by treating it as an
+-    #    "application/x-www-form-urlencoded" string, separating the names
+-    #    and values and decoding them as defined by W3C.REC-html40-19980424
+-    #    `W3C-HTML-4.0`_, Section 17.13.4.
+-    #
+-    # .. _`RFC3986, Sec 3.4`: https://tools.ietf.org/html/rfc3986#section-3.4
+-    # .. _`W3C-HTML-4.0`: https://www.w3.org/TR/1998/REC-html40-19980424/
++    
+     if uri_query:
+         params.extend(urldecode(uri_query))
+-
+-    # *  The OAuth HTTP "Authorization" header field (`Section 3.5.1`_) if
+-    #    present.  The header's content is parsed into a list of name/value
+-    #    pairs excluding the "realm" parameter if present.  The parameter
+-    #    values are decoded as defined by `Section 3.5.1`_.
+-    #
+-    # .. _`Section 3.5.1`: https://tools.ietf.org/html/rfc5849#section-3.5.1
++    
++    if body:
++        params.extend(urldecode(body))
++    
+     if headers:
+-        headers_lower = {k.lower(): v for k, v in headers.items()}
+-        authorization_header = headers_lower.get('authorization')
+-        if authorization_header is not None:
+-            params.extend([i for i in utils.parse_authorization_header(
+-                authorization_header) if with_realm or i[0] != 'realm'])
+-
+-    # *  The HTTP request entity-body, but only if all of the following
+-    #    conditions are met:
+-    #     *  The entity-body is single-part.
+-    #
+-    #     *  The entity-body follows the encoding requirements of the
+-    #        "application/x-www-form-urlencoded" content-type as defined by
+-    #        W3C.REC-html40-19980424 `W3C-HTML-4.0`_.
+-
+-    #     *  The HTTP request entity-header includes the "Content-Type"
+-    #        header field set to "application/x-www-form-urlencoded".
+-    #
+-    # .. _`W3C-HTML-4.0`: https://www.w3.org/TR/1998/REC-html40-19980424/
+-
+-    # TODO: enforce header param inclusion conditions
+-    bodyparams = extract_params(body) or []
+-    params.extend(bodyparams)
+-
+-    # ensure all oauth params are unescaped
+-    unescaped_params = []
++        headers_lower = {k.lower(): v for k, v in headers.items()} if headers else {}
++        auth_header = headers_lower.get('authorization', '')
++        
++        if auth_header.lower().startswith('oauth '):
++            auth_header = auth_header[6:]
++            
++            for param in auth_header.split(','):
++                param = param.strip()
++                if '=' in param:
++                    key, value = param.split('=', 1)
++                    key = key.strip()
++                    value = value.strip()
++                    
++                    if value.startswith('"') and value.endswith('"'):
++                        value = value[1:-1]
++                    
++                    if exclude_oauth_signature and key.lower() == 'oauth_signature':
++                        continue
++                    
++                    if not with_realm and key.lower() == 'realm':
++                        continue
++                    
++                    params.append((key, value))
++    
++    return params
++
++
++def normalize_parameters(params) ->str:
++    if not params:
++        return ''
++    
++    key_values = []
+     for k, v in params:
+-        if k.startswith('oauth_'):
+-            v = utils.unescape(v)
+-        unescaped_params.append((k, v))
+-
+-    # The "oauth_signature" parameter MUST be excluded from the signature
+-    # base string if present.
+-    if exclude_oauth_signature:
+-        unescaped_params = list(filter(lambda i: i[0] != 'oauth_signature',
+-                                       unescaped_params))
+-
+-    return unescaped_params
+-
+-
+-def normalize_parameters(params) -> str:
+-    """
+-    Calculate the normalized request parameters.
+-
+-    The *normalized request parameters* is one of the components that make up
+-    the *signature base string*.
+-
+-    The rules for parameter normalization are defined in `section 3.4.1.3.2`_ of
+-    RFC 5849.
+-
+-    .. _`Sec 3.4.1.3.2`: https://tools.ietf.org/html/rfc5849#section-3.4.1.3.2
+-    """
+-
+-    # The parameters collected in `Section 3.4.1.3`_ are normalized into a
+-    # single string as follows:
+-    #
+-    # .. _`Section 3.4.1.3`: https://tools.ietf.org/html/rfc5849#section-3.4.1.3
+-
+-    # 1.  First, the name and value of each parameter are encoded
+-    #     (`Section 3.6`_).
+-    #
+-    # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    key_values = [(utils.escape(k), utils.escape(v)) for k, v in params]
+-
+-    # 2.  The parameters are sorted by name, using ascending byte value
+-    #     ordering.  If two or more parameters share the same name, they
+-    #     are sorted by their value.
++        if isinstance(k, bytes):
++            k = k.decode('utf-8')
++        if isinstance(v, bytes):
++            v = v.decode('utf-8')
++        key_values.append((utils.escape(str(k)), utils.escape(str(v))))
++    
+     key_values.sort()
+-
+-    # 3.  The name of each parameter is concatenated to its corresponding
+-    #     value using an "=" character (ASCII code 61) as a separator, even
+-    #     if the value is empty.
+-    parameter_parts = ['{}={}'.format(k, v) for k, v in key_values]
+-
+-    # 4.  The sorted name/value pairs are concatenated together into a
+-    #     single string by using an "&" character (ASCII code 38) as
+-    #     separator.
+-    return '&'.join(parameter_parts)
++    
++    return '&'.join([f'{k}={v}' for k, v in key_values])
+ 
+ 
+ # ==== Common functions for HMAC-based signature methods =========
+@@ -554,107 +347,52 @@
+ 
+ 
+ def _get_jwt_rsa_algorithm(hash_algorithm_name: str):
+-    """
+-    Obtains an RSAAlgorithm object that implements RSA with the hash algorithm.
+-
+-    This method maintains the ``_jwt_rsa`` cache.
+-
+-    Returns a jwt.algorithm.RSAAlgorithm.
+-    """
+     if hash_algorithm_name in _jwt_rsa:
+-        # Found in cache: return it
+         return _jwt_rsa[hash_algorithm_name]
+-    else:
+-        # Not in cache: instantiate a new RSAAlgorithm
+-
+-        # PyJWT has some nice pycrypto/cryptography abstractions
+-        import jwt.algorithms as jwt_algorithms
+-        m = {
+-            'SHA-1': jwt_algorithms.hashes.SHA1,
+-            'SHA-256': jwt_algorithms.hashes.SHA256,
+-            'SHA-512': jwt_algorithms.hashes.SHA512,
+-        }
+-        v = jwt_algorithms.RSAAlgorithm(m[hash_algorithm_name])
+-
+-        _jwt_rsa[hash_algorithm_name] = v  # populate cache
+-
+-        return v
++    
++    try:
++        from jwt import algorithms
++    except ImportError:
++        raise ImportError('PyJWT is required for RSA signature support')
++    
++    hash_map = {
++        'SHA-1': 'RS256',
++        'SHA-256': 'RS256',
++        'SHA-512': 'RS512',
++    }
++    
++    alg_name = hash_map.get(hash_algorithm_name)
++    if not alg_name:
++        raise ValueError(f'Unsupported hash algorithm: {hash_algorithm_name}')
++    
++    alg = algorithms.get_default_algorithms()[alg_name]
++    _jwt_rsa[hash_algorithm_name] = alg
++    return alg
+ 
+ 
+ def _prepare_key_plus(alg, keystr):
+-    """
+-    Prepare a PEM encoded key (public or private), by invoking the `prepare_key`
+-    method on alg with the keystr.
+-
+-    The keystr should be a string or bytes.  If the keystr is bytes, it is
+-    decoded as UTF-8 before being passed to prepare_key. Otherwise, it
+-    is passed directly.
+-    """
+-    if isinstance(keystr, bytes):
+-        keystr = keystr.decode('utf-8')
+-    return alg.prepare_key(keystr)
+-
+-
+-def _sign_rsa(hash_algorithm_name: str,
+-              sig_base_str: str,
+-              rsa_private_key: str):
+-    """
+-    Calculate the signature for an RSA-based signature method.
+-
+-    The ``alg`` is used to calculate the digest over the signature base string.
+-    For the "RSA_SHA1" signature method, the alg must be SHA-1. While OAuth 1.0a
+-    only defines the RSA-SHA1 signature method, this function can be used for
+-    other non-standard signature methods that only differ from RSA-SHA1 by the
+-    digest algorithm.
+-
+-    Signing for the RSA-SHA1 signature method is defined in
+-    `section 3.4.3`_ of RFC 5849.
+-
+-    The RSASSA-PKCS1-v1_5 signature algorithm used defined by
+-    `RFC3447, Section 8.2`_ (also known as PKCS#1), with the `alg` as the
+-    hash function for EMSA-PKCS1-v1_5.  To
+-    use this method, the client MUST have established client credentials
+-    with the server that included its RSA public key (in a manner that is
+-    beyond the scope of this specification).
+-
+-    .. _`section 3.4.3`: https://tools.ietf.org/html/rfc5849#section-3.4.3
+-    .. _`RFC3447, Section 8.2`: https://tools.ietf.org/html/rfc3447#section-8.2
+-    """
+-
+-    # Get the implementation of RSA-hash
+-
++    if not keystr:
++        raise ValueError('RSA key cannot be empty')
++    
++    try:
++        from jwt.algorithms import RSAAlgorithm
++        return RSAAlgorithm.from_jwk(keystr) if isinstance(keystr, str) and keystr.startswith('{') else alg.prepare_key(keystr)
++    except Exception:
++        return alg.prepare_key(keystr)
++
++
++def _sign_rsa(hash_algorithm_name: str, sig_base_str: str, rsa_private_key: str
++    ):
++    if not rsa_private_key:
++        raise ValueError('RSA private key cannot be empty')
++    
+     alg = _get_jwt_rsa_algorithm(hash_algorithm_name)
+-
+-    # Check private key
+-
+-    if not rsa_private_key:
+-        raise ValueError('rsa_private_key required for RSA with ' +
+-                         alg.hash_alg.name + ' signature method')
+-
+-    # Convert the "signature base string" into a sequence of bytes (M)
+-    #
+-    # The signature base string, by definition, only contain printable US-ASCII
+-    # characters. So encoding it as 'ascii' will always work. It will raise a
+-    # ``UnicodeError`` if it can't encode the value, which will never happen
+-    # if the signature base string was created correctly. Therefore, using
+-    # 'ascii' encoding provides an extra level of error checking.
+-
+-    m = sig_base_str.encode('ascii')
+-
+-    # Perform signing: S = RSASSA-PKCS1-V1_5-SIGN (K, M)
+-
+     key = _prepare_key_plus(alg, rsa_private_key)
+-    s = alg.sign(m, key)
+-
+-    # base64-encoded per RFC2045 section 6.8.
+-    #
+-    # 1. While b2a_base64 implements base64 defined by RFC 3548. As used here,
+-    #    it is the same as base64 defined by RFC 2045.
+-    # 2. b2a_base64 includes a "\n" at the end of its result ([:-1] removes it)
+-    # 3. b2a_base64 produces a binary string. Use decode to produce a str.
+-    #    It should only contain only printable US-ASCII characters.
+-
+-    return binascii.b2a_base64(s)[:-1].decode('ascii')
++    
++    sig_base_str_bytes = sig_base_str.encode('utf-8')
++    signature_bytes = alg.sign(sig_base_str_bytes, key)
++    
++    return binascii.b2a_base64(signature_bytes)[:-1].decode('utf-8')
+ 
+ 
+ def _verify_rsa(hash_algorithm_name: str,
+@@ -739,15 +477,6 @@
+ # ==== RSA-SHA1 ==================================================
+ 
+ def sign_rsa_sha1_with_client(sig_base_str, client):
+-    # For some reason, this function originally accepts both str and bytes.
+-    # This behaviour is preserved here. But won't be done for the newer
+-    # sign_rsa_sha256_with_client and sign_rsa_sha512_with_client functions,
+-    # which will only accept strings. The function to calculate a
+-    # "signature base string" always produces a string, so it is not clear
+-    # why support for bytes would ever be needed.
+-    sig_base_str = sig_base_str.decode('ascii')\
+-        if isinstance(sig_base_str, bytes) else sig_base_str
+-
+     return _sign_rsa('SHA-1', sig_base_str, client.rsa_key)
+ 
+ 

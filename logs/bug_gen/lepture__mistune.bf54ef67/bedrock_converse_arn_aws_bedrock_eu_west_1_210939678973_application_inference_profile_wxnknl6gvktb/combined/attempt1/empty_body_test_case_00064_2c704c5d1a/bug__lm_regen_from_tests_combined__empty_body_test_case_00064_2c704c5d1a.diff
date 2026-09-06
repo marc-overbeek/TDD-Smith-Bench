@@ -1,0 +1,27 @@
+--- a/src/mistune/renderers/markdown.py
++++ b/src/mistune/renderers/markdown.py
+@@ -129,21 +129,6 @@
+ 
+ 
+ def _get_fenced_marker(code: str) -> str:
+-    found = fenced_re.findall(code)
+-    if not found:
+-        return '```'
+-
+-    ticks = []  # `
+-    waves = []  # ~
+-    for s in found:
+-        if s[0] == '`':
+-            ticks.append(len(s))
+-        else:
+-            waves.append(len(s))
+-
+-    if not ticks:
+-        return '```'
+-
+-    if not waves:
+-        return '~~~'
+-    return '`' * (max(ticks) + 1)
++    match = fenced_re.search(code)
++    if not match:
++        return '

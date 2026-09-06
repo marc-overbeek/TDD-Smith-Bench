@@ -1,0 +1,21 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -284,11 +284,13 @@
+ 
+ 
+ def _is_optional(anno: Any) -> bool:
+-    """Is the supplied annotation an instance of the 'virtual' Optional type?
+-
+-    Optional isn't really a type. It's an alias to Union[T, NoneType]
+-    """
+-    return is_union(anno) and NoneType in anno.__args__
++    """Check if an annotation is Optional (i.e., Union with None)."""
++    if not is_union(anno):
++        return False
++    args = getattr(anno, "__args__", None)
++    if args is None:
++        return False
++    return NoneType in args
+ 
+ 
+ def _get_optional_elem(anno: Any) -> Any:

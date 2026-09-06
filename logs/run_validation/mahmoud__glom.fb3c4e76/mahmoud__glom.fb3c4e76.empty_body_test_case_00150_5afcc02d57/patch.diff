@@ -1,0 +1,148 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -55,40 +55,13 @@
+     day-to-day use.
+     """
+     def __init__(self, subspec, init, op=operator.iadd):
+-        self.subspec = subspec
+-        self.init = init
+-        self.op = op
+-        if not callable(op):
+-            raise TypeError('expected callable for %s op param, not: %r' %
+-                            (self.__class__.__name__, op))
+-        if not callable(init):
+-            raise TypeError('expected callable for %s init param, not: %r' %
+-                            (self.__class__.__name__, init))
++        pass
+ 
+     def glomit(self, target, scope):
+-        is_agg = False
+-        if scope[MODE] is GROUP and scope.get(CUR_AGG) is None:
+-            scope[CUR_AGG] = self
+-            is_agg = True
+-
+-        if self.subspec is not T:
+-            target = scope[glom](target, self.subspec, scope)
+-
+-        if is_agg:
+-            return self._agg(target, scope[ACC_TREE])
+-        try:
+-            return self._fold(target_iter(target, scope))
+-        except UnregisteredTarget as ut:
+-            raise FoldError('can only %s on iterable targets, not %s type (%s)'
+-                            % (self.__class__.__name__, type(target).__name__, ut))
++        pass
+ 
+     def _fold(self, iterator):
+-        ret, op = self.init(), self.op
+-
+-        for v in iterator:
+-            ret = op(ret, v)
+-
+-        return ret
++        pass
+ 
+     def _agg(self, target, tree):
+         if self not in tree:
+@@ -163,17 +136,10 @@
+     collections during intermediate processing steps.
+     """
+     def __init__(self, subspec=T, init=list):
+-        if init == 'lazy':
+-            self.lazy = True
+-            init = list
+-        else:
+-            self.lazy = False
+-        super().__init__(subspec=subspec, init=init, op=operator.iadd)
++        pass
+ 
+     def _fold(self, iterator):
+-        if self.lazy:
+-            return itertools.chain.from_iterable(iterator)
+-        return super()._fold(iterator)
++        pass
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__
+@@ -187,80 +153,7 @@
+ 
+ 
+ def flatten(target, **kwargs):
+-    """At its most basic, ``flatten()`` turns an iterable of iterables
+-    into a single list. But it has a few arguments which give it more
+-    power:
+-
+-    Args:
+-
+-       init (callable): A function or type which gives the initial
+-          value of the return. The value must support addition. Common
+-          values might be :class:`list` (the default), :class:`tuple`,
+-          or even :class:`int`. You can also pass ``init="lazy"`` to
+-          get a generator.
+-       levels (int): A positive integer representing the number of
+-          nested levels to flatten. Defaults to 1.
+-       spec: The glomspec to fetch before flattening. This defaults to the
+-          the root level of the object.
+-
+-    Usage is straightforward.
+-
+-      >>> target = [[1, 2], [3], [4]]
+-      >>> flatten(target)
+-      [1, 2, 3, 4]
+-
+-    Because integers themselves support addition, we actually have two
+-    levels of flattening possible, to get back a single integer sum:
+-
+-      >>> flatten(target, init=int, levels=2)
+-      10
+-
+-    However, flattening a non-iterable like an integer will raise an
+-    exception:
+-
+-      >>> target = 10
+-      >>> flatten(target)
+-      Traceback (most recent call last):
+-      ...
+-      FoldError: can only Flatten on iterable targets, not int type (...)
+-
+-    By default, ``flatten()`` will add a mix of iterables together,
+-    making it a more-robust alternative to the built-in
+-    ``sum(list_of_lists, list())`` trick most experienced Python
+-    programmers are familiar with using:
+-
+-      >>> list_of_iterables = [range(2), [2, 3], (4, 5)]
+-      >>> sum(list_of_iterables, [])
+-      Traceback (most recent call last):
+-      ...
+-      TypeError: can only concatenate list (not "tuple") to list
+-
+-    Whereas flatten() handles this just fine:
+-
+-      >>> flatten(list_of_iterables)
+-      [0, 1, 2, 3, 4, 5]
+-
+-    The ``flatten()`` function is a convenient wrapper around the
+-    :class:`Flatten` specifier type. For embedding in larger specs,
+-    and more involved flattening, see :class:`Flatten` and its base,
+-    :class:`Fold`.
+-
+-    """
+-    subspec = kwargs.pop('spec', T)
+-    init = kwargs.pop('init', list)
+-    levels = kwargs.pop('levels', 1)
+-    if kwargs:
+-        raise TypeError('unexpected keyword args: %r' % sorted(kwargs.keys()))
+-
+-    if levels == 0:
+-        return target
+-    if levels < 0:
+-        raise ValueError('expected levels >= 0, not %r' % levels)
+-    spec = (subspec,)
+-    spec += (Flatten(init="lazy"),) * (levels - 1)
+-    spec += (Flatten(init=init),)
+-
+-    return glom(target, spec)
++    pass
+ 
+ 
+ class Merge(Fold):

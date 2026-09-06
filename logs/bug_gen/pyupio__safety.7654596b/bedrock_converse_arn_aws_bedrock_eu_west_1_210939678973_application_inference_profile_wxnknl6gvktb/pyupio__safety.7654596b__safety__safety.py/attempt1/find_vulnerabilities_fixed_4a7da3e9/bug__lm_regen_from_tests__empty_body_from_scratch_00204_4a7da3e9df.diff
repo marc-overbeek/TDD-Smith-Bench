@@ -1,0 +1,60 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1312,27 +1312,36 @@
+     return skip + apply + confirm
+ 
+ 
+-def find_vulnerabilities_fixed(
+-    vulnerabilities: Dict[str, Any],
+-    fixes: List[Fix]
+-) -> List[Vulnerability]:
+-    """
+-    Finds the vulnerabilities that have been fixed.
+-
+-    Args:
+-        vulnerabilities (Dict[str, Any]): The dictionary of vulnerabilities.
+-        fixes (List[Fix]): The list of applied fixes.
+-
+-    Returns:
+-        List[Vulnerability]: The list of fixed vulnerabilities.
+-    """
+-    fixed_specs = set(fix.previous_spec for fix in fixes)
+-
+-    if not fixed_specs:
+-        return []
+-
+-    return [vulnerability for vulnerability in vulnerabilities if
+-            str(vulnerability['analyzed_requirement'].specifier) in fixed_specs]
++def find_vulnerabilities_fixed(vulnerabilities: Dict[str, Any], fixes: List[Fix]) -> List[Vulnerability]:
++    """
++    Finds vulnerabilities that were fixed by the applied fixes.
++    
++    Args:
++        vulnerabilities (Dict[str, Any]): The vulnerabilities data.
++        fixes (List[Fix]): The list of fixes.
++    
++    Returns:
++        List[Vulnerability]: The vulnerabilities that were fixed.
++    """
++    vulnerabilities_fixed = []
++    
++    # Filter for applied fixes only
++    applied_fixes = [fix for fix in fixes if fix.status == 'APPLIED']
++    
++    if not applied_fixes:
++        return vulnerabilities_fixed
++    
++    # Convert vulnerabilities dict to list if needed
++    vuln_list = vulnerabilities if isinstance(vulnerabilities, list) else vulnerabilities.get('vulnerabilities', [])
++    
++    for fix in applied_fixes:
++        for vuln in vuln_list:
++            # Match vulnerability by package name and requirement spec
++            if (vuln.package_name == fix.package and 
++                str(vuln.analyzed_requirement.specifier) == fix.previous_spec):
++                vulnerabilities_fixed.append(vuln)
++    
++    return vulnerabilities_fixed
+ 
+ 
+ @sync_safety_context

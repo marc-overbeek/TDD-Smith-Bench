@@ -1,0 +1,76 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -46,13 +46,6 @@
+     """
+ 
+     def _set_attributes(self, params: Optional[List[Any]] = None) -> None:
+-        """
+-        Set attributes from the input list of parameters.
+-
+-        Args:
+-            params (list): list of parameters.
+-        """
+-
+         if params:
+             for k, v in params.items():
+                 if k != "self" and not k.startswith("_"):
+@@ -214,10 +207,6 @@
+         raise NotImplementedError
+ 
+     def __repr__(self):
+-        """
+-        Produce something like:
+-        "MyTransform(field1={self.field1}, field2={self.field2})"
+-        """
+         try:
+             sig = inspect.signature(self.__init__)
+             classname = type(self).__name__
+@@ -239,7 +228,6 @@
+                     continue
+                 attr_str = pprint.pformat(attr)
+                 if "\n" in attr_str:
+-                    # don't show it if pformat decides to use >1 lines
+                     attr_str = "..."
+                 argstr.append("{}={}".format(name, attr_str))
+             return "{}({})".format(classname, ", ".join(argstr))
+@@ -259,14 +247,7 @@
+     """
+ 
+     def __init__(self, transforms: List[Transform]):
+-        """
+-        Args:
+-            transforms (list[Transform]): list of transforms to perform.
+-        """
+         super().__init__()
+-        # "Flatten" the list so that TransformList do not recursively contain TransfomList.
+-        # The additional hierarchy does not change semantic of the class, but cause extra
+-        # complexities in e.g, telling whether a TransformList contains certain Transform
+         tfms_flatten = []
+         for t in transforms:
+             assert isinstance(
+@@ -292,7 +273,6 @@
+         return x
+ 
+     def __getattribute__(self, name: str):
+-        # use __getattribute__ to win priority over any registered dtypes
+         if name.startswith("apply_"):
+             return lambda x: self._apply(x, name)
+         return super().__getattribute__(name)
+@@ -816,17 +796,6 @@
+     """
+ 
+     def __init__(self, src_image: np.ndarray, src_weight: float, dst_weight: float):
+-        """
+-        Blends the input image (dst_image) with the src_image using formula:
+-        ``src_weight * src_image + dst_weight * dst_image``
+-
+-        Args:
+-            src_image (ndarray): Input image is blended with this image.
+-                The two images must have the same shape, range, channel order
+-                and dtype.
+-            src_weight (float): Blend weighting of src_image
+-            dst_weight (float): Blend weighting of dst_image
+-        """
+         super().__init__()
+         self._set_attributes(locals())
+ 

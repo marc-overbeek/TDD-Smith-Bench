@@ -1,0 +1,35 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -433,23 +433,16 @@
+ ### Table Printing ###
+ 
+ 
+-def _get_single_child(
+-    name: str, statistics: Dict[str, Dict[str, str]]
+-) -> Optional[str]:
+-    """
+-    If the given module has only a single child in statistics, return it.
+-    Otherwise, return None.
+-    """
++def _get_single_child(name: str, statistics: Dict[str, Dict[str, str]]
++    ) ->Optional[str]:
+     prefix = name + ("." if name else "")
+-    child = None
+-    for mod in statistics:
+-        # 'if mod' excludes root = '', which is never a child
+-        if mod and mod.count(".") == prefix.count(".") and mod.startswith(prefix):
+-            if child is None:
+-                child = mod
+-            else:
+-                return None  # We found a second child, so return None
+-    return child
++    children = []
++    for mod_name in statistics:
++        if mod_name and mod_name.startswith(prefix) and mod_name.count(".") == prefix.count("."):
++            children.append(mod_name)
++    if len(children) == 1:
++        return children[0]
++    return None
+ 
+ 
+ def _try_combine(

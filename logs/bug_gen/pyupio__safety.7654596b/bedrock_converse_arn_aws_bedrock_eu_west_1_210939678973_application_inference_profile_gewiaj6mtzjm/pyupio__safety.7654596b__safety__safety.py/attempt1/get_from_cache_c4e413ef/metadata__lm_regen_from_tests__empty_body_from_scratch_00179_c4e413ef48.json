@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```python\ndef get_from_cache(db_name: str, cache_valid_seconds: int=0,\n    skip_time_verification: bool=False) ->Optional[Dict[str, Any]]:\n    if not os.path.exists(DB_CACHE_FILE):\n        return None\n\n    try:\n        with open(DB_CACHE_FILE, \"r\") as f:\n            cache = json.loads(f.read())\n    except (json.JSONDecodeError, OSError):\n        return None\n\n    if db_name not in cache:\n        return None\n\n    db_cache = cache[db_name]\n    cached_at = db_cache.get(\"cached_at\")\n    \n    if not cached_at:\n        return None\n\n    if not skip_time_verification:\n        if cache_valid_seconds > 0:\n            if time.time() - cached_at > cache_valid_seconds:\n                return None\n\n    return db_cache.get(\"db\")\n```",
+  "rewrite": "def get_from_cache(db_name: str, cache_valid_seconds: int=0,\n    skip_time_verification: bool=False) ->Optional[Dict[str, Any]]:\n    if not os.path.exists(DB_CACHE_FILE):\n        return None\n\n    try:\n        with open(DB_CACHE_FILE, \"r\") as f:\n            cache = json.loads(f.read())\n    except (json.JSONDecodeError, OSError):\n        return None\n\n    if db_name not in cache:\n        return None\n\n    db_cache = cache[db_name]\n    cached_at = db_cache.get(\"cached_at\")\n    \n    if not cached_at:\n        return None\n\n    if not skip_time_verification:\n        if cache_valid_seconds > 0:\n            if time.time() - cached_at > cache_valid_seconds:\n                return None\n\n    return db_cache.get(\"db\")",
+  "strategy": "lm_regen_from_tests"
+}

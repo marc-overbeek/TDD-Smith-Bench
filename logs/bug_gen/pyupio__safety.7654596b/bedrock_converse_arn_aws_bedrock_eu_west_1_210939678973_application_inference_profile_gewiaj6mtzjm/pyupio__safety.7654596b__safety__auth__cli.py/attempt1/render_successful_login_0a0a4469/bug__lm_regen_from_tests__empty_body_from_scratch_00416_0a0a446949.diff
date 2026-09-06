@@ -1,0 +1,45 @@
+--- a/safety/auth/cli.py
++++ b/safety/auth/cli.py
+@@ -94,33 +94,16 @@
+     """
+     return "" if auth.email_verified else "[red](email verification required)[/red]"
+ 
+-def render_successful_login(auth: Auth,
+-                            organization: Optional[str] = None) -> None:
+-    """
+-    Renders a message indicating a successful login.
+-
+-    Args:
+-        auth (Auth): The Auth object.
+-        organization (Optional[str]): The organization name.
+-    """
+-    DEFAULT = "--"
+-    name = auth.name if auth.name else DEFAULT
+-    email = auth.email if auth.email else DEFAULT
+-    email_note = render_email_note(auth)
+-
+-    console.print("[bold][green]You're authenticated[/green][/bold]")
+-    if name and name != email:
+-        details = [f"[green][bold]Account:[/bold] {name}, {email}[/green] {email_note}"]
++def render_successful_login(auth: Auth, organization: Optional[str]=None
++    ) ->None:
++    console.print("You're authenticated")
++    email = auth.email
++    name = auth.name
++    if name:
++        console.print(f" Account: {name}, {email} {render_email_note(auth)}")
+     else:
+-        details = [f"[green][bold]Account:[/bold] {email}[/green] {email_note}"]
+-
+-    if organization:
+-        details.insert(0,
+-                        "[green][bold]Organization:[/bold] " \
+-                        f"{organization}[green]")
+-
+-    for msg in details:
+-        console.print(Padding(msg, (0, 0, 0, 1)), emoji=True)
++        console.print(f" Account: {email} {render_email_note(auth)}")
++    console.print()
+ 
+ 
+ @auth_app.command(name=CMD_LOGIN_NAME, help=CLI_AUTH_LOGIN_HELP)

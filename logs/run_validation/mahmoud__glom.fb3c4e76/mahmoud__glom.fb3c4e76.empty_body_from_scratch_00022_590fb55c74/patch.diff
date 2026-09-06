@@ -1,0 +1,41 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -2328,37 +2328,7 @@
+ 
+ 
+ def _glom(target, spec, scope):
+-    parent = scope
+-    pmap = parent.maps[0]
+-    scope = scope.new_child({
+-        T: target,
+-        Spec: spec,
+-        UP: parent,
+-        CHILD_ERRORS: [],
+-        MODE: pmap[MODE],
+-        MIN_MODE: pmap[MIN_MODE],
+-    })
+-    pmap[LAST_CHILD_SCOPE] = scope
+-
+-    try:
+-        if type(spec) is TType:  # must go first, due to callability
+-            scope[MIN_MODE] = None  # None is tombstone
+-            return _t_eval(target, spec, scope)
+-        elif _has_callable_glomit(spec):
+-            scope[MIN_MODE] = None
+-            return spec.glomit(target, scope)
+-
+-        return (scope.maps[0][MIN_MODE] or scope.maps[0][MODE])(target, spec, scope)
+-    except Exception as e:
+-        scope.maps[1][CHILD_ERRORS].append(scope)
+-        scope.maps[0][CUR_ERROR] = e
+-        if NO_PYFRAME in scope.maps[1]:
+-            cur_scope = scope[UP]
+-            while NO_PYFRAME in cur_scope.maps[0]:
+-                cur_scope.maps[1][CHILD_ERRORS].append(cur_scope)
+-                cur_scope.maps[0][CUR_ERROR] = e
+-                cur_scope = cur_scope[UP]
+-        raise
++    pass
+ 
+ 
+ def AUTO(target, spec, scope):

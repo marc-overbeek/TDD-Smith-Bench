@@ -1,0 +1,27 @@
+--- a/src/mistune/plugins/def_list.py
++++ b/src/mistune/plugins/def_list.py
+@@ -27,21 +27,9 @@
+ HAS_BLANK_LINE_RE = re.compile(r'\n[ \t]*\n$')
+ 
+ 
+-def parse_def_list(block: "BlockParser", m: Match[str], state: "BlockState") -> int:
+-    pos = m.end()
+-    children = list(_parse_def_item(block, m))
+-
+-    m2 = DEF_RE.match(state.src, pos)
+-    while m2:
+-        children.extend(list(_parse_def_item(block, m2)))
+-        pos = m2.end()
+-        m2 = DEF_RE.match(state.src, pos)
+-
+-    state.append_token({
+-        'type': 'def_list',
+-        'children': children,
+-    })
+-    return pos
++def parse_def_list(block: 'BlockParser', m: Match[str], state: 'BlockState'
++    ) ->int:
++    pass
+ 
+ 
+ def _parse_def_item(block: "BlockParser", m: Match[str]) -> Iterable[Dict[str, Any]]:

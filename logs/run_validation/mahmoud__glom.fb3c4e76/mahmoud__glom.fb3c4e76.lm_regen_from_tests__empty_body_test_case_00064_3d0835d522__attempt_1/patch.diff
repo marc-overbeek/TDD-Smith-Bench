@@ -1,0 +1,40 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -253,10 +253,10 @@
+ 
+ #TODO: combine this with other functionality elsewhere?
+ def _bool_child_repr(child):
+-    if child is M:
++    if isinstance(child, _MExpr):
+         return repr(child)
+-    elif isinstance(child, _MExpr):
+-        return "(" + bbrepr(child) + ")"
++    if isinstance(child, _Bool):
++        return repr(child)
+     return bbrepr(child)
+ 
+ 
+@@ -321,8 +321,9 @@
+         return result
+ 
+     def __and__(self, other):
+-        # reduce number of layers of spec
+-        return And(*(self.children + (other,)))
++        if type(self) is And:
++            return And(*(self.children + (other,)))
++        return And(self, other)
+ 
+ 
+ class Or(_Bool):
+@@ -343,8 +344,9 @@
+         return scope[glom](target, self.children[-1], scope)
+ 
+     def __or__(self, other):
+-        # reduce number of layers of spec
+-        return Or(*(self.children + (other,)))
++        if type(self) is Or:
++            return Or(*(self.children + (other,)))
++        return Or(self, other)
+ 
+ 
+ class Not(_Bool):

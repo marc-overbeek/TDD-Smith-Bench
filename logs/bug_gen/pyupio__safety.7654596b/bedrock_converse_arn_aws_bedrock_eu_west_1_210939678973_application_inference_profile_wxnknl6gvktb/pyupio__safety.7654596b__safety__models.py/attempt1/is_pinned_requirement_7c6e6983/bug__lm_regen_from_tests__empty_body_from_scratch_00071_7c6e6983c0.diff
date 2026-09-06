@@ -1,0 +1,51 @@
+--- a/safety/models.py
++++ b/safety/models.py
+@@ -120,22 +120,38 @@
+                     }
+ 
+ 
+-def is_pinned_requirement(spec: SpecifierSet) -> bool:
+-    """
+-    Check if a requirement is pinned.
+-
++def is_pinned_requirement(spec: SpecifierSet) ->bool:
++    """
++    Check if a requirement is pinned to a specific version.
++    
++    A requirement is considered pinned if it has exactly one specifier
++    using the == operator and does not use a wildcard version.
++    
+     Args:
+-        spec (SpecifierSet): The specifier set of the requirement.
+-
++        spec (SpecifierSet): The specifier set to check.
++        
+     Returns:
+         bool: True if the requirement is pinned, False otherwise.
+     """
+-    if not spec or len(spec) != 1:
++    if not spec:
+         return False
+-
++    
++    # A pinned requirement should have exactly one specifier
++    if len(spec) != 1:
++        return False
++    
++    # Get the single specifier
+     specifier = next(iter(spec))
+-
+-    return (specifier.operator == '==' and '*' != specifier.version[-1]) or specifier.operator == '==='
++    
++    # Check if it uses the == operator
++    if specifier.operator != "==":
++        return False
++    
++    # Check if the version is not a wildcard (e.g., 1.*)
++    if "*" in specifier.version:
++        return False
++    
++    return True
+ 
+ 
+ @dataclass

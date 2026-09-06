@@ -1,0 +1,12 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -676,4 +676,8 @@
+             raise AttributeError(message.format(self.__class__.__name__, key))
+ 
+     def __delattr__(self, key: typing.Any) -> None:
+-        del self._state[key]
++        try:
++            del self._state[key]
++        except KeyError:
++            message = "'{}' object has no attribute '{}'"
++            raise AttributeError(message.format(self.__class__.__name__, key))

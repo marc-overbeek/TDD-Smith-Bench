@@ -1,0 +1,20 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -303,14 +303,9 @@
+ 
+ 
+ class WebSocketRoute(BaseRoute):
+-    def __init__(
+-        self,
+-        path: str,
+-        endpoint: typing.Callable[..., typing.Any],
+-        *,
+-        name: str | None = None,
+-        middleware: typing.Sequence[Middleware] | None = None,
+-    ) -> None:
++    def __init__(self, path: str, endpoint: typing.Callable[..., typing.Any], *,
++        name: (str | None)=None, middleware: (typing.Sequence[Middleware] |
++        None)=None) ->None:
+         assert path.startswith("/"), "Routed paths must start with '/'"
+         self.path = path
+         self.endpoint = endpoint

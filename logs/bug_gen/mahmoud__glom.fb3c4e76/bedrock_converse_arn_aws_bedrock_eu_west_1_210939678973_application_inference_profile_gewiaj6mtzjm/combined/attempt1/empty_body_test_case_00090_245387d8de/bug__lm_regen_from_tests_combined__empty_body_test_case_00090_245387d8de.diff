@@ -1,0 +1,34 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -253,10 +253,8 @@
+ 
+ #TODO: combine this with other functionality elsewhere?
+ def _bool_child_repr(child):
+-    if child is M:
+-        return repr(child)
+-    elif isinstance(child, _MExpr):
+-        return "(" + bbrepr(child) + ")"
++    if isinstance(child, (_MType, _MExpr)):
++        return bbrepr(child)
+     return bbrepr(child)
+ 
+ 
+@@ -288,7 +286,7 @@
+             raise
+ 
+     def _m_repr(self):
+-        """should this Or() repr as M |?"""
++        """should this Or() repr as M repr?"""
+         # only used by And() and Or(), not Not(), so len(children) >= 1
+         if isinstance(self.children[0], (_MType, _MExpr)):
+             return True
+@@ -428,7 +426,8 @@
+         self.lhs, self.op, self.rhs = lhs, op, rhs
+ 
+     def __and__(self, other):
+-        return And(self, other)
++        # reduce number of layers of spec
++        return And(*(self.children + (other,)))
+ 
+     __rand__ = __and__
+ 

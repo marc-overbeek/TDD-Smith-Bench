@@ -1,0 +1,23 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -327,12 +327,14 @@
+         gamma: float,
+         num_updates: int,
+     ) -> None:
+-        for k in [base_value, gamma]:
+-            if not (isinstance(k, (int, float)) and k > 0):
+-                raise ValueError("base_value and gamma must be positive numbers")
+-        for k in [num_decays, num_updates]:
+-            if not (isinstance(k, int) and k > 0):
+-                raise ValueError("num_decays and num_updates must be positive integers")
++        if not (isinstance(base_value, (int, float)) and base_value > 0):
++            raise ValueError("base_value must be a positive number")
++        if not (isinstance(num_decays, int) and num_decays > 0):
++            raise ValueError("num_decays must be a positive integer")
++        if not (isinstance(gamma, (int, float)) and gamma > 0):
++            raise ValueError("gamma must be a positive number")
++        if not (isinstance(num_updates, int) and num_updates > 0):
++            raise ValueError("num_updates must be a positive integer")
+ 
+         self.base_value = base_value
+         self.num_decays = num_decays

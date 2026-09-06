@@ -1,0 +1,20 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -344,10 +344,14 @@
+         self.path = path
+         self.part_idx = part_idx
+ 
++    try:
++        exc_get_message = self.get_message
++    except AttributeError:
++        exc_get_message = super().__str__
++    return exc_get_message()
++
+     def get_message(self):
+-        path_part = Path(self.path).values()[self.part_idx]
+-        return ('could not access %r, part %r of %r, got error: %r'
+-                % (path_part, self.part_idx, self.path, self.exc))
++        return super().__str__()
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

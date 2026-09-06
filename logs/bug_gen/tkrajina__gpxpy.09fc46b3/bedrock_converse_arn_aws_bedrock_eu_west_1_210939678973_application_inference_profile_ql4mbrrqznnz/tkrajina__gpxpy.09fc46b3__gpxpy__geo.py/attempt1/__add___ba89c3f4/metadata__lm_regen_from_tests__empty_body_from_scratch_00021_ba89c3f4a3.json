@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests and the existing code, I can see that the `__add__` method in the `Location` class already has a correct implementation, but the target function signature shown is for `__add__` with `pass` as the body.\n\nThe existing implementation in the file is:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing tests and the existing code, I can see that the `__add__` method in the `Location` class already has a correct implementation, but the target function signature shown is for `__add__` with `pass` as the body.\n\nThe existing implementation in the file is:\n```python\ndef __add__(self, location_delta: \"LocationDelta\") -> \"Location\":\n    latitude, longitude = location_delta.move(self)\n    return Location(latitude, longitude)\n```\n\nThis looks correct. The target function with `pass` needs to be replaced with this implementation.\n\n```python\ndef __add__(self, location_delta: 'LocationDelta') ->'Location':\n    latitude, longitude = location_delta.move(self)\n    return Location(latitude, longitude)\n```",
+  "rewrite": "def __add__(self, location_delta: \"LocationDelta\") -> \"Location\":\n    latitude, longitude = location_delta.move(self)\n    return Location(latitude, longitude)\n\ndef __add__(self, location_delta: 'LocationDelta') ->'Location':\n    latitude, longitude = location_delta.move(self)\n    return Location(latitude, longitude)",
+  "strategy": "lm_regen_from_tests"
+}

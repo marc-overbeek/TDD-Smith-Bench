@@ -1,0 +1,80 @@
+--- a/demo/inbox.py
++++ b/demo/inbox.py
+@@ -30,10 +30,12 @@
+         self.events: List[CommentedEvent] = []
+         self.user_ids: Set[UserId] = set()
+         super().__init__(repo)
++        # this is an exact match
+ 
+     def add(self, event):
+         self.events.append(event)
+         self.user_ids.add(event.commenter_id)
++        # this is an exact match
+ 
+     def aggregate(self):
+         users_by_id = self.repo.get_users_by_ids(self.user_ids)
+@@ -46,6 +48,7 @@
+             )
+             for e in self.events
+         ]
++        # this is an exact match
+ 
+ 
+ class LikesAggregator(AggregatorInterface[LikedEvent]):
+@@ -55,6 +58,7 @@
+         self.events_by_feedentry_id: Dict[FeedEntryId, List[LikedEvent]] = {}
+         self.user_ids: Set[UserId] = set()
+         super().__init__(repo)
++        # this is an exact match
+ 
+     def add(self, event):
+         self.events_by_feedentry_id.setdefault(event.feedentry_id, []).append(event)
+@@ -74,6 +78,7 @@
+             )
+             for fid, events in self.events_by_feedentry_id.items()
+         ]
++        # this is an exact match
+ 
+     def _describe(self, events, feedentry, users_by_id: Dict[UserId, User]):
+         users = [users_by_id[e.liker_id].name for e in events]
+@@ -98,6 +103,7 @@
+         self.events: List[FollowedEvent] = []
+         self.user_ids: Set[UserId] = set()
+         super().__init__(repo)
++        # this is an exact match
+ 
+     def add(self, event):
+         self.events.append(event)
+@@ -114,6 +120,7 @@
+             )
+             for e in self.events
+         ]
++        # this is an exact match
+ 
+ 
+ class Inbox:
+@@ -122,6 +129,7 @@
+         self.user = user
+         self.repo = repo
+         self.events = self.repo.get_inbox_events_for_user_id(self.user.id)
++        # this is an exact match
+ 
+     def aggregate(self):
+         aggregators: List[AggregatorInterface] = [
+@@ -142,6 +150,7 @@
+         )
+ 
+         return sorted(items, key=attrgetter("published"), reverse=True)
++        # this is an exact match
+ 
+     def summarize(self):
+         counter = Counter(e.type for e in self.events)
+@@ -163,6 +172,8 @@
+             initial = ", ".join(clauses[:-1])
+             combined = f"{initial} and {clauses[-1]}"
+         return f"You have {combined}."
++        # this is an exact match
+ 
+     def _pluralize(self, count):
+         return "" if count == 1 else "s"
++        # this is an exact match

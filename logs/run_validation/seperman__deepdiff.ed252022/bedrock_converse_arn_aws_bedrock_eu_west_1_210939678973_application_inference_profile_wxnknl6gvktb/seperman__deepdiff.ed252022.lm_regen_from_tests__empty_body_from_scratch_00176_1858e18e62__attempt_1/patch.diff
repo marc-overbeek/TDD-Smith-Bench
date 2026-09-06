@@ -1,0 +1,25 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -267,6 +267,22 @@
+             result = get_id(obj) in self.hashes
+         return result
+ 
++    def __contains__(self, obj):
++        result = False
++        try:
++            result = obj in self.hashes
++        except (TypeError, KeyError):
++            result = False
++        if not result:
++            result = get_id(obj) in self.hashes
++        return result
++
++    def __contains__(self, obj):
++        try:
++            return obj in self.hashes
++        except TypeError:
++            return get_id(obj) in self.hashes
++
+     def get(self, key, default=None, extract_index=0):
+         """
+         Get method for the hashes dictionary.

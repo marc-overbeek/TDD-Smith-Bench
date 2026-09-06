@@ -1,0 +1,17 @@
+--- a/src/mistune/renderers/rst.py
++++ b/src/mistune/renderers/rst.py
+@@ -33,12 +33,8 @@
+             prev = tok
+             yield self.render_token(tok, state)
+ 
+-    def __call__(self, tokens: Iterable[Dict[str, Any]], state: BlockState) -> str:
+-        state.env['inline_images'] = []
+-        out = self.render_tokens(tokens, state)
+-        # special handle for line breaks
+-        out += '\n\n'.join(self.render_referrences(state)) + '\n'
+-        return strip_end(out)
++    def __call__(self, tokens: Iterable[Dict[str, Any]], state: BlockState) ->str:
++        pass
+ 
+     def render_referrences(self, state: BlockState) -> Iterable[str]:
+         images = state.env['inline_images']

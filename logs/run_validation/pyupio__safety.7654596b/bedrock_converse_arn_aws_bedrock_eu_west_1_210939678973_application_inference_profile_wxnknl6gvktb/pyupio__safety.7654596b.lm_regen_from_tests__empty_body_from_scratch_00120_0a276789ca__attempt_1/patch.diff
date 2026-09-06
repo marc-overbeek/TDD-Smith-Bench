@@ -1,0 +1,28 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -1231,21 +1231,10 @@
+     return click.prompt(msg)
+ 
+ 
+-def parse_html(*, kwargs: Dict[str, Any], template: str = 'index.html') -> str:
+-    """
+-    Parse HTML using Jinja2 templates.
+-
+-    Args:
+-        kwargs (Dict[str, Any]): The template variables.
+-        template (str, optional): The template name. Defaults to 'index.html'.
+-
+-    Returns:
+-        str: The rendered HTML.
+-    """
+-    file_loader = PackageLoader('safety', 'templates')
+-    env = Environment(loader=file_loader)
+-    template = env.get_template(template)
+-    return template.render(**kwargs)
++def parse_html(*, kwargs: Dict[str, Any], template: str='index.html') ->str:
++    env = Environment(loader=PackageLoader('safety', 'templates'))
++    tmpl = env.get_template(template)
++    return tmpl.render(**kwargs)
+ 
+ 
+ def format_unpinned_vulnerabilities(unpinned_packages: Dict[str, List[Any]], columns: Optional[int] = None) -> List[str]:

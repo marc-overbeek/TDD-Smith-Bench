@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```python\ndef shrink_types(types, max_typed_dict_size):\n    if not types:\n        return Any\n    if all(types_equal(t, types[0]) for t in types):\n        return types[0]\n    if all(is_typed_dict(t) for t in types):\n        return shrink_typed_dict_types(types, max_typed_dict_size)\n    return Union[tuple(types)]\n\n\ndef rewrite(self, typ):\n    return DEFAULT_REWRITER.rewrite(typ)\n```",
+  "rewrite": "def shrink_types(types, max_typed_dict_size):\n    if not types:\n        return Any\n    if all(types_equal(t, types[0]) for t in types):\n        return types[0]\n    if all(is_typed_dict(t) for t in types):\n        return shrink_typed_dict_types(types, max_typed_dict_size)\n    return Union[tuple(types)]\n\n\ndef rewrite(self, typ):\n    return DEFAULT_REWRITER.rewrite(typ)",
+  "strategy": "lm_regen_from_tests_combined"
+}

@@ -1,0 +1,29 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -471,18 +471,14 @@
+ 
+ 
+ def cartesian_product(a, b):
+-    """
+-    Get the Cartesian product of two iterables
+-
+-    **parameters**
+-
+-    a: list of lists
+-    b: iterable to do the Cartesian product
+-    """
+-
+-    for i in a:
+-        for j in b:
+-            yield i + (j,)
++    result = []
++    for x in a:
++        for y in b:
++            if isinstance(x, tuple):
++                result.append(x + (y,))
++            else:
++                result.append((x, y))
++    return result
+ 
+ 
+ def cartesian_product_of_shape(dimentions, result=None):

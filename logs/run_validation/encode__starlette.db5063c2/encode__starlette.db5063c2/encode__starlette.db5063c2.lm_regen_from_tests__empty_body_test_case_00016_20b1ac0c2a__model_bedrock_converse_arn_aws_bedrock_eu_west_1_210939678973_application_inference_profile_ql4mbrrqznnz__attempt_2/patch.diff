@@ -1,0 +1,16 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -549,12 +549,9 @@
+         return self._cm.__exit__(exc_type, exc_value, traceback)
+ 
+ 
+-def _wrap_gen_lifespan_context(
+-    lifespan_context: typing.Callable[[typing.Any], typing.Generator[typing.Any, typing.Any, typing.Any]],
+-) -> typing.Callable[[typing.Any], typing.AsyncContextManager[typing.Any]]:
++def _wrap_gen_lifespan_context(lifespan_context: typing.Callable[[typing.Any], typing.Generator[typing.Any, typing.Any, typing.Any]]) -> typing.Callable[[typing.Any], typing.AsyncContextManager[typing.Any]]:
+     cmgr = contextlib.contextmanager(lifespan_context)
+ 
+-    @functools.wraps(cmgr)
+     def wrapper(app: typing.Any) -> _AsyncLiftContextManager[typing.Any]:
+         return _AsyncLiftContextManager(cmgr(app))
+ 

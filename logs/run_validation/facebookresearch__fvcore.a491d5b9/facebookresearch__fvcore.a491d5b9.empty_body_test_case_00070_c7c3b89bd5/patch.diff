@@ -1,0 +1,130 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -45,18 +45,8 @@
+     :meth:`register_type` method.
+     """
+ 
+-    def _set_attributes(self, params: Optional[List[Any]] = None) -> None:
+-        """
+-        Set attributes from the input list of parameters.
+-
+-        Args:
+-            params (list): list of parameters.
+-        """
+-
+-        if params:
+-            for k, v in params.items():
+-                if k != "self" and not k.startswith("_"):
+-                    setattr(self, k, v)
++    def _set_attributes(self, params: Optional[List[Any]]=None) ->None:
++        pass
+ 
+     @abstractmethod
+     def apply_image(self, img: np.ndarray):
+@@ -641,23 +631,9 @@
+ 
+ 
+ class CropTransform(Transform):
+-    def __init__(
+-        self,
+-        x0: int,
+-        y0: int,
+-        w: int,
+-        h: int,
+-        orig_w: Optional[int] = None,
+-        orig_h: Optional[int] = None,
+-    ):
+-        """
+-        Args:
+-            x0, y0, w, h (int): crop the image(s) by img[y0:y0+h, x0:x0+w].
+-            orig_w, orig_h (int): optional, the original width and height
+-                before cropping. Needed to make this transform invertible.
+-        """
+-        super().__init__()
+-        self._set_attributes(locals())
++    def __init__(self, x0: int, y0: int, w: int, h: int, orig_w: Optional[int]=
++        None, orig_h: Optional[int]=None):
++        pass
+ 
+     def apply_image(self, img: np.ndarray) -> np.ndarray:
+         """
+@@ -675,19 +651,8 @@
+         else:
+             return img[..., self.y0 : self.y0 + self.h, self.x0 : self.x0 + self.w, :]
+ 
+-    def apply_coords(self, coords: np.ndarray) -> np.ndarray:
+-        """
+-        Apply crop transform on coordinates.
+-
+-        Args:
+-            coords (ndarray): floating point array of shape Nx2. Each row is
+-                (x, y).
+-        Returns:
+-            ndarray: cropped coordinates.
+-        """
+-        coords[:, 0] -= self.x0
+-        coords[:, 1] -= self.y0
+-        return coords
++    def apply_coords(self, coords: np.ndarray) ->np.ndarray:
++        pass
+ 
+     def apply_polygons(self, polygons: list) -> list:
+         """
+@@ -735,40 +700,15 @@
+                 cropped_polygons.append(coords[:-1])
+         return [self.apply_coords(p) for p in cropped_polygons]
+ 
+-    def inverse(self) -> Transform:
+-        assert (
+-            self.orig_w is not None and self.orig_h is not None
+-        ), "orig_w, orig_h are required for CropTransform to be invertible!"
+-        pad_x1 = self.orig_w - self.x0 - self.w
+-        pad_y1 = self.orig_h - self.y0 - self.h
+-        return PadTransform(
+-            self.x0, self.y0, pad_x1, pad_y1, orig_w=self.w, orig_h=self.h
+-        )
++    def inverse(self) ->Transform:
++        pass
+ 
+ 
+ class PadTransform(Transform):
+-    def __init__(
+-        self,
+-        x0: int,
+-        y0: int,
+-        x1: int,
+-        y1: int,
+-        orig_w: Optional[int] = None,
+-        orig_h: Optional[int] = None,
+-        pad_value: float = 0,
+-        seg_pad_value: int = 0,
+-    ):
+-        """
+-        Args:
+-            x0, y0: number of padded pixels on the left and top
+-            x1, y1: number of padded pixels on the right and bottom
+-            orig_w, orig_h: optional, original width and height.
+-                Needed to make this transform invertible.
+-            pad_value: the padding value to the image
+-            seg_pad_value: the padding value to the segmentation mask
+-        """
+-        super().__init__()
+-        self._set_attributes(locals())
++    def __init__(self, x0: int, y0: int, x1: int, y1: int, orig_w: Optional[int
++        ]=None, orig_h: Optional[int]=None, pad_value: float=0, seg_pad_value:
++        int=0):
++        pass
+ 
+     def apply_image(self, img):
+         if img.ndim == 3:
+@@ -795,9 +735,7 @@
+         )
+ 
+     def apply_coords(self, coords):
+-        coords[:, 0] += self.x0
+-        coords[:, 1] += self.y0
+-        return coords
++        pass
+ 
+     def inverse(self) -> Transform:
+         assert (

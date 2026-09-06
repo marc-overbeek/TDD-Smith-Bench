@@ -1,0 +1,26 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -340,11 +340,23 @@
+         self._dict.clear()
+         self._list.clear()
+ 
++    q = MultiDict([('a', '123')])
++    assert q.setdefault('a', '456') == '123'
++    assert q.getlist('a') == ['123']
++    assert q.setdefault('b', '456') == '456'
++    assert q.getlist('b') == ['456']
++
+     def setdefault(self, key: typing.Any, default: typing.Any = None) -> typing.Any:
+         if key not in self:
+             self._dict[key] = default
+             self._list.append((key, default))
+ 
++        return self[key]
++
++    def setdefault(self, key: typing.Any, default: typing.Any) -> typing.Any:
++        if key not in self:
++            self._dict[key] = default
++            self._list.append((key, default))
+         return self[key]
+ 
+     def setlist(self, key: typing.Any, values: list[typing.Any]) -> None:

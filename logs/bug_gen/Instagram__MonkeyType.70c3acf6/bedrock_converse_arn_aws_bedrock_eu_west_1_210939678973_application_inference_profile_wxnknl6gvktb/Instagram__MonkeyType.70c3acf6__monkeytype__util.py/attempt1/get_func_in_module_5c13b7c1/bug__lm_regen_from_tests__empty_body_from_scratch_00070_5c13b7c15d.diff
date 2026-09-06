@@ -1,0 +1,80 @@
+--- a/monkeytype/util.py
++++ b/monkeytype/util.py
+@@ -18,34 +18,52 @@
+     return func.__module__ + "." + func.__qualname__
+ 
+ 
+-def get_func_in_module(module: str, qualname: str) -> Callable[..., Any]:
+-    """Return the function specified by qualname in module.
++def get_func_in_module(module: str, qualname: str) ->Callable[..., Any]:
++    obj = get_name_in_module(module, qualname)
++    
++    # Handle bound methods - extract the underlying function
++    if isinstance(obj, types.MethodType):
++        obj = obj.__func__
++    
++    # Handle properties - extract the getter and validate it's getter-only
++    if isinstance(obj, property):
++        # Check if property has setter or deleter
++        if obj.fset is not None or obj.fdel is not None:
++            raise InvalidTypeError(
++                f"Cannot get function for property {qualname} with setter or deleter"
++            )
++        obj = obj.fget
++    
++    # Validate that the result is a function or callable
++    if not (inspect.isfunction(obj) or inspect.ismethod(obj) or callable(obj)):
++        raise InvalidTypeError(
++            f"Expected a function, method, or callable for {qualname}, got {type(obj)}"
++        )
++    
++    return obj  # type: ignore[no-any-return]
+ 
+-    Raises:
+-        NameLookupError if we can't find the named function
+-        InvalidTypeError if we the name isn't a function
+-    """
+-    func = get_name_in_module(module, qualname)
+-    func = inspect.unwrap(func)
+-    if isinstance(func, types.MethodType):
+-        func = func.__func__
+-    elif isinstance(func, property):
+-        if func.fget is not None:
+-            if (func.fset is None) and (func.fdel is None):
+-                func = func.fget
+-            else:
+-                raise InvalidTypeError(
+-                    f"Property {module}.{qualname} has setter or deleter."
+-                )
+-        else:
+-            raise InvalidTypeError(f"Property {module}.{qualname} is missing getter")
+-    elif cached_property and isinstance(func, cached_property):
+-        func = func.func
+-    elif not isinstance(func, (types.FunctionType, types.BuiltinFunctionType)):
++def get_func_in_module(module: str, qualname: str) ->Callable[..., Any]:
++    obj = get_name_in_module(module, qualname)
++    
++    # Handle bound methods - extract the underlying function
++    if isinstance(obj, types.MethodType):
++        obj = obj.__func__
++    
++    # Handle properties - validate getter-only
++    if isinstance(obj, property):
++        if obj.fset is not None or obj.fdel is not None:
++            raise InvalidTypeError(
++                f"Cannot get function for property {qualname} with setter or deleter"
++            )
++        obj = obj.fget
++    
++    # Validate that the result is a function
++    if not inspect.isfunction(obj):
+         raise InvalidTypeError(
+-            f"{module}.{qualname} is of type '{type(func)}', not function."
++            f"Expected a function for {qualname}, got {type(obj).__name__}"
+         )
+-    return func  # type: ignore[no-any-return]
++    
++    return obj  # type: ignore[no-any-return]
+ 
+ 
+ def get_name_in_module(

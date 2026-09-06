@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef escape(s: t.Any, /) ->Markup:\n    if hasattr(s, \"__html__\"):\n        return Markup(s.__html__())\n    return Markup(_escape_inner(str(s)))\n```\n\n```\ndef __add__(self, value: (str | _HasHTML), /) ->te.Self:\n    if isinstance(value, str) or hasattr(value, \"__html__\"):\n        return self.__class__(super().__add__(self.escape(value)))\n    return NotImplemented\n```\n\n```\ndef __radd__(self, value: (str | _HasHTML), /) ->te.Self:\n    if isinstance(value, str) or hasattr(value, \"__html__\"):\n        return self.escape(value).__add__(self)\n    return NotImplemented\n```\n\n```\ndef escape(cls, s: t.Any, /) ->te.Self:\n    rv = escape(s)\n    if rv.__class__ is not cls:\n        return cls(rv)\n    return rv  # type: ignore[return-value]\n```",
+  "rewrite": "def escape(s: t.Any, /) ->Markup:\n    if hasattr(s, \"__html__\"):\n        return Markup(s.__html__())\n    return Markup(_escape_inner(str(s)))\n\ndef __add__(self, value: (str | _HasHTML), /) ->te.Self:\n    if isinstance(value, str) or hasattr(value, \"__html__\"):\n        return self.__class__(super().__add__(self.escape(value)))\n    return NotImplemented\n\ndef __radd__(self, value: (str | _HasHTML), /) ->te.Self:\n    if isinstance(value, str) or hasattr(value, \"__html__\"):\n        return self.escape(value).__add__(self)\n    return NotImplemented\n\ndef escape(cls, s: t.Any, /) ->te.Self:\n    rv = escape(s)\n    if rv.__class__ is not cls:\n        return cls(rv)\n    return rv  # type: ignore[return-value]",
+  "strategy": "lm_regen_from_tests_combined"
+}

@@ -1,0 +1,19 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -100,8 +100,16 @@
+         return self.components.hostname
+ 
+     @property
++    @property
+     def port(self) -> int | None:
+         return self.components.port
++
++    @property
++    def port(self) -> int | None:
++        try:
++            return self.components.port
++        except ValueError:
++            return None
+ 
+     @property
+     def is_secure(self) -> bool:

@@ -1,0 +1,45 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -57,22 +57,29 @@
+ 
+ def parse_requirement(dep: Any, found: str) -> SafetyRequirement:
+     """
+-    Parse a requirement.
+-
+-    Args:
+-        dep (Any): The dependency.
+-        found (str): The location where the dependency was found.
+-
++    Parse a dependency into a SafetyRequirement.
++    
++    Args:
++        dep (Any): The dependency object from dparse.
++        found (str): The path where the requirement was found.
++    
+     Returns:
+         SafetyRequirement: The parsed requirement.
+     """
+-    req = SafetyRequirement(dep)
+-    req.found = found
+-
+-    if req.specifier == SpecifierSet(''):
+-        req.specifier = SpecifierSet('>=0')
+-
+-    return req
++    # Build the requirement string from the dependency
++    # dep.name is the package name, dep.specs is a list of (operator, version) tuples
++    
++    if dep.specs:
++        # Convert specs to requirement string format
++        # specs is like [('==', '1.8.1'), ('>=', '1.0')]
++        spec_str = ''.join([f'{op}{ver}' for op, ver in dep.specs])
++        requirement_str = f'{dep.name}{spec_str}'
++    else:
++        # No version specification
++        requirement_str = dep.name
++    
++    # Create and return SafetyRequirement
++    return SafetyRequirement(requirement_str)
+ 
+ 
+ def find_version(requirements: List[SafetyRequirement]) -> Optional[str]:

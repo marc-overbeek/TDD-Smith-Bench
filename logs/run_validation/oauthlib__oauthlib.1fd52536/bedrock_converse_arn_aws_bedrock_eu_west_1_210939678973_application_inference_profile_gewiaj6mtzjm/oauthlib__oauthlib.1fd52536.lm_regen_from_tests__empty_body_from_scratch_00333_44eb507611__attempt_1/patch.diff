@@ -1,0 +1,21 @@
+--- a/oauthlib/oauth2/rfc6749/grant_types/base.py
++++ b/oauthlib/oauth2/rfc6749/grant_types/base.py
+@@ -146,7 +146,17 @@
+         if request.response_type not in ["token", "code token", "id_token token", "code id_token token"]:
+             return token
+ 
+-        token.update(token_handler.create_token(request, refresh_token=False))
++        # For hybrid flows, we need to create tokens based on the response type
++        if request.response_type in ["code token", "code id_token token"]:
++            # Add access token for code token flows
++            token.update(token_handler.create_token(request, refresh_token=False))
++        elif request.response_type in ["id_token token", "code id_token token"]:
++            # Add access token for id_token token flows  
++            token.update(token_handler.create_token(request, refresh_token=False))
++        else:
++            # For other cases, just ensure we have the right token
++            token.update(token_handler.create_token(request, refresh_token=False))
++        
+         return token
+ 
+     def validate_grant_type(self, request):

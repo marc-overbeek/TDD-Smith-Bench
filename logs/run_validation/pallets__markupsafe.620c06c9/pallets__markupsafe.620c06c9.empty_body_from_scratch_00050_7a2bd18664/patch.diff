@@ -1,0 +1,27 @@
+--- a/src/markupsafe/__init__.py
++++ b/src/markupsafe/__init__.py
+@@ -336,22 +336,8 @@
+         self.escape: _TPEscape = escape
+         super().__init__()
+ 
+-    def format_field(self, value: t.Any, format_spec: str) -> str:
+-        if hasattr(value, "__html_format__"):
+-            rv = value.__html_format__(format_spec)
+-        elif hasattr(value, "__html__"):
+-            if format_spec:
+-                raise ValueError(
+-                    f"Format specifier {format_spec} given, but {type(value)} does not"
+-                    " define __html_format__. A class that defines __html__ must define"
+-                    " __html_format__ to work with format specifiers."
+-                )
+-            rv = value.__html__()
+-        else:
+-            # We need to make sure the format spec is str here as
+-            # otherwise the wrong callback methods are invoked.
+-            rv = super().format_field(value, str(format_spec))
+-        return str(self.escape(rv))
++    def format_field(self, value: t.Any, format_spec: str) ->str:
++        pass
+ 
+ 
+ class _MarkupEscapeHelper:

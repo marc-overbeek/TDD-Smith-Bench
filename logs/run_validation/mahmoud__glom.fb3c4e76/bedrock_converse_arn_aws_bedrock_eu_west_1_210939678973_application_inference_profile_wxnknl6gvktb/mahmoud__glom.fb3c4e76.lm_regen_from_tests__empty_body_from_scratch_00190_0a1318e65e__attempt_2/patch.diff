@@ -1,0 +1,38 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -301,16 +301,25 @@
+         self.subspec = subspec
+ 
+     def glomit(self, target, scope):
+-        if scope[MODE] is not GROUP:
+-            raise BadSpec("Limit() only valid in Group mode")
+-        tree = scope[ACC_TREE]  # current accumulator support structure
+-        if self not in tree:
+-            tree[self] = [0, {}]
+-        scope[ACC_TREE] = tree[self][1]
+-        tree[self][0] += 1
+-        if tree[self][0] > self.n:
+-            return STOP
+-        return scope[glom](target, self.subspec, scope)
++        scope[MODE] = GROUP
++        scope[CUR_AGG] = None  # reset aggregation tripwire for sub-specs
++        scope[ACC_TREE] = {}
++
++        # Initialize the accumulator for the spec
++        if type(self.spec) in (dict, list):
++            _spec_id = id(self.spec)
++            scope[ACC_TREE][_spec_id] = type(self.spec)()
++
++        for t in target_iter(target, scope):
++            ret = scope[glom](t, self.spec, scope)
++            if ret is STOP:
++                break
++
++        # Extract and return the accumulated result
++        _spec_id = id(self.spec)
++        if _spec_id in scope[ACC_TREE]:
++            return scope[ACC_TREE][_spec_id]
++        return ret
+ 
+     def __repr__(self):
+         return f'{self.__class__.__name__}({self.n!r}, {self.subspec!r})'

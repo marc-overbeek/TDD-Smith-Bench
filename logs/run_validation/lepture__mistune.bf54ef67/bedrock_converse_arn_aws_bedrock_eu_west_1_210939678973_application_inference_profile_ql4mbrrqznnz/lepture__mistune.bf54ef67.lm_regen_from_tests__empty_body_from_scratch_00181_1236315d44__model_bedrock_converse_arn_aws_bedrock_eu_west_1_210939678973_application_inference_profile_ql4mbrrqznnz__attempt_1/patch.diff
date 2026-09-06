@@ -1,0 +1,13 @@
+--- a/src/mistune/plugins/math.py
++++ b/src/mistune/plugins/math.py
+@@ -57,8 +57,9 @@
+         md.renderer.register('inline_math', render_inline_math)
+ 
+ 
+-def math_in_quote(md: "Markdown") -> None:
++def math_in_quote(md: 'Markdown') ->None:
+     """Enable block math plugin in block quote."""
++    md.block.insert_rule(md.block.list_rules, 'block_math', before='list')
+     md.block.insert_rule(md.block.block_quote_rules, 'block_math', before='list')
+ 
+ 

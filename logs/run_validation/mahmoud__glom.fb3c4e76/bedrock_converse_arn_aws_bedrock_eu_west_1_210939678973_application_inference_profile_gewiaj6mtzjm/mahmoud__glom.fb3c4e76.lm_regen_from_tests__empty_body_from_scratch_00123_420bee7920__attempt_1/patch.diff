@@ -1,0 +1,25 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1907,8 +1907,20 @@
+ 
+     @staticmethod
+     def get_keys(obj):
+-        ret = obj.__dict__.keys()
+-        return ret
++        try:
++            # Try to get keys from dict-like objects
++            return obj.keys()
++        except AttributeError:
++            try:
++                # Try to get keys from object-like objects
++                return obj.__dict__.keys()
++            except AttributeError:
++                # Fall back to iterating over the object if it's iterable
++                try:
++                    return range(len(obj))
++                except TypeError:
++                    # If all else fails, return empty list
++                    return []
+ 
+ 
+ def _get_sequence_item(target, index):

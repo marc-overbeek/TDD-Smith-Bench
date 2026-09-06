@@ -1,0 +1,23 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -310,13 +310,15 @@
+         return ret
+ 
+ 
++    assert glom([[1], [2, 3]], Group(Flatten())) == [1, 2, 3]
++    assert glom([{'a': 1}, {'b': 2}], Group(Merge())) == {'a': 1, 'b': 2}
++    assert glom([[[1]], [[2, 3], [4]]], Group(Flatten(Flatten()))) == [1, 2, 3, 4]
++
+     def _agg(self, target, tree):
+         if self not in tree:
+-            acc = tree[self] = self.init()
+-        else:
+-            acc = tree[self]
+-        self.op(acc, target)
+-        return acc
++            tree[self] = self.init()
++        tree[self] = self.op(tree[self], target)
++        return tree[self]
+ 
+ 
+ def merge(target, **kwargs):

@@ -1,0 +1,30 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -812,17 +812,16 @@
+                 yield point, point_no
+ 
+     def get_points_no(self) -> int:
+-        """
+-        Gets the number of points in segment.
+-
+-        Returns
+-        ----------
+-        num_points : integer
+-            Number of points in segment
+-        """
+-        if not self.points:
+-            return 0
+-        return len(self.points)
++        result = 0
++        for track in self.tracks:
++            result += track.get_points_no()
++        return result
++
++    def get_points_no(self) ->int:
++        result = 0
++        for track in self.tracks:
++            result += track.get_points_no()
++        return result
+ 
+     def split(self, point_no: int) -> Tuple["GPXTrackSegment", "GPXTrackSegment"]:
+         """

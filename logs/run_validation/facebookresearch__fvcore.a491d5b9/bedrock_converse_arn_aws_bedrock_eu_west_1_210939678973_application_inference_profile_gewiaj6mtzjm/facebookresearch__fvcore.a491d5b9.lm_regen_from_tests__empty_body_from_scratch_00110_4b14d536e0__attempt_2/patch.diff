@@ -1,0 +1,59 @@
+--- a/fvcore/nn/parameter_count.py
++++ b/fvcore/nn/parameter_count.py
+@@ -9,27 +9,35 @@
+ from torch import nn
+ 
+ 
+-def parameter_count(model: nn.Module) -> typing.DefaultDict[str, int]:
+-    """
+-    Count parameters of a model and its submodules.
+-
+-    Args:
+-        model: a torch module
+-
+-    Returns:
+-        dict (str-> int): the key is either a parameter name or a module name.
+-        The value is the number of elements in the parameter, or in all
+-        parameters of the module. The key "" corresponds to the total
+-        number of parameters of the model.
+-    """
+-    r = defaultdict(int)
+-    for name, prm in model.named_parameters():
+-        size = prm.numel()
+-        name = name.split(".")
+-        for k in range(0, len(name) + 1):
+-            prefix = ".".join(name[:k])
+-            r[prefix] += size
+-    return r
++def parameter_count(model: nn.Module) ->typing.DefaultDict[str, int]:
++    count: typing.DefaultDict[str, int] = defaultdict(int)
++    
++    # Create a mapping from parameters to their module names
++    param_to_module: typing.Dict[nn.Parameter, str] = {}
++    
++    # First pass: build the mapping from parameters to module names
++    for name, module in model.named_modules():
++        for param_name, param in module.named_parameters():
++            # Use the full name including the module name
++            full_name = name if name else ""
++            param_to_module[param] = full_name
++    
++    # Second pass: count parameters by module
++    for name, param in model.named_parameters():
++        # Find which module this parameter belongs to
++        module_name = ""
++        for param_check, mod_name in param_to_module.items():
++            if param is param_check:
++                module_name = mod_name
++                break
++        
++        # If we couldn't find the module, use empty string for top-level
++        if not module_name:
++            count[""] += param.numel()
++        else:
++            count[module_name] += param.numel()
++            
++    return count
+ 
+ 
+ def parameter_count_table(model: nn.Module, max_depth: int = 3) -> str:

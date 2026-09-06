@@ -1,0 +1,28 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -402,6 +402,7 @@
+             self.tree[report_type].add(level)
+ 
+     @staticmethod
++    @staticmethod
+     def _dict_from_slots(object):
+         def unmangle(attribute):
+             if attribute.startswith('__') and attribute != '__weakref__':
+@@ -426,7 +427,16 @@
+                 else:
+                     all_slots.extend(slots)
+ 
+-        return {i: getattr(object, key) for i in all_slots if hasattr(object, key := unmangle(i))}
++        result = {}
++        for slot in all_slots:
++            if slot == '__weakref__':
++                continue
++            unmangled_name = unmangle(slot)
++            try:
++                result[slot] = getattr(object, unmangled_name)
++            except AttributeError:
++                pass
++        return result
+ 
+     def _diff_enum(self, level, parents_ids=frozenset(), local_tree=None):
+         t1 = detailed__dict__(level.t1, include_keys=ENUM_INCLUDE_KEYS)

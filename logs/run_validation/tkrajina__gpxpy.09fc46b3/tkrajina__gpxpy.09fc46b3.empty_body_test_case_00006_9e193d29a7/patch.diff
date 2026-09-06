@@ -1,0 +1,137 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1050,71 +1050,14 @@
+             if track_point.elevation is not None:
+                 track_point.elevation += delta
+ 
+-    def add_missing_data(self,
+-                         get_data_function: Callable[[GPXTrackPoint], Any],
+-                         add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint, GPXTrackPoint, List[float]], None]) -> None:
+-        """
+-        Calculate missing data.
+-
+-        Parameters
+-        ----------
+-        get_data_function : object
+-            Returns the data from point
+-        add_missing_function : void
+-            Function with the following arguments: array with points with missing data, the point before them (with data),
+-            the point after them (with data), and distance ratios between points in the interval (the sum of distances ratios
+-            will be 1)
+-        """
+-        if not get_data_function:
+-            raise GPXException(f'Invalid get_data_function: {get_data_function}')
+-        if not add_missing_function:
+-            raise GPXException(f'Invalid add_missing_function: {add_missing_function}')
+-
+-        # Points (*without* data) between two points (*with* data):
+-        interval: List[GPXTrackPoint] = []
+-        # Point (*with* data) before and after the interval:
+-        start_point = None
+-
+-        previous_point = None
+-        for track_point in self.points:
+-            data = get_data_function(track_point)
+-            if data is None and previous_point:
+-                if not start_point:
+-                    start_point = previous_point
+-                interval.append(track_point)
+-            else:
+-                if interval and start_point:
+-                    distances_ratios = self._get_interval_distances_ratios(interval, start_point, track_point)
+-                    add_missing_function(interval, start_point, track_point, distances_ratios)
+-                    start_point = None
+-                    interval = []
+-            previous_point = track_point
+-
+-    def _get_interval_distances_ratios(self, interval: List[GPXTrackPoint], start: GPXTrackPoint, end: GPXTrackPoint) -> List[float]:
+-        assert start, start
+-        assert end, end
+-        assert interval, interval
+-        assert len(interval) > 0, interval
+-
+-        distances = []
+-        distance_from_start: float = 0
+-        previous_point = start
+-        for point in interval:
+-            dist = point.distance_3d(previous_point)
+-            if dist is not None:
+-                distance_from_start += dist
+-                distances.append(distance_from_start)
+-                previous_point = point
+-
+-        dist = interval[-1].distance_3d(end)
+-        from_start_to_end = None
+-        if dist:
+-            from_start_to_end = distances[-1] + dist
+-
+-        assert len(interval) == len(distances)
+-
+-        return [(distance / from_start_to_end) if from_start_to_end else 0
+-                for distance in distances]
++    def add_missing_data(self, get_data_function: Callable[[GPXTrackPoint], Any
++        ], add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint,
++        GPXTrackPoint, List[float]], None]) ->None:
++        pass
++
++    def _get_interval_distances_ratios(self, interval: List[GPXTrackPoint],
++        start: GPXTrackPoint, end: GPXTrackPoint) ->List[float]:
++        pass
+ 
+     def get_duration(self) -> Optional[float]:
+         """
+@@ -1732,11 +1675,10 @@
+         for track_segment in self.segments:
+             track_segment.add_elevation(delta)
+ 
+-    def add_missing_data(self,
+-                         get_data_function: Callable[[GPXTrackPoint], Any],
+-                         add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint, GPXTrackPoint, List[float]], None]) -> None:
+-        for track_segment in self.segments:
+-            track_segment.add_missing_data(get_data_function, add_missing_function)
++    def add_missing_data(self, get_data_function: Callable[[GPXTrackPoint], Any
++        ], add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint,
++        GPXTrackPoint, List[float]], None]) ->None:
++        pass
+ 
+     def move(self, location_delta: mod_geo.LocationDelta) -> None:
+         """
+@@ -2532,31 +2474,13 @@
+         for track in self.tracks:
+             track.add_elevation(delta)
+ 
+-    def add_missing_data(self,
+-                         get_data_function: Callable[[GPXTrackPoint], Any],
+-                         add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint, GPXTrackPoint, List[float]], None]) -> None:
+-        for track in self.tracks:
+-            track.add_missing_data(get_data_function, add_missing_function)
+-
+-    def add_missing_elevations(self) -> None:
+-        def _add(interval: List[GPXTrackPoint], start: GPXTrackPoint, end: GPXTrackPoint, distances_ratios: List[float]) -> None:
+-            if (start.elevation is None) or (end.elevation is None):
+-                return
+-            assert start
+-            assert end
+-            assert interval
+-            assert len(interval) == len(distances_ratios)
+-            for point, ratio in zip(interval, distances_ratios):
+-                point.elevation = start.elevation + ratio * (end.elevation - start.elevation)
+-
+-        self.add_missing_data(get_data_function=lambda point: point.elevation,
+-                              add_missing_function=_add)
+-
+-    def add_missing_times(self) -> None:
+-        def _add(interval: List[GPXTrackPoint], start: GPXTrackPoint, end: GPXTrackPoint, distances_ratios: List[float]) -> None:
+-            if (not start) or (not end) or (not start.time) or (not end.time):
+-                return
+-            assert interval
++    def add_missing_data(self, get_data_function: Callable[[GPXTrackPoint], Any
++        ], add_missing_function: Callable[[List[GPXTrackPoint], GPXTrackPoint,
++        GPXTrackPoint, List[float]], None]) ->None:
++        pass
++
++    def add_missing_elevations(self) ->None:
++        pass
+             assert len(interval) == len(distances_ratios)
+ 
+             if end.time and start.time:

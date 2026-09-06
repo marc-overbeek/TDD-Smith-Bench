@@ -1,0 +1,57 @@
+--- a/safety/models.py
++++ b/safety/models.py
+@@ -52,17 +52,8 @@
+     """
+     A subclass of Requirement that includes additional attributes and methods for safety requirements.
+     """
+-    def __init__(self, requirement: Union[str, Dependency], found: Optional[str] = None) -> None:
+-        """
+-        Initialize a SafetyRequirement.
+-
+-        Args:
+-            requirement (Union[str, Dependency]): The requirement as a string or Dependency object.
+-            found (Optional[str], optional): Where the requirement was found. Defaults to None.
+-
+-        Raises:
+-            InvalidRequirementError: If the requirement cannot be parsed.
+-        """
++    def __init__(self, requirement: Union[str, Dependency], found: Optional[str
++        ]=None) ->None:
+         dep = requirement
+ 
+         if isinstance(requirement, str):
+@@ -92,7 +83,7 @@
+         self.raw = raw_line
+         self.found = found
+ 
+-    def __eq__(self, other: Any) -> bool:
++    def __eq__(self, other: Any) ->bool:
+         return str(self) == str(other)
+ 
+     def to_dict(self, **kwargs: Any) -> Dict:
+@@ -120,22 +111,10 @@
+                     }
+ 
+ 
+-def is_pinned_requirement(spec: SpecifierSet) -> bool:
+-    """
+-    Check if a requirement is pinned.
+-
+-    Args:
+-        spec (SpecifierSet): The specifier set of the requirement.
+-
+-    Returns:
+-        bool: True if the requirement is pinned, False otherwise.
+-    """
+-    if not spec or len(spec) != 1:
++def is_pinned_requirement(spec: SpecifierSet) ->bool:
++    if not spec:
+         return False
+-
+-    specifier = next(iter(spec))
+-
+-    return (specifier.operator == '==' and '*' != specifier.version[-1]) or specifier.operator == '==='
++    return len(spec) == 1 and next(iter(spec)).operator in ('==', '===', '!=', '!==')
+ 
+ 
+ @dataclass

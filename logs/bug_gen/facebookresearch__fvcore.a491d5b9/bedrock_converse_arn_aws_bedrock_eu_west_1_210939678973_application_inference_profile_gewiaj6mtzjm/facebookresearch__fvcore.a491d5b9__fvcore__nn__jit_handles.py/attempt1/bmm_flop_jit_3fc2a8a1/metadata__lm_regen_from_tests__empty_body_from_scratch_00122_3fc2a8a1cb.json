@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef bmm_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:\n    \"\"\"\n    Count flops for batch matrix multiplication.\n    \"\"\"\n    # Inputs is a list of length 2.\n    # Inputs contains the shapes of two matrices.\n    input_shapes = [get_shape(v) for v in inputs]\n    assert len(input_shapes) == 2, input_shapes\n    assert input_shapes[0][-1] == input_shapes[1][-2], input_shapes\n    flop = prod(input_shapes[0]) * input_shapes[-1][-1]\n    return flop\n```",
+  "rewrite": "def bmm_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:\n    \"\"\"\n    Count flops for batch matrix multiplication.\n    \"\"\"\n    # Inputs is a list of length 2.\n    # Inputs contains the shapes of two matrices.\n    input_shapes = [get_shape(v) for v in inputs]\n    assert len(input_shapes) == 2, input_shapes\n    assert input_shapes[0][-1] == input_shapes[1][-2], input_shapes\n    flop = prod(input_shapes[0]) * input_shapes[-1][-1]\n    return flop",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,35 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -850,12 +850,32 @@
+         else:
+             return self.src_weight * self.src_image + self.dst_weight * img
+ 
++    def test_blend_coords_transforms(self):
++        """
++            Test BlendTransform.
++            """
++        _trans_name = 'BlendTransform'
++        for coords in TestTransforms._coords_provider(w_max=10, h_max=20):
++            params = (coords, 0.0, 1.0), (coords, 0.3, 0.7), (coords, 0.5, 0.5), (
++                coords, 0.7, 0.3), (coords, 1.0, 0.0)
++            for param in params:
++                gt_transformer = getattr(self, '{}_coords_gt'.format(_trans_name))
++                transformer = getattr(T, _trans_name)(*param)
++                result = transformer.apply_coords(np.copy(coords))
++                coords_gt, shape_gt = gt_transformer(np.copy(coords), *param)
++
+     def apply_coords(self, coords: np.ndarray) -> np.ndarray:
+         """
+         Apply no transform on the coordinates.
+         """
+         return coords
+ 
++    def apply_coords(self, coords: np.ndarray) -> np.ndarray:
++        """
++        Apply no transform on the coordinates.
++        """
++        return coords
++
+     def apply_segmentation(self, segmentation: np.ndarray) -> np.ndarray:
+         """
+         Apply no transform on the full-image segmentation.

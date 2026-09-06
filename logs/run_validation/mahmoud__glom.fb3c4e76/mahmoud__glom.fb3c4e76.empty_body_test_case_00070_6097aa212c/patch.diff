@@ -1,0 +1,63 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -262,13 +262,7 @@
+ 
+ class _Bool:
+     def __init__(self, *children, **kw):
+-        self.children = children
+-        if not children:
+-            raise ValueError("need at least one operand for {}".format(
+-                self.__class__.__name__))
+-        self.default = kw.pop('default', _MISSING)
+-        if kw:
+-            raise TypeError('got unexpected kwargs: %r' % list(kw.keys()))
++        pass
+ 
+     def __and__(self, other):
+         return And(self, other)
+@@ -280,12 +274,7 @@
+         return Not(self)
+ 
+     def glomit(self, target, scope):
+-        try:
+-            return self._glomit(target, scope)
+-        except GlomError:
+-            if self.default is not _MISSING:
+-                return arg_val(target, self.default, scope)
+-            raise
++        pass
+ 
+     def _m_repr(self):
+         """should this Or() repr as M |?"""
+@@ -335,12 +324,7 @@
+     __slots__ = ('children',)
+ 
+     def _glomit(self, target, scope):
+-        for child in self.children[:-1]:
+-            try:  # one child must match without exception
+-                return scope[glom](target, child, scope)
+-            except GlomError:
+-                pass
+-        return scope[glom](target, self.children[-1], scope)
++        pass
+ 
+     def __or__(self, other):
+         # reduce number of layers of spec
+@@ -433,7 +417,7 @@
+     __rand__ = __and__
+ 
+     def __or__(self, other):
+-        return Or(self, other)
++        pass
+ 
+     def __invert__(self):
+         return Not(self)
+@@ -536,7 +520,7 @@
+         return _MExpr(self, '>', other)
+ 
+     def __lt__(self, other):
+-        return _MExpr(self, '<', other)
++        pass
+ 
+     def __ge__(self, other):
+         return _MExpr(self, 'g', other)

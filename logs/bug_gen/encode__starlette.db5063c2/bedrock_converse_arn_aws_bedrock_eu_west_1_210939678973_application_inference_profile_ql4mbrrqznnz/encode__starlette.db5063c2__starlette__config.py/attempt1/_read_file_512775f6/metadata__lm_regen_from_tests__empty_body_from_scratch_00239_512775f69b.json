@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef _read_file(self, file_name: str | Path) -> dict[str, str]:\n    file_values: dict[str, str] = {}\n    with open(file_name) as input_file:\n        for line in input_file.readlines():\n            line = line.strip()\n            if \"=\" in line and not line.startswith(\"#\"):\n                key, value = line.split(\"=\", 1)\n                key = key.strip()\n                value = value.strip().strip(\"\\\"'\")\n                file_values[key] = value\n    return file_values\n```",
+  "rewrite": "def _read_file(self, file_name: str | Path) -> dict[str, str]:\n    file_values: dict[str, str] = {}\n    with open(file_name) as input_file:\n        for line in input_file.readlines():\n            line = line.strip()\n            if \"=\" in line and not line.startswith(\"#\"):\n                key, value = line.split(\"=\", 1)\n                key = key.strip()\n                value = value.strip().strip(\"\\\"'\")\n                file_values[key] = value\n    return file_values\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

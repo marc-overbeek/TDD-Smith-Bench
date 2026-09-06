@@ -1,0 +1,29 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/authorization.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/authorization.py
+@@ -89,14 +89,24 @@
+         request = Request(
+             uri, http_method=http_method, body=body, headers=headers)
+         request.scopes = scopes
+-        # TODO: decide whether this should be a required argument
+-        request.user = None     # TODO: explain this in docs
++        request.user = None
+         for k, v in (credentials or {}).items():
+             setattr(request, k, v)
++    
+         response_type_handler = self.response_types.get(
+             request.response_type, self.default_response_type_handler)
+         log.debug('Dispatching response_type %s request to %r.',
+                   request.response_type, response_type_handler)
++    
++        # Validate the authorization request first
++        validated_scopes, validated_credentials = response_type_handler.validate_authorization_request(request)
++    
++        # Update request with validated values
++        request.scopes = validated_scopes
++        for k, v in validated_credentials.items():
++            setattr(request, k, v)
++    
++        # Create and return the authorization response
+         return response_type_handler.create_authorization_response(
+             request, self.default_token_type)
+ 

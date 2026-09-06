@@ -1,0 +1,104 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -55,46 +55,16 @@
+     day-to-day use.
+     """
+     def __init__(self, subspec, init, op=operator.iadd):
+-        self.subspec = subspec
+-        self.init = init
+-        self.op = op
+-        if not callable(op):
+-            raise TypeError('expected callable for %s op param, not: %r' %
+-                            (self.__class__.__name__, op))
+-        if not callable(init):
+-            raise TypeError('expected callable for %s init param, not: %r' %
+-                            (self.__class__.__name__, init))
++        pass
+ 
+     def glomit(self, target, scope):
+-        is_agg = False
+-        if scope[MODE] is GROUP and scope.get(CUR_AGG) is None:
+-            scope[CUR_AGG] = self
+-            is_agg = True
+-
+-        if self.subspec is not T:
+-            target = scope[glom](target, self.subspec, scope)
+-
+-        if is_agg:
+-            return self._agg(target, scope[ACC_TREE])
+-        try:
+-            return self._fold(target_iter(target, scope))
+-        except UnregisteredTarget as ut:
+-            raise FoldError('can only %s on iterable targets, not %s type (%s)'
+-                            % (self.__class__.__name__, type(target).__name__, ut))
++        pass
+ 
+     def _fold(self, iterator):
+-        ret, op = self.init(), self.op
+-
+-        for v in iterator:
+-            ret = op(ret, v)
+-
+-        return ret
++        pass
+ 
+     def _agg(self, target, tree):
+-        if self not in tree:
+-            tree[self] = self.init()
+-        tree[self] = self.op(tree[self], target)
+-        return tree[self]
++        pass
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__
+@@ -163,17 +133,10 @@
+     collections during intermediate processing steps.
+     """
+     def __init__(self, subspec=T, init=list):
+-        if init == 'lazy':
+-            self.lazy = True
+-            init = list
+-        else:
+-            self.lazy = False
+-        super().__init__(subspec=subspec, init=init, op=operator.iadd)
++        pass
+ 
+     def _fold(self, iterator):
+-        if self.lazy:
+-            return itertools.chain.from_iterable(iterator)
+-        return super()._fold(iterator)
++        pass
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__
+@@ -289,15 +252,7 @@
+ 
+     """
+     def __init__(self, subspec=T, init=dict, op=None):
+-        if op is None:
+-            op = 'update'
+-        if isinstance(op, basestring):
+-            test_init = init()
+-            op = getattr(type(test_init), op, None)
+-        if not callable(op):
+-            raise ValueError('expected callable "op" arg or an "init" with an .update()'
+-                             ' method not %r and %r' % (op, init))
+-        super().__init__(subspec=subspec, init=init, op=op)
++        pass
+ 
+     def _fold(self, iterator):
+         # the difference here is that ret is mutated in-place, the
+@@ -311,12 +266,7 @@
+ 
+ 
+     def _agg(self, target, tree):
+-        if self not in tree:
+-            acc = tree[self] = self.init()
+-        else:
+-            acc = tree[self]
+-        self.op(acc, target)
+-        return acc
++        pass
+ 
+ 
+ def merge(target, **kwargs):

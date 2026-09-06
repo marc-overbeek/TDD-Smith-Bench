@@ -1,0 +1,16 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -449,12 +449,9 @@
+ 
+ 
+ def clean_license_command(f):
+-    """
+-    Main entry point for validation.
+-    """
+     @wraps(f)
+     def inner(ctx, *args, **kwargs):
+-        # TODO: Remove this soon, for now it keeps a legacy behavior
++        # Remove legacy options that are handled by the custom subgroup Click class
+         kwargs.pop("key", None)
+         kwargs.pop('proxy_protocol', None)
+         kwargs.pop('proxy_host', None)

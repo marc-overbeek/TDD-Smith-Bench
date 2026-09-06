@@ -1,0 +1,50 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -46,13 +46,6 @@
+     """
+ 
+     def _set_attributes(self, params: Optional[List[Any]] = None) -> None:
+-        """
+-        Set attributes from the input list of parameters.
+-
+-        Args:
+-            params (list): list of parameters.
+-        """
+-
+         if params:
+             for k, v in params.items():
+                 if k != "self" and not k.startswith("_"):
+@@ -816,33 +809,10 @@
+     """
+ 
+     def __init__(self, src_image: np.ndarray, src_weight: float, dst_weight: float):
+-        """
+-        Blends the input image (dst_image) with the src_image using formula:
+-        ``src_weight * src_image + dst_weight * dst_image``
+-
+-        Args:
+-            src_image (ndarray): Input image is blended with this image.
+-                The two images must have the same shape, range, channel order
+-                and dtype.
+-            src_weight (float): Blend weighting of src_image
+-            dst_weight (float): Blend weighting of dst_image
+-        """
+         super().__init__()
+         self._set_attributes(locals())
+ 
+     def apply_image(self, img: np.ndarray, interp: str = None) -> np.ndarray:
+-        """
+-        Apply blend transform on the image(s).
+-
+-        Args:
+-            img (ndarray): of shape NxHxWxC, or HxWxC or HxW. The array can be
+-                of type uint8 in range [0, 255], or floating point in range
+-                [0, 1] or [0, 255].
+-            interp (str): keep this option for consistency, perform blend would not
+-                require interpolation.
+-        Returns:
+-            ndarray: blended image(s).
+-        """
+         if img.dtype == np.uint8:
+             img = img.astype(np.float32)
+             img = self.src_weight * self.src_image + self.dst_weight * img

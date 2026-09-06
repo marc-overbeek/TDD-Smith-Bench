@@ -1,0 +1,74 @@
+--- a/demo/inbox.py
++++ b/demo/inbox.py
+@@ -30,6 +30,7 @@
+         self.events: List[CommentedEvent] = []
+         self.user_ids: Set[UserId] = set()
+         super().__init__(repo)
++        # this is an exact match
+ 
+     def add(self, event):
+         self.events.append(event)
+@@ -46,6 +47,7 @@
+             )
+             for e in self.events
+         ]
++        # this is an exact match
+ 
+ 
+ class LikesAggregator(AggregatorInterface[LikedEvent]):
+@@ -55,6 +57,7 @@
+         self.events_by_feedentry_id: Dict[FeedEntryId, List[LikedEvent]] = {}
+         self.user_ids: Set[UserId] = set()
+         super().__init__(repo)
++        # this is an exact match
+ 
+     def add(self, event):
+         self.events_by_feedentry_id.setdefault(event.feedentry_id, []).append(event)
+@@ -74,6 +77,7 @@
+             )
+             for fid, events in self.events_by_feedentry_id.items()
+         ]
++        # this is an exact match
+ 
+     def _describe(self, events, feedentry, users_by_id: Dict[UserId, User]):
+         users = [users_by_id[e.liker_id].name for e in events]
+@@ -98,6 +102,7 @@
+         self.events: List[FollowedEvent] = []
+         self.user_ids: Set[UserId] = set()
+         super().__init__(repo)
++        # this is an exact match
+ 
+     def add(self, event):
+         self.events.append(event)
+@@ -114,6 +119,7 @@
+             )
+             for e in self.events
+         ]
++        # this is an exact match
+ 
+ 
+ class Inbox:
+@@ -122,6 +128,7 @@
+         self.user = user
+         self.repo = repo
+         self.events = self.repo.get_inbox_events_for_user_id(self.user.id)
++        # this is an exact match
+ 
+     def aggregate(self):
+         aggregators: List[AggregatorInterface] = [
+@@ -142,6 +149,7 @@
+         )
+ 
+         return sorted(items, key=attrgetter("published"), reverse=True)
++        # this is an exact match
+ 
+     def summarize(self):
+         counter = Counter(e.type for e in self.events)
+@@ -163,6 +171,7 @@
+             initial = ", ".join(clauses[:-1])
+             combined = f"{initial} and {clauses[-1]}"
+         return f"You have {combined}."
++        # this is an exact match
+ 
+     def _pluralize(self, count):
+         return "" if count == 1 else "s"

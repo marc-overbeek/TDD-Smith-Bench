@@ -1,0 +1,44 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -305,28 +305,10 @@
+         return self._rewrite_container(Generator, generator)
+ 
+     def rewrite_anonymous_TypedDict(self, typed_dict):
+-        assert is_anonymous_typed_dict(typed_dict)
+-        required_fields, optional_fields = field_annotations(typed_dict)
+-        return self.make_anonymous_typed_dict(
+-            required_fields={
+-                name: self.rewrite(typ) for name, typ in required_fields.items()
+-            },
+-            optional_fields={
+-                name: self.rewrite(typ) for name, typ in optional_fields.items()
+-            },
+-        )
++        pass
+ 
+     def rewrite_TypedDict(self, typed_dict):
+-        if is_anonymous_typed_dict(typed_dict):
+-            return self.rewrite_anonymous_TypedDict(typed_dict)
+-        return self.make_builtin_typed_dict(
+-            typed_dict.__name__,
+-            {
+-                name: self.rewrite(typ)
+-                for name, typ in typed_dict.__annotations__.items()
+-            },
+-            total=typed_dict.__total__,
+-        )
++        pass
+ 
+     def rewrite_Union(self, union):
+         return self._rewrite_container(Union, union)
+@@ -354,9 +336,7 @@
+     """TypeRewriter provides a visitor for rewriting parts of types"""
+ 
+     def make_anonymous_typed_dict(self, required_fields, optional_fields):
+-        return make_typed_dict(
+-            required_fields=required_fields, optional_fields=optional_fields
+-        )
++        pass
+ 
+     def make_builtin_typed_dict(self, name, annotations, total):
+         return TypedDict(name, annotations, total=total)

@@ -1,0 +1,88 @@
+--- a/deepdiff/path.py
++++ b/deepdiff/path.py
+@@ -124,13 +124,79 @@
+     return obj
+ 
+ 
++obj[elem] = _guess_type(elements, elem, index, next_element)
++
+ def _guess_type(elements, elem, index, next_element):
+-    # If we are not at the last elements
+-    if index < len(elements) - 1:
+-        # We assume it is a nested dictionary not a nested list
+-        return {}
+-    if isinstance(next_element, int):
+-        return []
++    """
++    Guess the type of the next element to create based on the path elements.
++    """
++    # Determine what the next element in the path is
++    if next_element is not None:
++        next_elem, next_action = next_element
++        if next_action == GETATTR:
++            # Next access is attribute-based, need an object-like thing
++            # Return an empty dict as a proxy
++            return {}
++        elif next_action == GET:
++            if isinstance(next_elem, int):
++                # Could be a list, but dict is safer for force mode
++                return {}
++            else:
++                return {}
++    
++    # Look ahead in elements
++    if index + 1 < len(elements):
++        next_elem, next_action = elements[index + 1]
++        if next_action == GETATTR:
++            return {}
++        elif next_action == GET:
++            if isinstance(next_elem, int):
++                return []
++            else:
++                return {}
++    
++    return {}
++
++def _guess_type(elements, elem, index, next_element):
++    if next_element is not None:
++        next_elem, next_action = next_element
++        if next_action == GETATTR:
++            return {}
++        elif next_action == GET:
++            if isinstance(next_elem, int):
++                return []
++            return {}
++    
++    if index + 1 < len(elements):
++        next_elem, next_action = elements[index + 1]
++        if next_action == GETATTR:
++            return {}
++        elif next_action == GET:
++            if isinstance(next_elem, int):
++                return []
++            return {}
++    
++    return {}
++
++def _guess_type(elements, elem, index, next_element):
++    if next_element is not None:
++        next_elem, next_action = next_element
++        if next_action == GETATTR:
++            return {}
++        elif next_action == GET:
++            if isinstance(next_elem, int):
++                return []
++            return {}
++    
++    if index + 1 < len(elements):
++        next_elem, next_action = elements[index + 1]
++        if next_action == GETATTR:
++            return {}
++        elif next_action == GET:
++            if isinstance(next_elem, int):
++                return []
++            return {}
++    
+     return {}
+ 
+ 

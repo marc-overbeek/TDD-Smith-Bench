@@ -1,0 +1,35 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -219,29 +219,9 @@
+     return sig.replace(return_annotation=anno)
+ 
+ 
+-def shrink_traced_types(
+-    traces: Iterable[CallTrace],
+-    max_typed_dict_size: int,
+-) -> Tuple[Dict[str, type], Optional[type], Optional[type]]:
+-    """Merges the traced types and returns the minimally equivalent types"""
+-    arg_types: DefaultDict[str, Set[type]] = collections.defaultdict(set)
+-    return_types: Set[type] = set()
+-    yield_types: Set[type] = set()
+-    for t in traces:
+-        for arg, typ in t.arg_types.items():
+-            arg_types[arg].add(typ)
+-        if t.return_type is not None:
+-            return_types.add(t.return_type)
+-        if t.yield_type is not None:
+-            yield_types.add(t.yield_type)
+-    shrunken_arg_types = {
+-        name: shrink_types(ts, max_typed_dict_size) for name, ts in arg_types.items()
+-    }
+-    return_type = (
+-        shrink_types(return_types, max_typed_dict_size) if return_types else None
+-    )
+-    yield_type = shrink_types(yield_types, max_typed_dict_size) if yield_types else None
+-    return (shrunken_arg_types, return_type, yield_type)
++def shrink_traced_types(traces: Iterable[CallTrace], max_typed_dict_size: int
++    ) ->Tuple[Dict[str, type], Optional[type], Optional[type]]:
++    pass
+ 
+ 
+ def get_typed_dict_class_name(parameter_name: str) -> str:

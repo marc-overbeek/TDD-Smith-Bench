@@ -1,0 +1,46 @@
+--- a/oauthlib/oauth1/rfc5849/signature.py
++++ b/oauthlib/oauth1/rfc5849/signature.py
+@@ -583,16 +583,33 @@
+ 
+ def _prepare_key_plus(alg, keystr):
+     """
+-    Prepare a PEM encoded key (public or private), by invoking the `prepare_key`
+-    method on alg with the keystr.
+-
+-    The keystr should be a string or bytes.  If the keystr is bytes, it is
+-    decoded as UTF-8 before being passed to prepare_key. Otherwise, it
+-    is passed directly.
+-    """
+-    if isinstance(keystr, bytes):
+-        keystr = keystr.decode('utf-8')
+-    return alg.prepare_key(keystr)
++    Prepare an RSA key for use with JWT RSA algorithms.
++    
++    This function converts a PEM-encoded RSA key string into a format
++    suitable for use with the JWT library's RSA algorithms.
++    """
++    from cryptography.hazmat.primitives import serialization
++    from cryptography.hazmat.backends import default_backend
++    
++    # Try to parse as private key first
++    try:
++        key = serialization.load_pem_private_key(
++            keystr.encode('utf-8') if isinstance(keystr, str) else keystr,
++            password=None,
++            backend=default_backend()
++        )
++        return key
++    except Exception:
++        # If that fails, try to parse as public key
++        try:
++            key = serialization.load_pem_public_key(
++                keystr.encode('utf-8') if isinstance(keystr, str) else keystr,
++                backend=default_backend()
++            )
++            return key
++        except Exception:
++            # If both fail, raise the original error
++            raise ValueError("Invalid RSA key format")
+ 
+ 
+ def _sign_rsa(hash_algorithm_name: str,

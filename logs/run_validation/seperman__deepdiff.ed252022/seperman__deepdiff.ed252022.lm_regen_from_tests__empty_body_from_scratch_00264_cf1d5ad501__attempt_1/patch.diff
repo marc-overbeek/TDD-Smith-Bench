@@ -1,0 +1,12 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -372,6 +372,9 @@
+ 
+ 
+ def numpy_dtype_string_to_type(dtype_str):
++    from deepdiff.diff import DeltaError
++    if dtype_str not in numpy_dtype_str_to_type:
++        raise DeltaError(f"'{dtype_str}' is not a valid numpy type.")
+     return numpy_dtype_str_to_type[dtype_str]
+ 
+ 

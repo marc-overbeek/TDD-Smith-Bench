@@ -1,0 +1,121 @@
+--- a/safety/scan/main.py
++++ b/safety/scan/main.py
+@@ -125,35 +125,93 @@
+         config.write(configfile)
+ 
+ 
+-def load_policy_file(path: Path) -> Optional[PolicyFileModel]:
+-    """
+-    Loads a policy file from the specified path.
+-
+-    Args:
+-        path (Path): The path to the policy file.
+-
+-    Returns:
+-        Optional[PolicyFileModel]: PolicyFileModel object if successful, otherwise None.
+-    """
+-    config = None
+-
+-    if not path or not path.exists():
+-        return None
+-
+-    err = f'Unable to load the Safety Policy file ("{path}"), this command ' \
+-        "only supports version 3.0"
+-
++def load_policy_file(path: Path) ->Optional[PolicyFileModel]:
++    import yaml
++    import importlib
++    from safety_schemas.models import ConfigModel
++    
+     try:
+-        config = ConfigModel.parse_policy_file(raw_report=path)
++        with open(path, 'r') as f:
++            yml_raw = yaml.safe_load(f)
++        
++        if not yml_raw:
++            return None
++        
++        # Try to determine version from the file
++        version = yml_raw.get('version', '2.0')
++        
++        config = None
++        err = f'Unable to load the Safety Policy file ("{path}")'
++        
++        if version == '3.0':
++            module_name = "safety_schemas.config.schemas.v3_0.main"
++            module = importlib.import_module(module_name)
++            config_model = module.Config
++            validated_policy_file = config_model.parse_obj(yml_raw)
++            config = ConfigModel.from_v30(obj=validated_policy_file)
++        else:
++            # Version 2.0
++            module_name = "safety_schemas.config.schemas.v2_0.main"
++            module = importlib.import_module(module_name)
++            config_model = module.Config
++            validated_policy_file = config_model.parse_obj(yml_raw)
++            config = ConfigModel.from_v20(obj=validated_policy_file)
++        
++        return PolicyFileModel(
++            id=None,
++            source=PolicySource.local,
++            location=path,
++            config=config
++        )
+     except ValidationError as e:
+         LOG.error(f"Failed to parse policy file {path}.", exc_info=True)
+-        raise SafetyError(f"{err}, details: {e}")
+-    except ValueError as e:
++        raise SafetyError(f'{err}, details: {e}')
++    except (ValueError, FileNotFoundError) as e:
+         LOG.error(f"Wrong YML file for policy file {path}.", exc_info=True)
+-        raise SafetyError(f"{err}, details: {e}")
+-
+-    return PolicyFileModel(id=str(path), source=PolicySource.local,
+-                           location=path, config=config)
++        raise SafetyError(f'{err}, details: {e}')
++
++def load_policy_file(path: Path) ->Optional[PolicyFileModel]:
++    import yaml
++    import importlib
++    from safety_schemas.models import ConfigModel
++    
++    try:
++        with open(path, 'r') as f:
++            yml_raw = yaml.safe_load(f)
++        
++        if not yml_raw:
++            return None
++        
++        version = yml_raw.get('version', '2.0')
++        config = None
++        err = f'Unable to load the Safety Policy file ("{path}")'
++        
++        if version == '3.0':
++            module_name = "safety_schemas.config.schemas.v3_0.main"
++        else:
++            module_name = "safety_schemas.config.schemas.v2_0.main"
++        
++        module = importlib.import_module(module_name)
++        config_model = module.Config
++        validated_policy_file = config_model.parse_obj(yml_raw)
++        
++        if version == '3.0':
++            config = ConfigModel.from_v30(obj=validated_policy_file)
++        else:
++            config = ConfigModel.from_v20(obj=validated_policy_file)
++        
++        return PolicyFileModel(
++            id=None,
++            source=PolicySource.local,
++            location=path,
++            config=config
++        )
++    except ValidationError as e:
++        LOG.error(f"Failed to parse policy file {path}.", exc_info=True)
++        raise SafetyError(f'{err}, details: {e}')
++    except (ValueError, FileNotFoundError) as e:
++        LOG.error(f"Wrong YML file for policy file {path}.", exc_info=True)
++        raise SafetyError(f'{err}, details: {e}')
+ 
+ 
+ def resolve_policy(local_policy: Optional[PolicyFileModel], cloud_policy: Optional[PolicyFileModel]) -> Optional[PolicyFileModel]:

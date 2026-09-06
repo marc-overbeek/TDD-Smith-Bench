@@ -1,0 +1,26 @@
+--- a/fvcore/nn/precise_bn.py
++++ b/fvcore/nn/precise_bn.py
+@@ -140,20 +140,9 @@
+ 
+     batch_size_per_bn_layer: Dict[nn.Module, int] = {}
+ 
+-    def get_bn_batch_size_hook(
+-        module: nn.Module, input: Tuple[torch.Tensor]
+-    ) -> Tuple[torch.Tensor]:
+-        assert (
+-            module not in batch_size_per_bn_layer
+-        ), "Some BN layers are reused. This is not supported and probably not desired."
+-        x = input[0]
+-        assert isinstance(
+-            x, torch.Tensor
+-        ), f"BN layer should take tensor as input. Got {input}"
+-        # consider spatial dimensions as batch as well
+-        batch_size = x.numel() // x.shape[1]
+-        batch_size_per_bn_layer[module] = batch_size
+-        return (x,)
++    def get_bn_batch_size_hook(module: nn.Module, input: Tuple[torch.Tensor]
++        ) ->Tuple[torch.Tensor]:
++        pass
+ 
+     hooks_to_remove = [
+         bn.register_forward_pre_hook(get_bn_batch_size_hook) for bn in bn_layers

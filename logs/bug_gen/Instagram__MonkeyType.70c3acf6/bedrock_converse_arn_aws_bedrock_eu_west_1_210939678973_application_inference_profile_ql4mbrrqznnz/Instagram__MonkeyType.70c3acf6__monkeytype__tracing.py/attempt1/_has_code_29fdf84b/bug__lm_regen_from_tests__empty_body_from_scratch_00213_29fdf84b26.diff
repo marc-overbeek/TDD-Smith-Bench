@@ -1,0 +1,25 @@
+--- a/monkeytype/tracing.py
++++ b/monkeytype/tracing.py
+@@ -118,15 +118,13 @@
+     return _has_code(cand, code)
+ 
+ 
+-def _has_code(
+-    func: Optional[Callable[..., Any]], code: CodeType
+-) -> Optional[Callable[..., Any]]:
+-    while func is not None:
+-        func_code = getattr(func, "__code__", None)
+-        if func_code is code:
+-            return func
+-        # Attempt to find the decorated function
+-        func = getattr(func, "__wrapped__", None)
++def _has_code(func: Optional[Callable[..., Any]], code: CodeType) ->Optional[
++    Callable[..., Any]]:
++    if func is None:
++        return None
++    func_code = getattr(func, '__code__', None)
++    if func_code is code:
++        return func
+     return None
+ 
+ 

@@ -1,0 +1,28 @@
+--- a/safety/auth/models.py
++++ b/safety/auth/models.py
+@@ -32,23 +32,8 @@
+     name: Optional[str] = None
+     email_verified: bool = False
+ 
+-    def is_valid(self) -> bool:
+-        """
+-        Check if the authentication information is valid.
+-
+-        Returns:
+-            bool: True if valid, False otherwise.
+-        """
+-        if os.getenv("SAFETY_DB_DIR"):
+-            return True
+-
+-        if not self.client:
+-            return False
+-
+-        if self.client.api_key:
+-            return True
+-
+-        return bool(self.client.token and self.email_verified)
++    def is_valid(self) ->bool:
++        pass
+ 
+     def refresh_from(self, info: Dict) -> None:
+         """

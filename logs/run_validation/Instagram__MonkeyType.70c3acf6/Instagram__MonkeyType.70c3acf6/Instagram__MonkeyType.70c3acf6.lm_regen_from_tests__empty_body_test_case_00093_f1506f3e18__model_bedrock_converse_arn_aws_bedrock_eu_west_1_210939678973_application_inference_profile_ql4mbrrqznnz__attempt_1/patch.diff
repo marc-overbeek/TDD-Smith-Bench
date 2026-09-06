@@ -1,0 +1,57 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -52,21 +52,19 @@
+     return is_generic(typ) and name_of_generic(typ) == "List"
+ 
+ 
+-def make_typed_dict(*, required_fields=None, optional_fields=None) -> type:
+-    required_fields = required_fields or {}
+-    optional_fields = optional_fields or {}
+-    assert required_fields.keys().isdisjoint(optional_fields.keys())
+-    return TypedDict(
+-        DUMMY_TYPED_DICT_NAME,
+-        {
+-            "required_fields": TypedDict(
+-                DUMMY_REQUIRED_TYPED_DICT_NAME, required_fields
+-            ),
+-            "optional_fields": TypedDict(
+-                DUMMY_OPTIONAL_TYPED_DICT_NAME, optional_fields
+-            ),
+-        },
+-    )
++def make_typed_dict(*, required_fields=None, optional_fields=None) ->type:
++    if required_fields is None:
++        required_fields = {}
++    if optional_fields is None:
++        optional_fields = {}
++    
++    RequiredFields = TypedDict(DUMMY_REQUIRED_TYPED_DICT_NAME, required_fields, total=True)
++    OptionalFields = TypedDict(DUMMY_OPTIONAL_TYPED_DICT_NAME, optional_fields, total=False)
++    
++    return TypedDict(DUMMY_TYPED_DICT_NAME, {
++        'required_fields': RequiredFields,
++        'optional_fields': OptionalFields,
++    })
+ 
+ 
+ def field_annotations(typed_dict) -> Tuple[Dict[str, type], Dict[str, type]]:
+@@ -462,11 +460,14 @@
+     def rewrite_anonymous_TypedDict(self, typed_dict):
+         assert is_anonymous_typed_dict(typed_dict)
+         required_fields, optional_fields = field_annotations(typed_dict)
+-        all_value_types = [*required_fields.values(), *optional_fields.values()]
+-        if not all_value_types:
+-            # Special-case this because we can't justify any type.
+-            return Dict[Any, Any]
+-        return Dict[str, Union[tuple(self.rewrite(typ) for typ in all_value_types)]]
++        return self.make_anonymous_typed_dict(
++            required_fields={
++                name: self.rewrite(typ) for name, typ in required_fields.items()
++            },
++            optional_fields={
++                name: self.rewrite(typ) for name, typ in optional_fields.items()
++            },
++        )
+ 
+ 
+ class ChainedRewriter(TypeRewriter):

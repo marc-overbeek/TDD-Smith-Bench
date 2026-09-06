@@ -1,0 +1,34 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -156,27 +156,10 @@
+     """
+     Used for to (de)serialize fields with simple field<->xml_tag mapping.
+     """
+-    def __init__(self, name: Optional[str], tag: Optional[str]=None, attribute: Optional[str]=None, type: Any=None,
+-                 possible: Optional[Iterable[str]]=None, mandatory: Optional[bool]=None) -> None:
+-        AbstractGPXField.__init__(self)
+-        self.name = name
+-        if tag and attribute:
+-            from . import gpx as mod_gpx
+-            raise mod_gpx.GPXException('Only tag *or* attribute may be given!')
+-
+-        self.tag: Optional[str] = None
+-        if attribute:
+-            self.tag = None
+-            self.attribute = attribute
+-        elif tag:
+-            self.tag = name if (tag is True) else tag # type: ignore
+-            self.attribute = None
+-        else:
+-            self.tag = name
+-            self.attribute = None
+-        self.type_converter = type
+-        self.possible = possible
+-        self.mandatory = mandatory
++    def __init__(self, name: Optional[str], tag: Optional[str]=None, attribute:
++        Optional[str]=None, type: Any=None, possible: Optional[Iterable[str]]=
++        None, mandatory: Optional[bool]=None) ->None:
++        pass
+ 
+     def from_xml(self, node: Any, version: str) -> Any:
+         if self.attribute:

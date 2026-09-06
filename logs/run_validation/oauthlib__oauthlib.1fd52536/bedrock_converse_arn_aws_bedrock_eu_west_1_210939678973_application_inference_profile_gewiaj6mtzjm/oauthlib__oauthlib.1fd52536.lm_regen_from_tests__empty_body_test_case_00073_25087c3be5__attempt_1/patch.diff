@@ -1,0 +1,89 @@
+--- a/oauthlib/oauth2/rfc6749/grant_types/implicit.py
++++ b/oauthlib/oauth2/rfc6749/grant_types/implicit.py
+@@ -122,43 +122,6 @@
+         :type request: oauthlib.common.Request
+         :param token_handler: A token handler instance, for example of type
+                               oauthlib.oauth2.BearerToken.
+-
+-        The client constructs the request URI by adding the following
+-        parameters to the query component of the authorization endpoint URI
+-        using the "application/x-www-form-urlencoded" format, per `Appendix B`_:
+-
+-        response_type
+-                REQUIRED.  Value MUST be set to "token" for standard OAuth2 implicit flow
+-                           or "id_token token" or just "id_token" for OIDC implicit flow
+-
+-        client_id
+-                REQUIRED.  The client identifier as described in `Section 2.2`_.
+-
+-        redirect_uri
+-                OPTIONAL.  As described in `Section 3.1.2`_.
+-
+-        scope
+-                OPTIONAL.  The scope of the access request as described by
+-                `Section 3.3`_.
+-
+-        state
+-                RECOMMENDED.  An opaque value used by the client to maintain
+-                state between the request and callback.  The authorization
+-                server includes this value when redirecting the user-agent back
+-                to the client.  The parameter SHOULD be used for preventing
+-                cross-site request forgery as described in `Section 10.12`_.
+-
+-        The authorization server validates the request to ensure that all
+-        required parameters are present and valid.  The authorization server
+-        MUST verify that the redirection URI to which it will redirect the
+-        access token matches a redirection URI registered by the client as
+-        described in `Section 3.1.2`_.
+-
+-        .. _`Section 2.2`: https://tools.ietf.org/html/rfc6749#section-2.2
+-        .. _`Section 3.1.2`: https://tools.ietf.org/html/rfc6749#section-3.1.2
+-        .. _`Section 3.3`: https://tools.ietf.org/html/rfc6749#section-3.3
+-        .. _`Section 10.12`: https://tools.ietf.org/html/rfc6749#section-10.12
+-        .. _`Appendix B`: https://tools.ietf.org/html/rfc6749#appendix-B
+         """
+         return self.create_token_response(request, token_handler)
+ 
+@@ -169,42 +132,6 @@
+         :type request: oauthlib.common.Request
+         :param token_handler: A token handler instance, for example of type
+                               oauthlib.oauth2.BearerToken.
+-
+-        If the resource owner grants the access request, the authorization
+-        server issues an access token and delivers it to the client by adding
+-        the following parameters to the fragment component of the redirection
+-        URI using the "application/x-www-form-urlencoded" format, per
+-        `Appendix B`_:
+-
+-        access_token
+-                REQUIRED.  The access token issued by the authorization server.
+-
+-        token_type
+-                REQUIRED.  The type of the token issued as described in
+-                `Section 7.1`_.  Value is case insensitive.
+-
+-        expires_in
+-                RECOMMENDED.  The lifetime in seconds of the access token.  For
+-                example, the value "3600" denotes that the access token will
+-                expire in one hour from the time the response was generated.
+-                If omitted, the authorization server SHOULD provide the
+-                expiration time via other means or document the default value.
+-
+-        scope
+-                OPTIONAL, if identical to the scope requested by the client;
+-                otherwise, REQUIRED.  The scope of the access token as
+-                described by `Section 3.3`_.
+-
+-        state
+-                REQUIRED if the "state" parameter was present in the client
+-                authorization request.  The exact value received from the
+-                client.
+-
+-        The authorization server MUST NOT issue a refresh token.
+-
+-        .. _`Appendix B`: https://tools.ietf.org/html/rfc6749#appendix-B
+-        .. _`Section 3.3`: https://tools.ietf.org/html/rfc6749#section-3.3
+-        .. _`Section 7.1`: https://tools.ietf.org/html/rfc6749#section-7.1
+         """
+         try:
+             self.validate_token_request(request)

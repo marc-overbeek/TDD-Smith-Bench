@@ -1,0 +1,46 @@
+--- a/monkeytype/db/sqlite.py
++++ b/monkeytype/db/sqlite.py
+@@ -85,25 +85,25 @@
+         return cls(conn)
+ 
+     def add(self, traces: Iterable[CallTrace]) -> None:
+-        values = []
+-        for row in serialize_traces(traces):
+-            values.append(
+-                (
+-                    datetime.datetime.now(),
+-                    row.module,
+-                    row.qualname,
+-                    row.arg_types,
+-                    row.return_type,
+-                    row.yield_type,
++            values = []
++            for row in serialize_traces(traces):
++                values.append(
++                    (
++                        datetime.datetime.now(),
++                        row.module,
++                        row.qualname,
++                        row.arg_types,
++                        row.return_type,
++                        row.yield_type,
++                    )
+                 )
+-            )
+-        with self.conn:
+-            self.conn.executemany(
+-                "INSERT INTO {table} VALUES (?, ?, ?, ?, ?, ?)".format(
+-                    table=self.table
+-                ),
+-                values,
+-            )
++            with self.conn:
++                self.conn.executemany(
++                    "INSERT INTO {table} VALUES (?, ?, ?, ?, ?, ?)".format(
++                        table=self.table
++                    ),
++                    values,
++                )
+ 
+     def filter(
+         self, module: str, qualname_prefix: Optional[str] = None, limit: int = 2000

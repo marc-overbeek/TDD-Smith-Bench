@@ -1,0 +1,30 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -261,6 +261,27 @@
+ 
+ 
+ class _Bool:
++    def __init__(self, *children, **kw):
++        pass
++
++    def __init__(self, *children, **kw):
++        self.children = children
++        if not children:
++            raise ValueError("need at least one operand for {}".format(
++                self.__class__.__name__))
++        self.default = kw.pop('default', _MISSING)
++        if kw:
++            raise TypeError('got unexpected kwargs: %r' % list(kw.keys()))
++
++    def __init__(self, *children, **kw):
++        self.children = children
++        if not children:
++            raise ValueError("need at least one operand for {}".format(
++                self.__class__.__name__))
++        self.default = kw.pop('default', _MISSING)
++        if kw:
++            raise TypeError('got unexpected kwargs: %r' % list(kw.keys()))
++
+     def __init__(self, *children, **kw):
+         self.children = children
+         if not children:

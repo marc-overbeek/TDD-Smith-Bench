@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef type_to_dict(typ: type) ->TypeDict:\n    if is_typed_dict(typ):\n        return typed_dict_to_dict(typ)\n    if is_any(typ):\n        return {\n            'module': 'typing',\n            'qualname': 'Any',\n        }\n    if is_generic(typ):\n        qualname = qualname_of_generic(typ)\n        module = typ.__module__  # type: ignore[union-attr]\n        elem_types = [type_to_dict(t) for t in typ.__args__] if typ.__args__ else []  # type: ignore[union-attr]\n        return {\n            'module': module,\n            'qualname': qualname,\n            'elem_types': elem_types,\n        }\n    return {\n        'module': typ.__module__,\n        'qualname': typ.__qualname__,\n    }\n```",
+  "rewrite": "def type_to_dict(typ: type) ->TypeDict:\n    if is_typed_dict(typ):\n        return typed_dict_to_dict(typ)\n    if is_any(typ):\n        return {\n            'module': 'typing',\n            'qualname': 'Any',\n        }\n    if is_generic(typ):\n        qualname = qualname_of_generic(typ)\n        module = typ.__module__  # type: ignore[union-attr]\n        elem_types = [type_to_dict(t) for t in typ.__args__] if typ.__args__ else []  # type: ignore[union-attr]\n        return {\n            'module': module,\n            'qualname': qualname,\n            'elem_types': elem_types,\n        }\n    return {\n        'module': typ.__module__,\n        'qualname': typ.__qualname__,\n    }",
+  "strategy": "lm_regen_from_tests"
+}

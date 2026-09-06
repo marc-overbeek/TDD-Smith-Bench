@@ -1,0 +1,33 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -366,9 +366,27 @@
+         """Returns if this location contains elevation data."""
+         return self.elevation is not None
+ 
+-    def remove_elevation(self) -> None:
+-        """ Remove the elevation data from this location."""
+-        self.elevation = None
++    def remove_elevation(self, tracks: bool=True, waypoints: bool=True, routes: bool=True) -> None:
++        # Remove elevation from all tracks
++        if hasattr(self, 'tracks') and tracks:
++            for track in self.tracks:
++                for segment in track.segments:
++                    for point in segment.points:
++                        point.elevation = None
++                # Also remove elevation from track waypoints
++                for waypoint in track.waypoints:
++                    waypoint.elevation = None
++    
++        # Remove elevation from all waypoints
++        if hasattr(self, 'waypoints') and waypoints:
++            for waypoint in self.waypoints:
++                waypoint.elevation = None
++    
++        # Remove elevation from all routes
++        if hasattr(self, 'routes') and routes:
++            for route in self.routes:
++                for point in route.points:
++                    point.elevation = None
+ 
+     def distance_2d(self, location: "Location") -> Optional[float]:
+         """

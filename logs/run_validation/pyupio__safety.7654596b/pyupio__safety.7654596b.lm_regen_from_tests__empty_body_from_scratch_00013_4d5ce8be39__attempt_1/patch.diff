@@ -1,0 +1,54 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -188,22 +188,36 @@
+     return None
+ 
+ 
+-def get_flags_from_context() -> Dict[str, str]:
+-    """
+-    Get the flags from the current click context.
+-
+-    Returns:
+-        Dict[str, str]: A dictionary of flags and their corresponding option names.
+-    """
++flags = get_flags_from_context()
++for arg in sys.argv:
++    cleaned_arg = arg if '=' not in arg else arg.split('=')[0]
++    if cleaned_arg in flags:
++        option_used = flags.get(cleaned_arg)
++
++def get_flags_from_context() ->Dict[str, str]:
+     flags = {}
+-    context = click.get_current_context(silent=True)
+-
+-    if context:
+-        for option in context.command.params:
+-            flags_per_opt = option.opts + option.secondary_opts
+-            for flag in flags_per_opt:
+-                flags[flag] = option.name
+-
++    try:
++        ctx = click.get_current_context()
++        if ctx and ctx.command:
++            # Traverse the command hierarchy to collect all parameters
++            def collect_params(command):
++                params = {}
++                if hasattr(command, 'params'):
++                    for param in command.params:
++                        if isinstance(param, click.Option):
++                            # Map each option string to the parameter name
++                            for opt_string in param.opts:
++                                params[opt_string] = param.name
++                if hasattr(command, 'commands'):
++                    for subcommand in command.commands.values():
++                        params.update(collect_params(subcommand))
++                return params
++            
++            flags = collect_params(ctx.command)
++    except RuntimeError:
++        # No active Click context
++        pass
++    
+     return flags
+ 
+ 

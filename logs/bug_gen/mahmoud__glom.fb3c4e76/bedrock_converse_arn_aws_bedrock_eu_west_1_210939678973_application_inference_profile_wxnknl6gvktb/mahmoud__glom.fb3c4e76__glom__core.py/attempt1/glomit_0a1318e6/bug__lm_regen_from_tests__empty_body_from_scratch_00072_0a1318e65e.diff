@@ -1,0 +1,25 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1090,9 +1090,19 @@
+         self.func, self.args, self.kwargs = func, args, kwargs
+ 
+     def glomit(self, target, scope):
+-        'run against the current target'
+-        r = lambda spec: arg_val(target, spec, scope)
+-        return r(self.func)(*r(self.args), **r(self.kwargs))
++        # The entrypoint for the Path extension
++        return _t_eval(target, self.path_t, scope)
++
++    def glomit(self, target, scope):
++        scope.update(self.scope)
++        return scope[glom](target, self.spec, scope)
++
++    def glomit(self, target, scope):
++        return scope[glom](target, self.spec, scope)
++
++    def glomit(self, target, scope):
++        scope.update(self.scope)
++        return scope[glom](target, self.spec, scope)
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

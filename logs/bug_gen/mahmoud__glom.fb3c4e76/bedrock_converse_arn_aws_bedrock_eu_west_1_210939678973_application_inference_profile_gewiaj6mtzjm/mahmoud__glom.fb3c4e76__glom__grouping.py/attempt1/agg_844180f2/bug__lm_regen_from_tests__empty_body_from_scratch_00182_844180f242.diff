@@ -1,0 +1,20 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -209,9 +209,14 @@
+     __slots__ = ()
+ 
+     def agg(self, target, tree):
+-        if self not in tree or target > tree[self]:
+-            tree[self] = target
+-        return tree[self]
++        if self not in tree:
++            tree[self] = [0, {}]
++        scope_tree = tree[self][1]
++        scope = {'ACC_TREE': scope_tree}
++        tree[self][0] += 1
++        if tree[self][0] > self.n:
++            return STOP
++        return scope[glom](target, self.subspec, scope)
+ 
+     def __repr__(self):
+         return '%s()' % self.__class__.__name__

@@ -1,0 +1,25 @@
+--- a/oauthlib/oauth2/rfc6749/errors.py
++++ b/oauthlib/oauth2/rfc6749/errors.py
+@@ -95,21 +95,7 @@
+ 
+     @property
+     def headers(self):
+-        if self.status_code == 401:
+-            """
+-            https://tools.ietf.org/html/rfc6750#section-3
+-
+-            All challenges defined by this specification MUST use the auth-scheme
+-            value "Bearer".  This scheme MUST be followed by one or more
+-            auth-param values.
+-            """
+-            authvalues = ['error="{}"'.format(self.error)]
+-            if self.description:
+-                authvalues.append('error_description="{}"'.format(self.description))
+-            if self.uri:
+-                authvalues.append('error_uri="{}"'.format(self.uri))
+-            return {"WWW-Authenticate": "Bearer " + ", ".join(authvalues)}
+-        return {}
++        pass
+ 
+ 
+ class TokenExpiredError(OAuth2Error):

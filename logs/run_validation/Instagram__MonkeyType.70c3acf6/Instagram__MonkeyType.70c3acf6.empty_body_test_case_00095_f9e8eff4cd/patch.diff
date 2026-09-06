@@ -1,0 +1,45 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -422,38 +422,14 @@
+ class RewriteLargeUnion(TypeRewriter):
+     """Rewrite Union[T1, ..., TN] as Any for large N."""
+ 
+-    def __init__(self, max_union_len: int = 5):
+-        super().__init__()
+-        self.max_union_len = max_union_len
++    def __init__(self, max_union_len: int=5):
++        pass
+ 
+     def _rewrite_to_tuple(self, union):
+-        """Union[Tuple[V, ..., V], Tuple[V, ..., V], ...] -> Tuple[V, ...]"""
+-        value_type = None
+-        for t in union.__args__:
+-            if not is_generic_of(t, Tuple):
+-                return None
+-            value_type = value_type or t.__args__[0]
+-            if not all(vt is value_type for vt in t.__args__):
+-                return None
+-        return Tuple[value_type, ...]
++        pass
+ 
+     def rewrite_Union(self, union):
+-        if len(union.__args__) <= self.max_union_len:
+-            return union
+-
+-        rw_union = self._rewrite_to_tuple(union)
+-        if rw_union is not None:
+-            return rw_union
+-
+-        try:
+-            for ancestor in inspect.getmro(union.__args__[0]):
+-                if ancestor is not object and all(
+-                    issubclass(t, ancestor) for t in union.__args__
+-                ):
+-                    return ancestor
+-        except (TypeError, AttributeError):
+-            pass
+-        return Any
++        pass
+ 
+ 
+ class RewriteAnonymousTypedDictToDict(TypeRewriter):

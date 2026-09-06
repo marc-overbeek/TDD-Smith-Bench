@@ -1,0 +1,15 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -371,7 +371,12 @@
+     return obj if type(obj) is type else type(obj)
+ 
+ 
++expected_msg = NOT_VALID_NUMPY_TYPE.format("'int11'")
++
+ def numpy_dtype_string_to_type(dtype_str):
++    from deepdiff.diff import DeltaError, NOT_VALID_NUMPY_TYPE
++    if dtype_str not in numpy_dtype_str_to_type:
++        raise DeltaError(NOT_VALID_NUMPY_TYPE.format(f"'{dtype_str}'"))
+     return numpy_dtype_str_to_type[dtype_str]
+ 
+ 

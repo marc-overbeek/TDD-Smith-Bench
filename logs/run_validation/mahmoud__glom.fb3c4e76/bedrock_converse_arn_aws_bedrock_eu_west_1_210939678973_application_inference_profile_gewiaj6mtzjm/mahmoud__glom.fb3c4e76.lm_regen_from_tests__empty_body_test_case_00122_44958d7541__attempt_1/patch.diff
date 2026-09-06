@@ -1,0 +1,49 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -48,14 +48,18 @@
+ 
+ 
+ def _apply_for_each(func, path, val):
+-    layers = path.path_t.__stars__()
+-    if layers:
+-        for i in range(layers - 1):
+-            val = sum(val, [])  # flatten out the extra layers
+-        for inner in val:
+-            func(inner)
+-    else:
++    if not isinstance(path, Path):
++        path = Path(path)
++    if not path:
+         func(val)
++        return
++    op, arg = path.items()[0]
++    if op == '[':
++        _apply_for_each(func, path[1:], val[arg])
++    elif op == '.':
++        _apply_for_each(func, path[1:], getattr(val, arg))
++    elif op == 'P':
++        _apply_for_each(func, path[1:], val[arg])
+ 
+ 
+ class Assign:
+@@ -187,20 +191,6 @@
+ 
+ 
+ def assign(obj, path, val, missing=None):
+-    """*New in glom 18.3.0*
+-
+-    The ``assign()`` function provides convenient "deep set"
+-    functionality, modifying nested data structures in-place::
+-
+-      >>> target = {'a': [{'b': 'c'}, {'d': None}]}
+-      >>> _ = assign(target, 'a.1.d', 'e')  # let's give 'd' a value of 'e'
+-      >>> pprint(target)
+-      {'a': [{'b': 'c'}, {'d': 'e'}]}
+-
+-    Missing structures can also be automatically created with the
+-    *missing* parameter. For more information and examples, see the
+-    :class:`~glom.Assign` specifier type, which this function wraps.
+-    """
+     return glom(obj, Assign(path, val, missing=missing))
+ 
+ 

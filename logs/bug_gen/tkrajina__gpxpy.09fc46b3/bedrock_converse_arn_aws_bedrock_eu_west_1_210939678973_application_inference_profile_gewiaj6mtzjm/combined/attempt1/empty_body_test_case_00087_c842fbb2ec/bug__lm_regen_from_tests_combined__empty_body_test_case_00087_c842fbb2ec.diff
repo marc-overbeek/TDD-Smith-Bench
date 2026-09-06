@@ -1,0 +1,44 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -985,7 +985,7 @@
+             if max_lon is None or point.longitude > max_lon:
+                 max_lon = point.longitude
+ 
+-        if min_lat and max_lat and min_lon and max_lon:
++        if min_lat is not None and max_lat is not None and min_lon is not None and max_lon is not None:
+             return GPXBounds(min_lat, max_lat, min_lon, max_lon)
+         return None
+ 
+@@ -1527,7 +1527,7 @@
+ 
+     def get_bounds(self) -> Optional[GPXBounds]:
+         """
+-        Gets the latitude and longitude bounds of the track.
++        Gets the latitude and longitude bounds of the GPX file.
+ 
+         Returns
+         ----------
+@@ -1541,15 +1541,14 @@
+             max_longitude : float
+                 Maximum longitude of track in decimal degrees [-180, 180]
+         """
+-        bounds: Optional[GPXBounds] = None
+-        for track_segment in self.segments:
+-            segment_bounds = track_segment.get_bounds()
+-            if bounds is None:
+-                bounds = segment_bounds
+-            elif segment_bounds:
+-                bounds = bounds.max_bounds(segment_bounds)
+-
+-        return bounds
++        result: Optional[GPXBounds] = None 
++        for track in self.tracks:
++            track_bounds = track.get_bounds()
++            if not result:
++                result = track_bounds
++            elif track_bounds:
++                result = track_bounds.max_bounds(result)
++        return result
+ 
+     def walk(self, only_points: bool=False) -> Iterator[Any]: #Union[GPXTrackPoint, Tuple[GPXTrackPoint, int, int]]]:
+         """

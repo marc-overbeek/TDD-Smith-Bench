@@ -1,0 +1,68 @@
+--- a/src/mistune/directives/image.py
++++ b/src/mistune/directives/image.py
+@@ -56,45 +56,26 @@
+             md.renderer.register('block_image', render_block_image)
+ 
+ 
+-def render_block_image(
+-    self: 'HTMLRenderer',
+-    src: str,
+-    alt: Optional[str] = None,
+-    width: Optional[str] = None,
+-    height: Optional[str] = None,
+-    **attrs: Any,
+-) -> str:
+-    img = '<img src="' + escape_text(src) + '"'
+-    style = ''
+-    if alt:
+-        img += ' alt="' + escape_text(alt) + '"'
+-    if width:
+-        if width.isdigit():
+-            img += ' width="' + width + '"'
+-        else:
+-            style += 'width:' + width + ';'
+-    if height:
+-        if height.isdigit():
+-            img += ' height="' + height + '"'
+-        else:
+-            style += 'height:' + height + ';'
+-    if style:
+-        img += ' style="' + escape_text(style) + '"'
+-
+-    img += ' />'
+-
+-    _cls = 'block-image'
+-    align = attrs.get('align')
+-    if align:
+-        _cls += ' align-' + align
+-
+-    target = attrs.get('target')
+-    if target:
+-        href = self.safe_url(target)
+-        outer = '<a class="' + _cls + '" href="' + href + '">'
+-        return outer + img + '</a>\n'
+-    else:
+-        return '<div class="' + _cls + '">' + img + '</div>\n'
++def render_block_image(self: 'HTMLRenderer', src: str, alt: Optional[str]=
++    None, width: Optional[str]=None, height: Optional[str]=None, **attrs: Any
++    ) ->str:
++    attr_str = ''
++    if alt is not None:
++        attr_str += ' alt="%s"' % escape_text(alt)
++    if width is not None:
++        attr_str += ' width="%s"' % width
++    if height is not None:
++        attr_str += ' height="%s"' % height
++    if 'align' in attrs and attrs['align'] is not None:
++        attr_str += ' align="%s"' % escape_text(attrs['align'])
++    for key, value in attrs.items():
++        if key == 'align':
++            continue
++        if value is True:
++            attr_str += ' %s' % key
++        elif value is not None:
++            attr_str += ' %s="%s"' % (key, escape_text(value))
++    return '<img src="%s"%s />\n' % (escape_url(src), attr_str)
+ 
+ 
+ class Figure(DirectivePlugin):

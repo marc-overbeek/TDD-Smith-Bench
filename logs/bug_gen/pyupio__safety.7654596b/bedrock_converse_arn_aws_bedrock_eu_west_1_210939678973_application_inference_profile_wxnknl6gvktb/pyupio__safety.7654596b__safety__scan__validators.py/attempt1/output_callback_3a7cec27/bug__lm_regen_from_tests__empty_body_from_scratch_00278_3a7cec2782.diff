@@ -1,0 +1,41 @@
+--- a/safety/scan/validators.py
++++ b/safety/scan/validators.py
+@@ -41,20 +41,26 @@
+ 
+     return (export_type.value, export_path) if export_type and export_path else (export_type, export_path)
+ 
+-def output_callback(output: ScanOutput) -> str:
++def output_callback(output: ScanOutput) ->str:
+     """
+-    Callback function to handle output parameter and validate if spdx extension is installed.
++    Callback function to handle and format the scan output.
++    
++    Args:
++        output (ScanOutput): The scan output object to format.
++    
++    Returns:
++        str: The formatted scan output as a string.
++    """
++    if output is None:
++        return ""
++    
++    # Return string representation of the output
++    return str(output)
+ 
+-    Args:
+-        output (ScanOutput): The output format.
+-
+-    Returns:
+-        str: The validated output format.
+-    """
+-    if ScanOutput.is_format(output, ScanExport.SPDX):
+-        raise_if_not_spdx_extension_installed()
+-
+-    return output.value
++def output_callback(output: ScanOutput) ->str:
++    if output is None:
++        return ""
++    return str(output)
+ 
+ 
+ def save_verified_project(ctx: typer.Context, slug: str, name: Optional[str], project_path: Path, url_path: Optional[str]):

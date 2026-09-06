@@ -1,0 +1,105 @@
+--- a/src/mistune/block_parser.py
++++ b/src/mistune/block_parser.py
+@@ -197,96 +197,12 @@
+         state.append_token(token)
+         return m.end() + 1
+ 
+-    def parse_setex_heading(self, m: Match[str], state: BlockState) -> Optional[int]:
+-        """Parse token for setex style heading. A setex heading syntax looks like:
+-
+-        .. code-block:: markdown
+-
+-            H1 title
+-            ========
+-        """
+-        last_token = state.last_token()
+-        if last_token and last_token['type'] == 'paragraph':
+-            level = 1 if m.group('setext_1') == '=' else 2
+-            last_token['type'] = 'heading'
+-            last_token['style'] = 'setext'
+-            last_token['attrs'] = {'level': level}
+-            return m.end() + 1
+-
+-        sc = self.compile_sc(['thematic_break', 'list'])
+-        m2 = sc.match(state.src, state.cursor)
+-        if m2:
+-            return self.parse_method(m2, state)
+-        return None
+-
+-    def parse_ref_link(self, m: Match[str], state: BlockState) -> Optional[int]:
+-        """Parse link references and save the link information into ``state.env``.
+-
+-        Here is an example of a link reference:
+-
+-        .. code-block:: markdown
+-
+-            a [link][example]
+-
+-            [example]: https://example.com "Optional title"
+-
+-        This method will save the link reference into ``state.env`` as::
+-
+-            state.env['ref_links']['example'] = {
+-                'url': 'https://example.com',
+-                'title': "Optional title",
+-            }
+-        """
+-        end_pos = state.append_paragraph()
+-        if end_pos:
+-            return end_pos
+-
+-        label = m.group('reflink_1')
+-        key = unikey(label)
+-        if not key:
+-            return None
+-
+-        href, href_pos = parse_link_href(state.src, m.end(), block=True)
+-        if href is None:
+-            return None
+-
+-        assert href_pos is not None
+-
+-        _blank = self.BLANK_LINE.search(state.src, href_pos)
+-        if _blank:
+-            max_pos = _blank.start()
+-        else:
+-            max_pos = state.cursor_max
+-
+-        title, title_pos = parse_link_title(state.src, href_pos, max_pos)
+-        if title_pos:
+-            m2 = _BLANK_TO_LINE.match(state.src, title_pos)
+-            if m2:
+-                title_pos = m2.end()
+-            else:
+-                title_pos = None
+-                title = None
+-
+-        if title_pos is None:
+-            m3 = _BLANK_TO_LINE.match(state.src, href_pos)
+-            if m3:
+-                href_pos = m3.end()
+-            else:
+-                href_pos = None
+-                href = None
+-
+-        end_pos = title_pos or href_pos
+-        if not end_pos:
+-            return None
+-
+-        if key not in state.env['ref_links']:
+-            assert href is not None
+-            href = unescape_char(href)
+-            data = {'url': escape_url(href), 'label': label}
+-            if title:
+-                data['title'] = title
+-            state.env['ref_links'][key] = data
+-        return end_pos
++    def parse_setex_heading(self, m: Match[str], state: BlockState) ->Optional[int
++        ]:
++        pass
++
++    def parse_ref_link(self, m: Match[str], state: BlockState) ->Optional[int]:
++        pass
+ 
+     def extract_block_quote(
+         self, m: Match[str], state: BlockState

@@ -1,0 +1,30 @@
+--- a/safety/scan/main.py
++++ b/safety/scan/main.py
+@@ -177,24 +177,9 @@
+     return policy
+ 
+ 
+-def save_report_as(scan_type: ScanType, export_type: ScanExport, at: Path, report: Any) -> None:
+-    """
+-    Saves the scan report to the specified location.
+-
+-    Args:
+-        scan_type (ScanType): The type of scan.
+-        export_type (ScanExport): The type of export.
+-        at (Path): The path to save the report.
+-        report (Any): The report content.
+-    """
+-    tag = int(time.time())
+-
+-    if at.is_dir():
+-        at = at / Path(
+-            f"{scan_type.value}-{export_type.get_default_file_name(tag=tag)}")
+-
+-    with open(at, 'w+') as report_file:
+-        report_file.write(report)
++def save_report_as(scan_type: ScanType, export_type: ScanExport, at: Path,
++    report: Any) ->None:
++    pass
+ 
+ 
+ def process_files(paths: Dict[str, Set[Path]], config: Optional[ConfigModel] = None) -> Generator[Tuple[Path, InspectableFile], None, None]:

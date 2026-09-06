@@ -1,0 +1,70 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -275,24 +275,49 @@
+     return mod_math.degrees(angle)
+ 
+ 
+-def distance_from_line(point: "Location", line_point_1: "Location", line_point_2: "Location") -> Optional[float]:
+-    """ Distance of point from a line given with two points. """
+-    assert point, point
+-    assert line_point_1, line_point_1
+-    assert line_point_2, line_point_2
+-
+-    a = line_point_1.distance_2d(line_point_2)
+-
+-    if not a:
+-        return line_point_1.distance_2d(point)
+-
+-    b = line_point_1.distance_2d(point)
+-    c = line_point_2.distance_2d(point)
+-
+-    if a is not None and b is not None and c is not None:
+-        s = (a + b + c) / 2
+-        return 2 * mod_math.sqrt(abs(s * (s - a) * (s - b) * (s - c))) / a
+-    return None
++def test_distance_from_line(self) ->None:
++    d = mod_geo.distance_from_line(mod_geo.Location(1, 1), mod_geo.Location
++        (0, -1), mod_geo.Location(0, 1))
++    self.assertTrue(abs(d - mod_geo.ONE_DEGREE) < 100)
++
++def distance_from_line(point: 'Location', line_point_1: 'Location',
++    line_point_2: 'Location') ->Optional[float]:
++    """
++    Distance from a point to a line defined by two points.
++    """
++    a, b, c = get_line_equation_coefficients(line_point_1, line_point_2)
++    
++    # The line equation is: a * lat + b * lon + c = 0
++    # Distance in "degrees" from point to line:
++    # d = |a * lat + b * lon + c| / sqrt(a^2 + b^2)
++    
++    # But we need to convert to meters. We use the coef for longitude correction.
++    coef = mod_math.cos(mod_math.radians(point.latitude))
++    
++    # Numerator: distance in degrees
++    numerator = abs(a * point.latitude + b * point.longitude + c)
++    
++    # Denominator: normalize, accounting for longitude scaling
++    denominator = mod_math.sqrt(a * a + (b * coef) * (b * coef))
++    
++    if denominator == 0:
++        return None
++    
++    return (numerator / denominator) * ONE_DEGREE
++
++def distance_from_line(point: 'Location', line_point_1: 'Location',
++    line_point_2: 'Location') ->Optional[float]:
++    a, b, c = get_line_equation_coefficients(line_point_1, line_point_2)
++    
++    coef = mod_math.cos(mod_math.radians(point.latitude))
++    
++    numerator = abs(a * point.latitude + b * point.longitude + c)
++    denominator = mod_math.sqrt(a * a + (b * coef) * (b * coef))
++    
++    if denominator == 0:
++        return None
++    
++    return (numerator / denominator) * ONE_DEGREE
+ 
+ 
+ def get_line_equation_coefficients(location1: "Location", location2: "Location") -> Iterable[float]:

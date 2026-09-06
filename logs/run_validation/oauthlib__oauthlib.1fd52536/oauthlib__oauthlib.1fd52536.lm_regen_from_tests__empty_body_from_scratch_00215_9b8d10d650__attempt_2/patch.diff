@@ -1,0 +1,26 @@
+--- a/oauthlib/openid/connect/core/grant_types/implicit.py
++++ b/oauthlib/openid/connect/core/grant_types/implicit.py
+@@ -37,6 +37,23 @@
+         if not request_info:  # returns immediately if OAuth2.0
+             return request_info
+ 
++        # Handle prompt validation
++        if request.prompt:
++            prompts = request.prompt.split()
++            if 'none' in prompts:
++                # Check for invalid combinations with 'none'
++                if 'login' in prompts or 'consent' in prompts or 'select_account' in prompts:
++                    raise InvalidRequestError(
++                        request=request,
++                        description='Prompt parameter cannot contain "none" with other values.'
++                    )
++                # Validate silent login/authorization conditions
++                if not self.validate_silent_login(request) and not self.validate_silent_authorization(request):
++                    raise InvalidRequestError(
++                        request=request,
++                        description='Prompt parameter is "none" but no silent login or authorization is possible.'
++                    )
++
+         # REQUIRED. String value used to associate a Client session with an ID
+         # Token, and to mitigate replay attacks. The value is passed through
+         # unmodified from the Authentication Request to the ID Token.

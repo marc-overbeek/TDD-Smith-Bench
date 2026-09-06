@@ -1,0 +1,18 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -230,6 +230,7 @@
+                 match_func = regex.match
+         self.flags, self.func = flags, func
+         self.match_func, self.pattern = match_func, pattern
++        # this is an exact match
+ 
+     def glomit(self, target, scope):
+         if type(target) not in _RE_TYPES:
+@@ -240,6 +241,7 @@
+             raise MatchError("target did not match pattern {0!r}", self.pattern)
+         scope.update(match.groupdict())
+         return target
++        # this is an exact match
+ 
+     def __repr__(self):
+         args = '(' + bbrepr(self.pattern)

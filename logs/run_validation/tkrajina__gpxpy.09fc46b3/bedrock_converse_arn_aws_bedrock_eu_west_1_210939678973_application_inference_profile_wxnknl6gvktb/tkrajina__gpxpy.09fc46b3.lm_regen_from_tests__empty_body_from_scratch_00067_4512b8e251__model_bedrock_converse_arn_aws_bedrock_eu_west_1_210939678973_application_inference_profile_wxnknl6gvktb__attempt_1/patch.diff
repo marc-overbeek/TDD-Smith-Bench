@@ -1,0 +1,18 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -337,6 +337,15 @@
+         Returns:
+             a list of Element objects
+         """
++        result: Any = []
++        extensions_node = node.find(self.tag)
++        if extensions_node is None:
++            return result
++        for child in extensions_node:
++            result.append(mod_copy.deepcopy(child))
++        return result
++
++    def from_xml(self, node: Any, version: str) -> Any:
+         result: Any = []
+         extensions_node = node.find(self.tag)
+         if extensions_node is None:

@@ -1,0 +1,25 @@
+--- a/glom/cli.py
++++ b/glom/cli.py
+@@ -104,15 +104,15 @@
+ 
+ 
+ def console_main():
+-    _enable_debug = os.getenv('GLOM_CLI_DEBUG')
+-    if _enable_debug:
+-        print(sys.argv)
++    sys.exit(main(sys.argv[1:]) or 0)
++
++def console_main():
+     try:
+-        sys.exit(main(sys.argv) or 0)
++        sys.exit(main(sys.argv[1:]) or 0)
++    except SystemExit:
++        raise
+     except Exception:
+-        if _enable_debug:
+-            import pdb;pdb.post_mortem()
+-        raise
++        sys.exit(1)
+ 
+ 
+ def mw_handle_target(target_text, target_format):

@@ -1,0 +1,50 @@
+--- a/safety/scan/render.py
++++ b/safety/scan/render.py
+@@ -60,27 +60,28 @@
+     console.print(render_header(targets, is_system_scan), markup=True)
+ 
+ def print_announcements(console: Console, ctx: typer.Context):
+-    """
+-    Print announcements from Safety.
+-
+-    Args:
+-        console (Console): The console for output.
+-        ctx (typer.Context): The context of the Typer command.
+-    """
+-    colors = {"error": "red", "warning": "yellow", "info": "default"}
+-
+-    announcements = safety.get_announcements(ctx.obj.auth.client,
+-                                             telemetry=ctx.obj.config.telemetry_enabled,
+-                                             with_telemetry=ctx.obj.telemetry)
+-    basic_announcements = get_basic_announcements(announcements, False)
+-
+-    if any(basic_announcements):
++    announcements = safety.get_announcements(
++        ctx.obj.auth.client,
++        telemetry=ctx.obj.telemetry,
++        telemetry_enabled=ctx.obj.config.telemetry_enabled
++    )
++    basic_announcements = get_basic_announcements(announcements)
++    
++    if basic_announcements:
+         console.print()
+-        console.print("[bold]Safety Announcements:[/bold]")
++        console.print('[bold]Safety Announcements:[/bold]')
+         console.print()
+-        for announcement in announcements:
+-            color = colors.get(announcement.get('type', "info"), "default")
+-            console.print(f"[{color}]* {announcement.get('message')}[/{color}]")
++        
++        for announcement in basic_announcements:
++            msg_type = announcement.get('type', 'info')
++            message = announcement.get('message', '')
++            
++            if msg_type == 'warning':
++                console.print(f'[yellow]* {message}[/yellow]')
++            elif msg_type == 'error':
++                console.print(f'[red]* {message}[/red]')
++            else:
++                console.print(f'[default]* {message}[/default]')
+ 
+ def print_detected_ecosystems_section(console: Console, file_paths: Dict[str, Set[Path]], include_safety_prjs: bool = True) -> None:
+     """

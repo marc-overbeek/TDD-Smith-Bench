@@ -1,0 +1,25 @@
+--- a/src/mistune/plugins/formatting.py
++++ b/src/mistune/plugins/formatting.py
+@@ -86,17 +86,13 @@
+     return end_pos
+ 
+ 
+-def _parse_script(
+-    inline: "InlineParser", m: Match[str], state: "InlineState", tok_type: str
+-) -> int:
+-    text = m.group(0)
++def _parse_script(inline: 'InlineParser', m: Match[str], state:
++    'InlineState', tok_type: str) ->int:
++    text = m.group(0)[1:-1]
+     new_state = state.copy()
+-    new_state.src = text[1:-1].replace('\\ ', ' ')
++    new_state.src = text
+     children = inline.render(new_state)
+-    state.append_token({
+-        'type': tok_type,
+-        'children': children
+-    })
++    state.append_token({'type': tok_type, 'children': children})
+     return m.end()
+ 
+ 

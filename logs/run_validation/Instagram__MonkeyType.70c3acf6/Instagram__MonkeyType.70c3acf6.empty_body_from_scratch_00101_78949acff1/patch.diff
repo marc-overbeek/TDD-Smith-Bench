@@ -1,0 +1,35 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -815,27 +815,11 @@
+         )
+ 
+ 
+-def get_updated_definition(
+-    func: Callable[..., Any],
+-    traces: Iterable[CallTrace],
+-    max_typed_dict_size: int,
+-    rewriter: Optional[TypeRewriter] = None,
+-    existing_annotation_strategy: ExistingAnnotationStrategy = ExistingAnnotationStrategy.REPLICATE,
+-) -> FunctionDefinition:
+-    """Update the definition for func using the types collected in traces."""
+-    if rewriter is None:
+-        rewriter = NoOpRewriter()
+-    arg_types, return_type, yield_type = shrink_traced_types(
+-        traces, max_typed_dict_size
+-    )
+-    arg_types = {name: rewriter.rewrite(typ) for name, typ in arg_types.items()}
+-    if return_type is not None:
+-        return_type = rewriter.rewrite(return_type)
+-    if yield_type is not None:
+-        yield_type = rewriter.rewrite(yield_type)
+-    return FunctionDefinition.from_callable_and_traced_types(
+-        func, arg_types, return_type, yield_type, existing_annotation_strategy
+-    )
++def get_updated_definition(func: Callable[..., Any], traces: Iterable[
++    CallTrace], max_typed_dict_size: int, rewriter: Optional[TypeRewriter]=
++    None, existing_annotation_strategy: ExistingAnnotationStrategy=
++    ExistingAnnotationStrategy.REPLICATE) ->FunctionDefinition:
++    pass
+ 
+ 
+ def build_module_stubs(entries: Iterable[FunctionDefinition]) -> Dict[str, ModuleStub]:

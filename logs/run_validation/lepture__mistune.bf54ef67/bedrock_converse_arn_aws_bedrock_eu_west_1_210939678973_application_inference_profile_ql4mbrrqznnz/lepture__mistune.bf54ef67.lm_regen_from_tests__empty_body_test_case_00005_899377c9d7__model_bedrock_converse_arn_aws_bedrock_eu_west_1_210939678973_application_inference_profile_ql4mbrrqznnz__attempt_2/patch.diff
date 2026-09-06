@@ -1,0 +1,307 @@
+--- a/src/mistune/list_parser.py
++++ b/src/mistune/list_parser.py
+@@ -17,61 +17,52 @@
+ _LINE_HAS_TEXT = re.compile(r'(\s*)\S')
+ 
+ 
+-def parse_list(block: "BlockParser", m: Match[str], state: "BlockState") -> int:
+-    """Parse tokens for ordered and unordered list."""
+-    text = m.group('list_3')
+-    if not text.strip():
+-        # Example 285
+-        # an empty list item cannot interrupt a paragraph
+-        end_pos = state.append_paragraph()
+-        if end_pos:
+-            return end_pos
+-
+-    marker = m.group('list_2')
+-    ordered = len(marker) > 1
+-    depth = state.depth()
+-    token: Dict[str, Any] = {
++def parse_list(block: 'BlockParser', m: Match[str], state: 'BlockState') ->int:
++    bullet_start = m.start()
++    leading = m.group('list_1')
++    bullet_char = m.group('list_2')
++    tail = m.group('list_3')
++
++    leading_width = len(leading)
++    bullet_width = len(bullet_char)
++
++    if not tail.strip():
++        text = ''
++        space_width = 1
++        continue_width = leading_width + bullet_width + space_width
++    else:
++        text, continue_width = _compile_continue_width(tail, leading_width + bullet_width)
++
++    bullet = _get_list_bullet(bullet_char[-1])
++    ordered = bullet_char[-1] in ('.', ')')
++    if ordered:
++        start = int(bullet_char[:-1])
++    else:
++        start = None
++
++    token = {
+         'type': 'list',
+         'children': [],
+         'tight': True,
+-        'bullet': marker[-1],
+-        'attrs': {
+-            'depth': depth,
+-            'ordered': ordered,
+-        },
++        'bullet': bullet_char[-1],
++        'ordered': ordered,
++        'attrs': {'depth': 0, 'ordered': ordered},
+     }
+-    if ordered:
+-        start = int(marker[:-1])
+-        if start != 1:
+-            # Example 304
+-            # we allow only lists starting with 1 to interrupt paragraphs
+-            end_pos = state.append_paragraph()
+-            if end_pos:
+-                return end_pos
+-            token['attrs']['start'] = start
+-
+-    state.cursor = m.end() + 1
+-    groups: Optional[Tuple[str, str, str]] = (m.group("list_1"), marker, text)
+-
+-    if depth >= block.max_nested_level - 1:
+-        rules = list(block.list_rules)
+-        rules.remove('list')
+-    else:
+-        rules = block.list_rules
+-
+-    bullet = _get_list_bullet(marker[-1])
+-    while groups:
+-        groups = _parse_list_item(block, bullet, groups, token, state, rules)
+-
+-    end_pos = token.pop('_end_pos', None)
++    if ordered and start != 1:
++        token['attrs']['start'] = start
++
++    groups = (leading, bullet_char, tail)
++    rules = list(block.list_rules)
++
++    next_groups = _parse_list_item(block, bullet, groups, token, state, rules)
++
++    while next_groups is not None:
++        groups = next_groups
++        next_groups = _parse_list_item(block, bullet, groups, token, state, rules)
++
+     _transform_tight_list(token)
+-    if end_pos:
+-        index = token.pop('_tok_index')
+-        state.tokens.insert(index, token)
+-        return end_pos
+-
+     state.append_token(token)
+-    return state.cursor
++    return bullet_start
+ 
+ 
+ def _transform_tight_list(token: Dict[str, Any]) -> None:
+@@ -85,109 +76,107 @@
+                     _transform_tight_list(tok)
+ 
+ 
+-def _parse_list_item(
+-    block: "BlockParser",
+-    bullet: str,
+-    groups: Tuple[str, str, str],
+-    token: Dict[str, Any],
+-    state: "BlockState",
+-    rules: List[str],
+-) -> Optional[Tuple[str, str, str]]:
+-    spaces, marker, text = groups
+-
+-    leading_width = len(spaces) + len(marker)
+-    text, continue_width = _compile_continue_width(text, leading_width)
++def _parse_list_item(block: 'BlockParser', bullet: str, groups: Tuple[str,
++    str, str], token: Dict[str, Any], state: 'BlockState', rules: List[str]
++    ) ->Optional[Tuple[str, str, str]]:
++    leading, bullet_char, tail = groups
++    leading_width = len(leading)
++    bullet_width = len(bullet_char)
++
++    if not tail.strip():
++        text = ''
++        space_width = 1
++    else:
++        tail_expanded = expand_leading_tab(tail, 3)
++        tail_expanded = expand_tab(tail_expanded)
++        m2 = _LINE_HAS_TEXT.match(tail_expanded)
++        if m2:
++            if tail_expanded.startswith('     '):
++                space_width = 1
++            else:
++                space_width = len(m2.group(1))
++            text = tail_expanded[space_width:] + '\n'
++        else:
++            space_width = 1
++            text = ''
++
++    continue_width = leading_width + bullet_width + space_width
++
+     item_pattern = _compile_list_item_pattern(bullet, leading_width)
+-    pairs = [
+-        ('thematic_break', block.specification['thematic_break']),
+-        ('fenced_code', block.specification['fenced_code']),
+-        ('atx_heading', block.specification['atx_heading']),
+-        ('block_quote', block.specification['block_quote']),
+-        ('block_html', block.specification['block_html']),
+-        ('list', block.specification['list']),
+-    ]
+-    if leading_width < 3:
+-        _repl_w = str(leading_width)
+-        pairs = [(n, p.replace('3', _repl_w, 1)) for n, p in pairs]
+-
+-    pairs.insert(1, ('list_item', item_pattern))
+-    regex = '|'.join(r'(?P<%s>(?<=\n)%s)' % pair for pair in pairs)
+-    sc = re.compile(regex, re.M)
+-
+-    src = ''
+-    next_group = None
+-    prev_blank_line = False
++    item_re = re.compile(item_pattern, re.M)
++
++    src = state.src
+     pos = state.cursor
+ 
+-    continue_space = ' ' * continue_width
+-    while pos < state.cursor_max:
+-        pos = state.find_line_end()
+-        line = state.get_text(pos)
+-        if block.BLANK_LINE.match(line):
+-            src += '\n'
+-            prev_blank_line = True
+-            state.cursor = pos
++    spaces = ' ' * continue_width
++    blank_lines = 0
++    item_lines = [text]
++    next_groups = None
++
++    while pos < len(src):
++        line_end = src.find('\n', pos)
++        if line_end == -1:
++            line = src[pos:]
++            pos = len(src)
++        else:
++            line = src[pos:line_end]
++            pos = line_end + 1
++
++        if not line.strip():
++            blank_lines += 1
++            item_lines.append('\n')
+             continue
+ 
+-        line = expand_leading_tab(line)
+-        if line.startswith(continue_space):
+-            if prev_blank_line and not text and not src.strip():
+-                # Example 280
+-                # A list item can begin with at most one blank line
+-                break
+-
+-            src += line
+-            prev_blank_line = False
+-            state.cursor = pos
+-            continue
+-
+-        m = sc.match(state.src, state.cursor)
+-        if m:
+-            tok_type = m.lastgroup
+-            if tok_type == 'list_item':
+-                if prev_blank_line:
+-                    token['tight'] = False
+-                next_group = (
+-                    m.group('listitem_1'),
+-                    m.group('listitem_2'),
+-                    m.group('listitem_3')
+-                )
+-                state.cursor = m.end() + 1
+-                break
+-
+-            if tok_type == 'list':
+-                break
+-
+-            tok_index = len(state.tokens)
+-            end_pos = block.parse_method(m, state)
+-            if end_pos:
+-                token['_tok_index'] = tok_index
+-                token['_end_pos'] = end_pos
+-                break
+-
+-        if prev_blank_line and not line.startswith(continue_space):
+-            # not a continue line, and previous line is blank
++        m_item = item_re.match(line)
++        if m_item:
++            next_groups = (m_item.group('listitem_1'), m_item.group('listitem_2'), m_item.group('listitem_3'))
+             break
+ 
+-        src += line
++        expanded = expand_leading_tab(line, 3)
++        expanded = expand_tab(expanded)
++
++        if expanded.startswith(spaces) or (not expanded.strip()):
++            if blank_lines:
++                item_lines.append('\n' * blank_lines)
++                blank_lines = 0
++            item_lines.append(expanded[continue_width:] + '\n')
++        elif expanded.startswith(' ' * (leading_width + bullet_width)):
++            if blank_lines:
++                item_lines.append('\n' * blank_lines)
++                blank_lines = 0
++            item_lines.append(expanded[continue_width:] + '\n')
++        else:
++            pos -= len(line) + 1
++            break
++
++    item_src = ''.join(item_lines)
++    item_src = strip_end(item_src)
++
++    child_state = state.child_state(item_src)
++
++    if blank_lines and next_groups is None:
++        token['tight'] = False
++    elif blank_lines:
++        token['tight'] = False
++
++    block.parse(child_state, rules)
++    children = child_state.tokens
++
++    if _is_loose_list(children):
++        token['tight'] = False
++
++    list_item = {
++        'type': 'list_item',
++        'children': children,
++    }
++    token['children'].append(list_item)
++
++    if next_groups is not None:
+         state.cursor = pos
+-
+-    text += _clean_list_item_text(src, continue_width)
+-    child = state.child_state(strip_end(text))
+-
+-    block.parse(child, rules)
+-
+-    if token['tight'] and _is_loose_list(child.tokens):
+-        token['tight'] = False
+-
+-    token['children'].append({
+-        'type': 'list_item',
+-        'children': child.tokens,
+-    })
+-    if next_group:
+-        return next_group
+-
+-    return None
++    else:
++        state.cursor = pos
++
++    return next_groups
+ 
+ 
+ def _get_list_bullet(c: str) -> str:

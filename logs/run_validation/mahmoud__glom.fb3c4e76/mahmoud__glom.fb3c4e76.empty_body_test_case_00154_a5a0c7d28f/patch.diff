@@ -1,0 +1,65 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -55,32 +55,10 @@
+     day-to-day use.
+     """
+     def __init__(self, subspec, init, op=operator.iadd):
+-        self.subspec = subspec
+-        self.init = init
+-        self.op = op
+-        if not callable(op):
+-            raise TypeError('expected callable for %s op param, not: %r' %
+-                            (self.__class__.__name__, op))
+-        if not callable(init):
+-            raise TypeError('expected callable for %s init param, not: %r' %
+-                            (self.__class__.__name__, init))
++        pass
+ 
+     def glomit(self, target, scope):
+-        is_agg = False
+-        if scope[MODE] is GROUP and scope.get(CUR_AGG) is None:
+-            scope[CUR_AGG] = self
+-            is_agg = True
+-
+-        if self.subspec is not T:
+-            target = scope[glom](target, self.subspec, scope)
+-
+-        if is_agg:
+-            return self._agg(target, scope[ACC_TREE])
+-        try:
+-            return self._fold(target_iter(target, scope))
+-        except UnregisteredTarget as ut:
+-            raise FoldError('can only %s on iterable targets, not %s type (%s)'
+-                            % (self.__class__.__name__, type(target).__name__, ut))
++        pass
+ 
+     def _fold(self, iterator):
+         ret, op = self.init(), self.op
+@@ -289,25 +267,10 @@
+ 
+     """
+     def __init__(self, subspec=T, init=dict, op=None):
+-        if op is None:
+-            op = 'update'
+-        if isinstance(op, basestring):
+-            test_init = init()
+-            op = getattr(type(test_init), op, None)
+-        if not callable(op):
+-            raise ValueError('expected callable "op" arg or an "init" with an .update()'
+-                             ' method not %r and %r' % (op, init))
+-        super().__init__(subspec=subspec, init=init, op=op)
++        pass
+ 
+     def _fold(self, iterator):
+-        # the difference here is that ret is mutated in-place, the
+-        # variable not being reassigned, as in base Fold.
+-        ret, op = self.init(), self.op
+-
+-        for v in iterator:
+-            op(ret, v)
+-
+-        return ret
++        pass
+ 
+ 
+     def _agg(self, target, tree):

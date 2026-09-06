@@ -1,0 +1,108 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -78,22 +78,47 @@
+         return self.offset == other.offset # type: ignore
+ 
+ 
+-def parse_time(string: str) -> Optional[mod_datetime.datetime]:
+-    from . import gpx as mod_gpx
++def parse_time(string: str) ->Optional[mod_datetime.datetime]:
+     if not string:
+         return None
+-    m = RE_TIMESTAMP.match(string)
+-    if m:
+-        dt = [int(m.group(i)) for i in range(1, 7)]
+-        if m.group(7):
+-            f = m.group(7)[1:7]
+-            dt.append(int(f + "0" * (6 - len(f))))
+-        else:
+-            dt.append(0)
+-        if m.group(8):
+-            dt.append(SimpleTZ(m.group(8))) # type: ignore
+-        return mod_datetime.datetime(*dt) # type: ignore
+-    raise mod_gpx.GPXException(f'Invalid time: {string}')
++    
++    # Handle different timestamp formats
++    match = RE_TIMESTAMP.match(string.strip())
++    if not match:
++        return None
++    
++    year, month, day, hour, minute, second = map(int, match.groups()[:6])
++    
++    # Parse microseconds if present
++    microsecond_str = match.group(7)
++    microsecond = 0
++    if microsecond_str:
++        # Remove the leading dot and pad to 6 digits
++        microsecond_str = microsecond_str[1:].ljust(6, '0')[:6]
++        microsecond = int(microsecond_str)
++    
++    # Parse timezone if present
++    tz_str = match.group(8)
++    tzinfo = None
++    if tz_str:
++        if tz_str == 'Z':
++            tzinfo = mod_datetime.timezone.utc
++        else:
++            # Handle timezone offset like +01:00 or -0500
++            tz_str = tz_str.replace('−', '-')  # Replace Unicode minus with ASCII
++            if tz_str[0] in ('+', '-'):
++                sign = 1 if tz_str[0] == '+' else -1
++                if ':' in tz_str:
++                    # Format like +01:00
++                    hours, minutes = map(int, tz_str[1:].split(':'))
++                else:
++                    # Format like +0100
++                    hours = int(tz_str[1:3])
++                    minutes = int(tz_str[3:5]) if len(tz_str) > 3 else 0
++                offset_minutes = sign * (hours * 60 + minutes)
++                tzinfo = SimpleTZ(tz_str)
++    
++    return mod_datetime.datetime(year, month, day, hour, minute, second, microsecond, tzinfo)
+ 
+ 
+ def format_time(time: mod_datetime.datetime) -> str:
+@@ -119,7 +144,7 @@
+ 
+ 
+ class TimeConverter:
+-    def from_string(self, string: str) -> Optional[mod_datetime.datetime]:
++    def from_string(self, string: str) ->Optional[mod_datetime.datetime]:
+         try:
+             return parse_time(string)
+         except:
+@@ -178,7 +203,7 @@
+         self.possible = possible
+         self.mandatory = mandatory
+ 
+-    def from_xml(self, node: Any, version: str) -> Any:
++    def from_xml(self, node: Any, version: str) ->Any:
+         if self.attribute:
+             if node is not None:
+                 result = node.get(self.attribute)
+@@ -189,24 +214,8 @@
+             else:
+                 result = None
+         if result is None:
+-            if self.mandatory:
+-                from . import gpx as mod_gpx
+-                raise mod_gpx.GPXException(f'{self.name} is mandatory in {self.tag} (got {result})')
+             return None
+-
+-        if self.type_converter:
+-            try:
+-                result = self.type_converter.from_string(result)
+-            except Exception as e:
+-                from . import gpx as mod_gpx
+-                raise mod_gpx.GPXException(f'Invalid value for <{self.tag}>... {result} ({e})')
+-
+-        if self.possible:
+-            if not (result in self.possible):
+-                from . import gpx as mod_gpx
+-                raise mod_gpx.GPXException(f'Invalid value "{result}", possible: {self.possible}')
+-
+-        return result
++        return self.from_string(result)
+ 
+     def to_xml(self, value: Any, version: str, nsmap: Any=None, prettyprint: bool=True, indent: str='') -> Optional[str]:
+         if value is None:

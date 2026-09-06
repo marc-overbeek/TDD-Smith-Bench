@@ -1,0 +1,49 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -250,31 +250,25 @@
+ 
+     def __init__(
+         self,
+-        *args: ImmutableMultiDict[_KeyType, _CovariantValueType]
+-        | typing.Mapping[_KeyType, _CovariantValueType]
+-        | typing.Iterable[tuple[_KeyType, _CovariantValueType]],
++        *args: ImmutableMultiDict[typing.Any, typing.Any]
++        | typing.Mapping[typing.Any, typing.Any]
++        | list[tuple[typing.Any, typing.Any]]
++        | str
++        | bytes,
+         **kwargs: typing.Any,
+     ) -> None:
+         assert len(args) < 2, "Too many arguments."
+ 
+-        value: typing.Any = args[0] if args else []
+-        if kwargs:
+-            value = ImmutableMultiDict(value).multi_items() + ImmutableMultiDict(kwargs).multi_items()
+-
+-        if not value:
+-            _items: list[tuple[typing.Any, typing.Any]] = []
+-        elif hasattr(value, "multi_items"):
+-            value = typing.cast(ImmutableMultiDict[_KeyType, _CovariantValueType], value)
+-            _items = list(value.multi_items())
+-        elif hasattr(value, "items"):
+-            value = typing.cast(typing.Mapping[_KeyType, _CovariantValueType], value)
+-            _items = list(value.items())
+-        else:
+-            value = typing.cast("list[tuple[typing.Any, typing.Any]]", value)
+-            _items = list(value)
+-
+-        self._dict = {k: v for k, v in _items}
+-        self._list = _items
++        value = args[0] if args else []
++
++        if isinstance(value, str):
++            super().__init__(parse_qsl(value, keep_blank_values=True), **kwargs)
++        elif isinstance(value, bytes):
++            super().__init__(parse_qsl(value.decode("latin-1"), keep_blank_values=True), **kwargs)
++        else:
++            super().__init__(*args, **kwargs)  # type: ignore[arg-type]
++        self._list = [(str(k), str(v)) for k, v in self._list]
++        self._dict = {str(k): str(v) for k, v in self._dict.items()}
+ 
+     def getlist(self, key: typing.Any) -> list[_CovariantValueType]:
+         return [item_value for item_key, item_value in self._list if item_key == key]

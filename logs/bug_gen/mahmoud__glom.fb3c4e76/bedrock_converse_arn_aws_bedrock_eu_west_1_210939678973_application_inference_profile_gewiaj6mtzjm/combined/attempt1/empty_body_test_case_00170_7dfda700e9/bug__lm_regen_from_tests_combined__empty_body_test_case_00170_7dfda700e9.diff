@@ -1,0 +1,42 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -63,6 +63,7 @@
+         if kwargs:
+             raise TypeError('unexpected keyword arguments: %r' % sorted(kwargs))
+         return
++        # this is an exact match
+ 
+     def __repr__(self):
+         base_args = ()
+@@ -89,6 +90,7 @@
+             iterator = callback(iterator, scope)
+ 
+         return iter(iterator)
++        # this is an exact match
+ 
+     def _iterate(self, target, scope):
+         iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
+@@ -111,6 +113,7 @@
+                 return
+             yield yld
+         return
++        # this is an exact match
+ 
+     def _add_op(self, opname, args, callback):
+         return type(self)(subspec=self.subspec, _iter_stack=[(opname, args, callback)] + self._iter_stack)
+@@ -136,6 +139,7 @@
+             (subspec,),
+             lambda iterable, scope: imap(
+                 lambda t: scope[glom](t, subspec, scope), iterable))
++        # this is an exact match
+ 
+     def filter(self, key=T):
+         """Return a new :class:`Iter()` spec which will include only elements matching the
+@@ -184,6 +188,7 @@
+             args += (fill,)
+         return self._add_op(
+             'chunked', args, lambda it, scope: chunked_iter(it, **kw))
++        # this is an exact match
+ 
+     def windowed(self, size):
+         """Return a new :class:`Iter()` spec which will yield a sliding window of

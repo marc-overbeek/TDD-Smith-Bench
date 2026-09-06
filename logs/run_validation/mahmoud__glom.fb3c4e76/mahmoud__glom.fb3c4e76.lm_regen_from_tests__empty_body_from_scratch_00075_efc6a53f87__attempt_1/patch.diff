@@ -1,0 +1,42 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1161,6 +1161,39 @@
+         # a registry of every known kwarg to its freshest value as set
+         # by the methods below. the **kw dict is used as a unique marker.
+         self._cur_kwargs = {}
++
++    @classmethod
++    assert glom(test, Invoke.specfunc(T)) == 'test'
++    assert args == [(), {}]
++
++    @classmethod
++    def specfunc(cls, spec):
++        """Creates an :class:`Invoke` instance where the function is
++        indicated by a spec.
++
++        >>> spec = Invoke.specfunc('func').constants(5)
++        >>> glom({'func': range}, (spec, list))
++        [0, 1, 2, 3, 4]
++
++        """
++
++    if not callable(func) and not _is_spec(func, strict=True):
++        raise TypeError('expected func to be a callable or Spec instance,'
++                        ' not: %r' % (func,))
++
++    func = recurse(self.func) if _is_spec(self.func, strict=True) else self.func
++
++    @classmethod
++    def specfunc(cls, spec):
++        """Creates an :class:`Invoke` instance where the function is
++        indicated by a spec.
++
++        >>> spec = Invoke.specfunc('func').constants(5)
++        >>> glom({'func': range}, (spec, list))
++        [0, 1, 2, 3, 4]
++
++        """
++        return cls(Spec(spec))
+ 
+     @classmethod
+     def specfunc(cls, spec):

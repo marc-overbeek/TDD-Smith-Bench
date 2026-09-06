@@ -1,0 +1,50 @@
+--- a/safety/scan/finder/file_finder.py
++++ b/safety/scan/finder/file_finder.py
+@@ -97,22 +97,20 @@
+         self.console = console
+         self.live_status = live_status
+ 
+-    def process_directory(self, dir_path: str, max_deep: Optional[int] = None) -> Tuple[str, Dict[str, Set[Path]]]:
++    def process_directory(self, dir_path: str, max_deep: Optional[int]=None
++        ) ->Tuple[str, Dict[str, Set[Path]]]:
+         """
+-        Processes the specified directory to find files matching the handlers' criteria.
++            Processes the specified directory to find files matching the handlers' criteria.
+ 
+-        Args:
+-            dir_path (str): The directory path to process.
+-            max_deep (Optional[int]): Maximum depth to search within the directory.
++            Args:
++                dir_path (str): The directory path to process.
++                max_deep (Optional[int]): Maximum depth to search within the directory.
+ 
+-        Returns:
+-            Tuple[str, Dict[str, Set[Path]]]: The directory path and a dictionary of file types and their corresponding paths.
+-        """
++            Returns:
++                Tuple[str, Dict[str, Set[Path]]]: The directory path and a dictionary of file types and their corresponding paths.
++            """
+         files: Dict[str, Set[Path]] = {}
+-        level : int = 0
+         initial_depth = len(Path(dir_path).parts) - 1
+-        skip_dirs = set()
+-        skip_files = set()
+ 
+         for root, dirs, filenames in os.walk(dir_path):
+             root_path = Path(root)
+@@ -130,7 +128,6 @@
+ 
+             # Stop descending into directories if the maximum depth is reached
+             if max_deep is not None and current_depth > max_deep:
+-                # Don't go deeper
+                 del dirs[:]
+ 
+             # Filter filenames based on exclusion criteria
+@@ -149,7 +146,6 @@
+                             files[file_type.value] = set()
+                         files[file_type.value].add(inspectable_file)
+                         break
+-            level += 1
+ 
+         return dir_path, files
+ 

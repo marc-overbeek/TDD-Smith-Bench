@@ -1,0 +1,58 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -150,34 +150,7 @@
+         return [self.apply_coords(p) for p in polygons]
+ 
+     @classmethod
+-    def register_type(cls, data_type: str, func: Optional[Callable] = None):
+-        """
+-        Register the given function as a handler that this transform will use
+-        for a specific data type.
+-
+-        Args:
+-            data_type (str): the name of the data type (e.g., box)
+-            func (callable): takes a transform and a data, returns the
+-                transformed data.
+-
+-        Examples:
+-
+-        .. code-block:: python
+-
+-            # call it directly
+-            def func(flip_transform, voxel_data):
+-                return transformed_voxel_data
+-            HFlipTransform.register_type("voxel", func)
+-
+-            # or, use it as a decorator
+-            @HFlipTransform.register_type("voxel")
+-            def func(flip_transform, voxel_data):
+-                return transformed_voxel_data
+-
+-            # ...
+-            transform = HFlipTransform(...)
+-            transform.apply_voxel(voxel_data)  # func will be called
+-        """
++    def register_type(cls, data_type: str, func: Optional[Callable]=None):
+         if func is None:  # the decorator style
+ 
+             def wrapper(decorated_func):
+@@ -259,10 +232,6 @@
+     """
+ 
+     def __init__(self, transforms: List[Transform]):
+-        """
+-        Args:
+-            transforms (list[Transform]): list of transforms to perform.
+-        """
+         super().__init__()
+         # "Flatten" the list so that TransformList do not recursively contain TransfomList.
+         # The additional hierarchy does not change semantic of the class, but cause extra
+@@ -278,7 +247,7 @@
+                 tfms_flatten.append(t)
+         self.transforms = tfms_flatten
+ 
+-    def _apply(self, x: _T, meth: str) -> _T:
++    def _apply(self, x: _T, meth: str) ->_T:
+         """
+         Apply the transforms on the input.
+         Args:

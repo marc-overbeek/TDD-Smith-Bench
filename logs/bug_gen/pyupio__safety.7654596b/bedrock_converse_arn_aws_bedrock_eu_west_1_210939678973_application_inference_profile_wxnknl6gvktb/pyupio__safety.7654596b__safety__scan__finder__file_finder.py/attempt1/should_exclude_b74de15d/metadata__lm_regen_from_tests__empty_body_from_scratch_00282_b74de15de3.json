@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef should_exclude(excludes: Set[Path], to_analyze: Path) ->bool:\n    \"\"\"\n    Check if a path should be excluded based on the excludes set.\n    \n    Args:\n        excludes: Set of paths to exclude\n        to_analyze: Path to check\n        \n    Returns:\n        True if the path should be excluded, False otherwise\n    \"\"\"\n    # Check if the path itself is in the excludes set\n    if to_analyze in excludes:\n        return True\n    \n    # Check if the path is a child of any excluded directory\n    for exclude_path in excludes:\n        try:\n            to_analyze.relative_to(exclude_path)\n            return True\n        except ValueError:\n            # to_analyze is not relative to exclude_path\n            continue\n    \n    return False\n```",
+  "rewrite": "def should_exclude(excludes: Set[Path], to_analyze: Path) ->bool:\n    \"\"\"\n    Check if a path should be excluded based on the excludes set.\n    \n    Args:\n        excludes: Set of paths to exclude\n        to_analyze: Path to check\n        \n    Returns:\n        True if the path should be excluded, False otherwise\n    \"\"\"\n    # Check if the path itself is in the excludes set\n    if to_analyze in excludes:\n        return True\n    \n    # Check if the path is a child of any excluded directory\n    for exclude_path in excludes:\n        try:\n            to_analyze.relative_to(exclude_path)\n            return True\n        except ValueError:\n            # to_analyze is not relative to exclude_path\n            continue\n    \n    return False",
+  "strategy": "lm_regen_from_tests"
+}

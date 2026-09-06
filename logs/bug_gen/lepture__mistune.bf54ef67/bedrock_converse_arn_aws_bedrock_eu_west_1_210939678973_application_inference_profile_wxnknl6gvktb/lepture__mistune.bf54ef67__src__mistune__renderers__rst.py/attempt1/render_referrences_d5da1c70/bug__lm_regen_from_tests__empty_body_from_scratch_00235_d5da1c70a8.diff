@@ -1,0 +1,19 @@
+--- a/src/mistune/renderers/rst.py
++++ b/src/mistune/renderers/rst.py
+@@ -39,6 +39,16 @@
+         # special handle for line breaks
+         out += '\n\n'.join(self.render_referrences(state)) + '\n'
+         return strip_end(out)
++
++    out += '\n\n'.join(self.render_referrences(state)) + '\n'
++
++    def render_referrences(self, state: BlockState) -> Iterable[str]:
++        images = state.env['inline_images']
++        for index, token in enumerate(images):
++            attrs = token['attrs']
++            alt = self.render_children(token, state)
++            ident = self.INLINE_IMAGE_PREFIX + str(index)
++            yield '.. |' + ident + '| image:: ' + attrs['url'] + '\n   :alt: ' + alt
+ 
+     def render_referrences(self, state: BlockState) -> Iterable[str]:
+         images = state.env['inline_images']

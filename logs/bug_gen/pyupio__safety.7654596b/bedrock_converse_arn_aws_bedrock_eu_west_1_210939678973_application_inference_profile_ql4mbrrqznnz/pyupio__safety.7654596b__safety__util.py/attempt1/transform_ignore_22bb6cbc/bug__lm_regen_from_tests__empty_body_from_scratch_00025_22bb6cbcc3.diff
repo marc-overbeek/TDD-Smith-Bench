@@ -1,0 +1,42 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -595,29 +595,16 @@
+         )
+ 
+ 
+-def transform_ignore(ctx: click.Context, param: click.Parameter, value: Tuple[str]) -> Dict[str, Dict[str, Optional[str]]]:
+-    """
+-    Transform ignore parameters into a dictionary.
+-
+-    Args:
+-        ctx (click.Context): The click context.
+-        param (click.Parameter): The click parameter.
+-        value (Tuple[str]): The parameter value.
+-
+-    Returns:
+-        Dict[str, Dict[str, Optional[str]]]: The transformed ignore parameters.
+-    """
+-    ignored_default_dict = {'reason': '', 'expires': None}
+-    if isinstance(value, tuple) and any(value):
+-        # Following code is required to support the 2 ways of providing 'ignore'
+-        # --ignore=1234,567,789
+-        # or, the historical way (supported for backward compatibility)
+-        # -i 1234 -i 567
+-        combined_value = ','.join(value)
+-        ignore_ids = {vuln_id.strip() for vuln_id in combined_value.split(',')}
+-        return {ignore_id: dict(ignored_default_dict) for ignore_id in ignore_ids}
+-
+-    return {}
++def transform_ignore(ctx: click.Context, param: click.Parameter, value:
++    Tuple[str]) ->Dict[str, Dict[str, Optional[str]]]:
++    ignore_vulns = {}
++    if value:
++        for item in value:
++            # Handle comma-separated values within each item
++            ids = [v.strip() for v in item.split(',') if v.strip()]
++            for vuln_id in ids:
++                ignore_vulns[vuln_id] = {'expires': None, 'reason': ''}
++    return ignore_vulns
+ 
+ 
+ def active_color_if_needed(ctx: click.Context, param: click.Parameter, value: str) -> str:

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef takewhile(self, key=T):\n    \"\"\"Returns a new :class:`Iter()` spec which stops the stream once\n    *key* becomes falsy.\n\n    >>> glom([3, 2, 0, 1], Iter().takewhile().all())\n    [3, 2]\n\n    :func:`itertools.takewhile` for more details.\n    \"\"\"\n    return self._add_op(\n        'takewhile',\n        (key,),\n        lambda it, scope: takewhile(\n            lambda t: scope[glom](t, key, scope), it))\n```",
+  "rewrite": "def takewhile(self, key=T):\n    \"\"\"Returns a new :class:`Iter()` spec which stops the stream once\n    *key* becomes falsy.\n\n    >>> glom([3, 2, 0, 1], Iter().takewhile().all())\n    [3, 2]\n\n    :func:`itertools.takewhile` for more details.\n    \"\"\"\n    return self._add_op(\n        'takewhile',\n        (key,),\n        lambda it, scope: takewhile(\n            lambda t: scope[glom](t, key, scope), it))\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

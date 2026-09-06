@@ -1,0 +1,34 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -281,30 +281,7 @@
+ 
+ # TODO: not used (yet)
+ def format_oneline_trace(scope):
+-    """
+-    unpack a scope into a single line summary
+-    (shortest summary possible)
+-    """
+-    # the goal here is to do a kind of delta-compression --
+-    # if the target is the same, don't repeat it
+-    segments = []
+-    prev_target = _MISSING
+-    for scope, spec, target, error, branches in _unpack_stack(scope, only_errors=False):
+-        segments.append('/')
+-        if type(spec) in (TType, Path):
+-            segments.append(bbrepr(spec))
+-        else:
+-            segments.append(type(spec).__name__)
+-        if target != prev_target:
+-            segments.append('!')
+-            segments.append(type(target).__name__)
+-        if Path in scope:
+-            segments.append('<')
+-            segments.append('->'.join([str(p) for p in scope[Path]]))
+-            segments.append('>')
+-        prev_target = target
+-
+-    return "".join(segments)
++    pass
+ 
+ 
+ class PathAccessError(GlomError, AttributeError, KeyError, IndexError):

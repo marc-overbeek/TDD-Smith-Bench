@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef _process_directive(\n    self, block: \"BlockParser\", marker: str, start: int, state: \"BlockState\"\n) -> Optional[int]:\n    mlen = len(marker)\n    cursor_start = start + len(marker)\n\n    _end_pattern = (\n        r'^ {0,3}' + marker[0] + '{' + str(mlen) + r',}'\n        r'[ \\t]*(?:\\n|$)'\n    )\n    _end_re = re.compile(_end_pattern, re.M)\n\n    _end_m = _end_re.search(state.src, cursor_start)\n    if _end_m:\n        text = state.src[cursor_start:_end_m.start()]\n        end_pos = _end_m.end()\n    else:\n        text = state.src[cursor_start:]\n        end_pos = state.cursor_max\n\n    m = _directive_re.match(text)\n    if not m:\n        return None\n\n    self.parse_method(block, m, state)\n    return end_pos\n```",
+  "rewrite": "def _process_directive(\n    self, block: \"BlockParser\", marker: str, start: int, state: \"BlockState\"\n) -> Optional[int]:\n    mlen = len(marker)\n    cursor_start = start + len(marker)\n\n    _end_pattern = (\n        r'^ {0,3}' + marker[0] + '{' + str(mlen) + r',}'\n        r'[ \\t]*(?:\\n|$)'\n    )\n    _end_re = re.compile(_end_pattern, re.M)\n\n    _end_m = _end_re.search(state.src, cursor_start)\n    if _end_m:\n        text = state.src[cursor_start:_end_m.start()]\n        end_pos = _end_m.end()\n    else:\n        text = state.src[cursor_start:]\n        end_pos = state.cursor_max\n\n    m = _directive_re.match(text)\n    if not m:\n        return None\n\n    self.parse_method(block, m, state)\n    return end_pos\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

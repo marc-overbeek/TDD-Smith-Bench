@@ -1,0 +1,33 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -30,14 +30,10 @@
+ 
+ 
+ def target_iter(target, scope):
+-    iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
+-
+     try:
+-        iterator = iterate(target)
+-    except Exception as e:
+-        raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+-                        % (target.__class__.__name__, Path(*scope[Path]), e))
+-    return iterator
++        return iter(target)
++    except TypeError:
++        raise BadSpec(f"Group() expected an iterable target, not: {type(target)!r}")
+ 
+ 
+ class Group:
+@@ -74,11 +70,9 @@
+ 
+     def glomit(self, target, scope):
+         scope[MODE] = GROUP
+-        scope[CUR_AGG] = None  # reset aggregation tripwire for sub-specs
++        scope[CUR_AGG] = None
+         scope[ACC_TREE] = {}
+ 
+-        # handle the basecase where the spec stops immediately
+-        # TODO: something smarter
+         if type(self.spec) in (dict, list):
+             ret = type(self.spec)()
+         else:

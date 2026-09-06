@@ -1,0 +1,21 @@
+--- a/fvcore/common/config.py
++++ b/fvcore/common/config.py
+@@ -144,16 +144,5 @@
+         ), "The reserved key '{}' can only be used in files!".format(BASE_KEY)
+         return super().merge_from_list(cfg_list)
+ 
+-    def __setattr__(self, name: str, val: Any) -> None:  # pyre-ignore
+-        if name.startswith("COMPUTED_"):
+-            if name in self:
+-                old_val = self[name]
+-                if old_val == val:
+-                    return
+-                raise KeyError(
+-                    "Computed attributed '{}' already exists "
+-                    "with a different value! old={}, new={}.".format(name, old_val, val)
+-                )
+-            self[name] = val
+-        else:
+-            super().__setattr__(name, val)
++    def __setattr__(self, name: str, val: Any) ->None:
++        pass

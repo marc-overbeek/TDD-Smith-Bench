@@ -1,0 +1,138 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -37,7 +37,7 @@
+ class SimpleTZ(mod_datetime.tzinfo):
+     __slots__ = ('offset',)
+ 
+-    def __init__(self, s: str="") -> None:
++    def __init__(self, s: str="") ->None:
+         self.offset = 0
+         if s and len(s) >= 2:
+             if s[0] in ('−', '-'):
+@@ -47,12 +47,15 @@
+                 if s[0] == '+':
+                     s = s[1:]
+                 mult = 1
+-            hour = int(s[:2]) if s[:2].isdigit() else 0
+-            if len(s) >= 4:
+-                minute = int(s[-2:]) if s[-2:].isdigit() else 0
+-            else:
+-                minute = 0
+-            self.offset = mult * (hour * 60 + minute)
++            if len(s) >= 2:
++                hour = int(s[:2]) if s[:2].isdigit() else 0
++                if len(s) >= 4 and s[2] == ':':
++                    minute = int(s[3:5]) if s[3:5].isdigit() else 0
++                elif len(s) >= 4:
++                    minute = int(s[2:4]) if s[2:4].isdigit() else 0
++                else:
++                    minute = 0
++                self.offset = mult * (hour * 60 + minute)
+ 
+     def utcoffset(self, dt: Optional[mod_datetime.datetime]) -> mod_datetime.timedelta:
+         return mod_datetime.timedelta(minutes=self.offset)
+@@ -78,26 +81,86 @@
+         return self.offset == other.offset # type: ignore
+ 
+ 
+-def parse_time(string: str) -> Optional[mod_datetime.datetime]:
+-    from . import gpx as mod_gpx
++def parse_time(string: str) ->Optional[mod_datetime.datetime]:
+     if not string:
+         return None
+-    m = RE_TIMESTAMP.match(string)
+-    if m:
+-        dt = [int(m.group(i)) for i in range(1, 7)]
+-        if m.group(7):
+-            f = m.group(7)[1:7]
+-            dt.append(int(f + "0" * (6 - len(f))))
+-        else:
+-            dt.append(0)
+-        if m.group(8):
+-            dt.append(SimpleTZ(m.group(8))) # type: ignore
+-        return mod_datetime.datetime(*dt) # type: ignore
+-    raise mod_gpx.GPXException(f'Invalid time: {string}')
+-
+-
+-def format_time(time: mod_datetime.datetime) -> str:
+-    return time.isoformat().replace('+00:00', 'Z')
++    
++    # Handle timezone information
++    tz_info = None
++    if string.endswith('Z'):
++        string = string[:-1]
++        tz_info = SimpleTZ()
++    elif string[-6:] in ('+00:00', '-00:00'):
++        string = string[:-6]
++        tz_info = SimpleTZ()
++    elif string[-5:] in ('+0000', '-0000'):
++        string = string[:-5]
++        tz_info = SimpleTZ()
++    elif string[-6] in ('+', '−') and string[-3] == ':':
++        # Parse timezone offset like +01:00 or -05:00
++        tz_part = string[-6:]
++        string = string[:-6]
++        tz_info = SimpleTZ(tz_part)
++    elif string[-5] in ('+', '−') and string[-3] != ':':
++        # Parse timezone offset like +0100 or -0500
++        tz_part = string[-5:]
++        string = string[:-5]
++        tz_info = SimpleTZ(tz_part)
++    
++    # Match the timestamp pattern
++    match = RE_TIMESTAMP.match(string)
++    if not match:
++        return None
++    
++    year = int(match.group(1))
++    month = int(match.group(2))
++    day = int(match.group(3))
++    hour = int(match.group(4))
++    minute = int(match.group(5))
++    second = int(match.group(6))
++    
++    # Handle microseconds
++    microsecond = 0
++    if match.group(7):
++        microsecond_str = match.group(7)[1:]  # Remove the leading dot
++        microsecond = int(microsecond_str.ljust(6, '0')[:6])
++    
++    # Create datetime object
++    try:
++        dt = mod_datetime.datetime(year, month, day, hour, minute, second, microsecond, tzinfo=tz_info)
++        return dt
++    except ValueError:
++        return None
++
++
++def format_time(time: mod_datetime.datetime) ->str:
++    if time is None:
++        return ""
++    
++    # Format the datetime part
++    formatted = time.strftime("%Y-%m-%dT%H:%M:%S")
++    
++    # Add microseconds if present
++    if time.microsecond:
++        formatted += f".{time.microsecond:06d}"
++    
++    # Add timezone info
++    if time.tzinfo is not None:
++        tz_offset = time.utcoffset()
++        if tz_offset is not None:
++            total_minutes = int(tz_offset.total_seconds()) // 60
++            hours = total_minutes // 60
++            minutes = total_minutes % 60
++            if hours == 0 and minutes == 0:
++                formatted += "Z"
++            else:
++                formatted += f"{hours:+03d}:{minutes:02d}"
++        else:
++            formatted += "Z"
++    else:
++        formatted += "Z"
++    
++    return formatted
+ 
+ 
+ 

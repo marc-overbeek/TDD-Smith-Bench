@@ -1,0 +1,26 @@
+--- a/deepdiff/commands.py
++++ b/deepdiff/commands.py
+@@ -180,15 +180,14 @@
+     """
+     Deep Grep Commandline
+ 
+-    Grep through the contents of a file and find the path to the item.
+-    It can read csv, tsv, json, yaml, and toml files.
+-
+-    """
+-    kwargs['case_sensitive'] = not kwargs.pop('ignore_case')
+-    kwargs['match_string'] = kwargs.pop('exact_match')
+-
+-    try:
+-        content = load_path_content(path)
++    Search for an item in a file.
++    It can read csv, tsv, json, yaml, and toml files.
++
++    """
++    extension = path.split('.')[-1]
++
++    try:
++        content = load_path_content(path, file_type=extension)
+     except Exception as e:  # pragma: no cover.
+         if debug:  # pragma: no cover.
+             raise  # pragma: no cover.

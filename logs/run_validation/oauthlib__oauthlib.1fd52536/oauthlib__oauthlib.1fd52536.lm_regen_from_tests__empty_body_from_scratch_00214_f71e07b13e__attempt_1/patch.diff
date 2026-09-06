@@ -1,0 +1,14 @@
+--- a/oauthlib/openid/connect/core/grant_types/implicit.py
++++ b/oauthlib/openid/connect/core/grant_types/implicit.py
+@@ -30,6 +30,11 @@
+             token['state'] = request.state
+         return super().add_id_token(token, token_handler, request, nonce=request.nonce)
+ 
++    def add_id_token(self, token, token_handler, request):
++        if request.state and 'state' not in token:
++            token['state'] = request.state
++        return super().add_id_token(token, token_handler, request, nonce=request.nonce)
++
+     def openid_authorization_validator(self, request):
+         """Additional validation when following the implicit flow.
+         """

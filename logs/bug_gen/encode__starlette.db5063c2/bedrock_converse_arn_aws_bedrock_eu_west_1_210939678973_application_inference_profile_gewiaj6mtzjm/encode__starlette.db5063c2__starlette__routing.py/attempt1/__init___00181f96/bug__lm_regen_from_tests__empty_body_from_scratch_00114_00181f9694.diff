@@ -1,0 +1,13 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -29,6 +29,10 @@
+     Raised by `.url_for(name, **path_params)` and `.url_path_for(name, **path_params)`
+     if no matching route exists.
+     """
++
++    def __init__(self, name: str, path_params: dict[str, typing.Any]) -> None:
++        params = ", ".join(list(path_params.keys()))
++        super().__init__(f'No route exists for name "{name}" and params "{params}".')
+ 
+     def __init__(self, name: str, path_params: dict[str, typing.Any]) -> None:
+         params = ", ".join(list(path_params.keys()))

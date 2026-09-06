@@ -1,0 +1,19 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -145,14 +145,8 @@
+         query = urlencode([(str(key), str(value)) for key, value in kwargs.items()])
+         return self.replace(query=query)
+ 
+-    def remove_query_params(self, keys: str | typing.Sequence[str]) -> URL:
+-        if isinstance(keys, str):
+-            keys = [keys]
+-        params = MultiDict(parse_qsl(self.query, keep_blank_values=True))
+-        for key in keys:
+-            params.pop(key, None)
+-        query = urlencode(params.multi_items())
+-        return self.replace(query=query)
++    def remove_query_params(self, keys: (str | typing.Sequence[str])) ->URL:
++        pass
+ 
+     def __eq__(self, other: typing.Any) -> bool:
+         return str(self) == str(other)

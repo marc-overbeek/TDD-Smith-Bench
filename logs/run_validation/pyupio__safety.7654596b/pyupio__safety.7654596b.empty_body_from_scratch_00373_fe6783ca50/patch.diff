@@ -1,0 +1,59 @@
+--- a/safety/alerts/requirements.py
++++ b/safety/alerts/requirements.py
+@@ -447,53 +447,9 @@
+                 hashes.append({"hash": sha256, "method": "sha256"})
+         return hashes
+ 
+-    def update_version(self, content: str, version: str, update_hashes: bool = True) -> str:
+-        """
+-        Updates the version of the requirement in the content.
+-
+-        Args:
+-            content (str): The original content.
+-            version (str): The new version to update to.
+-            update_hashes (bool): Whether to update the hashes as well.
+-
+-        Returns:
+-            str: The updated content.
+-        """
+-        if self.file_type == filetypes.tox_ini:
+-            updater_class = updater.ToxINIUpdater
+-        elif self.file_type == filetypes.conda_yml:
+-            updater_class = updater.CondaYMLUpdater
+-        elif self.file_type == filetypes.requirements_txt:
+-            updater_class = updater.RequirementsTXTUpdater
+-        elif self.file_type == filetypes.pipfile:
+-            updater_class = updater.PipfileUpdater
+-        elif self.file_type == filetypes.pipfile_lock:
+-            updater_class = updater.PipfileLockUpdater
+-        elif self.file_type == filetypes.setup_cfg:
+-            updater_class = updater.SetupCFGUpdater
+-        else:
+-            raise NotImplementedError
+-
+-        dep = Dependency(
+-            name=self.name,
+-            specs=self.specs,
+-            line=self.line,
+-            line_numbers=[self.lineno, ] if self.lineno != 0 else None,
+-            dependency_type=self.file_type,
+-            hashes=self.hashes,
+-            extras=self.extras
+-        )
+-        hashes = []
+-        if self.hashes and update_hashes:
+-            hashes = self.get_hashes(version)
+-
+-        return updater_class.update(
+-            content=content,
+-            dependency=dep,
+-            version=version,
+-            hashes=hashes,
+-            spec="=="
+-        )
++    def update_version(self, content: str, version: str, update_hashes: bool=True
++        ) ->str:
++        pass
+ 
+     @classmethod
+     def parse(cls, s: str, lineno: int, file_type: str = filetypes.requirements_txt) -> 'Requirement':

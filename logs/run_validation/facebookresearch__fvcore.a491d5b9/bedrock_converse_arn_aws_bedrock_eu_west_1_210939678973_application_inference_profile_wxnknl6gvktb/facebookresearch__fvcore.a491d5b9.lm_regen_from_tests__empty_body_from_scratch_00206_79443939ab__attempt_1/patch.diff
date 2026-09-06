@@ -1,0 +1,21 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -431,14 +431,10 @@
+         Returns:
+             ndarray: the flipped image(s).
+         """
+-        tensor = torch.from_numpy(np.ascontiguousarray(img))
+-        if len(tensor.shape) == 2:
+-            # For dimension of HxW.
+-            tensor = tensor.flip((-2))
+-        elif len(tensor.shape) > 2:
+-            # For dimension of HxWxC, NxHxWxC.
+-            tensor = tensor.flip((-3))
+-        return tensor.numpy()
++        if img.ndim <= 3:  # HxW, HxWxC
++            return np.flip(img, axis=0)
++        else:
++            return np.flip(img, axis=1)
+ 
+     def apply_coords(self, coords: np.ndarray) -> np.ndarray:
+         """

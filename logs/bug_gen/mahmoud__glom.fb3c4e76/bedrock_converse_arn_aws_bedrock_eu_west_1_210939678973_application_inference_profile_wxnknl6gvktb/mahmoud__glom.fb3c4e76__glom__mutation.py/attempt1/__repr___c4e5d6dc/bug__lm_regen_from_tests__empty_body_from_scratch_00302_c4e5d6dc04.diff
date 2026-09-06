@@ -1,0 +1,20 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -178,6 +178,17 @@
+         _apply_for_each(_apply, path, dest)
+ 
+         return target
++
++    assert repr(Assign(T.a, 1)) == 'Assign(T.a, 1)'
++    assign_spec = Assign(T.a, 1, missing=dict)
++    assert repr(assign_spec) == 'Assign(T.a, 1, missing=dict)'
++    assert repr(assign_spec) == repr(eval(repr(assign_spec)))
++
++    def __repr__(self):
++        cn = self.__class__.__name__
++        if self.missing is None:
++            return f'{cn}({self._orig_path!r}, {self.val!r})'
++        return f'{cn}({self._orig_path!r}, {self.val!r}, missing={bbrepr(self.missing)})'
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

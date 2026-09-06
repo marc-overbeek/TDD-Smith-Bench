@@ -1,0 +1,41 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -480,37 +480,7 @@
+ @click.pass_context
+ @clean_license_command
+ def license(ctx, db, output, cache, files):
+-    """
+-    Find the open source licenses used by your Python dependencies.
+-    """
+-    print_deprecation_message("license", date(2024, 6, 1), new_command=None)
+-    LOG.info('Running license command')
+-    packages = get_packages(files, False)
+-    licenses_db = {}
+-
+-    SafetyContext().params = ctx.params
+-
+-    try:
+-        licenses_db = safety.get_licenses(session=ctx.obj.auth.client, db_mirror=db, cached=cache,
+-                                          telemetry=ctx.obj.config.telemetry_enabled)
+-    except SafetyError as e:
+-        LOG.exception('Expected SafetyError happened: %s', e)
+-        output_exception(e, exit_code_output=False)
+-    except Exception as e:
+-        LOG.exception('Unexpected Exception happened: %s', e)
+-        exception = e if isinstance(e, SafetyException) else SafetyException(info=e)
+-        output_exception(exception, exit_code_output=False)
+-
+-    filtered_packages_licenses = get_packages_licenses(packages=packages, licenses_db=licenses_db)
+-
+-    announcements = []
+-    if not db:
+-        announcements = safety.get_announcements(session=ctx.obj.auth.client, telemetry=ctx.obj.config.telemetry_enabled)
+-
+-    output_report = SafetyFormatter(output=output).render_licenses(announcements, filtered_packages_licenses)
+-
+-    click.secho(output_report, nl=True)
+-    print_deprecation_message("license", date(2024, 6, 1), new_command=None)
++    pass
+ 
+ 
+ @cli.command(cls=SafetyCLILegacyCommand, utility_command=True, help=CLI_GENERATE_HELP)

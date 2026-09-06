@@ -1,0 +1,22 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -494,6 +494,10 @@
+     """
+ 
+     def __init__(self, h: int, w: int, new_h: int, new_w: int, interp: str = None):
++
++    def __init__(self, h: int, w: int, new_h: int, new_w: int, interp: str)
++
++    def __init__(self, h: int, w: int, new_h: int, new_w: int, interp: str):
+         """
+         Args:
+             h, w (int): original image size.
+@@ -504,6 +508,8 @@
+                 https://pytorch.org/docs/stable/nn.functional.html
+         """
+         super().__init__()
++        assert h > 0 and w > 0, f"Original image size must be positive, got h={h}, w={w}"
++        assert new_h > 0 and new_w > 0, f"New image size must be positive, got new_h={new_h}, new_w={new_w}"
+         self._set_attributes(locals())
+ 
+     def apply_image(self, img: np.ndarray, interp: str = None) -> np.ndarray:

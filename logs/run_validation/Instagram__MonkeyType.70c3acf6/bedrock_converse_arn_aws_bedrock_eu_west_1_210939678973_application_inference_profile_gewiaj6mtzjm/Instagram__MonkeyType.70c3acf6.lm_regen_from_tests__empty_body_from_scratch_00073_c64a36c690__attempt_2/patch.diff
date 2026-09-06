@@ -1,0 +1,26 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -43,17 +43,12 @@
+     from typing import NoReturn  # noqa
+ 
+ 
+-def module_path(path: str) -> Tuple[str, Optional[str]]:
+-    """Parse <module>[:<qualname>] into its constituent parts."""
+-    parts = path.split(":", 1)
+-    module = parts.pop(0)
+-    qualname = parts[0] if parts else None
+-    if os.sep in module:  # Smells like a path
+-        raise argparse.ArgumentTypeError(
+-            f"{module} does not look like a valid Python import path"
+-        )
+-
+-    return module, qualname
++def module_path(path: str) ->Tuple[str, Optional[str]]:
++    if ":" in path:
++        module, qualname = path.split(":", 1)
++        return (module, qualname)
++    else:
++        return (path, None)
+ 
+ 
+ def module_path_with_qualname(path: str) -> Tuple[str, str]:

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef split_gpxs(xml: AnyStr) ->Iterable[str]:\n    dom = mod_minidom.parseString(xml)\n    gpx_node = _find_gpx_node(dom)\n    if not gpx_node:\n        return []\n    \n    gpx_nodes = []\n    for child_node in gpx_node.childNodes:\n        if child_node.nodeName == 'trk':\n            gpx_nodes.append(child_node)\n    \n    result = []\n    for gpx_node in gpx_nodes:\n        new_dom = mod_minidom.parseString('<gpx></gpx>')\n        new_gpx = _find_gpx_node(new_dom)\n        new_gpx.appendChild(gpx_node)\n        result.append(new_dom.toxml())\n    \n    return result\n\ndef _find_gpx_node(dom: Any) ->Any:\n    for node in dom.getElementsByTagName('gpx'):\n        return node\n    return None\n```",
+  "rewrite": "def split_gpxs(xml: AnyStr) ->Iterable[str]:\n    dom = mod_minidom.parseString(xml)\n    gpx_node = _find_gpx_node(dom)\n    if not gpx_node:\n        return []\n    \n    gpx_nodes = []\n    for child_node in gpx_node.childNodes:\n        if child_node.nodeName == 'trk':\n            gpx_nodes.append(child_node)\n    \n    result = []\n    for gpx_node in gpx_nodes:\n        new_dom = mod_minidom.parseString('<gpx></gpx>')\n        new_gpx = _find_gpx_node(new_dom)\n        new_gpx.appendChild(gpx_node)\n        result.append(new_dom.toxml())\n    \n    return result\n\ndef _find_gpx_node(dom: Any) ->Any:\n    for node in dom.getElementsByTagName('gpx'):\n        return node\n    return None",
+  "strategy": "lm_regen_from_tests_combined"
+}

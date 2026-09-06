@@ -1,0 +1,78 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -511,41 +511,41 @@
+         super(MutuallyExclusiveOption, self).__init__(*args, **kwargs)
+ 
+     def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+-        """
+-        Handle the parse result for mutually exclusive options.
+-
+-        Args:
+-            ctx (click.Context): The click context.
+-            opts (Dict[str, Any]): The options dictionary.
+-            args (List[str]): The arguments list.
+-
+-        Returns:
+-            Tuple[Any, List[str]]: The result and remaining arguments.
+-        """
+-        m_exclusive_used = self.mutually_exclusive.intersection(opts)
+-        option_used = m_exclusive_used and self.name in opts
+-
+-        exclusive_value_used = False
+-        for used in m_exclusive_used:
+-            value_used = opts.get(used, None)
+-            if not isinstance(value_used, List):
+-                value_used = [value_used]
+-            if value_used and set(self.with_values.get(used, [])).intersection(value_used):
+-                exclusive_value_used = True
+-
+-        if option_used and (not self.with_values or exclusive_value_used):
+-            options = ', '.join(self.opts)
+-            prohibited = ''.join(["\n * --{0} with {1}".format(item, self.with_values.get(
+-                        item)) if item in self.with_values else f"\n * {item}" for item in self.mutually_exclusive])
+-            raise click.UsageError(
+-                f"Illegal usage: `{options}` is mutually exclusive with: {prohibited}"
++            """
++            Handle the parse result for mutually exclusive options.
++
++            Args:
++                ctx (click.Context): The click context.
++                opts (Dict[str, Any]): The options dictionary.
++                args (List[str]): The arguments list.
++
++            Returns:
++                Tuple[Any, List[str]]: The result and remaining arguments.
++            """
++            m_exclusive_used = self.mutually_exclusive.intersection(opts)
++            option_used = m_exclusive_used and self.name in opts
++
++            exclusive_value_used = False
++            for used in m_exclusive_used:
++                value_used = opts.get(used, None)
++                if not isinstance(value_used, List):
++                    value_used = [value_used]
++                if value_used and set(self.with_values.get(used, [])).intersection(value_used):
++                    exclusive_value_used = True
++
++            if option_used and (not self.with_values or exclusive_value_used):
++                options = ', '.join(self.opts)
++                prohibited = ''.join(["\n * --{0} with {1}".format(item, self.with_values.get(
++                            item)) if item in self.with_values else f"\n * {item}" for item in self.mutually_exclusive])
++                raise click.UsageError(
++                    f"Illegal usage: `{options}` is mutually exclusive with: {prohibited}"
++                )
++
++            return super(MutuallyExclusiveOption, self).handle_parse_result(
++                ctx,
++                opts,
++                args
+             )
+-
+-        return super(MutuallyExclusiveOption, self).handle_parse_result(
+-            ctx,
+-            opts,
+-            args
+-        )
+ 
+ 
+ class DependentOption(click.Option):

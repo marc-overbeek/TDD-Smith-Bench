@@ -1,0 +1,48 @@
+--- a/monkeytype/util.py
++++ b/monkeytype/util.py
+@@ -48,30 +48,28 @@
+     return func  # type: ignore[no-any-return]
+ 
+ 
+-def get_name_in_module(
+-    module: str,
+-    qualname: str,
+-    attr_getter: Optional[Callable[[Any, str], Any]] = None,
+-) -> Any:
+-    """Return the python object specified by qualname in module.
++def get_name_in_module(module: str, qualname: str, attr_getter: Optional[
++    Callable[[Any, str], Any]]=None) ->Any:
++    """Return the object specified by qualname in module.
+ 
+     Raises:
+-        NameLookupError if the module/qualname cannot be retrieved.
++        NameLookupError if we can't find the named object
+     """
+-    if attr_getter is None:
+-        attr_getter = getattr
+     try:
+-        obj = importlib.import_module(module)
+-    except ModuleNotFoundError:
+-        raise NameLookupError("No module named '%s'" % (module,))
+-    walked = []
+-    for part in qualname.split("."):
+-        walked.append(part)
++        mod = importlib.import_module(module)
++    except ImportError:
++        raise NameLookupError(f"Could not import module {module}")
++    
++    obj = mod
++    for attr in qualname.split("."):
+         try:
+-            obj = attr_getter(obj, part)
++            if attr_getter is not None:
++                obj = attr_getter(obj, attr)
++            else:
++                obj = getattr(obj, attr)
+         except AttributeError:
+             raise NameLookupError(
+-                "Module '%s' has no attribute '%s'" % (module, ".".join(walked))
++                f"Could not find {attr!r} in {obj!r} ({module}.{qualname})"
+             )
+     return obj
+ 

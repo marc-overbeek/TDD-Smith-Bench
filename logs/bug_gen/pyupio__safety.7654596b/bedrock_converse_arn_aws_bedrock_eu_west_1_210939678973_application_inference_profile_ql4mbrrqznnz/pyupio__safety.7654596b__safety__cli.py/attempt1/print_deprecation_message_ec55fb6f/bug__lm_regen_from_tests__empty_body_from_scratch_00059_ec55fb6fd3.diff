@@ -1,0 +1,59 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -235,44 +235,19 @@
+ 
+     return inner
+ 
+-def print_deprecation_message(
+-    old_command: str, 
+-    deprecation_date: datetime, 
+-    new_command: Optional[str] = None
+-) -> None:
+-    """
+-    Print a formatted deprecation message for a command.
+-
+-    This function uses the click library to output a visually distinct
+-    message in the console, warning users about the deprecation of a
+-    specified command. It includes information about the deprecation date
+-    and suggests an alternative command to use, if provided.
+-
+-    The message is formatted with colors and styles for emphasis:
+-    - Yellow for the border and general information
+-    - Red for the 'DEPRECATED' label
+-    - Green for the suggestion of the new command (if provided)
+-
+-    Parameters:
+-    - old_command (str): The name of the deprecated command.
+-    - deprecation_date (datetime): The date when the command will no longer be supported.
+-    - new_command (str, optional): The name of the alternative command to suggest. Default is None.
+-    """
+-    click.echo("\n")
+-    click.echo(click.style(BAR_LINE, fg="yellow", bold=True))
+-    click.echo("\n")
+-    click.echo(click.style("DEPRECATED: ", fg="red", bold=True) +
+-               click.style(f"this command (`{old_command}`) has been DEPRECATED, and will be unsupported beyond {deprecation_date.strftime('%d %B %Y')}.", fg="yellow", bold=True))
+-    
++def print_deprecation_message(old_command: str, deprecation_date: datetime,
++    new_command: Optional[str]=None) ->None:
++    deprecation_str = f"DEPRECATED: this command (`{old_command}`) has been DEPRECATED"
++    if deprecation_date:
++        if isinstance(deprecation_date, datetime):
++            date_str = deprecation_date.strftime("%d %B %Y")
++        else:
++            date_str = deprecation_date.strftime("%d %B %Y")
++        deprecation_str += f" and will be unsupported after {date_str}"
+     if new_command:
+-        click.echo("\n")
+-        click.echo(click.style("We highly encourage switching to the new ", fg="green") +
+-                   click.style(f"`{new_command}`", fg="green", bold=True) +
+-                   click.style(" command which is easier to use, more powerful, and can be set up to mimic the deprecated command if required.", fg="green"))
+-    
+-    click.echo("\n")
+-    click.echo(click.style(BAR_LINE, fg="yellow", bold=True))
+-    click.echo("\n")
++        deprecation_str += f". Please use `{new_command}` instead"
++    deprecation_str += "."
++    click.secho(deprecation_str, fg="yellow", err=False)
+ 
+ 
+ 

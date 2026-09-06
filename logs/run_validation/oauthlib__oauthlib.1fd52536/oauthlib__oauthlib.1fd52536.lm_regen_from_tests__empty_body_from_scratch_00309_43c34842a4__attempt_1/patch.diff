@@ -1,0 +1,18 @@
+--- a/oauthlib/oauth2/rfc6749/clients/base.py
++++ b/oauthlib/oauth2/rfc6749/clients/base.py
+@@ -537,6 +537,7 @@
+             self.code_challenge_method = code_challenge_method
+             code_challenge = code_verifier
+             self.code_challenge = code_challenge
++            return code_challenge
+ 
+         if code_challenge_method == "S256":
+             h = hashlib.sha256()
+@@ -546,6 +547,7 @@
+             # replace '+' with '-', '/' with '_', and remove trailing '='
+             code_challenge = code_challenge.replace("+", "-").replace("/", "_").replace("=", "")
+             self.code_challenge = code_challenge
++            self.code_challenge_method = code_challenge_method
+ 
+         return code_challenge
+ 

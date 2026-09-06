@@ -1,0 +1,134 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -701,39 +701,103 @@
+         return False
+ 
+ 
+-def detailed__dict__(obj, ignore_private_variables=True, ignore_keys=frozenset(), include_keys=None):
+-    """
+-    Get the detailed dictionary of an object.
+-
+-    This is used so we retrieve object properties too.
+-    """
+-    if include_keys:
++def detailed__dict__(obj, ignore_private_variables=True, ignore_keys=
++    frozenset(), include_keys=None):
++    """
++    Get a detailed dictionary representation of an object.
++    
++    This function returns the __dict__ of an object, with options to:
++    - Ignore private variables
++    - Ignore specific keys
++    - Include only specific keys
++    """
++    try:
+         result = {}
+-        for key in include_keys:
++        
++        # Handle Enum objects specially
++        if isinstance(obj, enum.Enum):
++            keys_to_use = ENUM_INCLUDE_KEYS
++        else:
++            keys_to_use = None
++        
++        # Get the base __dict__
++        if hasattr(obj, '__dict__'):
++            obj_dict = obj.__dict__
++        else:
++            obj_dict = {}
++        
++        # Process all attributes
++        for key in dir(obj):
++            # Skip private/magic methods if requested
++            if ignore_private_variables and key.startswith('_'):
++                continue
++            
++            # Skip if in ignore_keys
++            if key in ignore_keys:
++                continue
++            
++            # If include_keys is specified, only include those keys
++            if include_keys is not None and key not in include_keys:
++                continue
++            
++            # For Enums, only include specific keys
++            if keys_to_use is not None and key not in keys_to_use:
++                continue
++            
++            # Skip special attributes that shouldn't be included
++            if key in ('__class__', '__doc__', '__module__', '__dict__', '__weakref__'):
++                continue
++            
+             try:
+                 value = getattr(obj, key)
++                # Skip methods and other callables (unless they're properties)
++                if callable(value) and not isinstance(getattr(type(obj), key, None), property):
++                    continue
++                result[key] = value
+             except Exception:
+-                pass
+-            else:
+-                if not callable(value) or key == '__objclass__':  # We don't want to compare functions, however for backward compatibility, __objclass__ needs to be reported.
+-                    result[key] = value
++                # Skip attributes that can't be accessed
++                continue
++        
++        return result
++    except Exception:
++        return {}
++
++def detailed__dict__(obj, ignore_private_variables=True, ignore_keys=
++    frozenset(), include_keys=None):
++    """
++    Get a detailed dictionary representation of an object.
++    """
++    result = {}
++    
++    # Determine which keys to process
++    if include_keys is not None:
++        keys_to_process = include_keys
++    elif isinstance(obj, enum.Enum):
++        keys_to_process = ENUM_INCLUDE_KEYS
+     else:
+-        result = obj.__dict__.copy()  # A shallow copy
+-        private_var_prefix = f"_{obj.__class__.__name__}__"  # The semi private variables in Python get this prefix
+-        for key in ignore_keys:
+-            if key in result or (
+-                ignore_private_variables and key.startswith('__') and not key.startswith(private_var_prefix)
+-            ):
+-                del result[key]
+-        for key in dir(obj):
+-            if key not in result and key not in ignore_keys and (
+-                    not ignore_private_variables or (
+-                        ignore_private_variables and not key.startswith('__') and not key.startswith(private_var_prefix)
+-                    )
+-            ):
+-                value = getattr(obj, key)
+-                if not callable(value):
+-                    result[key] = value
++        keys_to_process = None
++    
++    # Get attributes from dir(obj)
++    for key in dir(obj):
++        # Apply filters
++        if ignore_private_variables and key.startswith('_'):
++            continue
++        if key in ignore_keys:
++            continue
++        if keys_to_process is not None and key not in keys_to_process:
++            continue
++        
++        # Skip special attributes
++        if key in ('__class__', '__doc__', '__module__', '__dict__', '__weakref__', '__objclass__'):
++            continue
++        
++        try:
++            value = getattr(obj, key)
++            # Include the attribute
++            result[key] = value
++        except Exception:
++            pass
++    
+     return result
+ 
+ 

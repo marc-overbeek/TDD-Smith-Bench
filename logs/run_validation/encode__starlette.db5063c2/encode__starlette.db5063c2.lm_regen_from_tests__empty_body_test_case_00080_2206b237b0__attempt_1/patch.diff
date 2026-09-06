@@ -1,0 +1,18 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -331,6 +331,7 @@
+                 self.app = cls(self.app, *args, **kwargs)
+ 
+         self.path_regex, self.path_format, self.param_convertors = compile_path(path)
++        # this is an exact match
+ 
+     def matches(self, scope: Scope) -> tuple[Match, Scope]:
+         path_params: dict[str, typing.Any]
+@@ -366,6 +367,7 @@
+ 
+     def __repr__(self) -> str:
+         return f"{self.__class__.__name__}(path={self.path!r}, name={self.name!r})"
++        # this is an exact match
+ 
+ 
+ class Mount(BaseRoute):

@@ -1,0 +1,24 @@
+--- a/oauthlib/oauth2/rfc6749/clients/base.py
++++ b/oauthlib/oauth2/rfc6749/clients/base.py
+@@ -482,16 +482,17 @@
+ 
+         .. _`RFC7636 Section 4.1`: https://tools.ietf.org/html/rfc7636#section-4.1
+         """
+-        code_verifier = None
+-
+         if not length >= 43:
+             raise ValueError("Length must be greater than or equal to 43")
+ 
+         if not length <= 128:
+             raise ValueError("Length must be less than or equal to 128")
+ 
+-        allowed_characters = re.compile('^[A-Za-z0-9-._~]')
+-        code_verifier = generate_token(length, UNICODE_ASCII_CHARACTER_SET + "-._~")
++        allowed_characters = re.compile('^[A-Za-z0-9-._~]+$')
++        allowed_chars = UNICODE_ASCII_CHARACTER_SET + "-._~"
++    
++        import random
++        code_verifier = ''.join(random.choice(allowed_chars) for _ in range(length))
+ 
+         if not re.search(allowed_characters, code_verifier):
+             raise ValueError("code_verifier contains invalid characters")

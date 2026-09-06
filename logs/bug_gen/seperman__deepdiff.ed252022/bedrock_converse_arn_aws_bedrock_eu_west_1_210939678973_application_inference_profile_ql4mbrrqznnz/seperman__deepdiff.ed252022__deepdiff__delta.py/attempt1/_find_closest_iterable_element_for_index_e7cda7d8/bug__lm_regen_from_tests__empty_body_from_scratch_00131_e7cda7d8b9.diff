@@ -1,0 +1,20 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -605,12 +605,11 @@
+         closest_elem = None
+         closest_distance = float('inf')
+         for index, value in enumerate(obj):
+-            dist = abs(index - elem)
+-            if dist > closest_distance:
+-                break
+-            if value == expected_old_value and dist < closest_distance:
+-                closest_elem = index
+-                closest_distance = dist
++            if value == expected_old_value:
++                dist = abs(index - elem)
++                if dist < closest_distance:
++                    closest_elem = index
++                    closest_distance = dist
+         return closest_elem
+ 
+     def _do_iterable_opcodes(self):

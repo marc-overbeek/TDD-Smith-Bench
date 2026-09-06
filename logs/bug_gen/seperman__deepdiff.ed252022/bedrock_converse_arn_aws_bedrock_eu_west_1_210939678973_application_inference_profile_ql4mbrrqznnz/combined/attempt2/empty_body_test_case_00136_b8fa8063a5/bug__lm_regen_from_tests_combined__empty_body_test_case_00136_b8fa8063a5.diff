@@ -1,0 +1,34 @@
+--- a/deepdiff/model.py
++++ b/deepdiff/model.py
+@@ -235,8 +235,7 @@
+             set_item_info = self[key]
+             is_dict = isinstance(set_item_info, Mapping)
+             for change in tree[key]:
+-                path = change.up.path(
+-                )  # we want't the set's path, the added item is not directly accessible
++                path = change.up.path()
+                 item = change.t2 if key == 'set_item_added' else change.t1
+                 if self.ADD_QUOTES_TO_STRINGS and isinstance(item, strings):
+                     item = "'%s'" % item
+@@ -339,18 +338,15 @@
+         self._from_tree_set_item_added(tree)
+         self._from_tree_repetition_change(tree)
+ 
+-    def _from_tree_iterable_item_added_or_removed(self, tree, report_type, delta_report_key):
++    def _from_tree_iterable_item_added_or_removed(self, tree, report_type,
++        delta_report_key):
+         if report_type in tree:
+-            for change in tree[report_type]:  # report each change
+-                # determine change direction (added or removed)
+-                # Report t2 (the new one) whenever possible.
+-                # In cases where t2 doesn't exist (i.e. stuff removed), report t1.
++            for change in tree[report_type]:
+                 if change.t2 is not notpresent:
+                     item = change.t2
+                 else:
+                     item = change.t1
+ 
+-                # do the reporting
+                 path, param, _ = change.path(force=FORCE_DEFAULT, get_parent_too=True)
+                 try:
+                     iterable_items_added_at_indexes = self[delta_report_key][path]

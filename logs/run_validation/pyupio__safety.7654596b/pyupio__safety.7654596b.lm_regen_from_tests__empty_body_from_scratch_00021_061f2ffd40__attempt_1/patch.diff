@@ -1,0 +1,48 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -375,27 +375,28 @@
+         }
+ 
+ 
+-def output_exception(exception: Exception, exit_code_output: bool = True) -> None:
+-    """
+-    Output an exception message to the console and exit.
+-
++def output_exception(exception: Exception, exit_code_output: bool=True) ->None:
++    """
++    Output an exception to stderr and exit with the appropriate exit code.
++    
+     Args:
+         exception (Exception): The exception to output.
+         exit_code_output (bool): Whether to output the exit code.
+-
+-    Exits:
+-        Exits the program with the appropriate exit code.
+-    """
+-    click.secho(str(exception), fg="red", file=sys.stderr)
+-
++    """
++    exit_code = EXIT_CODE_FAILURE
++    message = str(exception)
++    
++    # Check if exception has a custom exit_code attribute
++    if hasattr(exception, 'exit_code'):
++        exit_code = exception.exit_code
++    
++    # Output the message to stderr
++    if message:
++        click.echo(message, err=True)
++    
++    # Exit with the appropriate code if exit_code_output is True
+     if exit_code_output:
+-        exit_code = EXIT_CODE_FAILURE
+-        if hasattr(exception, 'get_exit_code'):
+-            exit_code = exception.get_exit_code()
+-    else:
+-        exit_code = EXIT_CODE_OK
+-
+-    sys.exit(exit_code)
++        sys.exit(exit_code)
+ 
+ def build_remediation_info_url(base_url: str, version: Optional[str], spec: str,
+                                target_version: Optional[str] = '') -> str:

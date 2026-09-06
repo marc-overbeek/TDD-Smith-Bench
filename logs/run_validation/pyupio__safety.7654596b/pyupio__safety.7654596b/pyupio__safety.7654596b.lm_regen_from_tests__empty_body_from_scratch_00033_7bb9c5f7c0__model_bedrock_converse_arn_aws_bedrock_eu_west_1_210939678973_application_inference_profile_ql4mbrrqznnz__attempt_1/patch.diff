@@ -1,0 +1,43 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -1067,27 +1067,22 @@
+ 
+ 
+ def sync_safety_context(f):
+-    """
+-    Decorator to sync the Safety context with the function arguments.
+-    """
+-    def new_func(*args, **kwargs):
++    import functools
++
++    @functools.wraps(f)
++    def inner(*args, **kwargs):
+         ctx = SafetyContext()
+-
+-        legacy_key_added = False
+-        if "session" in kwargs:
+-            legacy_key_added = True
+-            kwargs["key"] = kwargs.get("session").api_key
+-
+-        for attr in dir(ctx):
+-            if attr in kwargs:
+-                setattr(ctx, attr, kwargs.get(attr))
+-
+-        if legacy_key_added:
+-            kwargs.pop("key")
+-
++        context = click.get_current_context(silent=True)
++        if context:
++            params = context.params
++            if params:
++                for key, value in params.items():
++                    if hasattr(ctx, key):
++                        setattr(ctx, key, value)
++                ctx.params.update(params)
+         return f(*args, **kwargs)
+ 
+-    return new_func
++    return inner
+ 
+ 
+ @sync_safety_context

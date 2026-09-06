@@ -1,0 +1,57 @@
+--- a/gpxpy/gpxxml.py
++++ b/gpxpy/gpxxml.py
+@@ -2,23 +2,38 @@
+ 
+ from typing import Any, AnyStr, Iterable
+ 
+-def split_gpxs(xml: AnyStr) -> Iterable[str]:
+-    """
+-    Split tracks in multiple xml files, without gpxpy. Each one with ont <trk>.
+-    """
++def split_gpxs(xml: AnyStr) ->Iterable[str]:
+     dom = mod_minidom.parseString(xml)
+-    gpx_node: Any = _find_gpx_node(dom)
+-    gpx_track_nodes = []
+-    if gpx_node:
+-        for child_node in gpx_node.childNodes:
+-            if child_node.nodeName == 'trk':
+-                gpx_track_nodes.append(child_node)
+-                gpx_node.removeChild(child_node)
+-
+-    for gpx_track_node in gpx_track_nodes:
+-        gpx_node.appendChild(gpx_track_node)
+-        yield dom.toxml()
+-        gpx_node.removeChild(gpx_track_node)
++    gpx_node = _find_gpx_node(dom)
++    
++    if not gpx_node:
++        return []
++    
++    trk_nodes = []
++    for child_node in gpx_node.childNodes:
++        if child_node.nodeName == 'trk':
++            trk_nodes.append(child_node)
++    
++    if not trk_nodes:
++        return [xml]
++    
++    result = []
++    for trk_node in trk_nodes:
++        # Create a new DOM for each track
++        new_dom = mod_minidom.Document()
++        new_gpx = new_dom.createElement('gpx')
++        new_dom.appendChild(new_gpx)
++        
++        # Copy the necessary attributes from the original gpx node
++        for attr_name in gpx_node.attributes.keys():
++            new_gpx.setAttribute(attr_name, gpx_node.getAttribute(attr_name))
++        
++        # Add the track to the new gpx
++        new_gpx.appendChild(trk_node)
++        
++        result.append(new_dom.toxml())
++    
++    return result
+ 
+ def join_gpxs(xmls: Iterable[AnyStr]) -> str:
+     """

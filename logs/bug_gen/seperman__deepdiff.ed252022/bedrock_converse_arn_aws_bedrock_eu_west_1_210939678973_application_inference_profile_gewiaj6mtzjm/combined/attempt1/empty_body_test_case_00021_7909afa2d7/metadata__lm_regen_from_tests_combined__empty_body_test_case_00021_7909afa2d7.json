@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef _path_to_elements(path, root_element=DEFAULT_FIRST_ELEMENT):\n    elements = []\n    inside = ''\n    elem = ''\n    for char in path:\n        if char in {'[', '.'}:\n            if elem:\n                _add_to_elements(elements, elem, inside)\n            elem = ''\n            inside = char\n        elif char == ']':\n            if elem:\n                _add_to_elements(elements, elem, inside)\n            elem = ''\n            inside = ''\n        else:\n            elem += char\n    if elem:\n        _add_to_elements(elements, elem, inside)\n    return tuple(elements)\n\n\ndef extract(obj, path):\n    elements = _path_to_elements(path)\n    return _get_nested_obj(obj, elements)\n```",
+  "rewrite": "def _path_to_elements(path, root_element=DEFAULT_FIRST_ELEMENT):\n    elements = []\n    inside = ''\n    elem = ''\n    for char in path:\n        if char in {'[', '.'}:\n            if elem:\n                _add_to_elements(elements, elem, inside)\n            elem = ''\n            inside = char\n        elif char == ']':\n            if elem:\n                _add_to_elements(elements, elem, inside)\n            elem = ''\n            inside = ''\n        else:\n            elem += char\n    if elem:\n        _add_to_elements(elements, elem, inside)\n    return tuple(elements)\n\n\ndef extract(obj, path):\n    elements = _path_to_elements(path)\n    return _get_nested_obj(obj, elements)",
+  "strategy": "lm_regen_from_tests_combined"
+}

@@ -1,0 +1,31 @@
+--- a/src/mistune/renderers/markdown.py
++++ b/src/mistune/renderers/markdown.py
+@@ -71,6 +71,28 @@
+ 
+     def codespan(self, token: Dict[str, Any], state: BlockState) -> str:
+         return "`" + cast(str, token["raw"]) + "`"
++
++    def codespan(self, token: Dict[str, Any], state: BlockState) -> str:
++        raw = cast(str, token["raw"])
++    
++        # Find the longest sequence of backticks in the code
++        max_backticks = 0
++        current_backticks = 0
++        for char in raw:
++            if char == '`':
++                current_backticks += 1
++                max_backticks = max(max_backticks, current_backticks)
++            else:
++                current_backticks = 0
++    
++        # Use one more backtick than the longest sequence found
++        delimiter = '`' * (max_backticks + 1)
++    
++        # Add spaces if the code starts or ends with a backtick
++        if raw.startswith('`') or raw.endswith('`'):
++            return delimiter + ' ' + raw + ' ' + delimiter
++        else:
++            return delimiter + raw + delimiter
+ 
+     def linebreak(self, token: Dict[str, Any], state: BlockState) -> str:
+         return '  \n'

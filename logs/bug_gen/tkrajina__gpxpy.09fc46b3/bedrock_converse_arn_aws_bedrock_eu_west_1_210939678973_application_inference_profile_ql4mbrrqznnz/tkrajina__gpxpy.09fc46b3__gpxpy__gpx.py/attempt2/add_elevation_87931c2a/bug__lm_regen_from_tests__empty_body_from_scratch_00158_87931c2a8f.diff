@@ -1,0 +1,32 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1721,16 +1721,23 @@
+         return MovingData(moving_time, stopped_time, moving_distance, stopped_distance, max_speed)
+ 
+     def add_elevation(self, delta: float) -> None:
+-        """
+-        Adjusts elevation data for track.
++        if not delta:
++            return
++        for track_point in self.points:
++            if track_point.elevation is not None:
++                track_point.elevation += delta
++
++    def add_elevation(self, delta: float) -> None:
++        """
++        Adjusts elevation data of GPX data.
+ 
+         Parameters
+         ----------
+         delta : float
+-            Elevation delta in meters to apply to track
+-        """
+-        for track_segment in self.segments:
+-            track_segment.add_elevation(delta)
++            Elevation delta in meters to apply to GPX data
++        """
++        for track in self.tracks:
++            track.add_elevation(delta)
+ 
+     def add_missing_data(self,
+                          get_data_function: Callable[[GPXTrackPoint], Any],

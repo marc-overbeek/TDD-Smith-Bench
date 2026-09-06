@@ -1,0 +1,69 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -45,18 +45,8 @@
+     :meth:`register_type` method.
+     """
+ 
+-    def _set_attributes(self, params: Optional[List[Any]] = None) -> None:
+-        """
+-        Set attributes from the input list of parameters.
+-
+-        Args:
+-            params (list): list of parameters.
+-        """
+-
+-        if params:
+-            for k, v in params.items():
+-                if k != "self" and not k.startswith("_"):
+-                    setattr(self, k, v)
++    def _set_attributes(self, params: Optional[List[Any]]=None) ->None:
++        pass
+ 
+     @abstractmethod
+     def apply_image(self, img: np.ndarray):
+@@ -641,39 +631,12 @@
+ 
+ 
+ class CropTransform(Transform):
+-    def __init__(
+-        self,
+-        x0: int,
+-        y0: int,
+-        w: int,
+-        h: int,
+-        orig_w: Optional[int] = None,
+-        orig_h: Optional[int] = None,
+-    ):
+-        """
+-        Args:
+-            x0, y0, w, h (int): crop the image(s) by img[y0:y0+h, x0:x0+w].
+-            orig_w, orig_h (int): optional, the original width and height
+-                before cropping. Needed to make this transform invertible.
+-        """
+-        super().__init__()
+-        self._set_attributes(locals())
+-
+-    def apply_image(self, img: np.ndarray) -> np.ndarray:
+-        """
+-        Crop the image(s).
+-
+-        Args:
+-            img (ndarray): of shape NxHxWxC, or HxWxC or HxW. The array can be
+-                of type uint8 in range [0, 255], or floating point in range
+-                [0, 1] or [0, 255].
+-        Returns:
+-            ndarray: cropped image(s).
+-        """
+-        if len(img.shape) <= 3:
+-            return img[self.y0 : self.y0 + self.h, self.x0 : self.x0 + self.w]
+-        else:
+-            return img[..., self.y0 : self.y0 + self.h, self.x0 : self.x0 + self.w, :]
++    def __init__(self, x0: int, y0: int, w: int, h: int, orig_w: Optional[int]=
++        None, orig_h: Optional[int]=None):
++        pass
++
++    def apply_image(self, img: np.ndarray) ->np.ndarray:
++        pass
+ 
+     def apply_coords(self, coords: np.ndarray) -> np.ndarray:
+         """

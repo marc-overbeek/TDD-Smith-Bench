@@ -1,0 +1,41 @@
+--- a/fvcore/common/checkpoint.py
++++ b/fvcore/common/checkpoint.py
+@@ -412,36 +412,8 @@
+         self.path_manager: PathManager = checkpointer.path_manager
+         self.file_prefix = file_prefix
+ 
+-    def step(self, iteration: int, **kwargs: Any) -> None:
+-        """
+-        Perform the appropriate action at the given iteration.
+-
+-        Args:
+-            iteration (int): the current iteration, ranged in [0, max_iter-1].
+-            kwargs (Any): extra data to save, same as in
+-                :meth:`Checkpointer.save`.
+-        """
+-        iteration = int(iteration)
+-        additional_state = {"iteration": iteration}
+-        additional_state.update(kwargs)
+-
+-        if (iteration + 1) % self.period == 0:
+-            self.checkpointer.save(
+-                "{}_{:07d}".format(self.file_prefix, iteration), **additional_state
+-            )
+-
+-            if self.max_to_keep is not None:
+-                self.recent_checkpoints.append(self.checkpointer.get_checkpoint_file())
+-                if len(self.recent_checkpoints) > self.max_to_keep:
+-                    file_to_delete = self.recent_checkpoints.pop(0)
+-                    if self.path_manager.exists(
+-                        file_to_delete
+-                    ) and not file_to_delete.endswith(f"{self.file_prefix}_final.pth"):
+-                        self.path_manager.rm(file_to_delete)
+-
+-        if self.max_iter is not None:
+-            if iteration >= self.max_iter - 1:
+-                self.checkpointer.save(f"{self.file_prefix}_final", **additional_state)
++    def step(self, iteration: int, **kwargs: Any) ->None:
++        pass
+ 
+     def save(self, name: str, **kwargs: Any) -> None:
+         """

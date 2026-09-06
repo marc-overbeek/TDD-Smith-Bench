@@ -1,0 +1,20 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -376,7 +376,16 @@
+ 
+ 
+ def type_in_type_group(item, type_group):
+-    return get_type(item) in type_group
++    item_type = get_type(item)
++    # Normalize the type_group to handle None values
++    # None in a type_group should match type(None)
++    normalized_group = []
++    for t in type_group:
++        if t is None:
++            normalized_group.append(type(None))
++        else:
++            normalized_group.append(t)
++    return item_type in normalized_group
+ 
+ 
+ def type_is_subclass_of_type_group(item, type_group):

@@ -1,0 +1,44 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -253,11 +253,19 @@
+ 
+ #TODO: combine this with other functionality elsewhere?
+ def _bool_child_repr(child):
+-    if child is M:
++    if isinstance(child, _MExpr):
+         return repr(child)
+-    elif isinstance(child, _MExpr):
+-        return "(" + bbrepr(child) + ")"
+-    return bbrepr(child)
++    if isinstance(child, (_MType, _MSubspec)):
++        return repr(child)
++    if type(child) in (And, Or):
++        if child._m_repr() and child.default is _MISSING:
++            return "(" + repr(child) + ")"
++        return repr(child)
++    if type(child) is Not:
++        if child._m_repr():
++            return repr(child)
++        return repr(child)
++    return repr(child)
+ 
+ 
+ class _Bool:
+@@ -288,8 +296,6 @@
+             raise
+ 
+     def _m_repr(self):
+-        """should this Or() repr as M |?"""
+-        # only used by And() and Or(), not Not(), so len(children) >= 1
+         if isinstance(self.children[0], (_MType, _MExpr)):
+             return True
+         if type(self.children[0]) in (And, Or, Not):
+@@ -378,7 +384,7 @@
+     def __repr__(self):
+         if self.child is M:
+             return '~M'
+-        if self._m_repr():  # is in M repr
++        if self._m_repr():
+             return "~(" + bbrepr(self.child) + ")"
+         return "Not(" + bbrepr(self.child) + ")"
+ 

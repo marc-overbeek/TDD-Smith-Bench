@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests and the code, I can see that the `WebSocketEndpoint.__init__` method has an empty body (`pass`), but it should initialize the instance variables just like the `HTTPEndpoint.__init__` does.\n\nThe current implementation is missing the initialization of `self.scope`, `self.receive`, and `self.send`, which are used in the `dispatch()` method. The tests are failing because these attributes are not being set.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "Looking at the failing tests and the code, I can see that the `WebSocketEndpoint.__init__` method has an empty body (`pass`), but it should initialize the instance variables just like the `HTTPEndpoint.__init__` does.\n\nThe current implementation is missing the initialization of `self.scope`, `self.receive`, and `self.send`, which are used in the `dispatch()` method. The tests are failing because these attributes are not being set.\n\n```python\ndef __init__(self, scope: Scope, receive: Receive, send: Send) -> None:\n    assert scope[\"type\"] == \"websocket\"\n    self.scope = scope\n    self.receive = receive\n    self.send = send\n```",
+  "rewrite": "def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:\n    assert scope[\"type\"] == \"websocket\"\n    self.scope = scope\n    self.receive = receive\n    self.send = send\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

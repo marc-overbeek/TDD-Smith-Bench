@@ -1,0 +1,40 @@
+--- a/fvcore/common/checkpoint.py
++++ b/fvcore/common/checkpoint.py
+@@ -384,33 +384,10 @@
+         checkpointer (Checkpointer): the underlying checkpointer object
+     """
+ 
+-    def __init__(
+-        self,
+-        checkpointer: Checkpointer,
+-        period: int,
+-        max_iter: Optional[int] = None,
+-        max_to_keep: Optional[int] = None,
+-        file_prefix: str = "model",
+-    ) -> None:
+-        """
+-        Args:
+-            checkpointer: the checkpointer object used to save checkpoints.
+-            period (int): the period to save checkpoint.
+-            max_iter (int): maximum number of iterations. When it is reached,
+-                a checkpoint named "{file_prefix}_final" will be saved.
+-            max_to_keep (int): maximum number of most current checkpoints to keep,
+-                previous checkpoints will be deleted
+-            file_prefix (str): the prefix of checkpoint's filename
+-        """
+-        self.checkpointer = checkpointer
+-        self.period = int(period)
+-        self.max_iter = max_iter
+-        if max_to_keep is not None:
+-            assert max_to_keep > 0
+-        self.max_to_keep = max_to_keep
+-        self.recent_checkpoints: List[str] = []
+-        self.path_manager: PathManager = checkpointer.path_manager
+-        self.file_prefix = file_prefix
++    def __init__(self, checkpointer: Checkpointer, period: int, max_iter:
++        Optional[int]=None, max_to_keep: Optional[int]=None, file_prefix: str=
++        'model') ->None:
++        pass
+ 
+     def step(self, iteration: int, **kwargs: Any) -> None:
+         """

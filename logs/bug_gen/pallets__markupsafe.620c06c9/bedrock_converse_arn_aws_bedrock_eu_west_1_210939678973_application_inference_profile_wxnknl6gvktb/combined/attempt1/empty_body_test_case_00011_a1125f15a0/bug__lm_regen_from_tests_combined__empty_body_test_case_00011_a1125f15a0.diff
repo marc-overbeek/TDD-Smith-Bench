@@ -1,0 +1,16 @@
+--- a/src/markupsafe/__init__.py
++++ b/src/markupsafe/__init__.py
+@@ -153,13 +153,10 @@
+ 
+     def __mod__(self, value: t.Any, /) -> te.Self:
+         if isinstance(value, tuple):
+-            # a tuple of arguments, each wrapped
+             value = tuple(_MarkupEscapeHelper(x, self.escape) for x in value)
+         elif hasattr(type(value), "__getitem__") and not isinstance(value, str):
+-            # a mapping of arguments, wrapped
+             value = _MarkupEscapeHelper(value, self.escape)
+         else:
+-            # a single argument, wrapped with the helper and a tuple
+             value = (_MarkupEscapeHelper(value, self.escape),)
+ 
+         return self.__class__(super().__mod__(value))

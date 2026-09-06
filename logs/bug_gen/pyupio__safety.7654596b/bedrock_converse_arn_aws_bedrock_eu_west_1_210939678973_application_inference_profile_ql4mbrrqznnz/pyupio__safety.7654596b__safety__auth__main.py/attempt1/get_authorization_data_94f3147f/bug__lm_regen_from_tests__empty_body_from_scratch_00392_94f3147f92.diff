@@ -1,0 +1,39 @@
+--- a/safety/auth/main.py
++++ b/safety/auth/main.py
+@@ -13,31 +13,13 @@
+ from safety.util import get_proxy_dict
+ 
+ 
+-def get_authorization_data(client, code_verifier: str,
+-                           organization: Optional[Organization] = None,
+-                           sign_up: bool = False, ensure_auth: bool = False, headless: bool = False) -> Tuple[str, str]:
+-    """
+-    Generate the authorization URL for the authentication process.
+-
+-    Args:
+-        client: The authentication client.
+-        code_verifier (str): The code verifier for the PKCE flow.
+-        organization (Optional[Organization]): The organization to authenticate with.
+-        sign_up (bool): Whether the URL is for sign-up.
+-        ensure_auth (bool): Whether to ensure authentication.
+-        headless (bool): Whether to run in headless mode.
+-
+-    Returns:
+-        Tuple[str, str]: The authorization URL and initial state.
+-    """
+-
++def get_authorization_data(client, code_verifier: str, organization:
++    Optional[Organization]=None, sign_up: bool=False, ensure_auth: bool=
++    False, headless: bool=False) ->Tuple[str, str]:
+     kwargs = {'sign_up': sign_up, 'locale': 'en', 'ensure_auth': ensure_auth, 'headless': headless}
+-    if organization:
++    if organization is not None:
+         kwargs['organization'] = organization.id
+-
+-    return client.create_authorization_url(CLI_AUTH,
+-                                           code_verifier=code_verifier,
+-                                           **kwargs)
++    return client.create_authorization_url(CLI_AUTH, code_verifier=code_verifier, **kwargs)
+ 
+ def get_logout_url(id_token: str) -> str:
+     """

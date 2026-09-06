@@ -1,0 +1,32 @@
+--- a/src/mistune/plugins/table.py
++++ b/src/mistune/plugins/table.py
+@@ -167,24 +167,11 @@
+     return html + '>' + text + '</' + tag + '>\n'
+ 
+ 
+-def table(md: "Markdown") -> None:
+-    """A mistune plugin to support table, spec defined at
+-    https://michelf.ca/projects/php-markdown/extra/#table
+-
+-    Here is an example:
+-
+-    .. code-block:: text
+-
+-        First Header  | Second Header
+-        ------------- | -------------
+-        Content Cell  | Content Cell
+-        Content Cell  | Content Cell
+-
+-    :param md: Markdown instance
+-    """
+-    md.block.register('table', TABLE_PATTERN, parse_table, before='paragraph')
+-    md.block.register('nptable', NP_TABLE_PATTERN, parse_nptable, before='paragraph')
+-
++def table(md: 'Markdown') ->None:
++    """Plugin to parse tables."""
++    md.block.register('table', TABLE_PATTERN, parse_table)
++    md.block.register('nptable', NP_TABLE_PATTERN, parse_nptable)
++    
+     if md.renderer and md.renderer.NAME == 'html':
+         md.renderer.register('table', render_table)
+         md.renderer.register('table_head', render_table_head)

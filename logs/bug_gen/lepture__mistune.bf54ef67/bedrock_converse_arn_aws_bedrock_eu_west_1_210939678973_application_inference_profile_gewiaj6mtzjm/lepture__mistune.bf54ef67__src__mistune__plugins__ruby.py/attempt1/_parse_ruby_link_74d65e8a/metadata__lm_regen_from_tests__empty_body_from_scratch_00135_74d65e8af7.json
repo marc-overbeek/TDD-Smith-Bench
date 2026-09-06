@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef _parse_ruby_link(inline: 'InlineParser', state: 'InlineState', pos: int,\n    tokens: List[Dict[str, Any]]) ->Optional[int]:\n    src = state.src\n    if pos >= len(src):\n        return None\n    if src[pos] != '[':\n        return None\n    \n    # Try to parse a link after the ruby text\n    link_pos = parse_link(inline, state, pos, tokens)\n    if link_pos:\n        return link_pos\n    \n    # If no link found, try to parse a link label\n    label_pos = parse_link_label(inline, state, pos, tokens)\n    if label_pos:\n        return label_pos\n        \n    return None\n```",
+  "rewrite": "def _parse_ruby_link(inline: 'InlineParser', state: 'InlineState', pos: int,\n    tokens: List[Dict[str, Any]]) ->Optional[int]:\n    src = state.src\n    if pos >= len(src):\n        return None\n    if src[pos] != '[':\n        return None\n    \n    # Try to parse a link after the ruby text\n    link_pos = parse_link(inline, state, pos, tokens)\n    if link_pos:\n        return link_pos\n    \n    # If no link found, try to parse a link label\n    label_pos = parse_link_label(inline, state, pos, tokens)\n    if label_pos:\n        return label_pos\n        \n    return None",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,65 @@
+--- a/src/mistune/plugins/spoiler.py
++++ b/src/mistune/plugins/spoiler.py
+@@ -15,37 +15,31 @@
+ INLINE_SPOILER_PATTERN = r'>!\s*(?P<spoiler_text>.+?)\s*!<'
+ 
+ 
+-def parse_block_spoiler(
+-    block: "BlockParser", m: Match[str], state: "BlockState"
+-) -> int:
+-    text, end_pos = block.extract_block_quote(m, state)
+-    if not text.endswith('\n'):
+-        # ensure it endswith \n to make sure
+-        # _BLOCK_SPOILER_MATCH.match works
+-        text += '\n'
+-
+-    depth = state.depth()
+-    if not depth and _BLOCK_SPOILER_MATCH.match(text):
+-        text = _BLOCK_SPOILER_START.sub('', text)
+-        tok_type = 'block_spoiler'
+-    else:
+-        tok_type = 'block_quote'
+-
+-    # scan children state
+-    child = state.child_state(text)
+-    if state.depth() >= block.max_nested_level - 1:
+-        rules = list(block.block_quote_rules)
+-        rules.remove('block_quote')
+-    else:
+-        rules = block.block_quote_rules
+-
+-    block.parse(child, rules)
+-    token = {'type': tok_type, 'children': child.tokens}
+-    if end_pos:
+-        state.prepend_token(token)
+-        return end_pos
+-    state.append_token(token)
+-    return state.cursor
++def parse_block_spoiler(block: 'BlockParser', m: Match[str], state:
++    'BlockState') ->int:
++    pos = m.end()
++    text = m.group(0)
++    
++    # Remove the '!' prefix from each line
++    lines = text.split('\n')
++    processed_lines = []
++    for line in lines:
++        # Remove leading spaces and '!' 
++        match = _BLOCK_SPOILER_START.match(line)
++        if match:
++            processed_lines.append(line[match.end():])
++        else:
++            processed_lines.append(line)
++    
++    content = '\n'.join(processed_lines).strip()
++    
++    # Parse the content as block-level markdown
++    new_state = state.copy()
++    new_state.process(content)
++    children = block.parse(new_state)
++    
++    state.append_token({'type': 'block_spoiler', 'children': children})
++    return pos
+ 
+ 
+ def parse_inline_spoiler(

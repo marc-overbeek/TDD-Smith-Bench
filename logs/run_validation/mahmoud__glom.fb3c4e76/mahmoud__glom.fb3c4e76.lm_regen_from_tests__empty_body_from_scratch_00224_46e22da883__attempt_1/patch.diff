@@ -1,0 +1,15 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -392,6 +392,12 @@
+ 
+     def __init__(self, spec):
+         self.spec = spec
++
++    assert glom(target, M == M(T['a'])) == target
++    assert glom(target, M(T['a']) == M) == target
++
++    def __eq__(self, other):
++        return _MExpr(self, '=', other)
+ 
+     def __eq__(self, other):
+         return _MExpr(self, '=', other)

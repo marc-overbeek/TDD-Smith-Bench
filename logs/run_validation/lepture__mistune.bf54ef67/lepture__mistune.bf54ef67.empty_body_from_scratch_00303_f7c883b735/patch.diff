@@ -1,0 +1,31 @@
+--- a/src/mistune/directives/image.py
++++ b/src/mistune/directives/image.py
+@@ -100,25 +100,9 @@
+ class Figure(DirectivePlugin):
+     NAME = 'figure'
+ 
+-    def parse_directive_content(
+-        self, block: "BlockParser", m: Match[str], state: "BlockState"
+-    ) -> Optional[List[Dict[str, Any]]]:
+-        content = self.parse_content(m)
+-        if not content:
+-            return None
+-
+-        tokens = list(self.parse_tokens(block, content, state))
+-        caption = tokens[0]
+-        if caption['type'] == 'paragraph':
+-            caption['type'] = 'figcaption'
+-            children = [caption]
+-            if len(tokens) > 1:
+-                children.append({
+-                    'type': 'legend',
+-                    'children': tokens[1:]
+-                })
+-            return children
+-        return None
++    def parse_directive_content(self, block: 'BlockParser', m: Match[str],
++        state: 'BlockState') ->Optional[List[Dict[str, Any]]]:
++        pass
+ 
+     def parse(
+         self, block: "BlockParser", m: Match[str], state: "BlockState"

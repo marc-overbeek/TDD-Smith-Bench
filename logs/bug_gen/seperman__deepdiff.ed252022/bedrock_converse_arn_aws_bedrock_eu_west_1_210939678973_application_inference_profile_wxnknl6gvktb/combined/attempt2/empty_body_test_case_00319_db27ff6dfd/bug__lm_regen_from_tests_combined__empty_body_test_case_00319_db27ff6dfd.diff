@@ -1,0 +1,153 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -129,16 +129,12 @@
+ class SerializationMixin:
+ 
+     def to_json_pickle(self):
+-        """
+-        :ref:`to_json_pickle_label`
+-        Get the json pickle of the diff object. Unless you need all the attributes and functionality of DeepDiff, running to_json() is the safer option that json pickle.
+-        """
+         try:
+             import jsonpickle
+             copied = self.copy()
+             return jsonpickle.encode(copied)
+-        except ImportError:  # pragma: no cover. Json pickle is getting deprecated.
+-            logger.error('jsonpickle library needs to be installed in order to run to_json_pickle')  # pragma: no cover. Json pickle is getting deprecated.
++        except ImportError:
++            logger.error('jsonpickle library needs to be installed in order to run to_json_pickle')
+ 
+     @classmethod
+     def from_json_pickle(cls, value):
+@@ -154,42 +150,6 @@
+             logger.error('jsonpickle library needs to be installed in order to run from_json_pickle')  # pragma: no cover. Json pickle is getting deprecated.
+ 
+     def to_json(self, default_mapping: Optional[dict]=None, force_use_builtin_json=False, **kwargs):
+-        """
+-        Dump json of the text view.
+-        **Parameters**
+-
+-        default_mapping : dictionary(optional), a dictionary of mapping of different types to json types.
+-
+-        by default DeepDiff converts certain data types. For example Decimals into floats so they can be exported into json.
+-        If you have a certain object type that the json serializer can not serialize it, please pass the appropriate type
+-        conversion through this dictionary.
+-
+-        force_use_builtin_json: Boolean, default = False
+-            When True, we use Python's builtin Json library for serialization,
+-            even if Orjson is installed.
+-
+-
+-        kwargs: Any other kwargs you pass will be passed on to Python's json.dumps()
+-
+-        **Example**
+-
+-        Serialize custom objects
+-            >>> class A:
+-            ...     pass
+-            ...
+-            >>> class B:
+-            ...     pass
+-            ...
+-            >>> t1 = A()
+-            >>> t2 = B()
+-            >>> ddiff = DeepDiff(t1, t2)
+-            >>> ddiff.to_json()
+-            TypeError: We do not know how to convert <__main__.A object at 0x10648> of type <class '__main__.A'> for json serialization. Please pass the default_mapping parameter with proper mapping of the object to a basic python type.
+-
+-            >>> default_mapping = {A: lambda x: 'obj A', B: lambda x: 'obj B'}
+-            >>> ddiff.to_json(default_mapping=default_mapping)
+-            '{"type_changes": {"root": {"old_type": "A", "new_type": "B", "old_value": "obj A", "new_value": "obj B"}}}'
+-        """
+         dic = self.to_dict(view_override=TEXT_VIEW)
+         return json_dumps(
+             dic,
+@@ -199,16 +159,6 @@
+         )
+ 
+     def to_dict(self, view_override=None):
+-        """
+-        convert the result to a python dictionary. You can override the view type by passing view_override.
+-
+-        **Parameters**
+-
+-        view_override: view type, default=None,
+-            override the view that was used to generate the diff when converting to the dictionary.
+-            The options are the text or tree.
+-        """
+-
+         view = view_override if view_override else self.view
+         return dict(self._get_view_results(view))
+ 
+@@ -607,23 +557,14 @@
+     JSON_CONVERTOR[PydanticBaseModel] = lambda x: x.dict()
+ 
+ 
+-def json_convertor_default(default_mapping=None):
+-    if default_mapping:
+-        _convertor_mapping = JSON_CONVERTOR.copy()
+-        _convertor_mapping.update(default_mapping)
+-    else:
+-        _convertor_mapping = JSON_CONVERTOR
+-
+-    def _convertor(obj):
+-        for original_type, convert_to in _convertor_mapping.items():
+-            if isinstance(obj, original_type):
+-                return convert_to(obj)
+-        # This is to handle reverse() which creates a generator of type list_reverseiterator
+-        if obj.__class__.__name__ == 'list_reverseiterator':
+-            return list(copy(obj))
+-        raise TypeError('We do not know how to convert {} of type {} for json serialization. Please pass the default_mapping parameter with proper mapping of the object to a basic python type.'.format(obj, type(obj)))
+-
+-    return _convertor
++def json_convertor_default(default_mapping):
++    def convertor(obj):
++        if default_mapping and type(obj) in default_mapping:
++            return default_mapping[type(obj)](obj)
++        if type(obj) in JSON_CONVERTOR:
++            return JSON_CONVERTOR[type(obj)](obj)
++        raise TypeError(f'We do not know how to convert {obj} of type {type(obj)} for json serialization. Please pass the default_mapping parameter with proper mapping of the object to a basic python type.')
++    return convertor
+ 
+ 
+ class JSONDecoder(json.JSONDecoder):
+@@ -641,34 +582,12 @@
+ 
+ 
+ def json_dumps(item, default_mapping=None, force_use_builtin_json: bool=False, **kwargs):
+-    """
+-    Dump json with extra details that are not normally json serializable
+-
+-    parameters
+-    ----------
+-
+-    force_use_builtin_json: Boolean, default = False
+-        When True, we use Python's builtin Json library for serialization,
+-        even if Orjson is installed.
+-    """
+-    if orjson and not force_use_builtin_json:
+-        indent = kwargs.pop('indent', None)
+-        if indent:
+-            kwargs['option'] = orjson.OPT_INDENT_2
+-        if 'sort_keys' in kwargs:
+-            raise TypeError(
+-                "orjson does not accept the sort_keys parameter. "
+-                "If you need to pass sort_keys, set force_use_builtin_json=True "
+-                "to use Python's built-in json library instead of orjson.")
+-        return orjson.dumps(
+-            item,
+-            default=json_convertor_default(default_mapping=default_mapping),
+-            **kwargs).decode(encoding='utf-8')
++    if orjson is not None and not force_use_builtin_json:
++        if kwargs:
++            raise TypeError('orjson does not accept the sort_keys parameter.' if 'sort_keys' in kwargs else 'orjson does not accept additional parameters.')
++        return orjson.dumps(item, default=json_convertor_default(default_mapping)).decode('utf-8')
+     else:
+-        return json.dumps(
+-            item,
+-            default=json_convertor_default(default_mapping=default_mapping),
+-            **kwargs)
++        return json.dumps(item, default=json_convertor_default(default_mapping), **kwargs)
+ 
+ 
+ json_loads = partial(json.loads, cls=JSONDecoder)

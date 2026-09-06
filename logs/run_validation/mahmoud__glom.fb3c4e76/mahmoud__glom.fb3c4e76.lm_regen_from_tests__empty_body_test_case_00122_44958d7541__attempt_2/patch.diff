@@ -1,0 +1,71 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -48,14 +48,13 @@
+ 
+ 
+ def _apply_for_each(func, path, val):
+-    layers = path.path_t.__stars__()
+-    if layers:
+-        for i in range(layers - 1):
+-            val = sum(val, [])  # flatten out the extra layers
+-        for inner in val:
+-            func(inner)
+-    else:
+-        func(val)
++    if path.startswith(T) and len(path.items()) > 0:
++        last_op, last_arg = path.items()[-1]
++        if last_op == '[' and isinstance(last_arg, slice):
++            for item in val:
++                func(item)
++            return
++    func(val)
+ 
+ 
+ class Assign:
+@@ -122,9 +121,6 @@
+ 
+     """
+     def __init__(self, path, val, missing=None):
+-        # TODO: an option like require_preexisting or something to
+-        # ensure that a value is mutated, not just added. Current
+-        # workaround is to do a Check().
+         if isinstance(path, basestring):
+             path = Path.from_text(path)
+         elif type(path) is TType:
+@@ -140,7 +136,6 @@
+         self.path = path[:-1]
+ 
+         if self.op not in '[.P':
+-            # maybe if we add null-coalescing this should do something?
+             raise ValueError('last part of path must be setattr or setitem')
+         self.val = val
+ 
+@@ -172,7 +167,6 @@
+             path = self._orig_path[:pae.part_idx]
+             dest = scope[glom](dest_target, path, scope)
+ 
+-        # TODO: forward-detect immutable dest?
+         _apply = lambda dest: _assign_op(
+             dest=dest, op=op, arg=arg, val=val, path=path, scope=scope)
+         _apply_for_each(_apply, path, dest)
+@@ -187,20 +181,6 @@
+ 
+ 
+ def assign(obj, path, val, missing=None):
+-    """*New in glom 18.3.0*
+-
+-    The ``assign()`` function provides convenient "deep set"
+-    functionality, modifying nested data structures in-place::
+-
+-      >>> target = {'a': [{'b': 'c'}, {'d': None}]}
+-      >>> _ = assign(target, 'a.1.d', 'e')  # let's give 'd' a value of 'e'
+-      >>> pprint(target)
+-      {'a': [{'b': 'c'}, {'d': 'e'}]}
+-
+-    Missing structures can also be automatically created with the
+-    *missing* parameter. For more information and examples, see the
+-    :class:`~glom.Assign` specifier type, which this function wraps.
+-    """
+     return glom(obj, Assign(path, val, missing=missing))
+ 
+ 

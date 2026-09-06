@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```python\ndef patch(path, delta_path, backup, raise_errors, debug):\n    try:\n        content = load_path_content(path)\n        delta = load_path_content(delta_path, file_type=delta_path.split('.')[-1])\n        \n        if backup:\n            save_content_to_path(content, f\"{path}.bak\")\n            \n        patched_content = delta.apply(content)\n        save_content_to_path(patched_content, path)\n        \n    except Exception as e:\n        if debug:\n            raise\n        elif raise_errors:\n            sys.exit(str(e))\n```",
+  "rewrite": "def patch(path, delta_path, backup, raise_errors, debug):\n    try:\n        content = load_path_content(path)\n        delta = load_path_content(delta_path, file_type=delta_path.split('.')[-1])\n        \n        if backup:\n            save_content_to_path(content, f\"{path}.bak\")\n            \n        patched_content = delta.apply(content)\n        save_content_to_path(patched_content, path)\n        \n    except Exception as e:\n        if debug:\n            raise\n        elif raise_errors:\n            sys.exit(str(e))",
+  "strategy": "lm_regen_from_tests"
+}

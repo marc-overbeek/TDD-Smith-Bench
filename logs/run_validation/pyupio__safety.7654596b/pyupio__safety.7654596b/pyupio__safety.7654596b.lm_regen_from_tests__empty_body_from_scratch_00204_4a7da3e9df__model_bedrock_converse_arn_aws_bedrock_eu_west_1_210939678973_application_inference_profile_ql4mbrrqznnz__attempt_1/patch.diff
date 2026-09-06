@@ -1,0 +1,64 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1312,27 +1312,40 @@
+     return skip + apply + confirm
+ 
+ 
+-def find_vulnerabilities_fixed(
+-    vulnerabilities: Dict[str, Any],
+-    fixes: List[Fix]
+-) -> List[Vulnerability]:
+-    """
+-    Finds the vulnerabilities that have been fixed.
+-
+-    Args:
+-        vulnerabilities (Dict[str, Any]): The dictionary of vulnerabilities.
+-        fixes (List[Fix]): The list of applied fixes.
+-
+-    Returns:
+-        List[Vulnerability]: The list of fixed vulnerabilities.
+-    """
+-    fixed_specs = set(fix.previous_spec for fix in fixes)
+-
+-    if not fixed_specs:
+-        return []
+-
+-    return [vulnerability for vulnerability in vulnerabilities if
+-            str(vulnerability['analyzed_requirement'].specifier) in fixed_specs]
++'remediations_results': {
++    'vulnerabilities_fixed': [], 
++    'remediations_applied': {},
++    'remediations_skipped': {}
++}
++
++def find_vulnerabilities_fixed(vulnerabilities: Dict[str, Any], fixes: List[Fix]) -> List[Vulnerability]:
++    fixed = []
++    applied_fixes = [fix for fix in fixes if fix.status == 'APPLIED']
++    
++    for fix in applied_fixes:
++        for vuln in vulnerabilities:
++            if vuln.package_name == fix.package and str(vuln.analyzed_requirement.specifier) == fix.previous_spec:
++                fixed.append(vuln)
++    
++    return fixed
++
++def find_vulnerabilities_fixed(vulnerabilities: Dict[str, Any], fixes: List
++    [Fix]) ->List[Vulnerability]:
++    fixed = []
++    
++    if not fixes or not vulnerabilities:
++        return fixed
++    
++    applied_fixes = [fix for fix in fixes if getattr(fix, 'status', None) == 'APPLIED']
++    
++    for fix in applied_fixes:
++        for vuln in vulnerabilities:
++            if (vuln.package_name == fix.package and 
++                    str(vuln.analyzed_requirement.specifier) == fix.previous_spec):
++                if vuln not in fixed:
++                    fixed.append(vuln)
++    
++    return fixed
+ 
+ 
+ @sync_safety_context

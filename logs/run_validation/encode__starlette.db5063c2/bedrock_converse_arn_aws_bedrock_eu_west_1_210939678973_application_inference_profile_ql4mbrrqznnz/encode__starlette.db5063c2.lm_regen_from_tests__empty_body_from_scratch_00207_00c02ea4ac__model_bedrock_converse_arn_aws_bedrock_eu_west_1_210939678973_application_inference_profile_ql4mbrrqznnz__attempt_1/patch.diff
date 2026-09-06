@@ -1,0 +1,45 @@
+--- a/starlette/applications.py
++++ b/starlette/applications.py
+@@ -208,24 +208,24 @@
+         return decorator
+ 
+     def websocket_route(self, path: str, name: str | None = None) -> typing.Callable:  # type: ignore[type-arg]
+-        """
+-        We no longer document this decorator style API, and its usage is discouraged.
+-        Instead you should use the following approach:
+-
+-        >>> routes = [WebSocketRoute(path, endpoint=...), ...]
+-        >>> app = Starlette(routes=routes)
+-        """
+-        warnings.warn(
+-            "The `websocket_route` decorator is deprecated, and will be removed in version 1.0.0. "
+-            "Refer to https://www.starlette.io/routing/#websocket-routing for the recommended approach.",
+-            DeprecationWarning,
+-        )
+-
+-        def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
+-            self.router.add_websocket_route(path, func, name=name)
+-            return func
+-
+-        return decorator
++            """
++            We no longer document this decorator style API, and its usage is discouraged.
++            Instead you should use the following approach:
++
++            >>> routes = [WebSocketRoute(path, endpoint=...), ...]
++            >>> app = Starlette(routes=routes)
++            """
++            warnings.warn(
++                "The `websocket_route` decorator is deprecated, and will be removed in version 1.0.0. "
++                "Refer to https://www.starlette.io/routing/#websocket-routing for the recommended approach.",
++                DeprecationWarning,
++            )
++
++            def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
++                self.router.add_websocket_route(path, func, name=name)
++                return func
++
++            return decorator
+ 
+     def middleware(self, middleware_type: str) -> typing.Callable:  # type: ignore[type-arg]
+         """

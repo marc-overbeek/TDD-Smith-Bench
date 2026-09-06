@@ -1,0 +1,134 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -280,31 +280,108 @@
+ 
+ 
+ # TODO: not used (yet)
++def test_line_trace():
++    stacklifier = [{'data': S}],
++    scope = glom([1], stacklifier)[0]['data'][ROOT][LAST_CHILD_SCOPE]
++    fmtd_stack = format_oneline_trace(scope)
++    assert fmtd_stack == '/tuple!list/list<0>/dict!int/S'
++
+ def format_oneline_trace(scope):
+-    """
+-    unpack a scope into a single line summary
+-    (shortest summary possible)
+-    """
+-    # the goal here is to do a kind of delta-compression --
+-    # if the target is the same, don't repeat it
+-    segments = []
+-    prev_target = _MISSING
+-    for scope, spec, target, error, branches in _unpack_stack(scope, only_errors=False):
+-        segments.append('/')
+-        if type(spec) in (TType, Path):
+-            segments.append(bbrepr(spec))
++    """Format a scope into a one-line trace string"""
++    parts = []
++    
++    # Traverse the scope chain using LAST_CHILD_SCOPE
++    current_scope = scope
++    while current_scope is not None and LAST_CHILD_SCOPE in current_scope.maps[0]:
++        scope_dict = current_scope.maps[0]
++        spec = scope_dict.get(Spec)
++        target = scope_dict.get(T)
++        
++        # Format the spec
++        if spec is None:
++            spec_str = '?'
++        elif isinstance(spec, TType):
++            spec_str = 'T' if spec is T else ('S' if spec is S else ('A' if spec is A else str(spec)))
++        elif isinstance(spec, list):
++            spec_str = 'list'
++        elif isinstance(spec, dict):
++            spec_str = 'dict'
++        elif isinstance(spec, tuple):
++            spec_str = 'tuple'
+         else:
+-            segments.append(type(spec).__name__)
+-        if target != prev_target:
+-            segments.append('!')
+-            segments.append(type(target).__name__)
+-        if Path in scope:
+-            segments.append('<')
+-            segments.append('->'.join([str(p) for p in scope[Path]]))
+-            segments.append('>')
+-        prev_target = target
+-
+-    return "".join(segments)
++            spec_str = type(spec).__name__
++        
++        # Format the target
++        if target is None:
++            target_str = '?'
++        else:
++            target_str = type(target).__name__
++        
++        # Combine spec and target
++        if spec_str and target_str:
++            parts.append(f'{spec_str}!{target_str}')
++        else:
++            parts.append(spec_str or target_str)
++        
++        # Move to parent scope
++        current_scope = scope_dict.get(UP)
++    
++    return '/' + '/'.join(reversed(parts))
++
++def format_oneline_trace(scope):
++    """Format a scope into a one-line trace string"""
++    parts = []
++    
++    # Traverse the scope chain
++    current_scope = scope
++    while current_scope is not None:
++        scope_dict = current_scope.maps[0]
++        spec = scope_dict.get(Spec)
++        target = scope_dict.get(T)
++        path = scope_dict.get(Path, [])
++        
++        # Format spec type
++        if spec is S:
++            spec_str = 'S'
++        elif isinstance(spec, list):
++            spec_str = 'list'
++        elif isinstance(spec, dict):
++            spec_str = 'dict'
++        elif isinstance(spec, tuple):
++            spec_str = 'tuple'
++        elif spec is not None:
++            spec_str = type(spec).__name__
++        else:
++            spec_str = None
++        
++        # Format target type
++        if target is not None:
++            target_str = type(target).__name__
++        else:
++            target_str = None
++        
++        # Build the part string
++        if spec_str:
++            if path and isinstance(path, list) and path:
++                # Include last path element if it's an index
++                last_path = path[-1]
++                if isinstance(last_path, int):
++                    parts.append(f'{spec_str}<{last_path}>')
++                elif target_str:
++                    parts.append(f'{spec_str}!{target_str}')
++                else:
++                    parts.append(spec_str)
++            elif target_str:
++                parts.append(f'{spec_str}!{target_str}')
++            else:
++                parts.append(spec_str)
++        
++        # Move up the scope chain
++        current_scope = scope_dict.get(UP)
++        if current_scope is scope_dict.get(ROOT):
++            break
++    
++    return '/' + '/'.join(reversed(parts))
+ 
+ 
+ class PathAccessError(GlomError, AttributeError, KeyError, IndexError):

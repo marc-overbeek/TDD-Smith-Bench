@@ -1,0 +1,38 @@
+--- a/src/mistune/renderers/markdown.py
++++ b/src/mistune/renderers/markdown.py
+@@ -128,22 +128,17 @@
+         return render_list(self, token, state)
+ 
+ 
+-def _get_fenced_marker(code: str) -> str:
+-    found = fenced_re.findall(code)
+-    if not found:
+-        return '```'
+-
+-    ticks = []  # `
+-    waves = []  # ~
+-    for s in found:
+-        if s[0] == '`':
+-            ticks.append(len(s))
++def _get_fenced_marker(code: str) ->str:
++    markers = fenced_re.findall(code)
++    
++    backtick_max = 0
++    tilde_max = 0
++    
++    for marker in markers:
++        if marker[0] == '`':
++            backtick_max = max(backtick_max, len(marker))
+         else:
+-            waves.append(len(s))
+-
+-    if not ticks:
+-        return '```'
+-
+-    if not waves:
+-        return '~~~'
+-    return '`' * (max(ticks) + 1)
++            tilde_max = max(tilde_max, len(marker))
++    
++    if backtick_max == 0:
++        return '

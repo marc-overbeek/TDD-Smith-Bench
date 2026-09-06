@@ -1,0 +1,28 @@
+--- a/src/mistune/plugins/footnotes.py
++++ b/src/mistune/plugins/footnotes.py
+@@ -48,17 +48,17 @@
+     return m.end()
+ 
+ 
+-def parse_ref_footnote(
+-    block: "BlockParser", m: Match[str], state: BlockState
+-) -> int:
++def parse_ref_footnote(block: 'BlockParser', m: Match[str], state: BlockState
++    ) ->int:
++    key = unikey(m.group("footnote_key"))
++    text = m.group("footnote_text")
++    
+     ref = state.env.get("ref_footnotes")
+     if not ref:
+         ref = {}
+-
+-    key = unikey(m.group('footnote_key'))
+-    if key not in ref:
+-        ref[key] = m.group('footnote_text')
+-        state.env['ref_footnotes'] = ref
++    ref[key] = text
++    state.env["ref_footnotes"] = ref
++    
+     return m.end()
+ 
+ 

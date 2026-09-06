@@ -1,0 +1,35 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -381,29 +381,9 @@
+     training.
+     """
+ 
+-    def __init__(
+-        self,
+-        schedulers: Sequence[ParamScheduler],
+-        lengths: List[float],
+-        interval_scaling: Sequence[str],
+-    ) -> None:
+-        if len(schedulers) != len(lengths):
+-            raise ValueError("Schedulers and lengths must be same length")
+-        if len(schedulers) == 0:
+-            raise ValueError(
+-                "There must be at least one scheduler in the composite scheduler"
+-            )
+-        if abs(sum(lengths) - 1.0) >= 1e-3:
+-            raise ValueError("The sum of all values in lengths must be 1")
+-        if sum(lengths) != 1.0:
+-            lengths[-1] = 1.0 - sum(lengths[:-1])
+-        for s in interval_scaling:
+-            if s not in ["rescaled", "fixed"]:
+-                raise ValueError(f"Unsupported interval_scaling: {s}")
+-
+-        self._lengths = lengths
+-        self._schedulers = schedulers
+-        self._interval_scaling = interval_scaling
++    def __init__(self, schedulers: Sequence[ParamScheduler], lengths: List[
++        float], interval_scaling: Sequence[str]) ->None:
++        pass
+ 
+     def __call__(self, where: float) -> float:
+         # Find scheduler corresponding to where

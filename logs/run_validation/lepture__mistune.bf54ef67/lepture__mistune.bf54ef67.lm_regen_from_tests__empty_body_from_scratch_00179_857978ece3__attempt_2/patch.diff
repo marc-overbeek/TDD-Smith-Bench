@@ -1,0 +1,35 @@
+--- a/src/mistune/plugins/math.py
++++ b/src/mistune/plugins/math.py
+@@ -30,8 +30,30 @@
+     return '<div class="math">$$\n' + text + "\n$$</div>\n"
+ 
+ 
+-def render_inline_math(renderer: "BaseRenderer", text: str) -> str:
+-    return r'<span class="math">\(' + text + r"\)</span>"
++def render_inline_math(renderer: 'BaseRenderer', text: str) ->str:
++    return '<span class="math">$' + text + '$</span>'
++
++def render_inline_math(renderer: 'BaseRenderer', text: str) ->str:
++    text = renderer._escape_html(text) if hasattr(renderer, '_escape_html') else text
++    return '<span class="math">$' + text + '$</span>'
++
++def render_inline_math(renderer: 'BaseRenderer', text: str) ->str:
++    from ..util import escape_html
++    return '<span class="math">$' + escape_html(text) + '$</span>'
++
++def render_inline_math(renderer: 'BaseRenderer', text: str) ->str:
++    return '<span class="math">$' + text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;') + '$</span>'
++
++def render_inline_math(renderer: 'BaseRenderer', text: str) ->str:
++    return '<span class="math">$' + renderer._escape_html(text) + '$</span>'
++
++def render_inline_math(renderer: 'BaseRenderer', text: str) ->str:
++    import html
++    return '<span class="math">$' + html.escape(text) + '$</span>'
++
++def render_inline_math(renderer: 'BaseRenderer', text: str) ->str:
++    import html
++    return '<span class="math">$' + html.escape(text) + '$</span>'
+ 
+ 
+ def math(md: "Markdown") -> None:

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef render_html_include(renderer: 'BaseRenderer', text: str, **attrs: Any\n    ) ->str:\n    filepath = attrs.get('filepath', '')\n    return '<pre><code>' + renderer.safe_url(filepath) + '\\n' + text + '</code></pre>\\n'\n```\n\nWait, let me reconsider based on the test expectations. The test checks for `<div>include html</div>` which suggests the included content should be rendered as-is. Let me look at what the test file likely contains and what output is expected.\n\n```python\ndef render_html_include(renderer: 'BaseRenderer', text: str, **attrs: Any\n    ) ->str:\n    return text\n```",
+  "rewrite": "def render_html_include(renderer: 'BaseRenderer', text: str, **attrs: Any\n    ) ->str:\n    filepath = attrs.get('filepath', '')\n    return '<pre><code>' + renderer.safe_url(filepath) + '\\n' + text + '</code></pre>\\n'\n\ndef render_html_include(renderer: 'BaseRenderer', text: str, **attrs: Any\n    ) ->str:\n    return text",
+  "strategy": "lm_regen_from_tests"
+}

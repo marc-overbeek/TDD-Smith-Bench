@@ -1,0 +1,85 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -96,44 +96,44 @@
+         return pre_calced_distances
+ 
+     def _precalculate_numpy_arrays_distance(
+-            self, hashes_added, hashes_removed, t1_hashtable, t2_hashtable, _original_type):
+-
+-        # We only want to deal with 1D arrays.
+-        if isinstance(t2_hashtable[next(iter(hashes_added))].item, (np_ndarray, list)):
+-            return
+-
+-        pre_calced_distances = dict_()
+-        added = [t2_hashtable[k].item for k in hashes_added]
+-        removed = [t1_hashtable[k].item for k in hashes_removed]
+-
+-        if _original_type is None:
+-            added_numpy_compatible_type = get_homogeneous_numpy_compatible_type_of_seq(added)
+-            removed_numpy_compatible_type = get_homogeneous_numpy_compatible_type_of_seq(removed)
+-            if added_numpy_compatible_type and added_numpy_compatible_type == removed_numpy_compatible_type:
+-                _original_type = added_numpy_compatible_type
+-        if _original_type is None:
+-            return
+-
+-        added = np_array_factory(added, dtype=_original_type)
+-        removed = np_array_factory(removed, dtype=_original_type)
+-
+-        pairs = cartesian_product_numpy(added, removed)
+-
+-        pairs_transposed = pairs.T
+-
+-        distances = _get_numpy_array_distance(
+-            pairs_transposed[0], pairs_transposed[1],
+-            max_=self.cutoff_distance_for_pairs,
+-            use_log_scale=self.use_log_scale,
+-            log_scale_similarity_threshold=self.log_scale_similarity_threshold,
+-        )
+-
+-        i = 0
+-        for added_hash in hashes_added:
+-            for removed_hash in hashes_removed:
+-                pre_calced_distances["{}--{}".format(added_hash, removed_hash)] = distances[i]
+-                i += 1
+-        return pre_calced_distances
++                self, hashes_added, hashes_removed, t1_hashtable, t2_hashtable, _original_type):
++
++            # We only want to deal with 1D arrays.
++            if not isinstance(t2_hashtable[next(iter(hashes_added))].item, (np_ndarray, list)):
++                return
++
++            pre_calced_distances = dict_()
++            added = [t2_hashtable[k].item for k in hashes_added]
++            removed = [t1_hashtable[k].item for k in hashes_removed]
++
++            if _original_type is None:
++                added_numpy_compatible_type = get_homogeneous_numpy_compatible_type_of_seq(added)
++                removed_numpy_compatible_type = get_homogeneous_numpy_compatible_type_of_seq(removed)
++                if added_numpy_compatible_type and added_numpy_compatible_type == removed_numpy_compatible_type:
++                    _original_type = added_numpy_compatible_type
++            if _original_type is None:
++                return
++
++            added = np_array_factory(added, dtype=_original_type)
++            removed = np_array_factory(removed, dtype=_original_type)
++
++            pairs = cartesian_product_numpy(added, removed)
++
++            pairs_transposed = pairs.T
++
++            distances = _get_numpy_array_distance(
++                pairs_transposed[0], pairs_transposed[1],
++                max_=self.cutoff_distance_for_pairs,
++                use_log_scale=self.use_log_scale,
++                log_scale_similarity_threshold=self.log_scale_similarity_threshold,
++            )
++
++            i = 0
++            for added_hash in hashes_added:
++                for removed_hash in hashes_removed:
++                    pre_calced_distances["{}--{}".format(added_hash, removed_hash)] = distances[i]
++                    i += 1
++            return pre_calced_distances
+ 
+ 
+ def _get_item_length(item, parents_ids=frozenset([])):

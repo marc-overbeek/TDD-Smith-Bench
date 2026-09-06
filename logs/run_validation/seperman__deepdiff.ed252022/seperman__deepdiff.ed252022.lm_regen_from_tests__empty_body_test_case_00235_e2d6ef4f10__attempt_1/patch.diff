@@ -1,0 +1,145 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -136,34 +136,7 @@
+ class DeepHash(Base):
+     __doc__ = doc
+ 
+-    def __init__(self,
+-                 obj,
+-                 *,
+-                 hashes=None,
+-                 exclude_types=None,
+-                 exclude_paths=None,
+-                 include_paths=None,
+-                 exclude_regex_paths=None,
+-                 hasher=None,
+-                 ignore_repetition=True,
+-                 significant_digits=None,
+-                 truncate_datetime=None,
+-                 number_format_notation="f",
+-                 apply_hash=True,
+-                 ignore_type_in_groups=None,
+-                 ignore_string_type_changes=False,
+-                 ignore_numeric_type_changes=False,
+-                 ignore_type_subclasses=False,
+-                 ignore_string_case=False,
+-                 use_enum_value=False,
+-                 exclude_obj_callback=None,
+-                 number_to_string_func=None,
+-                 ignore_private_variables=True,
+-                 parent="root",
+-                 encodings=None,
+-                 ignore_encoding_errors=False,
+-                 ignore_iterable_order=True,
+-                 **kwargs):
++    def __init__(self, obj, *, hashes=None, exclude_types=None, exclude_paths=None, include_paths=None, exclude_regex_paths=None, hasher=None, ignore_repetition=True, significant_digits=None, truncate_datetime=None, number_format_notation='f', apply_hash=True, ignore_type_in_groups=None, ignore_string_type_changes=False, ignore_numeric_type_changes=False, ignore_type_subclasses=False, ignore_string_case=False, use_enum_value=False, exclude_obj_callback=None, number_to_string_func=None, ignore_private_variables=True, parent='root', encodings=None, ignore_encoding_errors=False, ignore_iterable_order=True, **kwargs):
+         if kwargs:
+             raise ValueError(
+                 ("The following parameter(s) are not valid: %s\n"
+@@ -180,7 +153,7 @@
+         else:
+             self.hashes = dict_()
+         exclude_types = set() if exclude_types is None else set(exclude_types)
+-        self.exclude_types_tuple = tuple(exclude_types)  # we need tuple for checking isinstance
++        self.exclude_types_tuple = tuple(exclude_types)
+         self.ignore_repetition = ignore_repetition
+         self.exclude_paths = add_root_to_paths(convert_item_or_items_into_set_else_none(exclude_paths))
+         self.include_paths = add_root_to_paths(convert_item_or_items_into_set_else_none(include_paths))
+@@ -201,19 +174,15 @@
+         self.ignore_numeric_type_changes = ignore_numeric_type_changes
+         self.ignore_string_case = ignore_string_case
+         self.exclude_obj_callback = exclude_obj_callback
+-        # makes the hash return constant size result if true
+-        # the only time it should be set to False is when
+-        # testing the individual hash functions for different types of objects.
+         self.apply_hash = apply_hash
+         self.type_check_func = type_in_type_group if ignore_type_subclasses else type_is_subclass_of_type_group
+-        # self.type_check_func = type_is_subclass_of_type_group if ignore_type_subclasses else type_in_type_group
+         self.number_to_string = number_to_string_func or number_to_string
+         self.ignore_private_variables = ignore_private_variables
+         self.encodings = encodings
+         self.ignore_encoding_errors = ignore_encoding_errors
+         self.ignore_iterable_order = ignore_iterable_order
+ 
+-        self._hash(obj, parent=parent, parents_ids=frozenset({get_id(obj)}))
++        self._hash(obj, parent=parent, parents_ids=EMPTY_FROZENSET)
+ 
+         if self.hashes[UNPROCESSED_KEY]:
+             logger.warning("Can not hash the following items: {}.".format(self.hashes[UNPROCESSED_KEY]))
+@@ -289,11 +258,6 @@
+         return result
+ 
+     def _get_objects_to_hashes_dict(self, extract_index=0):
+-        """
+-        A dictionary containing only the objects to hashes,
+-        or a dictionary of objects to the count of items that went to build them.
+-        extract_index=0 for hashes and extract_index=1 for counts.
+-        """
+         result = dict_()
+         for key, value in self.hashes.items():
+             if key is UNPROCESSED_KEY:
+@@ -459,7 +423,7 @@
+         return result, counts
+ 
+     def _prep_bool(self, obj):
+-        return BoolObj.TRUE if obj else BoolObj.FALSE
++        return 'bool:true' if obj else 'bool:false'
+ 
+ 
+     def _prep_path(self, obj):
+@@ -496,16 +460,16 @@
+         return result, counts
+ 
+     def _hash(self, obj, parent, parents_ids=EMPTY_FROZENSET):
+-        """The main hash method"""
+         counts = 1
+ 
+         if isinstance(obj, booleanTypes):
+-            obj = self._prep_bool(obj)
+-            result = None
++            result = self._prep_bool(obj)
+         elif self.use_enum_value and isinstance(obj, Enum):
+             obj = obj.value
+-        else:
+             result = not_hashed
++        else:
++            result = not_hashed
++    
+         try:
+             result, counts = self.hashes[obj]
+         except (TypeError, KeyError):
+@@ -550,7 +514,7 @@
+             def gen():
+                 yield ('dtype', obj.dtypes)
+                 yield ('index', obj.index)
+-                yield from obj.items()  # which contains (column name, series tuples)
++                yield from obj.items()
+             result, counts = self._prep_iterable(obj=gen(), parent=parent, parents_ids=parents_ids)
+         elif (polars and isinstance(obj, polars.DataFrame)):
+             def gen():
+@@ -562,14 +526,12 @@
+         elif isinstance(obj, Iterable):
+             result, counts = self._prep_iterable(obj=obj, parent=parent, parents_ids=parents_ids)
+ 
+-        elif obj == BoolObj.TRUE or obj == BoolObj.FALSE:
+-            result = 'bool:true' if obj is BoolObj.TRUE else 'bool:false'
+         elif isinstance(obj, PydanticBaseModel):
+             result, counts = self._prep_obj(obj=obj, parent=parent, parents_ids=parents_ids, is_pydantic_object=True)
+         else:
+             result, counts = self._prep_obj(obj=obj, parent=parent, parents_ids=parents_ids)
+ 
+-        if result is not_hashed:  # pragma: no cover
++        if result is not_hashed:
+             self.hashes[UNPROCESSED_KEY].append(obj)
+ 
+         elif result is unprocessed:
+@@ -584,9 +546,6 @@
+                     ignore_string_case=self.ignore_string_case)
+             result = self.hasher(result_cleaned)
+ 
+-        # It is important to keep the hash of all objects.
+-        # The hashes will be later used for comparing the objects.
+-        # Object to hash when possible otherwise ObjectID to hash
+         try:
+             self.hashes[obj] = (result, counts)
+         except TypeError:

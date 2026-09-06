@@ -1,0 +1,65 @@
+--- a/safety/scan/command.py
++++ b/safety/scan/command.py
+@@ -799,27 +799,38 @@
+ 
+     process_report(ctx.obj, console, report, **{**ctx.params})
+ 
+-def get_vulnerability_summary(report: Dict[str, Any]) -> Tuple[int, int]:
+-    """
+-    Summarize vulnerabilities from the given report.
+-
+-    Args:
+-        report (ReportModel): The report containing vulnerability data.
+-
+-    Returns:
+-        Tuple[int, int]: A tuple containing:
+-            - Total number of issues (including duplicates)
+-            - Total number of ignored issues
+-    """
+-    total_issues = 0
+-    ignored_issues = 0
+-
+-    for project in report.scan_results.projects:
+-        for file in project.files:
+-            for dependency in file.results.dependencies:
+-                for specification in dependency.specifications:
+-                    known_vulnerabilities = specification.vulnerabilities.known_vulnerabilities
+-                    total_issues += len(known_vulnerabilities)
+-                    ignored_issues += sum(1 for v in known_vulnerabilities if v.ignored)
+-
+-    return total_issues, ignored_issues
++total_issues_with_duplicates, total_ignored_issues = get_vulnerability_summary(report.as_v30())
++
++print_summary(
++    console=console,
++    total_issues_with_duplicates=total_issues_with_duplicates,
++    total_ignored_issues=total_ignored_issues,
++    ...
++)
++
++def get_vulnerability_summary(report: Dict[str, Any]) ->Tuple[int, int]:
++    total_issues_with_duplicates = 0
++    total_ignored_issues = 0
++    
++    # Navigate through the report structure to find vulnerabilities
++    if isinstance(report, dict):
++        # Check if report has 'files' key (from ReportModel)
++        files = report.get('files', [])
++        if files:
++            for file_data in files:
++                if isinstance(file_data, dict):
++                    results = file_data.get('results', {})
++                    if isinstance(results, dict):
++                        # Get affected specifications
++                        affected_specs = results.get('affected_specifications', [])
++                        if affected_specs:
++                            for spec in affected_specs:
++                                if isinstance(spec, dict):
++                                    vulnerabilities = spec.get('vulnerabilities', [])
++                                    for vuln in vulnerabilities:
++                                        if isinstance(vuln, dict):
++                                            total_issues_with_duplicates += 1
++                                            if vuln.get('ignored', False):
++                                                total_ignored_issues += 1
++    
++    return total_issues_with_duplicates, total_ignored_issues

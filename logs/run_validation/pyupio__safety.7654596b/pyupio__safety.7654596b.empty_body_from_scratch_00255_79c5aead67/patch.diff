@@ -1,0 +1,38 @@
+--- a/safety/scan/render.py
++++ b/safety/scan/render.py
+@@ -724,32 +724,6 @@
+     return spdx_doc
+ 
+ 
+-def render_scan_spdx(report: ReportModel, obj: Any, spdx_version: Optional[str]) -> Optional[Any]:
+-    """
+-    Render the scan report to SPDX format.
+-
+-    Args:
+-        report (ReportModel): The scan report model.
+-        obj (Any): The object containing additional settings.
+-        spdx_version (Optional[str]): The SPDX version.
+-
+-    Returns:
+-        Optional[Any]: The rendered SPDX document in JSON format.
+-    """
+-    from spdx_tools.spdx.writer.write_utils import (
+-        convert,
+-        validate_and_deduplicate
+-    )
+-
+-    # Set to latest supported if a version is not specified
+-    if not spdx_version:
+-        spdx_version = "2.3"
+-
+-    document_obj = create_spdx_document(report=report, spdx_version=spdx_version)
+-    document_obj = validate_and_deduplicate(document=document_obj, validate=True, drop_duplicates=True)
+-    doc = None
+-
+-    if document_obj:
+-        doc = convert(document=document_obj, converter=None)
+-
+-    return json.dumps(doc) if doc else None
++def render_scan_spdx(report: ReportModel, obj: Any, spdx_version: Optional[str]
++    ) ->Optional[Any]:
++    pass

@@ -1,0 +1,41 @@
+--- a/src/mistune/plugins/table.py
++++ b/src/mistune/plugins/table.py
+@@ -167,30 +167,14 @@
+     return html + '>' + text + '</' + tag + '>\n'
+ 
+ 
+-def table(md: "Markdown") -> None:
+-    """A mistune plugin to support table, spec defined at
+-    https://michelf.ca/projects/php-markdown/extra/#table
+-
+-    Here is an example:
+-
+-    .. code-block:: text
+-
+-        First Header  | Second Header
+-        ------------- | -------------
+-        Content Cell  | Content Cell
+-        Content Cell  | Content Cell
+-
+-    :param md: Markdown instance
+-    """
+-    md.block.register('table', TABLE_PATTERN, parse_table, before='paragraph')
+-    md.block.register('nptable', NP_TABLE_PATTERN, parse_nptable, before='paragraph')
+-
+-    if md.renderer and md.renderer.NAME == 'html':
+-        md.renderer.register('table', render_table)
+-        md.renderer.register('table_head', render_table_head)
+-        md.renderer.register('table_body', render_table_body)
+-        md.renderer.register('table_row', render_table_row)
+-        md.renderer.register('table_cell', render_table_cell)
++def table(md: 'Markdown') ->None:
++    md.block.register_rule('table', TABLE_PATTERN, parse_table)
++    md.block.register_rule('nptable', NP_TABLE_PATTERN, parse_nptable)
++    md.renderer.register_rule('table', render_table)
++    md.renderer.register_rule('table_head', render_table_head)
++    md.renderer.register_rule('table_body', render_table_body)
++    md.renderer.register_rule('table_row', render_table_row)
++    md.renderer.register_rule('table_cell', render_table_cell)
+ 
+ 
+ def table_in_quote(md: "Markdown") -> None:

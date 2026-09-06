@@ -1,0 +1,28 @@
+--- a/deepdiff/model.py
++++ b/deepdiff/model.py
+@@ -857,11 +857,23 @@
+         self.param = param
+ 
+     def __repr__(self):
+-        name = "<{} parent:{}, child:{}, param:{}>"
+-        parent = short_repr(self.parent)
++        name = "<{} parent:'{}', child:'{}', param:'{}'>"
++        parent = short_repr(self.parent, max_length=20) if len(str(self.parent)) > 20 else short_repr(self.parent)
+         child = short_repr(self.child)
+         param = short_repr(self.param)
+         return name.format(self.__class__.__name__, parent, child, param)
++
++    def __repr__(self):
++        name = "<{} parent:'{}', child:'{}', param:'{}'>"
++        parent_repr = short_repr(self.parent)
++        child_repr = short_repr(self.child)
++        param_repr = short_repr(self.param)
++    
++        # Check if parent is too long and truncate with ...
++        if len(str(parent_repr)) > 20:
++            parent_repr = str(parent_repr)[:17] + '...'
++    
++        return name.format(self.__class__.__name__, parent_repr, child_repr, param_repr)
+ 
+     def get_param_repr(self, force=None):
+         """

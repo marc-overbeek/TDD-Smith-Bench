@@ -1,0 +1,13 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -387,6 +387,10 @@
+             return np.flip(img, axis=-2)
+ 
+     def apply_coords(self, coords: np.ndarray) -> np.ndarray:
++        coords[:, 0] = self.width - coords[:, 0]
++        return coords
++
++    def apply_coords(self, coords: np.ndarray) -> np.ndarray:
+         """
+         Flip the coordinates.
+ 

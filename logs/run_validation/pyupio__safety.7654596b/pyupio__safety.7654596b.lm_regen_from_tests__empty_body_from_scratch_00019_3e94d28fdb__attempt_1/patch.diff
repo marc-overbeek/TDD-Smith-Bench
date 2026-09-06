@@ -1,0 +1,91 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -296,39 +296,60 @@
+             announcement.get('type', '').lower() == by_type]
+ 
+ 
+-def build_telemetry_data(telemetry: bool = True,
+-                         command: Optional[str] = None,
+-                         subcommand: Optional[str] = None) -> TelemetryModel:
+-    """Build telemetry data for the Safety context.
+-
++def build_telemetry_data(telemetry: bool=True, command: Optional[str]=None,
++    subcommand: Optional[str]=None) ->TelemetryModel:
++    """
++    Build telemetry data for Safety.
++    
+     Args:
+         telemetry (bool): Whether telemetry is enabled.
+-        command (Optional[str]): The command.
+-        subcommand (Optional[str]): The subcommand.
+-
++        command (Optional[str]): The command being executed.
++        subcommand (Optional[str]): The subcommand being executed.
++    
+     Returns:
+         TelemetryModel: The telemetry data model.
+     """
+-    context = SafetyContext()
+-
+-    body = {
+-        'os_type': os.environ.get("SAFETY_OS_TYPE", None) or platform.system(),
+-        'os_release': os.environ.get("SAFETY_OS_RELEASE", None) or platform.release(),
+-        'os_description': os.environ.get("SAFETY_OS_DESCRIPTION", None) or platform.platform(),
+-        'python_version': platform.python_version(),
+-        'safety_command': command if command else context.command,
+-        'safety_options': get_used_options()
+-    } if telemetry else {}
+-
+-    body['safety_version'] = get_safety_version()
+-    body['safety_source'] = os.environ.get("SAFETY_SOURCE", None) or context.safety_source
+-
+-    if not 'safety_options' in body:
+-        body['safety_options'] = {}
+-
+-    LOG.debug(f'Telemetry body built: {body}')
+-
+-    return TelemetryModel(**body)
++    if not telemetry:
++        return TelemetryModel()
++    
++    try:
++        git_data = build_git_data()
++    except Exception:
++        git_data = {}
++    
++    try:
++        python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
++    except Exception:
++        python_version = ""
++    
++    try:
++        os_type = platform.system()
++        os_release = platform.release()
++    except Exception:
++        os_type = ""
++        os_release = ""
++    
++    try:
++        safety_version = get_safety_version()
++    except Exception:
++        safety_version = ""
++    
++    telemetry_data = TelemetryModel(
++        telemetry_enabled=telemetry,
++        command=command,
++        subcommand=subcommand,
++        python_version=python_version,
++        os_type=os_type,
++        os_release=os_release,
++        safety_version=safety_version,
++        git_data=git_data
++    )
++    
++    return telemetry_data
++
++def build_telemetry_data(telemetry: bool=True, command: Optional[str]=None,
++    subcommand: Optional[str]=None) ->TelemetryModel:
++    return TelemetryModel()
+ 
+ 
+ def build_git_data() -> Dict[str, Any]:

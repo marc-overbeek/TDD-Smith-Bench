@@ -1,0 +1,32 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -459,8 +459,28 @@
+     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+         await self.app(scope, receive, send)
+ 
++    def test_routes() ->None:
++        assert app.routes == [Route('/func', endpoint=func_homepage, methods=[
++            'GET']), Route('/async', endpoint=async_homepage, methods=['GET']),
++            Route('/class', endpoint=Homepage), Route('/500', endpoint=
++            runtime_error, methods=['GET']), WebSocketRoute('/ws', endpoint=
++            websocket_endpoint), WebSocketRoute('/ws-raise-websocket', endpoint
++            =websocket_raise_websocket_exception), WebSocketRoute(
++            '/ws-raise-http', endpoint=websocket_raise_http_exception),
++            WebSocketRoute('/ws-raise-custom', endpoint=websocket_raise_custom),
++            Mount('/users', app=Router(routes=[Route('/', endpoint=
++            all_users_page), Route('/{username}', endpoint=user_page)])), Host(
++            '{subdomain}.example.org', app=Router(routes=[Route('/', endpoint=
++            custom_subdomain)]))]
++
+     def __eq__(self, other: typing.Any) -> bool:
+-        return isinstance(other, Mount) and self.path == other.path and self.app == other.app
++        return isinstance(other, Host) and self.host == other.host and self.app == other.app
++
++    def __eq__(self, other: typing.Any) -> bool:
++        return isinstance(other, Router) and self.routes == other.routes
++
++    def __eq__(self, other: typing.Any) -> bool:
++        return isinstance(other, Host) and self.host == other.host and self.app == other.app
+ 
+     def __repr__(self) -> str:
+         class_name = self.__class__.__name__

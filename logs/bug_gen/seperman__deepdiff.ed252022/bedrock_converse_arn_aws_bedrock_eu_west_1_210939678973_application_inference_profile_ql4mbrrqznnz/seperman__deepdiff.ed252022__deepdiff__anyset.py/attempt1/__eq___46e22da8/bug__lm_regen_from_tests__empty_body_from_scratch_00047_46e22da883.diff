@@ -1,0 +1,11 @@
+--- a/deepdiff/anyset.py
++++ b/deepdiff/anyset.py
+@@ -42,6 +42,8 @@
+             return self._hash_to_objects.pop(next(iter(self._hash_to_objects)))
+ 
+     def __eq__(self, other):
++        if isinstance(other, AnySet):
++            return self._set == other._set and self._hash_to_objects == other._hash_to_objects
+         set_part, hashes_to_objs_part = other
+         return (self._set == set_part and self._hash_to_objects == hashes_to_objs_part)
+ 

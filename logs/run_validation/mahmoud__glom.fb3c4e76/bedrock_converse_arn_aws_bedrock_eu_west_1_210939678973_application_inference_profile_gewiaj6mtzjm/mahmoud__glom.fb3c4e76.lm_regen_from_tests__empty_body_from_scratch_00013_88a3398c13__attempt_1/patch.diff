@@ -1,0 +1,31 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1713,12 +1713,22 @@
+ 
+ 
+ def _format_slice(x):
+-    if type(x) is not slice:
+-        return bbrepr(x)
+-    fmt = lambda v: "" if v is None else bbrepr(v)
+-    if x.step is None:
+-        return fmt(x.start) + ":" + fmt(x.stop)
+-    return fmt(x.start) + ":" + fmt(x.stop) + ":" + fmt(x.step)
++    if isinstance(x, slice):
++        if x.start is None and x.stop is None and x.step is None:
++            return ':'
++        parts = []
++        if x.start is not None:
++            parts.append(str(x.start))
++        else:
++            parts.append('')
++        if x.stop is not None:
++            parts.append(str(x.stop))
++        else:
++            parts.append('')
++        if x.step is not None:
++            parts.append(str(x.step))
++        return ':'.join(parts)
++    return repr(x)
+ 
+ 
+ def _format_t(path, root=T):

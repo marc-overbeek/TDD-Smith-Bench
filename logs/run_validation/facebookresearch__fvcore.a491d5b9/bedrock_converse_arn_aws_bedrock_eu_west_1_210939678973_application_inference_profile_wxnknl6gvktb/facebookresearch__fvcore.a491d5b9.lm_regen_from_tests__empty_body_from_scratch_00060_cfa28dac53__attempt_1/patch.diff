@@ -1,0 +1,42 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -327,21 +327,31 @@
+         gamma: float,
+         num_updates: int,
+     ) -> None:
+-        for k in [base_value, gamma]:
+-            if not (isinstance(k, (int, float)) and k > 0):
+-                raise ValueError("base_value and gamma must be positive numbers")
+-        for k in [num_decays, num_updates]:
+-            if not (isinstance(k, int) and k > 0):
+-                raise ValueError("num_decays and num_updates must be positive integers")
+-
++        # Validate base_value
++        if not isinstance(base_value, (int, float)) or base_value <= 0:
++            raise ValueError("base_value must be a positive number")
++    
++        # Validate gamma
++        if not isinstance(gamma, (int, float)) or gamma <= 0:
++            raise ValueError("gamma must be a positive number")
++    
++        # Validate num_decays
++        if not isinstance(num_decays, int) or num_decays <= 0:
++            raise ValueError("num_decays must be a positive integer")
++    
++        # Validate num_updates
++        if not isinstance(num_updates, int) or num_updates <= 0:
++            raise ValueError("num_updates must be a positive integer")
++    
+         self.base_value = base_value
+         self.num_decays = num_decays
+         self.gamma = gamma
+         self.num_updates = num_updates
++    
+         values = [base_value]
+         for _ in range(num_decays):
+             values.append(values[-1] * gamma)
+-
++    
+         self._step_param_scheduler = StepParamScheduler(
+             num_updates=num_updates, values=values
+         )

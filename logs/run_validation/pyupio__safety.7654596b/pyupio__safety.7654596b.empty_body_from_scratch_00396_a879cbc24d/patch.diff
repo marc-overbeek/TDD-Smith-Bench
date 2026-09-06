@@ -1,0 +1,49 @@
+--- a/safety/auth/main.py
++++ b/safety/auth/main.py
+@@ -85,44 +85,8 @@
+ 
+     return org
+ 
+-def get_auth_info(ctx) -> Optional[Dict]:
+-    """
+-    Retrieve the authentication information.
+-
+-    Args:
+-        ctx: The context object containing authentication data.
+-
+-    Returns:
+-        Optional[Dict]: The authentication information, or None if not authenticated.
+-    """
+-    from safety.auth.utils import is_email_verified
+-
+-    info = None
+-    if ctx.obj.auth.client.token:
+-        try:
+-            info = get_token_data(get_token(name='id_token'), keys=ctx.obj.auth.keys)
+-
+-            verified = is_email_verified(info)
+-            if not verified:
+-                user_info = ctx.obj.auth.client.fetch_user_info()
+-                verified = is_email_verified(user_info)
+-
+-                if verified:
+-                    # refresh only if needed
+-                    raise ExpiredTokenError
+-
+-        except ExpiredTokenError as e:
+-            # id_token expired. So fire a manually a refresh
+-            try:
+-                ctx.obj.auth.client.refresh_token(ctx.obj.auth.client.metadata.get('token_endpoint'),
+-                                         refresh_token=ctx.obj.auth.client.token.get('refresh_token'))
+-                info = get_token_data(get_token(name='id_token'), keys=ctx.obj.auth.keys)
+-            except Exception as _e:
+-                clean_session(ctx.obj.auth.client)
+-        except Exception as _g:
+-            clean_session(ctx.obj.auth.client)
+-
+-    return info
++def get_auth_info(ctx) ->Optional[Dict]:
++    pass
+ 
+ def get_token_data(token: str, keys: Any, silent_if_expired: bool = False) -> Optional[Dict]:
+     """

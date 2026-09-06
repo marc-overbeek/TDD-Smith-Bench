@@ -1,0 +1,123 @@
+--- a/deepdiff/commands.py
++++ b/deepdiff/commands.py
+@@ -55,69 +55,64 @@
+ @click.option('--truncate-datetime', required=False, type=click.Choice(['second', 'minute', 'hour', 'day'], case_sensitive=True), show_default=True, default=None)
+ @click.option('--verbose-level', required=False, default=1, type=click.IntRange(0, 2), show_default=True)
+ @click.option('--debug', is_flag=True, show_default=False)
+-def diff(
+-    *args, **kwargs
+-):
++def diff(*args, **kwargs):
+     """
+     Deep Diff Commandline
+ 
+-    Deep Difference of content in files.
+-    It can read csv, tsv, json, yaml, and toml files.
+-
+-    T1 and T2 are the path to the files to be compared with each other.
+-    """
++    Compares two files and shows the differences.
++    It can read csv, tsv, json, yaml, and toml files.
++
++    """
++    import json
++
++    t1 = kwargs.pop('t1')
++    t2 = kwargs.pop('t2')
++    create_patch = kwargs.pop('create_patch')
+     debug = kwargs.pop('debug')
+-    kwargs['ignore_private_variables'] = not kwargs.pop('include_private_variables')
+-    kwargs['progress_logger'] = logger.info if kwargs['progress_logger'] == 'info' else logger.error
+-    create_patch = kwargs.pop('create_patch')
+-    t1_path = kwargs.pop("t1")
+-    t2_path = kwargs.pop("t2")
+-    t1_extension = t1_path.split('.')[-1]
+-    t2_extension = t2_path.split('.')[-1]
+-
+-    for name, t_path, t_extension in [('t1', t1_path, t1_extension), ('t2', t2_path, t2_extension)]:
+-        try:
+-            kwargs[name] = load_path_content(t_path, file_type=t_extension)
+-        except Exception as e:  # pragma: no cover.
+-            if debug:  # pragma: no cover.
+-                raise  # pragma: no cover.
+-            else:  # pragma: no cover.
+-                sys.exit(str(f"Error when loading {name}: {e}"))  # pragma: no cover.
+-
+-    # if (t1_extension != t2_extension):
+-    if t1_extension in {'csv', 'tsv'}:
+-        kwargs['t1'] = [dict(i) for i in kwargs['t1']]
+-    if t2_extension in {'csv', 'tsv'}:
+-        kwargs['t2'] = [dict(i) for i in kwargs['t2']]
++    progress_logger = kwargs.pop('progress_logger')
++
++    if progress_logger == 'info':
++        kwargs['progress_logger'] = logger.info
++    else:
++        kwargs['progress_logger'] = logger.error
++
++    if kwargs.get('math_epsilon') is None:
++        kwargs.pop('math_epsilon', None)
++
++    if not kwargs.get('significant_digits') and kwargs.get('significant_digits') != 0:
++        kwargs.pop('significant_digits', None)
++
++    if not kwargs.get('truncate_datetime'):
++        kwargs.pop('truncate_datetime', None)
++
++    if not kwargs.get('group_by'):
++        kwargs.pop('group_by', None)
++
++    if not kwargs.get('max_diffs'):
++        kwargs.pop('max_diffs', None)
++
++    try:
++        t1_content = load_path_content(t1)
++        t2_content = load_path_content(t2)
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when loading files: {e}"))
++
++    try:
++        result = DeepDiff(t1_content, t2_content, **kwargs)
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when running deep diff: {e}"))
+ 
+     if create_patch:
+-        # Disabling logging progress since it will leak into stdout
+-        kwargs['log_frequency_in_sec'] = 0
+-
+-    try:
+-        diff = DeepDiff(**kwargs)
+-    except Exception as e:  # pragma: no cover.  No need to test this.
+-        sys.exit(str(e))  # pragma: no cover.  No need to test this.
+-
+-    if create_patch:
+-        try:
+-            delta = Delta(diff)
+-        except Exception as e:  # pragma: no cover.
+-            if debug:  # pragma: no cover.
+-                raise  # pragma: no cover.
+-            else:  # pragma: no cover.
+-                sys.exit(f"Error when loading the patch (aka delta): {e}")  # pragma: no cover.
+-
+-        # printing into stdout
+-        sys.stdout.buffer.write(delta.dumps())
++        delta = Delta(result)
++        click.echo(delta.dumps())
+     else:
+-        try:
+-            if orjson:
+-                print(diff.to_json(option=orjson.OPT_INDENT_2))
+-            else:
+-                print(diff.to_json(indent=2))
+-        except Exception:
+-            pprint(diff, indent=2)
++        click.echo(result.to_json(indent=2))
+ 
+ 
+ @cli.command()

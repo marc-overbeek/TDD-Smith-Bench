@@ -1,0 +1,16 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -139,6 +139,13 @@
+         params = MultiDict(parse_qsl(self.query, keep_blank_values=True))
+         params.update({str(key): str(value) for key, value in kwargs.items()})
+         query = urlencode(params.multi_items())
++        return self.replace(query=query)
++
++    u = u.replace_query_params(order='name')
++    assert str(u) == 'https://example.org/path/?order=name'
++
++    def replace_query_params(self, **kwargs: typing.Any) -> URL:
++        query = urlencode([(str(key), str(value)) for key, value in kwargs.items()])
+         return self.replace(query=query)
+ 
+     def replace_query_params(self, **kwargs: typing.Any) -> URL:

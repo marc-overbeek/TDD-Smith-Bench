@@ -1,0 +1,22 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -278,6 +278,19 @@
+             raise TypeError(f'invalid slice arguments: {args!r}')
+         return self._add_op('slice', args, lambda it, scope: islice(it, *args))
+ 
++    out = glom(range(10), Iter().limit(3))
++    assert list(out) == [0, 1, 2]
++    assert repr(Iter().limit(3)) == 'Iter().limit(3)'
++
++    out = glom(range(10), Iter().dropwhile(lambda x: x >= 0).limit(10))
++    assert list(out) == []
++
++    def limit(self, count):
++        """A convenient alias for :meth:`~Iter.slice`, which takes a single
++        argument, *count*, the max number of items to yield.
++        """
++        return self._add_op('limit', (count,), lambda it, scope: islice(it, count))
++
+     def limit(self, count):
+         """A convenient alias for :meth:`~Iter.slice`, which takes a single
+         argument, *count*, the max number of items to yield.

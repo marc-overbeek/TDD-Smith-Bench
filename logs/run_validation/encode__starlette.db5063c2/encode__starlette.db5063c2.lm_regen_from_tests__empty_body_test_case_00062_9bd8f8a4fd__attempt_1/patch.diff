@@ -1,0 +1,36 @@
+--- a/starlette/responses.py
++++ b/starlette/responses.py
+@@ -306,6 +306,7 @@
+             warnings.warn(
+                 "The 'method' parameter is not used, and it will be removed.",
+                 DeprecationWarning,
++                stacklevel=2,
+             )
+         if media_type is None:
+             media_type = guess_type(filename or path)[0] or "text/plain"
+@@ -475,20 +476,22 @@
+         if len(ranges) == 1:
+             return ranges
+ 
+-        # Merge ranges
+         result: list[tuple[int, int]] = []
+         for start, end in ranges:
++            inserted = False
+             for p in range(len(result)):
+                 p_start, p_end = result[p]
+                 if start > p_end:
+                     continue
+                 elif end < p_start:
+-                    result.insert(p, (start, end))  # THIS IS NOT REACHED!
++                    result.insert(p, (start, end))
++                    inserted = True
+                     break
+                 else:
+                     result[p] = (min(start, p_start), max(end, p_end))
++                    inserted = True
+                     break
+-            else:
++            if not inserted:
+                 result.append((start, end))
+ 
+         return result

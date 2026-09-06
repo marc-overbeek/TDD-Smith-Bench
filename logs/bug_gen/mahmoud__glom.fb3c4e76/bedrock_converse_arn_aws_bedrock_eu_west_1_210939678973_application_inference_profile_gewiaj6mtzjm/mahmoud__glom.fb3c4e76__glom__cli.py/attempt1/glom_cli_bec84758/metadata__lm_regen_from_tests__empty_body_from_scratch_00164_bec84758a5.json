@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```python\ndef glom_cli(target, spec, indent, debug, inspect, scalar):\n    try:\n        val = glom.glom(target, spec)\n    except GlomError as g:\n        if debug:\n            import pdb; pdb.post_mortem()\n        raise SystemExit(1)\n    \n    if inspect:\n        Inspect(val)\n        return\n    \n    if scalar and is_scalar(val):\n        print(val)\n    else:\n        import pprint\n        if indent == 0:\n            print(repr(val))\n        else:\n            pprint.pprint(val, width=1, depth=None, stream=sys.stdout, \n                          compact=False, sort_dicts=False)\n```",
+  "rewrite": "def glom_cli(target, spec, indent, debug, inspect, scalar):\n    try:\n        val = glom.glom(target, spec)\n    except GlomError as g:\n        if debug:\n            import pdb; pdb.post_mortem()\n        raise SystemExit(1)\n    \n    if inspect:\n        Inspect(val)\n        return\n    \n    if scalar and is_scalar(val):\n        print(val)\n    else:\n        import pprint\n        if indent == 0:\n            print(repr(val))\n        else:\n            pprint.pprint(val, width=1, depth=None, stream=sys.stdout, \n                          compact=False, sort_dicts=False)",
+  "strategy": "lm_regen_from_tests"
+}

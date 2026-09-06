@@ -1,0 +1,232 @@
+--- a/oauthlib/oauth2/rfc6749/clients/base.py
++++ b/oauthlib/oauth2/rfc6749/clients/base.py
+@@ -52,105 +52,16 @@
+     """
+     refresh_token_key = 'refresh_token'
+ 
+-    def __init__(self, client_id,
+-                 default_token_placement=AUTH_HEADER,
+-                 token_type='Bearer',
+-                 access_token=None,
+-                 refresh_token=None,
+-                 mac_key=None,
+-                 mac_algorithm=None,
+-                 token=None,
+-                 scope=None,
+-                 state=None,
+-                 redirect_url=None,
+-                 state_generator=generate_token,
+-                 code_verifier=None,
+-                 code_challenge=None,
+-                 code_challenge_method=None,
+-                 **kwargs):
+-        """Initialize a client with commonly used attributes.
+-
+-        :param client_id: Client identifier given by the OAuth provider upon
+-        registration.
+-
+-        :param default_token_placement: Tokens can be supplied in the Authorization
+-        header (default), the URL query component (``query``) or the request
+-        body (``body``).
+-
+-        :param token_type: OAuth 2 token type. Defaults to Bearer. Change this
+-        if you specify the ``access_token`` parameter and know it is of a
+-        different token type, such as a MAC, JWT or SAML token. Can
+-        also be supplied as ``token_type`` inside the ``token`` dict parameter.
+-
+-        :param access_token: An access token (string) used to authenticate
+-        requests to protected resources. Can also be supplied inside the
+-        ``token`` dict parameter.
+-
+-        :param refresh_token: A refresh token (string) used to refresh expired
+-        tokens. Can also be supplied inside the ``token`` dict parameter.
+-
+-        :param mac_key: Encryption key used with MAC tokens.
+-
+-        :param mac_algorithm:  Hashing algorithm for MAC tokens.
+-
+-        :param token: A dict of token attributes such as ``access_token``,
+-        ``token_type`` and ``expires_at``.
+-
+-        :param scope: A list of default scopes to request authorization for.
+-
+-        :param state: A CSRF protection string used during authorization.
+-
+-        :param redirect_url: The redirection endpoint on the client side to which
+-        the user returns after authorization.
+-
+-        :param state_generator: A no argument state generation callable. Defaults
+-        to :py:meth:`oauthlib.common.generate_token`.
+-
+-        :param code_verifier: PKCE parameter. A cryptographically random string that is used to correlate the
+-        authorization request to the token request.
+-
+-        :param code_challenge: PKCE parameter. A challenge derived from the code verifier that is sent in the
+-        authorization request, to be verified against later.
+-
+-        :param code_challenge_method: PKCE parameter. A method that was used to derive code challenge.
+-        Defaults to "plain" if not present in the request.
+-        """
+-
+-        self.client_id = client_id
+-        self.default_token_placement = default_token_placement
+-        self.token_type = token_type
+-        self.access_token = access_token
+-        self.refresh_token = refresh_token
+-        self.mac_key = mac_key
+-        self.mac_algorithm = mac_algorithm
+-        self.token = token or {}
+-        self.scope = scope
+-        self.state_generator = state_generator
+-        self.state = state
+-        self.redirect_url = redirect_url
+-        self.code_verifier = code_verifier
+-        self.code_challenge = code_challenge
+-        self.code_challenge_method = code_challenge_method
+-        self.code = None
+-        self.expires_in = None
+-        self._expires_at = None
+-        self.populate_token_attributes(self.token)
++    def __init__(self, client_id, default_token_placement=AUTH_HEADER,
++        token_type='Bearer', access_token=None, refresh_token=None, mac_key=
++        None, mac_algorithm=None, token=None, scope=None, state=None,
++        redirect_url=None, state_generator=generate_token, code_verifier=None,
++        code_challenge=None, code_challenge_method=None, **kwargs):
++        pass
+ 
+     @property
+     def token_types(self):
+-        """Supported token types and their respective methods
+-
+-        Additional tokens can be supported by extending this dictionary.
+-
+-        The Bearer token spec is stable and safe to use.
+-
+-        The MAC token spec is not yet stable and support for MAC tokens
+-        is experimental and currently matching version 00 of the spec.
+-        """
+-        return {
+-            'Bearer': self._add_bearer_token,
+-            'MAC': self._add_mac_token
+-        }
++        pass
+ 
+     def prepare_request_uri(self, *args, **kwargs):
+         """Abstract method used to create request URIs."""
+@@ -165,58 +76,8 @@
+         raise NotImplementedError("Must be implemented by inheriting classes.")
+ 
+     def add_token(self, uri, http_method='GET', body=None, headers=None,
+-                  token_placement=None, **kwargs):
+-        """Add token to the request uri, body or authorization header.
+-
+-        The access token type provides the client with the information
+-        required to successfully utilize the access token to make a protected
+-        resource request (along with type-specific attributes).  The client
+-        MUST NOT use an access token if it does not understand the token
+-        type.
+-
+-        For example, the "bearer" token type defined in
+-        [`I-D.ietf-oauth-v2-bearer`_] is utilized by simply including the access
+-        token string in the request:
+-
+-        .. code-block:: http
+-
+-            GET /resource/1 HTTP/1.1
+-            Host: example.com
+-            Authorization: Bearer mF_9.B5f-4.1JqM
+-
+-        while the "mac" token type defined in [`I-D.ietf-oauth-v2-http-mac`_] is
+-        utilized by issuing a MAC key together with the access token which is
+-        used to sign certain components of the HTTP requests:
+-
+-        .. code-block:: http
+-
+-            GET /resource/1 HTTP/1.1
+-            Host: example.com
+-            Authorization: MAC id="h480djs93hd8",
+-                                nonce="274312:dj83hs9s",
+-                                mac="kDZvddkndxvhGRXZhvuDjEWhGeE="
+-
+-        .. _`I-D.ietf-oauth-v2-bearer`: https://tools.ietf.org/html/rfc6749#section-12.2
+-        .. _`I-D.ietf-oauth-v2-http-mac`: https://tools.ietf.org/html/rfc6749#section-12.2
+-        """
+-        if not is_secure_transport(uri):
+-            raise InsecureTransportError()
+-
+-        token_placement = token_placement or self.default_token_placement
+-
+-        case_insensitive_token_types = {
+-            k.lower(): v for k, v in self.token_types.items()}
+-        if self.token_type.lower() not in case_insensitive_token_types:
+-            raise ValueError("Unsupported token type: %s" % self.token_type)
+-
+-        if not (self.access_token or self.token.get('access_token')):
+-            raise ValueError("Missing access token.")
+-
+-        if self._expires_at and self._expires_at < time.time():
+-            raise TokenExpiredError()
+-
+-        return case_insensitive_token_types[self.token_type.lower()](uri, http_method, body,
+-                                                                     headers, token_placement, **kwargs)
++        token_placement=None, **kwargs):
++        pass
+ 
+     def prepare_authorization_request(self, authorization_url, state=None,
+                                       redirect_url=None, scope=None, **kwargs):
+@@ -448,21 +309,9 @@
+         return prepare_token_request(self.refresh_token_key, body=body, scope=scope,
+                                      refresh_token=refresh_token, **kwargs)
+ 
+-    def _add_bearer_token(self, uri, http_method='GET', body=None,
+-                          headers=None, token_placement=None):
+-        """Add a bearer token to the request uri, body or authorization header."""
+-        if token_placement == AUTH_HEADER:
+-            headers = tokens.prepare_bearer_headers(self.access_token, headers)
+-
+-        elif token_placement == URI_QUERY:
+-            uri = tokens.prepare_bearer_uri(self.access_token, uri)
+-
+-        elif token_placement == BODY:
+-            body = tokens.prepare_bearer_body(self.access_token, body)
+-
+-        else:
+-            raise ValueError("Invalid token placement.")
+-        return uri, headers, body
++    def _add_bearer_token(self, uri, http_method='GET', body=None, headers=None,
++        token_placement=None):
++        pass
+ 
+     def create_code_verifier(self, length):
+         """Create PKCE **code_verifier** used in computing **code_challenge**.
+@@ -575,29 +424,4 @@
+             self.code = response.get('code')
+ 
+     def populate_token_attributes(self, response):
+-        """Add attributes from a token exchange response to self."""
+-
+-        if 'access_token' in response:
+-            self.access_token = response.get('access_token')
+-
+-        if 'refresh_token' in response:
+-            self.refresh_token = response.get('refresh_token')
+-
+-        if 'token_type' in response:
+-            self.token_type = response.get('token_type')
+-
+-        if 'expires_in' in response:
+-            self.expires_in = response.get('expires_in')
+-            self._expires_at = round(time.time()) + int(self.expires_in)
+-
+-        if 'expires_at' in response:
+-            try:
+-                self._expires_at = round(float(response.get('expires_at')))
+-            except:
+-                self._expires_at = None
+-
+-        if 'mac_key' in response:
+-            self.mac_key = response.get('mac_key')
+-
+-        if 'mac_algorithm' in response:
+-            self.mac_algorithm = response.get('mac_algorithm')
++        pass

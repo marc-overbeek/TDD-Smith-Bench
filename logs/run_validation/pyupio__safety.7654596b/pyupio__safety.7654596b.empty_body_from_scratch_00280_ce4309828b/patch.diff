@@ -1,0 +1,57 @@
+--- a/safety/scan/validators.py
++++ b/safety/scan/validators.py
+@@ -80,51 +80,9 @@
+ 
+ 
+ def check_project(console, ctx: typer.Context, session: SafetyAuthSession,
+-                  unverified_project: UnverifiedProjectModel, stage: Stage,
+-                  git_origin: Optional[str], ask_project_id: bool = False) -> dict:
+-    """
+-    Check the project against the session and stage, verifying the project if necessary.
+-
+-    Args:
+-        console: The console for output.
+-        ctx (typer.Context): The context of the Typer command.
+-        session (SafetyAuthSession): The authentication session.
+-        unverified_project (UnverifiedProjectModel): The unverified project model.
+-        stage (Stage): The current stage.
+-        git_origin (Optional[str]): The Git origin URL.
+-        ask_project_id (bool): Whether to prompt for the project ID.
+-
+-    Returns:
+-        dict: The result of the project check.
+-    """
+-    stage = ctx.obj.auth.stage
+-    source = ctx.obj.telemetry.safety_source if ctx.obj.telemetry else None
+-    data = {"scan_stage": stage, "safety_source": source}
+-
+-    PRJ_SLUG_KEY = "project_slug"
+-    PRJ_SLUG_SOURCE_KEY = "project_slug_source"
+-    PRJ_GIT_ORIGIN_KEY = "git_origin"
+-
+-    if git_origin:
+-        data[PRJ_GIT_ORIGIN_KEY] = git_origin
+-
+-    if unverified_project.id:
+-        data[PRJ_SLUG_KEY] = unverified_project.id
+-        data[PRJ_SLUG_SOURCE_KEY] = ".safety-project.ini"
+-    elif not git_origin or ask_project_id:
+-        # Set a project id for this scan (no spaces). If empty Safety will use: pyupio:
+-        parent_root_name = None
+-        if unverified_project.project_path.parent.name:
+-            parent_root_name = unverified_project.project_path.parent.name
+-
+-        unverified_project.id = prompt_project_id(console, stage, parent_root_name)
+-        data[PRJ_SLUG_KEY] = unverified_project.id
+-        data[PRJ_SLUG_SOURCE_KEY] = "user"
+-
+-    status = print_wait_project_verification(console, data[PRJ_SLUG_KEY] if data.get(PRJ_SLUG_KEY, None) else "-",
+-                                    (session.check_project, data), on_error_delay=1)
+-
+-    return status
++    unverified_project: UnverifiedProjectModel, stage: Stage, git_origin:
++    Optional[str], ask_project_id: bool=False) ->dict:
++    pass
+ 
+ 
+ def verify_project(console, ctx: typer.Context, session: SafetyAuthSession,

@@ -1,0 +1,41 @@
+--- a/oauthlib/oauth1/rfc5849/parameters.py
++++ b/oauthlib/oauth1/rfc5849/parameters.py
+@@ -86,24 +86,20 @@
+ 
+ 
+ def _append_params(oauth_params, params):
+-    """Append OAuth params to an existing set of parameters.
+-
+-    Both params and oauth_params is must be lists of 2-tuples.
+-
+-    Per `section 3.5.2`_ and `3.5.3`_ of the spec.
+-
+-    .. _`section 3.5.2`: https://tools.ietf.org/html/rfc5849#section-3.5.2
+-    .. _`3.5.3`: https://tools.ietf.org/html/rfc5849#section-3.5.3
+-
+-    """
+-    merged = list(params)
+-    merged.extend(oauth_params)
+-    # The request URI / entity-body MAY include other request-specific
+-    # parameters, in which case, the protocol parameters SHOULD be appended
+-    # following the request-specific parameters, properly separated by an "&"
+-    # character (ASCII code 38)
+-    merged.sort(key=lambda i: i[0].startswith('oauth_'))
+-    return merged
++    """Append OAuth params to a list of params or a form-encoded body string."""
++    # If params is a string, extract the params from it
++    if isinstance(params, (str, bytes)):
++        params = extract_params(params) or []
++    
++    # Separate non-oauth and oauth params from each list
++    non_oauth_params = [p for p in params if not p[0].startswith('oauth_')]
++    oauth_in_params = [p for p in params if p[0].startswith('oauth_')]
++    
++    non_oauth_oauth_params = [p for p in oauth_params if not p[0].startswith('oauth_')]
++    oauth_in_oauth_params = [p for p in oauth_params if p[0].startswith('oauth_')]
++    
++    return (non_oauth_params + non_oauth_oauth_params + 
++            oauth_in_params + oauth_in_oauth_params)
+ 
+ 
+ def prepare_form_encoded_body(oauth_params, body):

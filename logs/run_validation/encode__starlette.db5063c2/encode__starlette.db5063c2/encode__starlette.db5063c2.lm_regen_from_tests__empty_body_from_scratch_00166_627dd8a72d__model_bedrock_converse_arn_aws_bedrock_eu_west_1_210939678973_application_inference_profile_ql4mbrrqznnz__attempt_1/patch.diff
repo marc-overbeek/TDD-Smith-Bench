@@ -1,0 +1,20 @@
+--- a/starlette/responses.py
++++ b/starlette/responses.py
+@@ -211,14 +211,9 @@
+ class StreamingResponse(Response):
+     body_iterator: AsyncContentStream
+ 
+-    def __init__(
+-        self,
+-        content: ContentStream,
+-        status_code: int = 200,
+-        headers: typing.Mapping[str, str] | None = None,
+-        media_type: str | None = None,
+-        background: BackgroundTask | None = None,
+-    ) -> None:
++    def __init__(self, content: ContentStream, status_code: int=200, headers: (
++        typing.Mapping[str, str] | None)=None, media_type: (str | None)=None,
++        background: (BackgroundTask | None)=None) ->None:
+         if isinstance(content, typing.AsyncIterable):
+             self.body_iterator = content
+         else:

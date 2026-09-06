@@ -1,0 +1,54 @@
+--- a/safety/scan/render.py
++++ b/safety/scan/render.py
+@@ -625,49 +625,8 @@
+     return pkg_ref
+ 
+ 
+-def create_packages(dependencies: List[PythonDependency]) -> List[Any]:
+-    """
+-    Create a list of SPDX packages.
+-
+-    Args:
+-        dependencies (List[PythonDependency]): List of Python dependencies.
+-
+-    Returns:
+-        List[Any]: List of SPDX packages.
+-    """
+-    from spdx_tools.spdx.model.spdx_no_assertion import SpdxNoAssertion
+-
+-    from spdx_tools.spdx.model import (
+-        Package,
+-    )
+-
+-    doc_pkgs = []
+-    pkgs_added = set([])
+-    for dependency in dependencies:
+-        for spec in dependency.specifications:
+-            pkg_version = next(iter(spec.specifier)).version if spec.is_pinned() else f"{spec.specifier}"
+-            dep_name = dependency.name.replace('_', '-')
+-            pkg_id = f"SPDXRef-pip-{dep_name}-{pkg_version}" if spec.is_pinned() else f"SPDXRef-pip-{dep_name}"
+-            if pkg_id in pkgs_added:
+-                continue
+-            pkg_ref = create_pkg_ext_ref(package=dependency, version=pkg_version)
+-
+-            pkg = Package(
+-                spdx_id=pkg_id,
+-                name=f"pip:{dep_name}",
+-                download_location=SpdxNoAssertion(),
+-                version=pkg_version,
+-                file_name="",
+-                supplier=SpdxNoAssertion(),
+-                files_analyzed=False,
+-                license_concluded=SpdxNoAssertion(),
+-                license_declared=SpdxNoAssertion(),
+-                copyright_text=SpdxNoAssertion(),
+-                external_references=[pkg_ref],
+-            )
+-            pkgs_added.add(pkg_id)
+-            doc_pkgs.append(pkg)
+-    return doc_pkgs
++def create_packages(dependencies: List[PythonDependency]) ->List[Any]:
++    pass
+ 
+ 
+ def create_spdx_document(*, report: ReportModel, spdx_version: str) -> Optional[Any]:

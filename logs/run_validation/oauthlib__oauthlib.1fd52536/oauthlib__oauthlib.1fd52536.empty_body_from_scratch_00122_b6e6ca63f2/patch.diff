@@ -1,0 +1,35 @@
+--- a/oauthlib/oauth1/rfc5849/request_validator.py
++++ b/oauthlib/oauth1/rfc5849/request_validator.py
+@@ -435,31 +435,7 @@
+         raise self._subclass_must_implement("get_rsa_key")
+ 
+     def invalidate_request_token(self, client_key, request_token, request):
+-        """Invalidates a used request token.
+-
+-        :param client_key: The client/consumer key.
+-        :param request_token: The request token string.
+-        :param request: OAuthlib request.
+-        :type request: oauthlib.common.Request
+-        :returns: None
+-
+-        Per `Section 2.3`_ of the spec:
+-
+-        "The server MUST (...) ensure that the temporary
+-        credentials have not expired or been used before."
+-
+-        .. _`Section 2.3`: https://tools.ietf.org/html/rfc5849#section-2.3
+-
+-        This method should ensure that provided token won't validate anymore.
+-        It can be simply removing RequestToken from storage or setting
+-        specific flag that makes it invalid (note that such flag should be
+-        also validated during request token validation).
+-
+-        This method is used by
+-
+-        * AccessTokenEndpoint
+-        """
+-        raise self._subclass_must_implement("invalidate_request_token")
++        pass
+ 
+     def validate_client_key(self, client_key, request):
+         """Validates that supplied client key is a registered and valid client.

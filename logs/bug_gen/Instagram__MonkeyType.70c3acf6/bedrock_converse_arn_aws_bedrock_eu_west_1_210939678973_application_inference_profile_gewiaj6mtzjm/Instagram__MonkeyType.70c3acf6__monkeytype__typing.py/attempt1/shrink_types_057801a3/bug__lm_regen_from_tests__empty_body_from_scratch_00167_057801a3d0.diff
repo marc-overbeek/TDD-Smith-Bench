@@ -1,0 +1,73 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -134,33 +134,45 @@
+ 
+ 
+ def shrink_types(types, max_typed_dict_size):
+-    """Return the smallest type equivalent to Union[types].
+-    If all the types are anonymous TypedDicts, shrink them ourselves.
+-    Otherwise, recursively turn the anonymous TypedDicts into Dicts.
+-    Union will handle deduplicating types (both by equality and subtype relationships).
+-    """
+-    types = tuple(types)
+-    if len(types) == 0:
++    if not types:
+         return Any
+-    if all(is_anonymous_typed_dict(typ) for typ in types):
++    
++    # Convert to list to handle various iterables
++    types = list(types)
++    
++    # If all types are the same, return that type
++    if len(set(types)) == 1:
++        return types[0]
++    
++    # Check if all types are TypedDicts
++    typed_dicts = [t for t in types if is_typed_dict(t) and not is_anonymous_typed_dict(t)]
++    if typed_dicts and len(typed_dicts) == len(types):
++        # All are regular TypedDicts, return Union of them
++        return Union[tuple(types)]
++    
++    # Check if all types are anonymous TypedDicts
++    anon_typed_dicts = [t for t in types if is_anonymous_typed_dict(t)]
++    if anon_typed_dicts and len(anon_typed_dicts) == len(types):
++        # All are anonymous TypedDicts, shrink them
+         return shrink_typed_dict_types(types, max_typed_dict_size)
+-    # Don't rewrite anonymous TypedDict to Dict if the types are all the same,
+-    # such as [Tuple[TypedDict(...)], Tuple[TypedDict(...)]].
+-    if all(types_equal(typ, types[0]) for typ in types[1:]):
+-        return types[0]
+-
+-    # If they are all lists, shrink their argument types. This way, we avoid
+-    # rewriting heterogeneous anonymous TypedDicts to Dict.
+-    if all(is_list(typ) for typ in types):
+-        annotation = shrink_types(
+-            (getattr(typ, "__args__")[0] for typ in types), max_typed_dict_size
+-        )
+-        return List[annotation]
+-
+-    all_dict_types = tuple(
+-        RewriteAnonymousTypedDictToDict().rewrite(typ) for typ in types
+-    )
+-    return Union[all_dict_types]
++    
++    # Handle the case where we have a mix or non-TypedDict types
++    # Check if we have a single type that's a TypedDict
++    if len(types) == 1 and is_typed_dict(types[0]):
++        if is_anonymous_typed_dict(types[0]):
++            return shrink_typed_dict_types(types, max_typed_dict_size)
++        else:
++            return types[0]
++    
++    # For other cases, check if we have a union-like situation
++    # If we have multiple types, create a Union
++    if len(types) > 1:
++        # Check if they're all the same type but with different annotations
++        # This is a simplified approach - in practice, we'd want more sophisticated handling
++        return Union[tuple(types)]
++    
++    # Fallback - return the first type
++    return types[0]
+ 
+ 
+ def make_iterator(typ):

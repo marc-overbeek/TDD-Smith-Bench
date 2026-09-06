@@ -1,0 +1,43 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -209,11 +209,35 @@
+ 
+ 
+ def short_repr(item, max_length=15):
+-    """Short representation of item if it is too long"""
+-    item = repr(item)
+-    if len(item) > max_length:
+-        item = '{}...{}'.format(item[:max_length - 3], item[-1])
+-    return item
++    repr_str = repr(item)
++    if len(repr_str) <= max_length:
++        return repr_str
++    else:
++        # For dictionaries, try to show a truncated version
++        if isinstance(item, dict):
++            # Get first few items and show them
++            items = list(item.items())[:3]  # Show first 3 items
++            if len(item) > 3:
++                truncated = '{' + ', '.join(f'{k!r}: {v!r}' for k, v in items) + ', ...}'
++            else:
++                truncated = '{' + ', '.join(f'{k!r}: {v!r}' for k, v in items) + '}'
++            # If the truncated version is still too long, truncate it further
++            if len(truncated) > max_length:
++                # Try to fit at least one item
++                if items:
++                    # Start with first item and add ...
++                    first_item = f'{items[0][0]!r}: {items[0][1]!r}'
++                    if len(first_item) + 5 <= max_length:  # +5 for '{..., ...}'
++                        return f'{{{first_item}, ...}}'
++                    else:
++                        # Even the first item is too long, truncate it
++                        return f'{{...}}'
++                else:
++                    return f'{{...}}'
++            return truncated
++        else:
++            # For other types, truncate at max_length
++            return repr_str[:max_length-3] + '...'
+ 
+ 
+ class ListItemRemovedOrAdded:  # pragma: no cover

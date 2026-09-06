@@ -1,0 +1,36 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2103,8 +2103,31 @@
+             for route in self.routes:
+                 route.remove_time()
+ 
+-    def remove_elevation(self, tracks: bool=True, routes: bool=False, waypoints: bool=False) -> None:
+-        """ Removes elevation data. """
++    def test_remove_elevation(self) ->None:
++        gpx = self.parse('cerknicko-jezero.gpx')
++        for point, track_no, segment_no, point_no in gpx.walk():
++            self.assertTrue(point.elevation is not None)
++        gpx.remove_elevation(tracks=True, waypoints=True, routes=True)
++        for point, track_no, segment_no, point_no in gpx.walk():
++            self.assertTrue(point.elevation is None)
++        xml = gpx.to_xml()
++        self.assertFalse('<ele>' in xml)
++
++    def remove_elevation(self, tracks: bool=True, routes: bool=False, waypoints: bool=False) ->None:
++        pass
++
++    def remove_elevation(self, tracks: bool=True, routes: bool=False, waypoints: bool=False) ->None:
++        if tracks:
++            for track in self.tracks:
++                track.remove_elevation()
++        if routes:
++            for route in self.routes:
++                route.remove_elevation()
++        if waypoints:
++            for waypoint in self.waypoints:
++                waypoint.remove_elevation()
++
++    def remove_elevation(self, tracks: bool=True, routes: bool=False, waypoints: bool=False) ->None:
+         if tracks:
+             for track in self.tracks:
+                 track.remove_elevation()

@@ -1,0 +1,16 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -102,9 +102,10 @@
+ 
+ 
+ def _get_import_for_qualname(qualname: str) -> str:
+-    # Nested classes are annotated using the path from the root class
+-    # (e.g. Parent.Child, where Child is defined inside Parent)
+-    return qualname.split(".")[0]
++    if "__RENAME_ME__" in qualname:
++        # This is a generated TypedDict name, extract the base name
++        return qualname.split("__RENAME_ME__")[0]
++    return qualname
+ 
+ 
+ def get_imports_for_annotation(anno: Any) -> ImportMap:

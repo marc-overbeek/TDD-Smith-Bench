@@ -1,0 +1,22 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -52,7 +52,18 @@
+         Args:
+             params (list): list of parameters.
+         """
+-
++        if params:
++            for k, v in params.items():
++                if k != "self" and not k.startswith("_"):
++                    setattr(self, k, v)
++
++    def _set_attributes(self, params: Optional[List[Any]] = None) -> None:
++        """
++        Set attributes from the input list of parameters.
++
++        Args:
++            params (list): list of parameters.
++        """
+         if params:
+             for k, v in params.items():
+                 if k != "self" and not k.startswith("_"):

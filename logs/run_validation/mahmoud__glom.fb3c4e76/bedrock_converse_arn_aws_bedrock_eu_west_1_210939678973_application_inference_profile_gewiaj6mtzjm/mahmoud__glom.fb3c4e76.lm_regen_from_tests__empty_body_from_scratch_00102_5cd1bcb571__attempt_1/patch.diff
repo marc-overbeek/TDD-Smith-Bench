@@ -1,0 +1,28 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1495,6 +1495,25 @@
+         return _t_child(self, '_', None)
+ 
+     def __(self, name):
++        return _t_child(self, '.', '__' + name)
++
++    def __getattr__(self, name):
++        if name.startswith('__'):
++            raise AttributeError('T instances reserve dunder attributes.'
++                                 ' To access the "{name}" attribute, use'
++                                 ' T.__("{d_name}")'.format(name=name, d_name=name[2:]))
++        return _t_child(self, '.', name)
++
++    with raises(AttributeError) as exc_info:
++        T.__name__
++    assert 'use T.__("name__")' in str(exc_info.value)
++    assert glom(1, T.__('class__')) is int
++
++    def __(self, name):
++        if name.startswith('__'):
++            raise AttributeError('T instances reserve dunder attributes.'
++                                 ' To access the "{name}" attribute, use'
++                                 ' T.__("{d_name}")'.format(name=name, d_name=name[2:]))
+         return _t_child(self, '.', '__' + name)
+ 
+     def __repr__(self):

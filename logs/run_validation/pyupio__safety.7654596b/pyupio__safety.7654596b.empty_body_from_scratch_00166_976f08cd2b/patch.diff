@@ -1,0 +1,41 @@
+--- a/safety/cli_util.py
++++ b/safety/cli_util.py
+@@ -680,35 +680,9 @@
+     Custom Click Group to handle legacy command-line arguments.
+     """
+ 
+-    def parse_legacy_args(self, args: List[str]) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
+-        """
+-        Parse legacy command-line arguments for proxy settings and keys.
+-
+-        Args:
+-            args (List[str]): List of command-line arguments.
+-
+-        Returns:
+-            Tuple[Optional[Dict[str, str]], Optional[str]]: Parsed proxy options and key.
+-        """
+-        options = {
+-            'proxy_protocol': 'https',
+-            'proxy_port': 80,
+-            'proxy_host': None
+-        }
+-        key = None
+-
+-        for i, arg in enumerate(args):
+-            if arg in ['--proxy-protocol', '-pr'] and i + 1 < len(args):
+-                options['proxy_protocol'] = args[i + 1]
+-            elif arg in ['--proxy-port', '-pp'] and i + 1 < len(args):
+-                options['proxy_port'] = int(args[i + 1])
+-            elif arg in ['--proxy-host', '-ph'] and i + 1 < len(args):
+-                options['proxy_host'] = args[i + 1]
+-            elif arg in ['--key'] and i + 1 < len(args):
+-                key = args[i + 1]
+-
+-        proxy = options if options['proxy_host'] else None
+-        return proxy, key
++    def parse_legacy_args(self, args: List[str]) ->Tuple[Optional[Dict[str, str
++        ]], Optional[str]]:
++        pass
+ 
+     def invoke(self, ctx: click.Context) -> None:
+         """

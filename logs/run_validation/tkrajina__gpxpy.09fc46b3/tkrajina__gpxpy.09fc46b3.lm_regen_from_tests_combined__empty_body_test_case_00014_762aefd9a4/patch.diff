@@ -1,0 +1,137 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -31,23 +31,16 @@
+ ONE_DEGREE = (2*mod_math.pi*EARTH_RADIUS) / 360  # ==> 111.319 km
+ 
+ 
+-def haversine_distance(latitude_1: float, longitude_1: float, latitude_2: float, longitude_2: float) -> float:
+-    """
+-    Haversine distance between two points, expressed in meters.
+-
+-    Implemented from http://www.movable-type.co.uk/scripts/latlong.html
+-    """
+-    d_lon = mod_math.radians(longitude_1 - longitude_2)
++def haversine_distance(latitude_1: float, longitude_1: float, latitude_2:
++    float, longitude_2: float) ->float:
++    d_lat = mod_math.radians(latitude_2 - latitude_1)
++    d_lon = mod_math.radians(longitude_2 - longitude_1)
+     lat1 = mod_math.radians(latitude_1)
+     lat2 = mod_math.radians(latitude_2)
+-    d_lat = lat1 - lat2
+-
+-    a = mod_math.pow(mod_math.sin(d_lat/2),2) + \
+-        mod_math.pow(mod_math.sin(d_lon/2),2) * mod_math.cos(lat1) * mod_math.cos(lat2)
+-    c = 2 * mod_math.asin(mod_math.sqrt(a))
+-    d = EARTH_RADIUS * c
+-
+-    return d
++    a = (mod_math.sin(d_lat / 2) * mod_math.sin(d_lat / 2) +
++         mod_math.sin(d_lon / 2) * mod_math.sin(d_lon / 2) * mod_math.cos(lat1) * mod_math.cos(lat2))
++    c = 2 * mod_math.atan2(mod_math.sqrt(a), mod_math.sqrt(1 - a))
++    return EARTH_RADIUS * c
+ 
+ 
+ def get_course(latitude_1: float, longitude_1: float, latitude_2: float, longitude_2: float,
+@@ -226,53 +219,30 @@
+     return uphill, downhill
+ 
+ 
+-def distance(latitude_1: float, longitude_1: float, elevation_1: Optional[float],
+-            latitude_2: float, longitude_2: float, elevation_2: Optional[float],
+-            haversine: bool=False) -> float:
+-    """
+-    Distance between two points. If elevation is None compute a 2d distance
+-
+-    if haversine==True -- haversine will be used for every computations,
+-    otherwise...
+-
+-    Haversine distance will be used for distant points where elevation makes a
+-    small difference, so it is ignored. That's because haversine is 5-6 times
+-    slower than the dummy distance algorithm (which is OK for most GPS tracks).
+-    """
+-
+-    # If points too distant -- compute haversine distance:
+-    if haversine or (abs(latitude_1 - latitude_2) > .2 or abs(longitude_1 - longitude_2) > .2):
+-        return haversine_distance(latitude_1, longitude_1, latitude_2, longitude_2)
+-
+-    coef = mod_math.cos(mod_math.radians(latitude_1))
+-    x = latitude_1 - latitude_2
+-    y = (longitude_1 - longitude_2) * coef
+-
+-    distance_2d = mod_math.sqrt(x * x + y * y) * ONE_DEGREE
+-
+-    if elevation_1 is None or elevation_2 is None or elevation_1 == elevation_2:
+-        return distance_2d
+-
+-    return mod_math.sqrt(distance_2d ** 2 + (elevation_1 - elevation_2) ** 2)
+-
+-
+-def elevation_angle(location1: "Location", location2: "Location", radians: float=False) -> Optional[float]:
+-    """ Uphill/downhill angle between two locations. """
+-    if location1.elevation is None or location2.elevation is None:
++def distance(latitude_1: float, longitude_1: float, elevation_1: Optional[
++    float], latitude_2: float, longitude_2: float, elevation_2: Optional[
++    float], haversine: bool=False) ->float:
++    if haversine:
++        d = haversine_distance(latitude_1, longitude_1, latitude_2, longitude_2)
++    else:
++        d = ONE_DEGREE * mod_math.sqrt((latitude_2 - latitude_1) ** 2 + (longitude_2 - longitude_1) ** 2)
++    if elevation_1 is not None and elevation_2 is not None:
++        d = mod_math.sqrt(d ** 2 + (elevation_2 - elevation_1) ** 2)
++    return d
++
++
++def elevation_angle(location1: 'Location', location2: 'Location', radians:
++    float=False) ->Optional[float]:
++    if not location1 or not location2:
+         return None
+-
+-    b = location2.elevation - location1.elevation
+-    a = location2.distance_2d(location1)
+-
+-    if not a:
+-        return 0
+-
+-    angle = mod_math.atan(b / a)
+-
+-    if radians:
+-        return angle
+-
+-    return mod_math.degrees(angle)
++    horizontal_distance = location1.distance_2d(location2)
++    if horizontal_distance is None or horizontal_distance == 0:
++        return None
++    vertical_distance = location2.elevation - location1.elevation
++    angle = mod_math.atan2(vertical_distance, horizontal_distance)
++    if not radians:
++        angle = mod_math.degrees(angle)
++    return angle
+ 
+ 
+ def distance_from_line(point: "Location", line_point_1: "Location", line_point_2: "Location") -> Optional[float]:
+@@ -370,24 +340,9 @@
+         """ Remove the elevation data from this location."""
+         self.elevation = None
+ 
+-    def distance_2d(self, location: "Location") -> Optional[float]:
+-        """
+-        Calculate the distance between self and location in meters.
+-        Does not take elevation in account.
+-
+-        Parameters
+-        ----------
+-        location: Location
+-            Location to calculate the distance to.
+-
+-        Returns
+-        ----------
+-        distance : float
+-            Distance returned in meters.
+-        """
++    def distance_2d(self, location: 'Location') ->Optional[float]:
+         if not location:
+             return None
+-
+         return distance(self.latitude, self.longitude, None, location.latitude, location.longitude, None)
+ 
+     def distance_3d(self, location: "Location") -> Optional[float]:

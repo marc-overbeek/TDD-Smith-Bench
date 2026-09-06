@@ -1,0 +1,39 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -59,21 +59,8 @@
+     DJANGO_CACHED_PROPERTY = 5
+ 
+     @classmethod
+-    def from_callable(cls, func: Callable[..., Any]) -> "FunctionKind":
+-        if "." not in func.__qualname__:
+-            return FunctionKind.MODULE
+-        func_or_desc = get_name_in_module(
+-            func.__module__, func.__qualname__, inspect.getattr_static
+-        )
+-        if isinstance(func_or_desc, classmethod):
+-            return FunctionKind.CLASS
+-        elif isinstance(func_or_desc, staticmethod):
+-            return FunctionKind.STATIC
+-        elif isinstance(func_or_desc, property):
+-            return FunctionKind.PROPERTY
+-        elif cached_property and isinstance(func_or_desc, cached_property):
+-            return FunctionKind.DJANGO_CACHED_PROPERTY
+-        return FunctionKind.INSTANCE
++    def from_callable(cls, func: Callable[..., Any]) ->'FunctionKind':
++        pass
+ 
+ 
+ class ExistingAnnotationStrategy(enum.Enum):
+@@ -799,10 +786,8 @@
+     def has_self(self) -> bool:
+         return self.kind in self._KIND_WITH_SELF
+ 
+-    def __eq__(self, other: Any) -> bool:
+-        if isinstance(other, self.__class__):
+-            return self.__dict__ == other.__dict__
+-        return NotImplemented
++    def __eq__(self, other: Any) ->bool:
++        pass
+ 
+     def __repr__(self) -> str:
+         return "FunctionDefinition('%s', '%s', %s, %s, %s, %s)" % (

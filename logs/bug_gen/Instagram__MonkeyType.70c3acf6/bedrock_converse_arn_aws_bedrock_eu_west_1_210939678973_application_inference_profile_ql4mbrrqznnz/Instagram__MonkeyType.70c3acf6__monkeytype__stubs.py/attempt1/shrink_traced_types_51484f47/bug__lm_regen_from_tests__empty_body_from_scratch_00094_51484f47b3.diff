@@ -1,0 +1,60 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -219,29 +219,35 @@
+     return sig.replace(return_annotation=anno)
+ 
+ 
+-def shrink_traced_types(
+-    traces: Iterable[CallTrace],
+-    max_typed_dict_size: int,
+-) -> Tuple[Dict[str, type], Optional[type], Optional[type]]:
+-    """Merges the traced types and returns the minimally equivalent types"""
+-    arg_types: DefaultDict[str, Set[type]] = collections.defaultdict(set)
+-    return_types: Set[type] = set()
+-    yield_types: Set[type] = set()
+-    for t in traces:
+-        for arg, typ in t.arg_types.items():
+-            arg_types[arg].add(typ)
+-        if t.return_type is not None:
+-            return_types.add(t.return_type)
+-        if t.yield_type is not None:
+-            yield_types.add(t.yield_type)
+-    shrunken_arg_types = {
+-        name: shrink_types(ts, max_typed_dict_size) for name, ts in arg_types.items()
++def shrink_traced_types(traces: Iterable[CallTrace], max_typed_dict_size: int
++    ) ->Tuple[Dict[str, type], Optional[type], Optional[type]]:
++    all_arg_types: DefaultDict[str, List[type]] = collections.defaultdict(list)
++    return_types: List[type] = []
++    yield_types: List[type] = []
++    
++    for trace in traces:
++        if trace.arg_types:
++            for name, typ in trace.arg_types.items():
++                all_arg_types[name].append(typ)
++        if trace.return_type is not None:
++            return_types.append(trace.return_type)
++        if trace.yield_type is not None:
++            yield_types.append(trace.yield_type)
++    
++    arg_types = {
++        name: shrink_types(types, max_typed_dict_size=max_typed_dict_size)
++        for name, types in all_arg_types.items()
+     }
+-    return_type = (
+-        shrink_types(return_types, max_typed_dict_size) if return_types else None
+-    )
+-    yield_type = shrink_types(yield_types, max_typed_dict_size) if yield_types else None
+-    return (shrunken_arg_types, return_type, yield_type)
++    
++    return_type: Optional[type] = None
++    if return_types:
++        return_type = shrink_types(return_types, max_typed_dict_size=max_typed_dict_size)
++    
++    yield_type: Optional[type] = None
++    if yield_types:
++        yield_type = shrink_types(yield_types, max_typed_dict_size=max_typed_dict_size)
++    
++    return arg_types, return_type, yield_type
+ 
+ 
+ def get_typed_dict_class_name(parameter_name: str) -> str:

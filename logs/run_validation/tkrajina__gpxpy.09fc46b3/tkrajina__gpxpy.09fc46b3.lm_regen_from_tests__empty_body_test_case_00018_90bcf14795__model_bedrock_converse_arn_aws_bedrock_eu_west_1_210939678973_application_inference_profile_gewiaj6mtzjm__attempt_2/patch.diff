@@ -1,0 +1,74 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -752,29 +752,40 @@
+         for track_point in self.points:
+             track_point.remove_elevation()
+ 
+-    def length_2d(self) -> Optional[float]:
+-        """
+-        Computes 2-dimensional length (meters) of segment (only latitude and
+-        longitude, no elevation).
++    def length_2d(self) -> float:
++        """
++        Computes 2-dimensional length of the GPX file (only latitude and
++        longitude, no elevation). This is the sum of 2D length of all segments
++        in all tracks.
+ 
+         Returns
+         ----------
+         length : float
+             Length returned in meters
+         """
+-        return mod_geo.length_2d(self.points) # type: ignore
++        result: float = 0
++        for track in self.tracks:
++            length = track.length_2d()
++            if length is not None:
++                result += length
++        return result
+ 
+     def length_3d(self) -> float:
+         """
+-        Computes 3-dimensional length of segment (latitude, longitude, and
+-        elevation).
++        Computes 3-dimensional length of the GPX file (latitude, longitude, and
++        elevation). This is the sum of 3D length of all segments in all tracks.
+ 
+         Returns
+         ----------
+         length : float
+             Length returned in meters
+         """
+-        return mod_geo.length_3d(self.points) # type: ignore
++        result: float = 0
++        for track in self.tracks:
++            length = track.length_3d()
++            if length is not None:
++                result += length
++        return result
+ 
+     def move(self, location_delta: mod_geo.LocationDelta) -> None:
+         """
+@@ -2320,8 +2331,12 @@
+         point_no : integer
+             Index of point. This is suppressed if only_points is True.
+         """
+-        for track_no, track in enumerate(self.tracks if self.tracks else [] ):
++        for track_no, track in enumerate(self.tracks if self.tracks else []):
++            if track.segments is None:
++                continue
+             for segment_no, segment in enumerate(track.segments if track.segments else []):
++                if segment.points is None:
++                    continue
+                 for point_no, point in enumerate(segment.points if segment.points else []):
+                     if only_points:
+                         yield point
+@@ -2741,7 +2756,7 @@
+                 parts.append(f'{attribute}={value!r}')
+         return f'GPX({", ".join(parts)})'
+ 
+-    def clone(self) -> "GPX":
++    def clone(self) -> 'GPX':
+         return mod_copy.deepcopy(self)
+ 
+ # Add attributes and fill default values (lists or None) for all GPX elements:

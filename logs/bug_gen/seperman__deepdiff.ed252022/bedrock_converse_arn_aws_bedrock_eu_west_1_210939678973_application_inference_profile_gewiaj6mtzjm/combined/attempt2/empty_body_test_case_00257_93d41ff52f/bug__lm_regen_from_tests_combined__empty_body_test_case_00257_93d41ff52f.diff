@@ -1,0 +1,44 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -574,16 +574,9 @@
+                 result[clean_key] = key
+         return result
+ 
+-    def _diff_dict(
+-        self,
+-        level,
+-        parents_ids=frozenset([]),
+-        print_as_attribute=False,
+-        override=False,
+-        override_t1=None,
+-        override_t2=None,
+-        local_tree=None,
+-    ):
++    def _diff_dict(self, level, parents_ids=frozenset([]), print_as_attribute=
++        False, override=False, override_t1=None, override_t2=None, local_tree=None
++        ):
+         """Difference of 2 dictionaries"""
+         if override:
+             # for special stuff like custom objects and named tuples we receive preprocessed t1 and t2
+@@ -1138,8 +1131,8 @@
+             key2 = key2.encode('utf-8')
+         return key1 + b'--' + key2 + b'dc'
+ 
+-    def _get_rough_distance_of_hashed_objs(
+-            self, added_hash, removed_hash, added_hash_obj, removed_hash_obj, _original_type=None):
++    def _get_rough_distance_of_hashed_objs(self, added_hash, removed_hash,
++        added_hash_obj, removed_hash_obj, _original_type=None):
+         # We need the rough distance between the 2 objects to see if they qualify to be pairs or not
+         _distance = cache_key = None
+         if self._stats[DISTANCE_CACHE_ENABLED]:
+@@ -1164,8 +1157,8 @@
+                 self._distance_cache.set(cache_key, value=_distance)
+         return _distance
+ 
+-    def _get_most_in_common_pairs_in_iterables(
+-            self, hashes_added, hashes_removed, t1_hashtable, t2_hashtable, parents_ids, _original_type):
++    def _get_most_in_common_pairs_in_iterables(self, hashes_added,
++        hashes_removed, t1_hashtable, t2_hashtable, parents_ids, _original_type):
+         """
+         Get the closest pairs between items that are removed and items that are added.
+ 

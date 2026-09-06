@@ -1,0 +1,33 @@
+--- a/fvcore/common/checkpoint.py
++++ b/fvcore/common/checkpoint.py
+@@ -331,28 +331,8 @@
+             incorrect_shapes=incorrect_shapes,
+         )
+ 
+-    def _log_incompatible_keys(self, incompatible: _IncompatibleKeys) -> None:
+-        """
+-        Log information about the incompatible keys returned by ``_load_model``.
+-        """
+-        for k, shape_checkpoint, shape_model in incompatible.incorrect_shapes:
+-            self.logger.warning(
+-                "Skip loading parameter '{}' to the model due to incompatible "
+-                "shapes: {} in the checkpoint but {} in the "
+-                "model! You might want to double check if this is expected.".format(
+-                    k, shape_checkpoint, shape_model
+-                )
+-            )
+-        if incompatible.missing_keys:
+-            missing_keys = _filter_reused_missing_keys(
+-                self.model, incompatible.missing_keys
+-            )
+-            if missing_keys:
+-                self.logger.warning(get_missing_parameters_message(missing_keys))
+-        if incompatible.unexpected_keys:
+-            self.logger.warning(
+-                get_unexpected_parameters_message(incompatible.unexpected_keys)
+-            )
++    def _log_incompatible_keys(self, incompatible: _IncompatibleKeys) ->None:
++        pass
+ 
+     def _convert_ndarray_to_tensor(self, state_dict: Dict[str, Any]) -> None:
+         """

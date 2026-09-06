@@ -1,0 +1,74 @@
+--- a/src/mistune/block_parser.py
++++ b/src/mistune/block_parser.py
+@@ -220,23 +220,6 @@
+         return None
+ 
+     def parse_ref_link(self, m: Match[str], state: BlockState) -> Optional[int]:
+-        """Parse link references and save the link information into ``state.env``.
+-
+-        Here is an example of a link reference:
+-
+-        .. code-block:: markdown
+-
+-            a [link][example]
+-
+-            [example]: https://example.com "Optional title"
+-
+-        This method will save the link reference into ``state.env`` as::
+-
+-            state.env['ref_links']['example'] = {
+-                'url': 'https://example.com',
+-                'title': "Optional title",
+-            }
+-        """
+         end_pos = state.append_paragraph()
+         if end_pos:
+             return end_pos
+@@ -291,9 +274,6 @@
+     def extract_block_quote(
+         self, m: Match[str], state: BlockState
+     ) -> Tuple[str, Optional[int]]:
+-        """Extract text and cursor end position of a block quote."""
+-
+-        # cleanup at first to detect if it is code block
+         text = m.group('quote_1') + '\n'
+         text = expand_leading_tab(text, 3)
+         text = _BLOCK_QUOTE_TRIM.sub('', text)
+@@ -335,9 +315,6 @@
+                     continue
+ 
+                 if prev_blank_line:
+-                    # CommonMark Example 249
+-                    # because of laziness, a blank line is needed between
+-                    # a block quote and a following paragraph
+                     break
+ 
+                 m4 = break_sc.match(state.src, state.cursor)
+@@ -346,27 +323,16 @@
+                     if end_pos:
+                         break
+ 
+-                # lazy continuation line
+                 pos = state.find_line_end()
+                 line = state.get_text(pos)
+                 line = expand_leading_tab(line, 3)
+                 text += line
+                 state.cursor = pos
+ 
+-        # according to CommonMark Example 6, the second tab should be
+-        # treated as 4 spaces
+         return expand_tab(text), end_pos
+ 
+     def parse_block_quote(self, m: Match[str], state: BlockState) -> int:
+-        """Parse token for block quote. Here is an example of the syntax:
+-
+-        .. code-block:: markdown
+-
+-            > a block quote starts
+-            > with right arrows
+-        """
+         text, end_pos = self.extract_block_quote(m, state)
+-        # scan children state
+         child = state.child_state(text)
+         if state.depth() >= self.max_nested_level - 1:
+             rules = list(self.block_quote_rules)

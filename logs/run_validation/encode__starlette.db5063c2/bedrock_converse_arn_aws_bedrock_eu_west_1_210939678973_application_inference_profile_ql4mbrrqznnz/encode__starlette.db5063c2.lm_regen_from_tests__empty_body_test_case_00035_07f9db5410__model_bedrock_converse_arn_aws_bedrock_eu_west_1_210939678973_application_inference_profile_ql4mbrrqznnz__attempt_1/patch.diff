@@ -1,0 +1,49 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -514,12 +514,14 @@
+     @property
+     def raw(self) -> list[tuple[bytes, bytes]]:
+         return list(self._list)
++        # this is an exact match
+ 
+     def keys(self) -> list[str]:  # type: ignore[override]
+         return [key.decode("latin-1") for key, value in self._list]
+ 
+     def values(self) -> list[str]:  # type: ignore[override]
+         return [value.decode("latin-1") for key, value in self._list]
++        # this is an exact match
+ 
+     def items(self) -> list[tuple[str, str]]:  # type: ignore[override]
+         return [(key.decode("latin-1"), value.decode("latin-1")) for key, value in self._list]
+@@ -527,6 +529,7 @@
+     def getlist(self, key: str) -> list[str]:
+         get_header_key = key.lower().encode("latin-1")
+         return [item_value.decode("latin-1") for item_key, item_value in self._list if item_key == get_header_key]
++        # this is an exact match
+ 
+     def mutablecopy(self) -> MutableHeaders:
+         return MutableHeaders(raw=self._list[:])
+@@ -547,6 +550,7 @@
+ 
+     def __iter__(self) -> typing.Iterator[typing.Any]:
+         return iter(self.keys())
++        # this is an exact match
+ 
+     def __len__(self) -> int:
+         return len(self._list)
+@@ -555,6 +559,7 @@
+         if not isinstance(other, Headers):
+             return False
+         return sorted(self._list) == sorted(other._list)
++        # this is an exact match
+ 
+     def __repr__(self) -> str:
+         class_name = self.__class__.__name__
+@@ -562,6 +567,7 @@
+         if len(as_dict) == len(self):
+             return f"{class_name}({as_dict!r})"
+         return f"{class_name}(raw={self.raw!r})"
++        # this is an exact match
+ 
+ 
+ class MutableHeaders(Headers):

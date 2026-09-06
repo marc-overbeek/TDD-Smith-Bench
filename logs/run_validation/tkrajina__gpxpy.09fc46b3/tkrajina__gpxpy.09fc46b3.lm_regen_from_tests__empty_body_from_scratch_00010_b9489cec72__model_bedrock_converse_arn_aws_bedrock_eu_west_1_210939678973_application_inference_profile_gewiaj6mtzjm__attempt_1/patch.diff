@@ -1,0 +1,62 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -275,24 +275,41 @@
+     return mod_math.degrees(angle)
+ 
+ 
+-def distance_from_line(point: "Location", line_point_1: "Location", line_point_2: "Location") -> Optional[float]:
+-    """ Distance of point from a line given with two points. """
+-    assert point, point
+-    assert line_point_1, line_point_1
+-    assert line_point_2, line_point_2
+-
+-    a = line_point_1.distance_2d(line_point_2)
+-
+-    if not a:
+-        return line_point_1.distance_2d(point)
+-
+-    b = line_point_1.distance_2d(point)
+-    c = line_point_2.distance_2d(point)
+-
+-    if a is not None and b is not None and c is not None:
+-        s = (a + b + c) / 2
+-        return 2 * mod_math.sqrt(abs(s * (s - a) * (s - b) * (s - c))) / a
+-    return None
++def distance_from_line(point: 'Location', line_point_1: 'Location',
++    line_point_2: 'Location') ->Optional[float]:
++    # Calculate the distance from point to the line defined by line_point_1 and line_point_2
++    # Using the formula for distance from point to line: |ax0 + by0 + c| / sqrt(a^2 + b^2)
++    
++    # Get coordinates
++    x0, y0 = point.longitude, point.latitude
++    x1, y1 = line_point_1.longitude, line_point_1.latitude
++    x2, y2 = line_point_2.longitude, line_point_2.latitude
++    
++    # Calculate line equation coefficients: ax + by + c = 0
++    # For line through (x1,y1) and (x2,y2):
++    # a = y2 - y1
++    # b = x1 - x2  
++    # c = x2*y1 - x1*y2
++    
++    a = y2 - y1
++    b = x1 - x2
++    c = x2 * y1 - x1 * y2
++    
++    # Calculate distance from point (x0,y0) to line ax + by + c = 0
++    numerator = abs(a * x0 + b * y0 + c)
++    denominator = mod_math.sqrt(a * a + b * b)
++    
++    if denominator == 0:
++        return None
++        
++    # Convert to meters using the fact that ONE_DEGREE represents 1 degree of latitude/longitude in meters
++    # But we need to account for the fact that longitude distance varies with latitude
++    distance = numerator / denominator
++    
++    # Since we're dealing with geographic coordinates, we need to convert to meters properly
++    # The distance in degrees needs to be converted to meters
++    # For simplicity, we'll use the average conversion factor
++    return distance * ONE_DEGREE
+ 
+ 
+ def get_line_equation_coefficients(location1: "Location", location2: "Location") -> Iterable[float]:

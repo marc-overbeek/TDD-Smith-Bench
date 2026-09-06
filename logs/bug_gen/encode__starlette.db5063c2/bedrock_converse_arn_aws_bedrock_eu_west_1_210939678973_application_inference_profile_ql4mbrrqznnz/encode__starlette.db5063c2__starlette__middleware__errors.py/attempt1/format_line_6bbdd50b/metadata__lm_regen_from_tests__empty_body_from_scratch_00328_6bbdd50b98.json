@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef format_line(self, index: int, line: str, frame_lineno: int, frame_index: int) -> str:\n    values = {\n        # HTML escape - line could contain < or >\n        \"line\": html.escape(line).replace(\" \", \"&nbsp\"),\n        \"lineno\": (frame_lineno - frame_index) + index,\n    }\n\n    if index != frame_index:\n        return LINE.format(**values)\n    return CENTER_LINE.format(**values)\n```",
+  "rewrite": "def format_line(self, index: int, line: str, frame_lineno: int, frame_index: int) -> str:\n    values = {\n        # HTML escape - line could contain < or >\n        \"line\": html.escape(line).replace(\" \", \"&nbsp\"),\n        \"lineno\": (frame_lineno - frame_index) + index,\n    }\n\n    if index != frame_index:\n        return LINE.format(**values)\n    return CENTER_LINE.format(**values)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,102 @@
+--- a/monkeytype/encoding.py
++++ b/monkeytype/encoding.py
+@@ -37,51 +37,12 @@
+ TypeDict = Dict[str, Any]
+ 
+ 
+-def typed_dict_to_dict(typ: type) -> TypeDict:
+-    elem_types: Dict[str, Any] = {}
+-    for k, v in typ.__annotations__.items():
+-        elem_types[k] = type_to_dict(v)
+-    return {
+-        "module": typ.__module__,
+-        "qualname": typ.__qualname__,
+-        "elem_types": elem_types,
+-        "is_typed_dict": True,
+-    }
++def typed_dict_to_dict(typ: type) ->TypeDict:
++    pass
+ 
+ 
+-def type_to_dict(typ: type) -> TypeDict:
+-    """Convert a type into a dictionary representation that we can store.
+-
+-    The dictionary must:
+-        1. Be encodable as JSON
+-        2. Contain enough information to let us reify the type
+-    """
+-    if is_typed_dict(typ):
+-        return typed_dict_to_dict(typ)
+-
+-    # Union and Any are special cases that aren't actually types.
+-    if is_union(typ):
+-        qualname = "Union"
+-    elif is_any(typ):
+-        qualname = "Any"
+-    elif is_generic(typ):
+-        qualname = qualname_of_generic(typ)
+-    else:
+-        qualname = typ.__qualname__
+-    d: TypeDict = {
+-        "module": typ.__module__,
+-        "qualname": qualname,
+-    }
+-    elem_types = getattr(typ, "__args__", None)
+-    # In Python < 3.9, bare generics still have args
+-    is_bare_generic = typ in {Dict, List, Tuple}
+-    if not is_bare_generic and elem_types is not None and is_generic(typ):
+-        # empty typing.Tuple is weird; the spec says it should be Tuple[()],
+-        # which results in __args__ of `((),)` pre-Python 3.11
+-        if elem_types == ((),):
+-            elem_types = ()
+-        d["elem_types"] = [type_to_dict(t) for t in elem_types]
+-    return d
++def type_to_dict(typ: type) ->TypeDict:
++    pass
+ 
+ 
+ _HIDDEN_BUILTIN_TYPES: Dict[str, type] = {
+@@ -92,39 +53,12 @@
+ }
+ 
+ 
+-def typed_dict_from_dict(d: TypeDict) -> type:
+-    return TypedDict(
+-        d["qualname"], {k: type_from_dict(v) for k, v in d["elem_types"].items()}
+-    )
++def typed_dict_from_dict(d: TypeDict) ->type:
++    pass
+ 
+ 
+-def type_from_dict(d: TypeDict) -> type:
+-    """Given a dictionary produced by type_to_dict, return the equivalent type.
+-
+-    Raises:
+-        NameLookupError if we can't reify the specified type
+-        InvalidTypeError if the named type isn't actually a type
+-    """
+-    module, qualname = d["module"], d["qualname"]
+-    if d.get("is_typed_dict", False):
+-        return typed_dict_from_dict(d)
+-    if module == "builtins" and qualname in _HIDDEN_BUILTIN_TYPES:
+-        typ = _HIDDEN_BUILTIN_TYPES[qualname]
+-    else:
+-        typ = get_name_in_module(module, qualname)
+-    if not (isinstance(typ, type) or is_any(typ) or is_generic(typ)):
+-        raise InvalidTypeError(
+-            f"Attribute specified by '{qualname}' in module '{module}' "
+-            f"is of type {type(typ)}, not type."
+-        )
+-    elem_type_dicts = d.get("elem_types")
+-    if elem_type_dicts is not None and is_generic(typ):
+-        elem_types = tuple(type_from_dict(e) for e in elem_type_dicts)
+-        # mypy complains that a value of type `type` isn't indexable. That's
+-        # true, but we know typ is a subtype that is indexable. Even checking
+-        # with hasattr(typ, '__getitem__') doesn't help
+-        typ = typ[elem_types]  # type: ignore[index]
+-    return typ
++def type_from_dict(d: TypeDict) ->type:
++    pass
+ 
+ 
+ def type_to_json(typ: type) -> str:

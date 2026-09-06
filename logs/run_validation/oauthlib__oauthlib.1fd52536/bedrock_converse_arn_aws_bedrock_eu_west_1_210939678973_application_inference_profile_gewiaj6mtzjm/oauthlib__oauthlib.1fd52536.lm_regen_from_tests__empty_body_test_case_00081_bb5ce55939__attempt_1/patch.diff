@@ -1,0 +1,20 @@
+--- a/oauthlib/oauth2/rfc6749/grant_types/implicit.py
++++ b/oauthlib/oauth2/rfc6749/grant_types/implicit.py
+@@ -160,6 +160,17 @@
+         .. _`Section 10.12`: https://tools.ietf.org/html/rfc6749#section-10.12
+         .. _`Appendix B`: https://tools.ietf.org/html/rfc6749#appendix-B
+         """
++        try:
++            self.validate_authorization_request(request)
++        except errors.FatalClientError as e:
++            log.debug('Fatal client error during validation of %r. %r.',
++                      request, e)
++            raise
++        except errors.OAuth2Error as e:
++            log.debug('Client error during validation of %r. %r.', request, e)
++            return {'Location': common.add_params_to_uri(request.redirect_uri, e.twotuples,
++                                                         fragment=True)}, None, 302
++    
+         return self.create_token_response(request, token_handler)
+ 
+     def create_token_response(self, request, token_handler):

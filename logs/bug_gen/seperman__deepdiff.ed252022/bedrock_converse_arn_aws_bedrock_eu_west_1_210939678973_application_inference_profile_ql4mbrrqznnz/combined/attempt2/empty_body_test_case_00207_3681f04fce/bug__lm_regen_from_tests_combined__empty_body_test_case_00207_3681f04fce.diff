@@ -1,0 +1,62 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -190,34 +190,23 @@
+     return length
+ 
+ 
+-def _get_numbers_distance(num1, num2, max_=1, use_log_scale=False, log_scale_similarity_threshold=0.1):
+-    """
+-    Get the distance of 2 numbers. The output is a number between 0 to the max.
+-    The reason is the
+-    When max is returned means the 2 numbers are really far, and 0 means they are equal.
+-    """
++def _get_numbers_distance(num1, num2, max_=1, use_log_scale=False,
++    log_scale_similarity_threshold=0.1):
+     if num1 == num2:
+         return 0
+     if use_log_scale:
+-        distance = logarithmic_distance(num1, num2)
+-        if distance < logarithmic_distance:
+-            return 0
+-        return distance
+-    if not isinstance(num1, float):
+-        num1 = float(num1)
+-    if not isinstance(num2, float):
+-        num2 = float(num2)
+-    # Since we have a default cutoff of 0.3 distance when
+-    # getting the pairs of items during the ingore_order=True
+-    # calculations, we need to make the divisor of comparison very big
+-    # so that any 2 numbers can be chosen as pairs.
+-    divisor = (num1 + num2) / max_
++        log_num1 = math.copysign(math.log(abs(num1) + MATH_LOG_OFFSET), num1)
++        log_num2 = math.copysign(math.log(abs(num2) + MATH_LOG_OFFSET), num2)
++        num1 = log_num1
++        num2 = log_num2
++    divisor = (abs(num1) + abs(num2)) / max_
+     if divisor == 0:
+         return max_
+-    try:
+-        return min(max_, abs((num1 - num2) / divisor))
+-    except Exception:  # pragma: no cover. I don't think this line will ever run but doesn't hurt to leave it.
+-        return max_  # pragma: no cover
++    result = abs((num1 - num2) / divisor)
++    distance = min(result, max_)
++    if use_log_scale and distance < log_scale_similarity_threshold:
++        return 0
++    return distance
+ 
+ 
+ def _numpy_div(a, b, replace_inf_with=1):
+@@ -289,8 +278,10 @@
+     return _get_numbers_distance(date1.timestamp(), date2.timestamp(), max_)
+ 
+ 
+-def _get_date_distance(date1, date2, max_, use_log_scale, log_scale_similarity_threshold):
+-    return _get_numbers_distance(date1.toordinal(), date2.toordinal(), max_)
++def _get_date_distance(date1, date2, max_, use_log_scale,
++    log_scale_similarity_threshold):
++    return _get_numbers_distance(
++        date1.toordinal(), date2.toordinal(), max_, use_log_scale, log_scale_similarity_threshold)
+ 
+ 
+ def _get_timedelta_distance(timedelta1, timedelta2, max_, use_log_scale, log_scale_similarity_threshold):

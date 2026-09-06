@@ -1,0 +1,30 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -160,6 +160,27 @@
+     """
+     out_stats: Dict[str, Dict[str, int]] = {}
+     _force_keep: Set[str] = force_keep if force_keep else set() | {""}
++
++    def keep_stat(name: str) -> None:
++        pass
++
++    def keep_stat(name: str) -> None:
++        prefix = name + ("." if name else "")
++        trivial_children = True
++        for mod in statistics:
++            # 'if mod' excludes root = '', which is never a child
++            if mod and mod.count(".") == prefix.count(".") and mod.startswith(prefix):
++                keep_stat(mod)
++                trivial_children &= mod not in out_stats
++
++        if (
++            (not all(val == 0 for val in statistics[name].values()))
++            or (name in _force_keep)
++            or (require_trivial_children and not trivial_children)
++        ):
++            out_stats[name] = statistics[name].copy()
++
++    keep_stat("")
+ 
+     def keep_stat(name: str) -> None:
+         prefix = name + ("." if name else "")

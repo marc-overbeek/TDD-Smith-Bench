@@ -1,0 +1,32 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1503,7 +1503,7 @@
+ 
+     def get_time_bounds(self) -> TimeBounds:
+         """
+-        Gets the time bound (start and end) of the track.
++        Gets the time bounds (start and end) of the GPX file.
+ 
+         Returns
+         ----------
+@@ -1516,12 +1516,14 @@
+         start_time = None
+         end_time = None
+ 
+-        for track_segment in self.segments:
+-            point_start_time, point_end_time = track_segment.get_time_bounds()
+-            if not start_time and point_start_time:
+-                start_time = point_start_time
+-            if point_end_time:
+-                end_time = point_end_time
++        for track in self.tracks:
++            track_start_time, track_end_time = track.get_time_bounds()
++            if track_start_time:
++                if start_time is None or track_start_time < start_time:
++                    start_time = track_start_time
++            if track_end_time:
++                if end_time is None or track_end_time > end_time:
++                    end_time = track_end_time
+ 
+         return TimeBounds(start_time, end_time)
+ 

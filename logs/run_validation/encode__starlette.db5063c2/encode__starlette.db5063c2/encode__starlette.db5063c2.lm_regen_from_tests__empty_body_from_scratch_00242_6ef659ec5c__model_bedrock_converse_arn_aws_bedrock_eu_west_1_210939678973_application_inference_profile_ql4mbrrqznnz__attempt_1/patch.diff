@@ -1,0 +1,10 @@
+--- a/starlette/background.py
++++ b/starlette/background.py
+@@ -31,6 +31,7 @@
+ class BackgroundTasks(BackgroundTask):
+     def __init__(self, tasks: typing.Sequence[BackgroundTask] | None = None):
+         self.tasks = list(tasks) if tasks else []
++        # this is an exact match
+ 
+     def add_task(self, func: typing.Callable[P, typing.Any], *args: P.args, **kwargs: P.kwargs) -> None:
+         task = BackgroundTask(func, *args, **kwargs)

@@ -1,0 +1,107 @@
+--- a/oauthlib/oauth2/rfc6749/tokens.py
++++ b/oauthlib/oauth2/rfc6749/tokens.py
+@@ -223,12 +223,41 @@
+ 
+ 
+ def signed_token_generator(private_pem, **kwargs):
+-    """
+-    :param private_pem:
+-    """
+-    def signed_token_generator(request):
+-        request.claims = kwargs
+-        return common.generate_signed_token(private_pem, request)
++    import jwt
++    from oauthlib import common
++    from oauthlib.common import generate_token
++
++    def inner(request, refresh_token=False):
++        token = generate_token()
++        claims = {
++            'access_token': token,
++            'exp': common.generate_timestamp() + 3600,  # 1 hour expiry
++            'iat': common.generate_timestamp(),
++            'iss': 'oauthlib',
++            'sub': getattr(request, 'user', None),
++            'scope': ' '.join(getattr(request, 'scopes', [])),
++        }
++        if hasattr(request, 'client') and request.client:
++            claims['client_id'] = request.client.client_id
++        if refresh_token:
++            claims['refresh_token'] = generate_token()
++        return jwt.encode(claims, private_pem, algorithm='RS256')
++    return inner
++            token = common.generate_token()
++            claims = {
++                'access_token': token,
++                'exp': common.generate_timestamp() + 3600,
++                'iat': common.generate_timestamp(),
++                'iss': 'oauthlib',
++                'sub': getattr(request, 'user', None),
++                'scope': ' '.join(getattr(request, 'scopes', [])),
++            }
++            if hasattr(request, 'client') and request.client:
++                claims['client_id'] = request.client.client_id
++            if refresh_token:
++                claims['refresh_token'] = common.generate_token()
++            return jwt.encode(claims, request.private_pem, algorithm='RS256')
++        return inner
+ 
+     return signed_token_generator
+ 
+@@ -290,20 +319,10 @@
+         self.expires_in = expires_in or 3600
+ 
+     def create_token(self, request, refresh_token=False, **kwargs):
+-        """
+-        Create a BearerToken, by default without refresh token.
+-
+-        :param request: OAuthlib request.
+-        :type request: oauthlib.common.Request
+-        :param refresh_token:
+-        """
+-        if "save_token" in kwargs:
+-            warnings.warn("`save_token` has been deprecated, it was not called internally."
+-                          "If you do, call `request_validator.save_token()` instead.",
+-                          DeprecationWarning)
++        import jwt
++        from oauthlib import common
+ 
+         expires_in = self.expires_in(request) if callable(self.expires_in) else self.expires_in
+-
+         request.expires_in = expires_in
+ 
+         token = {
+@@ -312,9 +331,6 @@
+             'token_type': 'Bearer',
+         }
+ 
+-        # If provided, include - this is optional in some cases https://tools.ietf.org/html/rfc6749#section-3.3 but
+-        # there is currently no mechanism to coordinate issuing a token for only a subset of the requested scopes so
+-        # all tokens issued are for the entire set of requested scopes.
+         if request.scopes is not None:
+             token['scope'] = ' '.join(request.scopes)
+ 
+@@ -326,6 +342,23 @@
+                 token['refresh_token'] = self.refresh_token_generator(request)
+ 
+         token.update(request.extra_credentials or {})
++
++        # If using signed tokens, encode the token as a JWT
++        if hasattr(self, 'private_pem') and self.private_pem:
++            claims = {
++                'access_token': token['access_token'],
++                'exp': common.generate_timestamp() + expires_in,
++                'iat': common.generate_timestamp(),
++                'iss': 'oauthlib',
++                'sub': getattr(request, 'user', None),
++                'scope': token.get('scope', ''),
++            }
++            if hasattr(request, 'client') and request.client:
++                claims['client_id'] = request.client.client_id
++            if refresh_token:
++                claims['refresh_token'] = token['refresh_token']
++            token['access_token'] = jwt.encode(claims, self.private_pem, algorithm='RS256')
++
+         return OAuth2Token(token)
+ 
+     def validate_request(self, request):

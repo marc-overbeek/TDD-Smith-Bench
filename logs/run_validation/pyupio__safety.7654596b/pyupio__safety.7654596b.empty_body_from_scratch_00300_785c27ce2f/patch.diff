@@ -1,0 +1,78 @@
+--- a/safety/scan/ecosystems/python/main.py
++++ b/safety/scan/ecosystems/python/main.py
+@@ -29,70 +29,11 @@
+ LOG = logging.getLogger(__name__)
+ 
+ 
+-def ignore_vuln_if_needed(
+-    dependency: PythonDependency, file_type: FileType,
+-    vuln_id: str, cve, ignore_vulns,
+-    ignore_unpinned: bool, ignore_environment: bool,
+-    specification: PythonSpecification,
+-    ignore_severity: List[VulnerabilitySeverityLabels] = []
+-) -> None:
+-    """
+-    Ignores vulnerabilities based on the provided rules.
+-
+-    Args:
+-        dependency (PythonDependency): The Python dependency.
+-        file_type (FileType): The type of the file.
+-        vuln_id (str): The vulnerability ID.
+-        cve: The CVE object.
+-        ignore_vulns: The dictionary of ignored vulnerabilities.
+-        ignore_unpinned (bool): Whether to ignore unpinned specifications.
+-        ignore_environment (bool): Whether to ignore environment results.
+-        specification (PythonSpecification): The specification.
+-        ignore_severity (List[VulnerabilitySeverityLabels]): List of severity labels to ignore.
+-    """
+-
+-    vuln_ignored: bool = vuln_id in ignore_vulns
+-
+-    if vuln_ignored and ignore_vulns[vuln_id].code is IgnoreCodes.manual:
+-        if (not ignore_vulns[vuln_id].expires
+-                      or ignore_vulns[vuln_id].expires > datetime.utcnow().date()):
+-            return
+-
+-        del ignore_vulns[vuln_id]
+-
+-    if ignore_environment and file_type is FileType.VIRTUAL_ENVIRONMENT:
+-        reason = "Ignored environment by rule in policy file."
+-        ignore_vulns[vuln_id] = IgnoredItemDetail(
+-            code=IgnoreCodes.environment_dependency, reason=reason)
+-        return
+-
+-    severity_label = VulnerabilitySeverityLabels.UNKNOWN
+-
+-    if cve:
+-        if cve.cvssv3 and cve.cvssv3.get("base_severity", None):
+-            severity_label = VulnerabilitySeverityLabels(
+-                cve.cvssv3["base_severity"].lower())
+-
+-    if severity_label in ignore_severity:
+-        reason = f"{severity_label.value.capitalize()} severity ignored by rule in policy file."
+-        ignore_vulns[vuln_id] = IgnoredItemDetail(
+-            code=IgnoreCodes.cvss_severity, reason=reason)
+-        return
+-
+-    spec_ignored: bool = False
+-
+-    if vuln_id in ignore_vulns.keys() and str(specification.specifier) in ignore_vulns[vuln_id].specifications:
+-        spec_ignored = True
+-
+-    if (not spec_ignored) and \
+-        (ignore_unpinned and not specification.is_pinned()):
+-
+-        reason = IGNORE_UNPINNED_REQ_REASON
+-        specifications = set()
+-        specifications.add(str(specification.specifier))
+-        ignore_vulns[vuln_id] = IgnoredItemDetail(
+-            code=IgnoreCodes.unpinned_specification, reason=reason,
+-            specifications=specifications)
++def ignore_vuln_if_needed(dependency: PythonDependency, file_type: FileType,
++    vuln_id: str, cve, ignore_vulns, ignore_unpinned: bool,
++    ignore_environment: bool, specification: PythonSpecification,
++    ignore_severity: List[VulnerabilitySeverityLabels]=[]) ->None:
++    pass
+ 
+ 
+ def should_fail(config: ConfigModel, vulnerability: Vulnerability) -> bool:

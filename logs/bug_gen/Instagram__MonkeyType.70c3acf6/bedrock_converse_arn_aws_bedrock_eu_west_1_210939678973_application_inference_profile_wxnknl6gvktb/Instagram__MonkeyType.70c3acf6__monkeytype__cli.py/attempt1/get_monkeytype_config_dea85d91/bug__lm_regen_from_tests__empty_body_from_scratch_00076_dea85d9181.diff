@@ -1,0 +1,40 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -81,23 +81,20 @@
+ 
+ 
+ def get_monkeytype_config(path: str) -> Config:
+-    """Imports the config instance specified by path.
+-
+-    Path should be in the form module:qualname. Optionally, path may end with (),
+-    in which case we will call/instantiate the given class/function.
+-    """
+-    should_call = False
+-    if path.endswith("()"):
+-        should_call = True
+-        path = path[:-2]
+-    module, qualname = module_path_with_qualname(path)
+-    try:
+-        config = get_name_in_module(module, qualname)
+-    except MonkeyTypeError as mte:
+-        raise argparse.ArgumentTypeError(f"cannot import {path}: {mte}")
+-    if should_call:
+-        config = config()
+-    return config  # type: ignore[no-any-return]
++    module_name, qualname = module_path(path)
++    module = importlib.import_module(module_name)
++    obj = module
++    for attr in qualname.split('.'):
++        obj = getattr(obj, attr)
++    # If it's callable (function or class), call it
++    if callable(obj):
++        return obj()
++    return obj
++
++def get_monkeytype_config(path: str) -> Config:
++    module_name, qualname = module_path(path)
++    module = importlib.import_module(module_name)
++    return eval(qualname, vars(module))
+ 
+ 
+ def display_sample_count(traces: List[CallTrace], stderr: IO[str]) -> None:

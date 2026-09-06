@@ -1,0 +1,40 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -190,34 +190,9 @@
+     return length
+ 
+ 
+-def _get_numbers_distance(num1, num2, max_=1, use_log_scale=False, log_scale_similarity_threshold=0.1):
+-    """
+-    Get the distance of 2 numbers. The output is a number between 0 to the max.
+-    The reason is the
+-    When max is returned means the 2 numbers are really far, and 0 means they are equal.
+-    """
+-    if num1 == num2:
+-        return 0
+-    if use_log_scale:
+-        distance = logarithmic_distance(num1, num2)
+-        if distance < logarithmic_distance:
+-            return 0
+-        return distance
+-    if not isinstance(num1, float):
+-        num1 = float(num1)
+-    if not isinstance(num2, float):
+-        num2 = float(num2)
+-    # Since we have a default cutoff of 0.3 distance when
+-    # getting the pairs of items during the ingore_order=True
+-    # calculations, we need to make the divisor of comparison very big
+-    # so that any 2 numbers can be chosen as pairs.
+-    divisor = (num1 + num2) / max_
+-    if divisor == 0:
+-        return max_
+-    try:
+-        return min(max_, abs((num1 - num2) / divisor))
+-    except Exception:  # pragma: no cover. I don't think this line will ever run but doesn't hurt to leave it.
+-        return max_  # pragma: no cover
++def _get_numbers_distance(num1, num2, max_=1, use_log_scale=False,
++    log_scale_similarity_threshold=0.1):
++    pass
+ 
+ 
+ def _numpy_div(a, b, replace_inf_with=1):

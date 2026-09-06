@@ -1,0 +1,21 @@
+--- a/starlette/applications.py
++++ b/starlette/applications.py
+@@ -112,7 +112,17 @@
+         await self.middleware_stack(scope, receive, send)
+ 
+     def on_event(self, event_type: str) -> typing.Callable:  # type: ignore[type-arg]
+-        return self.router.on_event(event_type)  # pragma: no cover
++        warnings.warn(
++            "The `on_event` decorator is deprecated, and will be removed in version 1.0.0. "
++            "Refer to https://www.starlette.io/lifespan/ for the recommended approach.",
++            DeprecationWarning,
++        )
++
++        def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
++            self.router.add_event_handler(event_type, func)
++            return func
++
++        return decorator
+ 
+     def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:
+         self.router.mount(path, app=app, name=name)  # pragma: no cover

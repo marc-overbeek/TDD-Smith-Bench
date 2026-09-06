@@ -1,0 +1,106 @@
+--- a/monkeytype/tracing.py
++++ b/monkeytype/tracing.py
+@@ -141,39 +141,71 @@
+         yield from previous_frame.f_locals.values()
+ 
+ 
+-def get_func(frame: FrameType) -> Optional[Callable[..., Any]]:
+-    """Return the function whose code object corresponds to the supplied stack frame."""
++def get_func(frame: FrameType) ->Optional[Callable[..., Any]]:
+     code = frame.f_code
+-    if code.co_name is None:
+-        return None
+-    # First, try to find the function in globals
+-    cand = frame.f_globals.get(code.co_name, None)
+-    func = _has_code(cand, code)
+-    # If that failed, as will be the case with class and instance methods, try
+-    # to look up the function from the first argument. In the case of class/instance
+-    # methods, this should be the class (or an instance of the class) on which our
+-    # method is defined.
+-    if func is None and code.co_argcount >= 1:
+-        first_arg = frame.f_locals.get(code.co_varnames[0])
+-        func = get_func_in_mro(first_arg, code)
+-    # If we still can't find the function, as will be the case with static methods,
+-    # try looking at classes in global scope.
+-    if func is None:
+-        for v in frame.f_globals.values():
+-            if not isinstance(v, type):
+-                continue
+-            func = get_func_in_mro(v, code)
+-            if func is not None:
+-                break
+-    # If we still can't find the function, try looking at the locals of all previous frames.
+-    if func is None:
+-        for v in get_locals_from_previous_frames(frame):
+-            if not callable(v):
+-                continue
+-            func = _has_code(v, code)
+-            if func is not None:
+-                break
+-    return func
++    func_name = code.co_name
++    
++    # Try to get the function from the frame's local variables first
++    if func_name in frame.f_locals:
++        func = frame.f_locals[func_name]
++        if callable(func):
++            return _has_code(func, code)
++    
++    # Try to get the function from the frame's global variables
++    if func_name in frame.f_globals:
++        func = frame.f_globals[func_name]
++        if callable(func):
++            return _has_code(func, code)
++    
++    # Handle special case for built-in functions and methods
++    if func_name == "<module>":
++        # For module-level functions, we need to look in the module's namespace
++        module = sys.modules.get(frame.f_globals.get("__name__"))
++        if module is not None:
++            func = getattr(module, func_name, None)
++            if callable(func):
++                return _has_code(func, code)
++    
++    # If we're in a method call, look for the function in the instance/class
++    if code.co_argcount > 0 and frame.f_locals:
++        # Get the first argument (usually 'self' or 'cls') to determine context
++        arg_names = code.co_varnames[:code.co_argcount]
++        if arg_names:
++            first_arg_name = arg_names[0]
++            if first_arg_name in frame.f_locals:
++                first_arg = frame.f_locals[first_arg_name]
++                # Try to find the function in the class/method resolution order
++                func = get_func_in_mro(first_arg, code)
++                if func is not None:
++                    return func
++    
++    # Try to get the function from the frame's globals again, but more carefully
++    # This handles cases where the function might be imported or defined differently
++    for obj in get_locals_from_previous_frames(frame):
++        if hasattr(obj, '__dict__') and func_name in obj.__dict__:
++            func = obj.__dict__[func_name]
++            if callable(func):
++                return _has_code(func, code)
++    
++    # If we still haven't found it, try to get it from the frame's code object directly
++    # This handles cases where the function is defined in the same module
++    module_name = frame.f_globals.get("__name__")
++    if module_name:
++        module = sys.modules.get(module_name)
++        if module is not None and hasattr(module, func_name):
++            func = getattr(module, func_name)
++            if callable(func):
++                return _has_code(func, code)
++    
++    # Try to find the function in the module's globals using the filename
++    if code.co_filename in frame.f_globals:
++        module = frame.f_globals[code.co_filename]
++        if hasattr(module, func_name):
++            func = getattr(module, func_name)
++            if callable(func):
++                return _has_code(func, code)
++    
++    return None
+ 
+ 
+ RETURN_VALUE_OPCODE = opcode.opmap["RETURN_VALUE"]

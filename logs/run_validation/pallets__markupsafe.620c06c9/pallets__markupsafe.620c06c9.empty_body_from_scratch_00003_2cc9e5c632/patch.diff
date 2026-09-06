@@ -1,0 +1,19 @@
+--- a/setup.py
++++ b/setup.py
+@@ -26,15 +26,7 @@
+             raise BuildFailed() from e
+ 
+     def build_extension(self, ext):
+-        try:
+-            super().build_extension(ext)
+-        except (CCompilerError, ExecError, PlatformError) as e:
+-            raise BuildFailed() from e
+-        except ValueError as e:
+-            # this can happen on Windows 64 bit, see Python issue 7511
+-            if "'path'" in str(sys.exc_info()[1]):  # works with Python 2 and 3
+-                raise BuildFailed() from e
+-            raise
++        pass
+ 
+ 
+ def run_setup(with_binary):

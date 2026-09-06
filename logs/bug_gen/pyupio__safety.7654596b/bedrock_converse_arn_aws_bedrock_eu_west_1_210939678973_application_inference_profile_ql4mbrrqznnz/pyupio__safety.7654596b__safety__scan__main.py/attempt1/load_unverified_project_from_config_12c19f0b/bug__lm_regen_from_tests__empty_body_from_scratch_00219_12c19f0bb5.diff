@@ -1,0 +1,49 @@
+--- a/safety/scan/main.py
++++ b/safety/scan/main.py
+@@ -75,30 +75,23 @@
+     return None
+ 
+ 
+-def load_unverified_project_from_config(project_root: Path) -> UnverifiedProjectModel:
+-    """
+-    Loads an unverified project from the configuration file located at the project root.
+-
+-    Args:
+-        project_root (Path): The root directory of the project.
+-
+-    Returns:
+-        UnverifiedProjectModel: An instance of UnverifiedProjectModel.
+-    """
+-    config = configparser.ConfigParser()
++def load_unverified_project_from_config(project_root: Path
++    ) ->UnverifiedProjectModel:
+     project_path = project_root / PROJECT_CONFIG
+-    config.read(project_path)
+-    id = config.get(PROJECT_CONFIG_SECTION, PROJECT_CONFIG_ID, fallback=None)
+-    id = config.get(PROJECT_CONFIG_SECTION, PROJECT_CONFIG_ID, fallback=None)
+-    url = config.get(PROJECT_CONFIG_SECTION, PROJECT_CONFIG_URL, fallback=None)
+-    name = config.get(PROJECT_CONFIG_SECTION, PROJECT_CONFIG_NAME, fallback=None)
+-    created = True
+-    if id:
+-        created = False
+-
+-    return UnverifiedProjectModel(id=id, url_path=url,
+-                                  name=name, project_path=project_path,
+-                                  created=created)
++    id = None
++    url_path = None
++    name = None
++
++    if project_path.exists():
++        config = configparser.ConfigParser()
++        config.read(project_path)
++
++        if PROJECT_CONFIG_SECTION in config.sections():
++            id = config[PROJECT_CONFIG_SECTION].get(PROJECT_CONFIG_ID, None)
++            url_path = config[PROJECT_CONFIG_SECTION].get(PROJECT_CONFIG_URL, None)
++            name = config[PROJECT_CONFIG_SECTION].get(PROJECT_CONFIG_NAME, None)
++
++    return UnverifiedProjectModel(id=id, url_path=url_path, name=name, project_path=project_path)
+ 
+ 
+ def save_project_info(project: ProjectModel, project_path: Path) -> None:

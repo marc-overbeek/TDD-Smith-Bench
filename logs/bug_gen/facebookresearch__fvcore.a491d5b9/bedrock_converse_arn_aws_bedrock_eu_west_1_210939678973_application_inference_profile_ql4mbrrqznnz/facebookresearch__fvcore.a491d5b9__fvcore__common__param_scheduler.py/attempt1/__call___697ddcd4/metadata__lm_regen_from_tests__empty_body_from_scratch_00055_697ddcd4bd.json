@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef __call__(self, where: float) -> float:\n    if where > 1.0:\n        raise RuntimeError(\n            f\"where in ParamScheduler must be in [0, 1]: got {where}\"\n        )\n    epoch_num = int((where + self.WHERE_EPSILON) * self._num_updates)\n    return self._param_schedule[bisect.bisect_right(self._milestones, epoch_num)]\n```",
+  "rewrite": "def __call__(self, where: float) -> float:\n    if where > 1.0:\n        raise RuntimeError(\n            f\"where in ParamScheduler must be in [0, 1]: got {where}\"\n        )\n    epoch_num = int((where + self.WHERE_EPSILON) * self._num_updates)\n    return self._param_schedule[bisect.bisect_right(self._milestones, epoch_num)]\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

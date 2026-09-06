@@ -1,0 +1,19 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -318,6 +318,16 @@
+         self.transforms.extend(others)
+         return self
+ 
++    transforms = T.NoOpTransform() + transforms
++
++    def __add__(self, other: "TransformList") -> "TransformList":
++        others = other.transforms if isinstance(other, TransformList) else [other]
++        return TransformList(self.transforms + others)
++
++    def __radd__(self, other: "TransformList") -> "TransformList":
++        others = other.transforms if isinstance(other, TransformList) else [other]
++        return TransformList(others + self.transforms)
++
+     def __radd__(self, other: "TransformList") -> "TransformList":
+         """
+         Args:

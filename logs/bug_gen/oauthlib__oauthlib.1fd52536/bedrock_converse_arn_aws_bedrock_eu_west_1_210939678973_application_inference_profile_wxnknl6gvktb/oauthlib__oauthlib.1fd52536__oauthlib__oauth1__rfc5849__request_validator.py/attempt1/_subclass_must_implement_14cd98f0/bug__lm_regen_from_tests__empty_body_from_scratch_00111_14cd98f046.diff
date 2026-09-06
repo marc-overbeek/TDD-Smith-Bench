@@ -1,0 +1,21 @@
+--- a/oauthlib/oauth1/rfc5849/request_validator.py
++++ b/oauthlib/oauth1/rfc5849/request_validator.py
+@@ -194,6 +194,18 @@
+         """Check that the realm is one of a set allowed realms."""
+         return all(r in self.realms for r in realms)
+ 
++    self.assertRaises(NotImplementedError, lambda : v.dummy_client)
++
++    raise self._subclass_must_implement("dummy_client")
++
++    def _subclass_must_implement(self, fn):
++        """
++        Returns a NotImplementedError for a function that should be implemented.
++        :param fn: name of the function
++        """
++        m = "Missing function implementation in {}: {}".format(type(self), fn)
++        return NotImplementedError(m)
++
+     def _subclass_must_implement(self, fn):
+         """
+         Returns a NotImplementedError for a function that should be implemented.

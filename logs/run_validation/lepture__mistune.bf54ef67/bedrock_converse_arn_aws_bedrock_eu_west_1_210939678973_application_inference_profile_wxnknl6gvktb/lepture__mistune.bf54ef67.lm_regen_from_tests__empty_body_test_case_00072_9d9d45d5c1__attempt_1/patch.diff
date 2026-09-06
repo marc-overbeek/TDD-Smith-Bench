@@ -1,0 +1,29 @@
+--- a/src/mistune/inline_parser.py
++++ b/src/mistune/inline_parser.py
+@@ -157,15 +157,15 @@
+         if end_pos < len(state.src):
+             c = state.src[end_pos]
+             if c == '(':
+-                # standard link [text](<url> "title")
+                 attrs, pos2 = parse_link(state.src, end_pos + 1)
+                 if pos2:
++                    if attrs and 'url' in attrs:
++                        attrs['url'] = escape_url(attrs['url'])
+                     token = self.__parse_link_token(is_image, text, attrs, state)
+                     state.append_token(token)
+                     return pos2
+ 
+             elif c == '[':
+-                # standard ref link [text][label]
+                 label2, pos2 = parse_link_label(state.src, end_pos + 1)
+                 if pos2:
+                     end_pos = pos2
+@@ -182,7 +182,7 @@
+         key = unikey(label)
+         env = ref_links.get(key)
+         if env:
+-            attrs = {'url': env['url'], 'title': env.get('title')}
++            attrs = {'url': escape_url(env['url']), 'title': env.get('title')}
+             token = self.__parse_link_token(is_image, text, attrs, state)
+             token['ref'] = key
+             token['label'] = label

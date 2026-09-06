@@ -1,0 +1,52 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -63,45 +63,10 @@
+     return format_long_text('')
+ 
+ 
+-def style_lines(lines: List[Dict[str, Any]], columns: int, pre_processed_text: str = '', start_line: str = ' ' * 4, end_line: str = ' ' * 4) -> str:
+-    """
+-    Style the lines with the specified format.
+-
+-    Args:
+-        lines (List[Dict[str, Any]]): List of lines to style.
+-        columns (int): Number of columns for formatting.
+-        pre_processed_text (str, optional): Pre-processed text. Defaults to ''.
+-        start_line (str, optional): Starting line decorator. Defaults to ' ' * 4.
+-        end_line (str, optional): Ending line decorator. Defaults to ' ' * 4.
+-
+-    Returns:
+-        str: Styled text.
+-    """
+-    styled_text = pre_processed_text
+-
+-    for line in lines:
+-        styled_line = ''
+-        left_padding = ' ' * line.get('indent', 0)
+-
+-        for i, word in enumerate(line.get('words', [])):
+-            if word.get('style', {}):
+-                text = ''
+-
+-                if i == 0:
+-                    text = left_padding  # Include the line padding in the word to avoid Github issues
+-                    left_padding = ''  # Clean left padding to avoid be added two times
+-
+-                text += word.get('value', '')
+-
+-                styled_line += click.style(text=text, **word.get('style', {}))
+-            else:
+-                styled_line += word.get('value', '')
+-
+-        styled_text += format_long_text(styled_line, columns=columns, start_line_decorator=start_line,
+-                                        end_line_decorator=end_line,
+-                                        indent=left_padding, **line.get('format', {})) + '\n'
+-
+-    return styled_text
++def style_lines(lines: List[Dict[str, Any]], columns: int,
++    pre_processed_text: str='', start_line: str=' ' * 4, end_line: str=' ' * 4
++    ) ->str:
++    pass
+ 
+ 
+ def format_vulnerability(vulnerability: Any, full_mode: bool, only_text: bool = False, columns: int = get_terminal_size().columns) -> str:

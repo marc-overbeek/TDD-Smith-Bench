@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef join_gpxs(xmls: Iterable[AnyStr]) ->str:\n    if not xmls:\n        return ''\n    \n    doms = [mod_minidom.parseString(xml) for xml in xmls]\n    main_dom = doms[0]\n    main_gpx = _find_gpx_node(main_dom)\n    \n    for dom in doms[1:]:\n        gpx = _find_gpx_node(dom)\n        if gpx:\n            for child in gpx.childNodes[:]:  # Use slice to avoid issues with modifying during iteration\n                if child.nodeType == child.ELEMENT_NODE:\n                    main_gpx.appendChild(main_dom.importNode(child, True))\n    \n    return main_dom.toxml()\n\ndef _find_gpx_node(dom: Any) ->Any:\n    for node in dom.childNodes:\n        if node.nodeType == node.ELEMENT_NODE and node.tagName == 'gpx':\n            return node\n    return None\n```",
+  "rewrite": "def join_gpxs(xmls: Iterable[AnyStr]) ->str:\n    if not xmls:\n        return ''\n    \n    doms = [mod_minidom.parseString(xml) for xml in xmls]\n    main_dom = doms[0]\n    main_gpx = _find_gpx_node(main_dom)\n    \n    for dom in doms[1:]:\n        gpx = _find_gpx_node(dom)\n        if gpx:\n            for child in gpx.childNodes[:]:  # Use slice to avoid issues with modifying during iteration\n                if child.nodeType == child.ELEMENT_NODE:\n                    main_gpx.appendChild(main_dom.importNode(child, True))\n    \n    return main_dom.toxml()\n\ndef _find_gpx_node(dom: Any) ->Any:\n    for node in dom.childNodes:\n        if node.nodeType == node.ELEMENT_NODE and node.tagName == 'gpx':\n            return node\n    return None",
+  "strategy": "lm_regen_from_tests_combined"
+}

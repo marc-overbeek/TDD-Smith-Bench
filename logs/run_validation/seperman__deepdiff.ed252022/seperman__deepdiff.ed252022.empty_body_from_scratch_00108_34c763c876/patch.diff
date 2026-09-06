@@ -1,0 +1,38 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -171,34 +171,7 @@
+         self.post_process_paths_to_convert = dict_()
+ 
+     def __add__(self, other):
+-        if isinstance(other, numbers) and self._numpy_paths:
+-            raise DeltaNumpyOperatorOverrideError(DELTA_NUMPY_OPERATOR_OVERRIDE_MSG)
+-        if self.mutate:
+-            self.root = other
+-        else:
+-            self.root = deepcopy(other)
+-        self._do_pre_process()
+-        self._do_values_changed()
+-        self._do_set_item_added()
+-        self._do_set_item_removed()
+-        self._do_type_changes()
+-        # NOTE: the remove iterable action needs to happen BEFORE
+-        # all the other iterables to match the reverse of order of operations in DeepDiff
+-        self._do_iterable_opcodes()
+-        self._do_iterable_item_removed()
+-        self._do_iterable_item_added()
+-        self._do_ignore_order()
+-        self._do_dictionary_item_added()
+-        self._do_dictionary_item_removed()
+-        self._do_attribute_added()
+-        self._do_attribute_removed()
+-        self._do_post_process()
+-
+-        other = self.root
+-        # removing the reference to other
+-        del self.root
+-        self.reset()
+-        return other
++        pass
+ 
+     __radd__ = __add__
+ 

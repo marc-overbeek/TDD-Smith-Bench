@@ -1,0 +1,45 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -265,20 +265,31 @@
+     return None
+ 
+ 
+-def get_basic_announcements(announcements: List[Dict[str, Any]], include_local: bool = True) -> List[Dict[str, Any]]:
+-    """
+-    Get the basic announcements from a list of announcements.
+-
++def get_basic_announcements(announcements: List[Dict[str, Any]], include_local: bool=True) ->List[Dict[str, Any]]:
++
++def get_basic_announcements(announcements: List[Dict[str, Any]],
++    include_local: bool=True) ->List[Dict[str, Any]]:
++    """
++    Get basic announcements, excluding primary announcements.
++    
+     Args:
+         announcements (List[Dict[str, Any]]): The list of announcements.
+         include_local (bool): Whether to include local announcements.
+-
+-    Returns:
+-        List[Dict[str, Any]]: The list of basic announcements.
+-    """
+-    return [announcement for announcement in announcements if
+-            announcement.get('type', '').lower() != 'primary_announcement' and not announcement.get('local', False)
+-            or (announcement.get('local', False) and include_local)]
++    
++    Returns:
++        List[Dict[str, Any]]: The filtered announcements.
++    """
++    # Filter out primary announcements
++    basic_announcements = [announcement for announcement in announcements 
++                          if announcement.get('type', '').lower() != 'primary_announcement']
++    
++    # Add local announcements if requested
++    if include_local:
++        ctx = SafetyContext()
++        if ctx.local_announcements:
++            basic_announcements.extend(ctx.local_announcements)
++    
++    return basic_announcements
+ 
+ 
+ def filter_announcements(announcements: List[Dict[str, Any]], by_type: str = 'error') -> List[Dict[str, Any]]:

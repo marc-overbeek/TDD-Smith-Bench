@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef to_float_tensor(numpy_array: np.ndarray) ->torch.Tensor:\n    if numpy_array.dtype == np.uint8:\n        return torch.from_numpy(numpy_array.astype(np.float32) / 255.0)\n    else:\n        return torch.from_numpy(numpy_array.astype(np.float32))\n\n\ndef to_numpy(float_tensor: torch.Tensor, target_shape: list, target_dtype:\n    np.dtype) ->np.ndarray:\n    numpy_array = float_tensor.numpy()\n    if target_dtype == np.uint8:\n        numpy_array = (numpy_array * 255).astype(np.uint8)\n    else:\n        numpy_array = numpy_array.astype(target_dtype)\n    return numpy_array.reshape(target_shape)\n```",
+  "rewrite": "def to_float_tensor(numpy_array: np.ndarray) ->torch.Tensor:\n    if numpy_array.dtype == np.uint8:\n        return torch.from_numpy(numpy_array.astype(np.float32) / 255.0)\n    else:\n        return torch.from_numpy(numpy_array.astype(np.float32))\n\n\ndef to_numpy(float_tensor: torch.Tensor, target_shape: list, target_dtype:\n    np.dtype) ->np.ndarray:\n    numpy_array = float_tensor.numpy()\n    if target_dtype == np.uint8:\n        numpy_array = (numpy_array * 255).astype(np.uint8)\n    else:\n        numpy_array = numpy_array.astype(target_dtype)\n    return numpy_array.reshape(target_shape)",
+  "strategy": "lm_regen_from_tests_combined"
+}

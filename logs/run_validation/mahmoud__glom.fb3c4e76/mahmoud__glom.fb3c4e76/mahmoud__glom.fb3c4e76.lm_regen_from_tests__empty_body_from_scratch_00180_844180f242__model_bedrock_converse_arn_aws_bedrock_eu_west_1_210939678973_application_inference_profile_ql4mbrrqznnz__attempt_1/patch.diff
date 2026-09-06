@@ -1,0 +1,26 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -184,15 +184,14 @@
+     """
+     __slots__ = ()
+ 
+-    def agg(self, target, tree):
+-        try:
+-            avg_acc = tree[self]
+-        except KeyError:
+-            # format is [sum, count]
+-            avg_acc = tree[self] = [0.0, 0]
+-        avg_acc[0] += target
+-        avg_acc[1] += 1
+-        return avg_acc[0] / avg_acc[1]
++    assert glom(range(10), Group({(lambda t: t % 2): Count()})) == {(0): 5, (1): 5}
++    assert repr(Count()) == 'Count()'
++
++    def agg(self, target, tree):
++        if self not in tree:
++            tree[self] = 0
++        tree[self] += 1
++        return tree[self]
+ 
+     def __repr__(self):
+         return '%s()' % self.__class__.__name__

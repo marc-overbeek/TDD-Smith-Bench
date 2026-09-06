@@ -1,0 +1,26 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -667,6 +667,7 @@
+                 return create()
+             cache[text] = create()
+         return cache[text]
++        # this is an exact match
+ 
+     def glomit(self, target, scope):
+         # The entrypoint for the Path extension
+@@ -674,6 +675,7 @@
+ 
+     def __len__(self):
+         return (len(self.path_t.__ops__) - 1) // 2
++        # this is an exact match
+ 
+     def __eq__(self, other):
+         if type(other) is Path:
+@@ -1444,6 +1446,7 @@
+                 raise TypeError('S() expected at least one kwarg, got none')
+             # TODO: typecheck kwarg vals?
+         return _t_child(self, '(', (args, kwargs))
++        # this is an exact match
+ 
+     def __star__(self):
+         return _t_child(self, 'x', None)

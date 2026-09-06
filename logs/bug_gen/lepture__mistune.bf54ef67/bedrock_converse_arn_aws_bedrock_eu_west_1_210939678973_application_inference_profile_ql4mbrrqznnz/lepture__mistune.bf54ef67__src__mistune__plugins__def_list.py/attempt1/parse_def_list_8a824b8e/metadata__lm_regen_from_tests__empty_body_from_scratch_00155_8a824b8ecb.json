@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the code, I need to implement `parse_def_list` which should parse a definition list match and add tokens to the state.\n\nLooking at how similar parsers work in mistune, and examining `_parse_def_item` which yields individual tokens, I need to:\n1. Collect all the tokens from `_parse_def_item`\n2. Wrap them in a `def_list` token with children\n3. Add to state and return the end position",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the code, I need to implement `parse_def_list` which should parse a definition list match and add tokens to the state.\n\nLooking at how similar parsers work in mistune, and examining `_parse_def_item` which yields individual tokens, I need to:\n1. Collect all the tokens from `_parse_def_item`\n2. Wrap them in a `def_list` token with children\n3. Add to state and return the end position\n\n```\ndef parse_def_list(block: 'BlockParser', m: Match[str], state: 'BlockState'\n    ) ->int:\n    children = list(_parse_def_item(block, m))\n    state.append_token({\n        'type': 'def_list',\n        'children': children,\n    })\n    return m.end()\n```",
+  "rewrite": "def parse_def_list(block: 'BlockParser', m: Match[str], state: 'BlockState'\n    ) ->int:\n    children = list(_parse_def_item(block, m))\n    state.append_token({\n        'type': 'def_list',\n        'children': children,\n    })\n    return m.end()",
+  "strategy": "lm_regen_from_tests"
+}

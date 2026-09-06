@@ -1,0 +1,17 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -641,6 +641,14 @@
+ 
+     """
+     __slots__ = ('key',)
++
++    def __init__(self, key):
++        if type(key) in (Required, Optional):
++            raise TypeError("double wrapping of Required")
++        hash(key)  # ensure is a valid key
++        if _precedence(key) == 0:
++            raise ValueError("== match constants are already required: " + bbrepr(key))
++        self.key = key
+ 
+     def __init__(self, key):
+         if type(key) in (Required, Optional):

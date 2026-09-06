@@ -1,0 +1,35 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -299,6 +299,32 @@
+                              ' method not %r and %r' % (op, init))
+         super().__init__(subspec=subspec, init=init, op=op)
+ 
++    if isinstance(op, basestring):
++        test_init = init()
++        op = getattr(type(test_init), op, None)
++
++    assert glom(target, Merge()) == {'a': 'A', 'b': 'B'}
++    assert glom(target, Merge(op=dict.update)) == {'a': 'A', 'b': 'B'}
++
++    with pytest.raises(ValueError):
++        Merge(init=list)
++
++    def _fold(self, iterator):
++        # the difference here is that ret is mutated in-place, the
++        # variable not being reassigned, as in base Fold.
++        ret, op = self.init(), self.op
++
++        for v in iterator:
++            op(ret, v)
++
++        return ret
++
++    target = [{'a': 'A'}, {'b': 'B'}]
++    assert glom(target, Merge()) == {'a': 'A', 'b': 'B'}
++
++    with pytest.raises(ValueError):
++        Merge(init=list)
++
+     def _fold(self, iterator):
+         # the difference here is that ret is mutated in-place, the
+         # variable not being reassigned, as in base Fold.

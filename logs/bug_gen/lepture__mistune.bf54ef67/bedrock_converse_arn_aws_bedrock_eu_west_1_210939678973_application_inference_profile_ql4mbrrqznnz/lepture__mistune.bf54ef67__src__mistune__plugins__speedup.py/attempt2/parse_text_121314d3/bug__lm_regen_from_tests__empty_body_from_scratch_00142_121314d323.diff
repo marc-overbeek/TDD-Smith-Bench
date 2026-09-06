@@ -1,0 +1,40 @@
+--- a/src/mistune/plugins/speedup.py
++++ b/src/mistune/plugins/speedup.py
+@@ -19,10 +19,34 @@
+ __all__ = ['speedup']
+ 
+ 
+-def parse_text(inline: "InlineParser", m: Match[str], state: "InlineState") -> int:
++def parse_text(inline: 'InlineParser', m: Match[str], state: 'InlineState'
++    ) ->int:
+     text = m.group(0)
+-    text = HARD_LINEBREAK_RE.sub('\n', text)
+-    inline.process_text(text, state)
++    new_pos = m.end()
++    # Check if there are any entity references in the text that need processing
++    # by falling back to the inline parser's entity handling
++    if '&' in text:
++        # Process the text through the normal inline parsing to handle entities
++        state.append_token({'type': 'text', 'raw': text})
++        return new_pos
++    state.append_token({'type': 'text', 'raw': text})
++    return new_pos
++
++def parse_text(inline: 'InlineParser', m: Match[str], state: 'InlineState'
++    ) ->int:
++    text = m.group(0)
++    if '&' in text:
++        # Split on potential entity references and let the inline parser handle them
++        # by returning a shorter match that stops before the '&'
++        pos = text.index('&')
++        if pos == 0:
++            # Start with &, just consume one character to let entity parser handle it
++            state.append_token({'type': 'text', 'raw': text[0]})
++            return m.start() + 1
++        else:
++            state.append_token({'type': 'text', 'raw': text[:pos]})
++            return m.start() + pos
++    state.append_token({'type': 'text', 'raw': text})
+     return m.end()
+ 
+ 

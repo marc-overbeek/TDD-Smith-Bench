@@ -1,0 +1,22 @@
+--- a/starlette/config.py
++++ b/starlette/config.py
+@@ -106,17 +106,8 @@
+             return self._perform_cast(key, default, cast)
+         raise KeyError(f"Config '{key}' is missing, and has no default.")
+ 
+-    def _read_file(self, file_name: str | Path) -> dict[str, str]:
+-        file_values: dict[str, str] = {}
+-        with open(file_name) as input_file:
+-            for line in input_file.readlines():
+-                line = line.strip()
+-                if "=" in line and not line.startswith("#"):
+-                    key, value = line.split("=", 1)
+-                    key = key.strip()
+-                    value = value.strip().strip("\"'")
+-                    file_values[key] = value
+-        return file_values
++    def _read_file(self, file_name: (str | Path)) ->dict[str, str]:
++        pass
+ 
+     def _perform_cast(
+         self,

@@ -1,0 +1,36 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -464,29 +464,10 @@
+     SOUTH = 180
+     WEST = 270
+ 
+-    def __init__(self, distance: Optional[float]=None, angle: Optional[float]=None,
+-                 latitude_diff: Optional[float]=None,longitude_diff: Optional[float]=None) -> None:
+-        """
+-        Version 1:
+-            Distance (in meters).
+-            angle_from_north *clockwise*.
+-            ...must be given
+-        Version 2:
+-            latitude_diff and longitude_diff
+-            ...must be given
+-        """
+-        if (distance is not None) and (angle is not None):
+-            if (latitude_diff is not None) or (longitude_diff is not None):
+-                raise Exception('No lat/lon diff if using distance and angle!')
+-            self.distance = distance
+-            self.angle_from_north = angle
+-            self.move_function = self.move_by_angle_and_distance
+-        elif (latitude_diff is not None) and (longitude_diff is not None):
+-            if (distance is not None) or (angle is not None):
+-                raise Exception('No distance/angle if using lat/lon diff!')
+-            self.latitude_diff  = latitude_diff
+-            self.longitude_diff = longitude_diff
+-            self.move_function = self.move_by_lat_lon_diff
++    def __init__(self, distance: Optional[float]=None, angle: Optional[float]=
++        None, latitude_diff: Optional[float]=None, longitude_diff: Optional[
++        float]=None) ->None:
++        pass
+ 
+     def move(self, location: Location) -> Tuple[float, float]:
+         """

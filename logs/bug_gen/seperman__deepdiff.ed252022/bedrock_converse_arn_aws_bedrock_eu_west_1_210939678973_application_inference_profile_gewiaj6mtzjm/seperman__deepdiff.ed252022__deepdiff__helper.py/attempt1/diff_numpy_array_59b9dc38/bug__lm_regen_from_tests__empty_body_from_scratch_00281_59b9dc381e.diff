@@ -1,0 +1,27 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -670,13 +670,17 @@
+ 
+ 
+ def diff_numpy_array(A, B):
+-    """
+-    Numpy Array A - B
+-    return items in A that are not in B
+-    By Divakar
+-    https://stackoverflow.com/a/52417967/1497443
+-    """
+-    return A[~np.isin(A, B)]
++    if A.shape != B.shape:
++        return {'shape': {'old': A.shape, 'new': B.shape}}
++    
++    # Check if arrays are equal
++    if np.array_equal(A, B):
++        return {}
++    
++    # For now, return a simple difference structure
++    # In a real implementation, this would be more sophisticated
++    # comparing element by element and returning indices of differences
++    return {'values': {'old': A.tolist(), 'new': B.tolist()}}
+ 
+ 
+ PYTHON_TYPE_TO_NUMPY_TYPE = {

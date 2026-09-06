@@ -1,0 +1,199 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1147,47 +1147,11 @@
+ 
+         return mod_utils.total_seconds(last.time - first.time)
+ 
+-    def get_uphill_downhill(self) -> UphillDownhill:
+-        """
+-        Calculates the uphill and downhill elevation climbs for the track
+-        segment. If elevation for some points is not found those are simply
+-        ignored.
+-
+-        Returns
+-        -------
+-        uphill_downhill: UphillDownhill named tuple
+-            uphill: float
+-                Uphill elevation climbs in meters
+-            downhill: float
+-                Downhill elevation descent in meters
+-        """
+-        if not self.points:
+-            return UphillDownhill(0, 0)
+-
+-        elevations = [point.elevation for point in self.points]
+-        uphill, downhill = mod_geo.calculate_uphill_downhill(elevations)
+-
+-        return UphillDownhill(uphill, downhill)
+-
+-    def get_elevation_extremes(self) -> MinimumMaximum:
+-        """
+-        Calculate elevation extremes of track segment
+-
+-        Returns
+-        -------
+-        min_max_elevation: MinimumMaximum named tuple
+-            minimum: float
+-                Minimum elevation in meters
+-            maximum: float
+-                Maximum elevation in meters
+-        """
+-        if not self.points:
+-            return MinimumMaximum(None, None)
+-
+-        elevations = [x.elevation for x in self.points if x.elevation is not None]
+-        if not elevations:
+-            return MinimumMaximum(None, None)
+-        return MinimumMaximum(min(elevations), max(elevations))
++    def get_uphill_downhill(self) ->UphillDownhill:
++        pass
++
++    def get_elevation_extremes(self) ->MinimumMaximum:
++        pass
+ 
+     def get_location_at(self, time: mod_datetime.datetime) -> Optional[GPXTrackPoint]:
+         """
+@@ -1773,32 +1737,8 @@
+ 
+         return result
+ 
+-    def get_uphill_downhill(self) -> UphillDownhill:
+-        """
+-        Calculates the uphill and downhill elevation climbs for the track.
+-        If elevation for some points is not found those are simply ignored.
+-
+-        Returns
+-        -------
+-        uphill_downhill: UphillDownhill named tuple
+-            uphill: float
+-                Uphill elevation climbs in meters
+-            downhill: float
+-                Downhill elevation descent in meters
+-        """
+-        if not self.segments:
+-            return UphillDownhill(0, 0)
+-
+-        uphill: float = 0
+-        downhill: float = 0
+-
+-        for track_segment in self.segments:
+-            current_uphill, current_downhill = track_segment.get_uphill_downhill()
+-
+-            uphill += current_uphill or .0
+-            downhill += current_downhill or .0
+-
+-        return UphillDownhill(uphill, downhill)
++    def get_uphill_downhill(self) ->UphillDownhill:
++        pass
+ 
+     def get_location_at(self, time: mod_datetime.datetime) -> List[GPXTrackPoint]:
+         """
+@@ -1815,34 +1755,8 @@
+ 
+         return result
+ 
+-    def get_elevation_extremes(self) -> MinimumMaximum:
+-        """
+-        Calculate elevation extremes of track
+-
+-        Returns
+-        -------
+-        min_max_elevation: MinimumMaximum named tuple
+-            minimum: float
+-                Minimum elevation in meters
+-            maximum: float
+-                Maximum elevation in meters
+-        """
+-        if not self.segments:
+-            return MinimumMaximum(None, None)
+-
+-        elevations = []
+-
+-        for track_segment in self.segments:
+-            (_min, _max) = track_segment.get_elevation_extremes()
+-            if _min is not None:
+-                elevations.append(_min)
+-            if _max is not None:
+-                elevations.append(_max)
+-
+-        if len(elevations) == 0:
+-            return MinimumMaximum(None, None)
+-
+-        return MinimumMaximum(min(elevations), max(elevations))
++    def get_elevation_extremes(self) ->MinimumMaximum:
++        pass
+ 
+     def get_center(self) -> Optional[mod_geo.Location]:
+         """
+@@ -2360,32 +2274,8 @@
+ 
+         return result
+ 
+-    def get_uphill_downhill(self) -> UphillDownhill:
+-        """
+-        Calculates the uphill and downhill elevation climbs for the gpx file.
+-        If elevation for some points is not found those are simply ignored.
+-
+-        Returns
+-        -------
+-        uphill_downhill: UphillDownhill named tuple
+-            uphill: float
+-                Uphill elevation climbs in meters
+-            downhill: float
+-                Downhill elevation descent in meters
+-        """
+-        if not self.tracks:
+-            return UphillDownhill(0, 0)
+-
+-        uphill: float = 0
+-        downhill: float = 0
+-
+-        for track in self.tracks:
+-            current_uphill, current_downhill = track.get_uphill_downhill()
+-
+-            uphill += current_uphill or 0
+-            downhill += current_downhill or 0
+-
+-        return UphillDownhill(uphill, downhill)
++    def get_uphill_downhill(self) ->UphillDownhill:
++        pass
+ 
+     def get_location_at(self, time: mod_datetime.datetime) -> List[mod_geo.Location]:
+         """
+@@ -2402,34 +2292,8 @@
+ 
+         return result
+ 
+-    def get_elevation_extremes(self) -> MinimumMaximum:
+-        """
+-        Calculate elevation extremes of GPX file
+-
+-        Returns
+-        -------
+-        min_max_elevation: MinimumMaximum named tuple
+-            minimum: float
+-                Minimum elevation in meters
+-            maximum: float
+-                Maximum elevation in meters
+-        """
+-        if not self.tracks:
+-            return MinimumMaximum(None, None)
+-
+-        elevations = []
+-
+-        for track in self.tracks:
+-            (_min, _max) = track.get_elevation_extremes()
+-            if _min is not None:
+-                elevations.append(_min)
+-            if _max is not None:
+-                elevations.append(_max)
+-
+-        if len(elevations) == 0:
+-            return MinimumMaximum(None, None)
+-
+-        return MinimumMaximum(min(elevations), max(elevations))
++    def get_elevation_extremes(self) ->MinimumMaximum:
++        pass
+ 
+     def get_points_data(self, distance_2d: bool=False) -> List[PointData]:
+         """

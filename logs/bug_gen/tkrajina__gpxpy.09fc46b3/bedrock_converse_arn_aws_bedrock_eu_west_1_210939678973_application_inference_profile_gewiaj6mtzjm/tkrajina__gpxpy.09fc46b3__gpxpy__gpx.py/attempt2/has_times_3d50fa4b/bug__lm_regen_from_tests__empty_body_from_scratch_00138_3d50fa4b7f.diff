@@ -1,0 +1,38 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1340,6 +1340,17 @@
+         self.points = new_track_points
+ 
+     def has_times(self) -> bool:
++        """ See GPXTrackSegment.has_times() """
++        if not self.segments:
++            return False
++
++        for track_segment in self.segments:
++            if track_segment.has_times():
++                return True
++
++        return False
++
++    def has_times(self) -> bool:
+         """
+         Returns if points in this segment contains timestamps.
+ 
+@@ -1357,6 +1368,17 @@
+                 found += 1
+ 
+         return len(self.points) > 2 and found / len(self.points) > .75
++
++    def has_times(self) -> bool:
++        """ See GPXTrackSegment.has_times() """
++        if not self.segments:
++            return False
++
++        for track_segment in self.segments:
++            if track_segment.has_times():
++                return True
++
++        return False
+ 
+     def has_elevations(self) -> bool:
+         """

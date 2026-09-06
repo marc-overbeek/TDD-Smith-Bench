@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef list_modules(self) ->List[str]:\n        with self.conn:\n            cur = self.conn.cursor()\n            cur.execute(\n                \"\"\"\n                        SELECT module FROM {table}\n                        GROUP BY module\n                        ORDER BY date(created_at) DESC\n                        \"\"\".format(\n                    table=self.table\n                )\n            )\n            return [row[0] for row in cur.fetchall() if row[0]]\n```",
+  "rewrite": "def list_modules(self) ->List[str]:\n        with self.conn:\n            cur = self.conn.cursor()\n            cur.execute(\n                \"\"\"\n                        SELECT module FROM {table}\n                        GROUP BY module\n                        ORDER BY date(created_at) DESC\n                        \"\"\".format(\n                    table=self.table\n                )\n            )\n            return [row[0] for row in cur.fetchall() if row[0]]",
+  "strategy": "lm_regen_from_tests"
+}

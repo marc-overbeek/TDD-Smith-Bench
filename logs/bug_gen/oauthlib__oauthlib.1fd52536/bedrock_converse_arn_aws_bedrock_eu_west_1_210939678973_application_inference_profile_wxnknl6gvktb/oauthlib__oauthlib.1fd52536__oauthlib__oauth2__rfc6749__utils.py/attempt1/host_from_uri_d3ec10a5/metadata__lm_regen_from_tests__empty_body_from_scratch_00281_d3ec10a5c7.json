@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing test `test_host_from_uri`, I need to implement a function that:\n\n1. Parses a URI to extract the hostname and port\n2. Returns a tuple of (hostname, port_as_string)\n3. Uses default ports: '80' for http, '443' for https when no port is specified\n\nHere's the implementation:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "Looking at the failing test `test_host_from_uri`, I need to implement a function that:\n\n1. Parses a URI to extract the hostname and port\n2. Returns a tuple of (hostname, port_as_string)\n3. Uses default ports: '80' for http, '443' for https when no port is specified\n\nHere's the implementation:\n\n```python\ndef host_from_uri(uri):\n    parsed = urlparse(uri)\n    hostname = parsed.hostname\n    port = parsed.port\n    \n    if port is None:\n        # Use default ports based on scheme\n        if parsed.scheme == 'https':\n            port = 443\n        else:  # default to http\n            port = 80\n    \n    return (hostname, str(port))\n```",
+  "rewrite": "def host_from_uri(uri):\n    parsed = urlparse(uri)\n    hostname = parsed.hostname\n    port = parsed.port\n    \n    if port is None:\n        # Use default ports based on scheme\n        if parsed.scheme == 'https':\n            port = 443\n        else:  # default to http\n            port = 80\n    \n    return (hostname, str(port))",
+  "strategy": "lm_regen_from_tests"
+}

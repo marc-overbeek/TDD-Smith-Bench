@@ -1,0 +1,85 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -138,56 +138,32 @@
+ 
+ def _get_item_length(item, parents_ids=frozenset([])):
+     """
+-    Get the number of operations in a diff object.
+-    It is designed mainly for the delta view output
+-    but can be used with other dictionary types of view outputs too.
+-    """
+-    length = 0
+-    if isinstance(item, Mapping):
+-        for key, subitem in item.items():
+-            # dedupe the repetition report so the number of times items have shown up does not affect the distance.
+-            if key in {'iterable_items_added_at_indexes', 'iterable_items_removed_at_indexes'}:
+-                new_subitem = dict_()
+-                for path_, indexes_to_items in subitem.items():
+-                    used_value_ids = set()
+-                    new_indexes_to_items = dict_()
+-                    for k, v in indexes_to_items.items():
+-                        v_id = id(v)
+-                        if v_id not in used_value_ids:
+-                            used_value_ids.add(v_id)
+-                            new_indexes_to_items[k] = v
+-                    new_subitem[path_] = new_indexes_to_items
+-                subitem = new_subitem
+-
+-            # internal keys such as _numpy_paths should not count towards the distance
+-            if isinstance(key, strings) and (key.startswith('_') or key == 'deep_distance' or key == 'new_path'):
+-                continue
+-
+-            item_id = id(subitem)
+-            if parents_ids and item_id in parents_ids:
+-                continue
+-            parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+-            length += _get_item_length(subitem, parents_ids_added)
+-    elif isinstance(item, numbers):
+-        length = 1
+-    elif isinstance(item, strings):
+-        length = 1
+-    elif isinstance(item, Iterable):
+-        for subitem in item:
+-            item_id = id(subitem)
+-            if parents_ids and item_id in parents_ids:
+-                continue
+-            parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+-            length += _get_item_length(subitem, parents_ids_added)
+-    elif isinstance(item, type):  # it is a class
+-        length = 1
+-    else:
+-        if hasattr(item, '__dict__'):
+-            for subitem in item.__dict__:
+-                item_id = id(subitem)
+-                parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+-                length += _get_item_length(subitem, parents_ids_added)
+-    return length
++    Get the length of an item for distance calculation.
++    This is used to calculate the rough distance between objects.
++    """
++    if item is None:
++        return 0
++    if isinstance(item, (bool, int, float, complex, str, bytes, datetime.datetime, datetime.date, datetime.timedelta, datetime.time)):
++        return 1
++    if isinstance(item, (list, tuple, set, frozenset)):
++        if id(item) in parents_ids:
++            return 0
++        parents_ids = add_to_frozen_set(parents_ids, id(item))
++        if isinstance(item, (list, tuple)):
++            return sum(_get_item_length(i, parents_ids) for i in item)
++        elif isinstance(item, (set, frozenset)):
++            return sum(_get_item_length(i, parents_ids) for i in item)
++    if isinstance(item, dict):
++        if id(item) in parents_ids:
++            return 0
++        parents_ids = add_to_frozen_set(parents_ids, id(item))
++        return sum(_get_item_length(k, parents_ids) + _get_item_length(v, parents_ids) for k, v in item.items())
++    if hasattr(item, '__dict__'):
++        if id(item) in parents_ids:
++            return 0
++        parents_ids = add_to_frozen_set(parents_ids, id(item))
++        return sum(_get_item_length(v, parents_ids) for v in item.__dict__.values())
++    return 1
+ 
+ 
+ def _get_numbers_distance(num1, num2, max_=1, use_log_scale=False, log_scale_similarity_threshold=0.1):

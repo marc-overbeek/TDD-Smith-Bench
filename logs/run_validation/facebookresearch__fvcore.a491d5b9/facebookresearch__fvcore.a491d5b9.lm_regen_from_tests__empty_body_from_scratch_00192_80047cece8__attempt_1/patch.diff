@@ -1,0 +1,21 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -297,6 +297,18 @@
+             return lambda x: self._apply(x, name)
+         return super().__getattribute__(name)
+ 
++    transforms = T.TransformList([T.ScaleTransform(0, 0, 0, 0, 0), T.
++        CropTransform(0, 0, 0, 0), T.HFlipTransform(3)])
++    self.assertEqual(transforms.apply_int(3), 2)
++    transforms = transforms + transforms  # __add__ is called here
++    transforms += transforms  # __iadd__ is called here
++    transforms = T.NoOpTransform() + transforms  # __radd__ is called here
++    self.assertEqual(len(transforms), 13)
++
++    def __add__(self, other: "TransformList") -> "TransformList":
++        others = other.transforms if isinstance(other, TransformList) else [other]
++        return TransformList(self.transforms + others)
++
+     def __add__(self, other: "TransformList") -> "TransformList":
+         """
+         Args:

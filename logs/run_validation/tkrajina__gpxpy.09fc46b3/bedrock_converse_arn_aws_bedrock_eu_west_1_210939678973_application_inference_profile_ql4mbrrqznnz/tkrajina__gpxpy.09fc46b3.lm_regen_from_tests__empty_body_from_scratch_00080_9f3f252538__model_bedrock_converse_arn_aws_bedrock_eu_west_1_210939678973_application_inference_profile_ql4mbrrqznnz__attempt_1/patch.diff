@@ -1,0 +1,51 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -178,11 +178,45 @@
+             return max(a, b)
+         return None
+ 
+-    def max_bounds(self, bounds: "GPXBounds") -> "GPXBounds":
+-        return GPXBounds(self._min(self.min_latitude, bounds.min_latitude),
++    def max_bounds(self, bounds: 'GPXBounds') ->'GPXBounds':
++        return GPXBounds(
++            self._min(self.min_latitude, bounds.min_latitude),
+             self._max(self.max_latitude, bounds.max_latitude),
+             self._min(self.min_longitude, bounds.min_longitude),
+-            self._max(self.max_longitude, bounds.max_longitude))
++            self._max(self.max_longitude, bounds.max_longitude)
++        )
++
++    def max_bounds(self, bounds: 'GPXBounds') ->'GPXBounds':
++        def _min(a, b):
++            if a is None: return b
++            if b is None: return a
++            return min(a, b)
++        def _max(a, b):
++            if a is None: return b
++            if b is None: return a
++            return max(a, b)
++        return GPXBounds(
++            _min(self.min_latitude, bounds.min_latitude),
++            _max(self.max_latitude, bounds.max_latitude),
++            _min(self.min_longitude, bounds.min_longitude),
++            _max(self.max_longitude, bounds.max_longitude)
++        )
++
++    def max_bounds(self, bounds: 'GPXBounds') ->'GPXBounds':
++        def _min(a: Optional[float], b: Optional[float]) -> Optional[float]:
++            if a is None: return b
++            if b is None: return a
++            return min(a, b)
++        def _max(a: Optional[float], b: Optional[float]) -> Optional[float]:
++            if a is None: return b
++            if b is None: return a
++            return max(a, b)
++        return GPXBounds(
++            _min(self.min_latitude, bounds.min_latitude),
++            _max(self.max_latitude, bounds.max_latitude),
++            _min(self.min_longitude, bounds.min_longitude),
++            _max(self.max_longitude, bounds.max_longitude)
++        )
+ 
+ class GPXXMLSyntaxException(GPXException):
+     """

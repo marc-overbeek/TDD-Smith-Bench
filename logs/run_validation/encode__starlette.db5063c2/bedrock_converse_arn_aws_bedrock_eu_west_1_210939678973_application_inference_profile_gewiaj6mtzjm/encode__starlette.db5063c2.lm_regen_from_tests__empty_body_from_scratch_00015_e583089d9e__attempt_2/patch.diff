@@ -1,0 +1,14 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -152,7 +152,10 @@
+         for key in keys:
+             params.pop(key, None)
+         query = urlencode(params.multi_items())
+-        return self.replace(query=query)
++        if query:
++            return self.replace(query=query)
++        else:
++            return self.replace(query="")
+ 
+     def __eq__(self, other: typing.Any) -> bool:
+         return str(self) == str(other)

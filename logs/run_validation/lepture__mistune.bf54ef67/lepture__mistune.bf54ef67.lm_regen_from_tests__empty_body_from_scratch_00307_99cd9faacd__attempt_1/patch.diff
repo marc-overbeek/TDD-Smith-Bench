@@ -1,0 +1,33 @@
+--- a/src/mistune/directives/toc.py
++++ b/src/mistune/directives/toc.py
+@@ -105,11 +105,25 @@
+     return html + content + '</details>\n'
+ 
+ 
+-def _normalize_level(options: Dict[str, Any], name: str, default: Any) -> Any:
+-    level = options.get(name)
+-    if not level:
++min_level = _normalize_level(d_options, 'min-level', self.min_level)
++max_level = _normalize_level(d_options, 'max-level', self.max_level)
++
++def _normalize_level(options: Dict[str, Any], name: str, default: Any) ->Any:
++    if name not in options:
+         return default
++    
++    value = options[name]
++    
++    # Handle empty string or None
++    if not value:
++        return default
++    
+     try:
+-        return int(level)
++        level = int(value)
+     except (ValueError, TypeError):
+-        raise ValueError(f'"{name}" option MUST be integer')
++        raise ValueError(f'"{name}" option must be an integer')
++    
++    if level < 1 or level > 6:
++        raise ValueError(f'"{name}" option must be between 1 and 6')
++    
++    return level

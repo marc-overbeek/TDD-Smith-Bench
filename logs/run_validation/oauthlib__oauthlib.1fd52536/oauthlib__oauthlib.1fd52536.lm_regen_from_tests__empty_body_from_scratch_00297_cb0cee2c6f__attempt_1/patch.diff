@@ -1,0 +1,23 @@
+--- a/oauthlib/oauth2/rfc6749/clients/base.py
++++ b/oauthlib/oauth2/rfc6749/clients/base.py
+@@ -152,8 +152,19 @@
+             'MAC': self._add_mac_token
+         }
+ 
++    def test_prepare_authorization_request(self):
++        redirect_url = 'https://example.com/callback/'
++        scopes = 'read'
++        auth_url = 'https://example.com/authorize/'
++        state = 'fake_state'
++        client = Client(self.client_id, redirect_url=redirect_url, scope=scopes,
++            state=state)
++        self.assertRaises(InsecureTransportError, client.
++            prepare_authorization_request, 'http://example.com/authorize/')
++        self.assertRaises(NotImplementedError, client.
++            prepare_authorization_request, auth_url)
++
+     def prepare_request_uri(self, *args, **kwargs):
+-        """Abstract method used to create request URIs."""
+         raise NotImplementedError("Must be implemented by inheriting classes.")
+ 
+     def prepare_request_body(self, *args, **kwargs):

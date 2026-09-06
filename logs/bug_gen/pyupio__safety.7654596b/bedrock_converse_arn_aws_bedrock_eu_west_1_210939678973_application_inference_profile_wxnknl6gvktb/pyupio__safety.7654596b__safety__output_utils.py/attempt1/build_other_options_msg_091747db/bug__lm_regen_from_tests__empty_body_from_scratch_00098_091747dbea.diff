@@ -1,0 +1,59 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -350,36 +350,28 @@
+     return f'{msg} {link}'
+ 
+ 
+-def build_other_options_msg(fix_version: Optional[str], is_spec: bool, secure_options: List[str]) -> str:
+-    """
+-    Build the message for other secure options.
+-
+-    Args:
+-        fix_version (Optional[str]): The recommended fix version.
+-        is_spec (bool): Whether the package is specified.
+-        secure_options (List[str]): List of secure options.
+-
+-    Returns:
+-        str: The message for other secure options.
+-    """
+-    other_options_msg = ''
+-    raw_pre_other_options = ''
+-    outside = ''
+-
+-    if fix_version:
+-        raw_pre_other_options = 'other '
+-    elif is_spec:
+-        outside = 'outside of your current specified range '
+-
+-    if secure_options:
++other_options_msg = build_other_options_msg(fix_version=fix_version, is_spec=is_spec,
++                                            secure_options=secure_options)
++
++other_options_msg = build_other_options_msg(fix_version=remediation.get("recommended_version"), is_spec=True,
++                                            secure_options=secure_options)
++
++def build_other_options_msg(fix_version: Optional[str], is_spec: bool,
++    secure_options: List[str]) ->str:
++    if not secure_options:
++        return ''
++    
++    options_str = ', '.join(secure_options)
++    
++    if is_spec:
++        # For unpinned/spec case
+         if len(secure_options) == 1:
+-            raw_pre_other_options += f'version without known vulnerabilities {outside}is'
++            return f'Other version without known vulnerabilities is {options_str}'
+         else:
+-            raw_pre_other_options += f'versions without known vulnerabilities {outside}are:'
+-
+-        other_options_msg = f"{raw_pre_other_options} {', '.join(secure_options)}".capitalize()
+-
+-    return other_options_msg
++            return f'Other versions without known vulnerabilities are: {options_str}'
++    else:
++        # For pinned case
++        return f'Other versions without known vulnerabilities are: {options_str}'
+ 
+ 
+ def build_remediation_section(remediations: Dict[str, Any], only_text: bool = False, columns: int = get_terminal_size().columns, kwargs: Optional[Dict[str, Any]] = None) -> List[str]:

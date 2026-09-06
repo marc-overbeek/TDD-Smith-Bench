@@ -1,0 +1,222 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -107,52 +107,59 @@
+     return qualname.split(".")[0]
+ 
+ 
+-def get_imports_for_annotation(anno: Any) -> ImportMap:
+-    """Return the imports (module, name) needed for the type in the annotation"""
++def get_imports_for_annotation(anno: Any) ->ImportMap:
+     imports = ImportMap()
+-    if (
+-        anno is inspect.Parameter.empty
+-        or anno is inspect.Signature.empty
+-        or not (
+-            isinstance(anno, type) or is_any(anno) or is_union(anno) or is_generic(anno)
+-        )
+-        or anno.__module__ == "builtins"
+-    ):
++    if is_forward_ref(anno):
++        # Forward references are not imported
+         return imports
+     if is_any(anno):
+         imports["typing"].add("Any")
+-    elif _is_optional(anno):
+-        imports["typing"].add("Optional")
+-        elem_type = _get_optional_elem(anno)
+-        elem_imports = get_imports_for_annotation(elem_type)
+-        imports.merge(elem_imports)
+-    elif is_generic(anno):
+-        if is_union(anno):
+-            imports["typing"].add("Union")
++        return imports
++    if is_union(anno):
++        if _is_optional(anno):
++            elem_type = _get_optional_elem(anno)
++            imports.merge(get_imports_for_annotation(elem_type))
+         else:
+-            imports[anno.__module__].add(
+-                _get_import_for_qualname(qualname_of_generic(anno))
+-            )
+-        elem_types = getattr(anno, "__args__", None) or []
+-        for et in elem_types:
+-            elem_imports = get_imports_for_annotation(et)
+-            imports.merge(elem_imports)
+-    else:
+-        name = _get_import_for_qualname(anno.__qualname__)
+-        imports[anno.__module__].add(name)
++            for arg in anno.__args__:
++                imports.merge(get_imports_for_annotation(arg))
++        return imports
++    if hasattr(anno, "__module__") and anno.__module__ is not None:
++        if anno.__module__ == "builtins":
++            return imports
++        if anno.__module__ == "typing":
++            imports["typing"].add(anno.__name__)
++            return imports
++        if hasattr(anno, "__origin__") and anno.__origin__ is not None:
++            # Handle generic types like List, Dict, etc.
++            origin = anno.__origin__
++            if hasattr(origin, "__module__"):
++                imports[origin.__module__].add(origin.__name__)
++            for arg in getattr(anno, "__args__", []):
++                imports.merge(get_imports_for_annotation(arg))
++            return imports
++        # For user-defined classes
++        imports[anno.__module__].add(_get_import_for_qualname(anno.__qualname__))
++        return imports
++    if isinstance(anno, type):
++        # Handle regular types
++        if anno.__module__ == "builtins":
++            return imports
++        imports[anno.__module__].add(_get_import_for_qualname(anno.__qualname__))
++        return imports
++    if isinstance(anno, str):
++        # Handle string annotations (forward references)
++        return imports
++    # Fallback for other cases
+     return imports
+ 
+ 
+-def get_imports_for_signature(sig: inspect.Signature) -> ImportMap:
+-    """Return the imports (module, name) needed for all types in annotations"""
++def get_imports_for_signature(sig: inspect.Signature) ->ImportMap:
+     imports = ImportMap()
+     for param in sig.parameters.values():
+-        param_imports = get_imports_for_annotation(param.annotation)
+-        if not _is_optional(param.annotation) and param.default is None:
+-            imports["typing"].add("Optional")
+-        imports.merge(param_imports)
+-    return_imports = get_imports_for_annotation(sig.return_annotation)
+-    imports.merge(return_imports)
++        if param.annotation is not inspect.Parameter.empty:
++            imports.merge(get_imports_for_annotation(param.annotation))
++    if sig.return_annotation is not inspect.Signature.empty:
++        imports.merge(get_imports_for_annotation(sig.return_annotation))
+     return imports
+ 
+ 
+@@ -283,11 +290,7 @@
+         return "ImportBlockStub(%s)" % (repr(self.imports),)
+ 
+ 
+-def _is_optional(anno: Any) -> bool:
+-    """Is the supplied annotation an instance of the 'virtual' Optional type?
+-
+-    Optional isn't really a type. It's an alias to Union[T, NoneType]
+-    """
++def _is_optional(anno: Any) ->bool:
+     return is_union(anno) and NoneType in anno.__args__
+ 
+ 
+@@ -668,13 +671,10 @@
+ 
+ 
+ class ModuleStub(Stub):
+-    def __init__(
+-        self,
+-        function_stubs: Optional[Iterable[FunctionStub]] = None,
+-        class_stubs: Optional[Iterable[ClassStub]] = None,
+-        imports_stub: Optional[ImportBlockStub] = None,
+-        typed_dict_class_stubs: Optional[Iterable[ClassStub]] = None,
+-    ) -> None:
++    def __init__(self, function_stubs: Optional[Iterable[FunctionStub]]=None,
++        class_stubs: Optional[Iterable[ClassStub]]=None, imports_stub: Optional
++        [ImportBlockStub]=None, typed_dict_class_stubs: Optional[Iterable[
++        ClassStub]]=None) ->None:
+         self.function_stubs: Dict[str, FunctionStub] = {}
+         if function_stubs is not None:
+             self.function_stubs = {stub.name: stub for stub in function_stubs}
+@@ -717,15 +717,9 @@
+         FunctionKind.DJANGO_CACHED_PROPERTY,
+     }
+ 
+-    def __init__(
+-        self,
+-        module: str,
+-        qualname: str,
+-        kind: FunctionKind,
+-        sig: inspect.Signature,
+-        is_async: bool = False,
+-        typed_dict_class_stubs: Optional[Iterable[ClassStub]] = None,
+-    ) -> None:
++    def __init__(self, module: str, qualname: str, kind: FunctionKind, sig:
++        inspect.Signature, is_async: bool=False, typed_dict_class_stubs:
++        Optional[Iterable[ClassStub]]=None) ->None:
+         self.module = module
+         self.qualname = qualname
+         self.kind = kind
+@@ -838,41 +832,40 @@
+     )
+ 
+ 
+-def build_module_stubs(entries: Iterable[FunctionDefinition]) -> Dict[str, ModuleStub]:
+-    """Given an iterable of function definitions, build the corresponding stubs"""
+-    mod_stubs: Dict[str, ModuleStub] = {}
++def build_module_stubs(entries: Iterable[FunctionDefinition]) ->Dict[str,
++    ModuleStub]:
++    modules: Dict[str, ModuleStub] = {}
+     for entry in entries:
+-        path = entry.qualname.split(".")
+-        name = path.pop()
+-        class_path = path
+-        # TODO: Handle nested classes
+-        klass = None
+-        if len(class_path) > 0:
+-            klass = ".".join(class_path)
+-        if entry.module not in mod_stubs:
+-            mod_stubs[entry.module] = ModuleStub()
+-        mod_stub = mod_stubs[entry.module]
+-        imports = get_imports_for_signature(entry.signature)
+-        # Import TypedDict, if needed.
+-        if entry.typed_dict_class_stubs:
+-            imports["mypy_extensions"].add("TypedDict")
+-        func_stub = FunctionStub(
+-            name, entry.signature, entry.kind, list(imports.keys()), entry.is_async
+-        )
+-        # Don't need to import anything from the same module
+-        imports.pop(entry.module, None)
+-        mod_stub.imports_stub.imports.merge(imports)
+-        if klass is not None:
+-            if klass not in mod_stub.class_stubs:
+-                mod_stub.class_stubs[klass] = ClassStub(klass)
+-            class_stub = mod_stub.class_stubs[klass]
+-            class_stub.function_stubs[func_stub.name] = func_stub
++        module_name = entry.module
++        if module_name not in modules:
++            modules[module_name] = ModuleStub()
++        module = modules[module_name]
++        if entry.kind == FunctionKind.MODULE:
++            module.function_stubs[entry.qualname] = FunctionStub(
++                entry.qualname,
++                entry.signature,
++                entry.kind,
++                strip_modules=entry.signature.parameters.keys(),
++                is_async=entry.is_async,
++            )
+         else:
+-            mod_stub.function_stubs[func_stub.name] = func_stub
+-
+-        mod_stub.typed_dict_class_stubs.extend(entry.typed_dict_class_stubs)
+-
+-    return mod_stubs
++            # For class methods, instance methods, etc., we need to create or update class stubs
++            class_name = entry.qualname.split(".")[-2] if "." in entry.qualname else None
++            if class_name:
++                if class_name not in module.class_stubs:
++                    module.class_stubs[class_name] = ClassStub(class_name)
++                class_stub = module.class_stubs[class_name]
++                class_stub.function_stubs[entry.qualname.split(".")[-1]] = FunctionStub(
++                    entry.qualname.split(".")[-1],
++                    entry.signature,
++                    entry.kind,
++                    strip_modules=entry.signature.parameters.keys(),
++                    is_async=entry.is_async,
++                )
++        # Add typed dict class stubs
++        for stub in entry.typed_dict_class_stubs:
++            module.typed_dict_class_stubs.append(stub)
++    return modules
+ 
+ 
+ def build_module_stubs_from_traces(

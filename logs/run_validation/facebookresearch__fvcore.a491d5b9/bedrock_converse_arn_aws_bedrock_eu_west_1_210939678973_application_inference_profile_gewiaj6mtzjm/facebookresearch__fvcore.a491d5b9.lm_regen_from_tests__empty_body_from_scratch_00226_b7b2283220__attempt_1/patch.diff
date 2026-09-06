@@ -1,0 +1,19 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -733,7 +733,15 @@
+                 # the end. So we remove it. This is tested by
+                 # `tests/test_data_transform.py`
+                 cropped_polygons.append(coords[:-1])
+-        return [self.apply_coords(p) for p in cropped_polygons]
++    
++        # Apply coordinate transformation to all cropped polygons
++        result = []
++        for p in cropped_polygons:
++            transformed = self.apply_coords(p)
++            # Only add if the transformed polygon is valid (has enough points)
++            if len(transformed) >= 3:
++                result.append(transformed)
++        return result
+ 
+     def inverse(self) -> Transform:
+         assert (

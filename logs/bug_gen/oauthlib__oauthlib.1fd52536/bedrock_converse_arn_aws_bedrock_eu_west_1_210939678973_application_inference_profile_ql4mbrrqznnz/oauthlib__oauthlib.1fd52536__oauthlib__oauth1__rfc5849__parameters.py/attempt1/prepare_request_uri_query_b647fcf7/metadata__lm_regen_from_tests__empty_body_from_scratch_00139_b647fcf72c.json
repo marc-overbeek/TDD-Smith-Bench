@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef prepare_request_uri_query(oauth_params, uri):\n    \"\"\"Prepare the Request URI Query.\n\n    Per `section 3.5.3`_ of the spec.\n\n    .. _`section 3.5.3`: https://tools.ietf.org/html/rfc5849#section-3.5.3\n\n    \"\"\"\n    # parse the URI\n    sch, net, path, par, query, fra = urlparse(uri)\n    \n    # extract existing query parameters\n    existing_params = extract_params(query) or []\n    \n    # append OAuth params to existing params\n    merged = _append_params(oauth_params, existing_params)\n    \n    # encode the merged params back into a query string\n    new_query = urlencode(merged)\n    \n    # reconstruct the URI with the new query string\n    return urlunparse((sch, net, path, par, new_query, fra))\n```",
+  "rewrite": "def prepare_request_uri_query(oauth_params, uri):\n    \"\"\"Prepare the Request URI Query.\n\n    Per `section 3.5.3`_ of the spec.\n\n    .. _`section 3.5.3`: https://tools.ietf.org/html/rfc5849#section-3.5.3\n\n    \"\"\"\n    # parse the URI\n    sch, net, path, par, query, fra = urlparse(uri)\n    \n    # extract existing query parameters\n    existing_params = extract_params(query) or []\n    \n    # append OAuth params to existing params\n    merged = _append_params(oauth_params, existing_params)\n    \n    # encode the merged params back into a query string\n    new_query = urlencode(merged)\n    \n    # reconstruct the URI with the new query string\n    return urlunparse((sch, net, path, par, new_query, fra))",
+  "strategy": "lm_regen_from_tests"
+}

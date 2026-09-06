@@ -1,0 +1,38 @@
+--- a/safety/scan/finder/file_finder.py
++++ b/safety/scan/finder/file_finder.py
+@@ -12,33 +12,8 @@
+ 
+ LOG = logging.getLogger(__name__)
+ 
+-def should_exclude(excludes: Set[Path], to_analyze: Path) -> bool:
+-    """
+-    Determines whether a given path should be excluded based on the provided exclusion set.
+-
+-    Args:
+-        excludes (Set[Path]): Set of paths to exclude.
+-        to_analyze (Path): The path to analyze.
+-
+-    Returns:
+-        bool: True if the path should be excluded, False otherwise.
+-    """
+-
+-    if not to_analyze.is_absolute():
+-        to_analyze = to_analyze.resolve()
+-
+-    for exclude in excludes:
+-        if not exclude.is_absolute():
+-            exclude = exclude.resolve()
+-
+-        try:
+-            if to_analyze == exclude or \
+-                to_analyze.relative_to(exclude):
+-                return True
+-        except ValueError:
+-            pass
+-
+-    return False
++def should_exclude(excludes: Set[Path], to_analyze: Path) ->bool:
++    pass
+ 
+ 
+ class FileFinder():

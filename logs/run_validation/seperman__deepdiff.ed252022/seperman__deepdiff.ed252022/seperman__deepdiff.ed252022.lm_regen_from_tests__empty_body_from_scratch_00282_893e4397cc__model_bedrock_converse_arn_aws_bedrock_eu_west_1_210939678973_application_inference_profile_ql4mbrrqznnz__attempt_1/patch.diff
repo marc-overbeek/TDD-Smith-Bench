@@ -1,0 +1,31 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -687,18 +687,16 @@
+ 
+ 
+ def get_homogeneous_numpy_compatible_type_of_seq(seq):
+-    """
+-    Return with the numpy dtype if the array can be converted to a non-object numpy array.
+-    Originally written by mgilson https://stackoverflow.com/a/13252348/1497443
+-    This is the modified version.
+-    """
+-    iseq = iter(seq)
+-    first_type = type(next(iseq))
+-    if first_type in {int, float, Decimal}:
+-        type_ = first_type if all((type(x) is first_type) for x in iseq) else False
+-        return PYTHON_TYPE_TO_NUMPY_TYPE.get(type_, False)
+-    else:
+-        return False
++    if not seq:
++        return None
++    type_of_first = type(seq[0])
++    numpy_type = PYTHON_TYPE_TO_NUMPY_TYPE.get(type_of_first)
++    if numpy_type is None:
++        return None
++    for item in seq[1:]:
++        if type(item) is not type_of_first:
++            return None
++    return numpy_type
+ 
+ 
+ def detailed__dict__(obj, ignore_private_variables=True, ignore_keys=frozenset(), include_keys=None):

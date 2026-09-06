@@ -1,0 +1,56 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1908,14 +1908,49 @@
+         return mod_copy.deepcopy(self)
+ 
+ 
++    def get_nearest_location(self, location: mod_geo.Location) -> Optional[NearestLocationData]:
++        """ Returns (location, track_no, track_segment_no, track_point_no) for the
++        nearest location on map """
++        return min((NearestLocationData(pt, tr, seg, pt_no) for (pt,tr, seg, pt_no) in self.walk()) # type:ignore
++                   ,key=lambda x: x.location.distance_2d(location) if x is not None else mod_math.inf
++                   ,default=None)
++
++    def walk(self, only_points: bool=False) -> Iterator[Any]:
++        for track_no, track in enumerate(self.tracks if self.tracks else [] ):
++            for segment_no, segment in enumerate(track.segments if track.segments else []):
++                for point_no, point in enumerate(segment.points if segment.points else []):
++                    if only_points:
++                        yield point
++                    else:
++                        yield point, track_no, segment_no, point_no
++
+     def __repr__(self) -> str:
+         parts = []
+-        for attribute in 'name', 'description', 'number':
++        for attribute in 'waypoints', 'routes', 'tracks':
+             value = getattr(self, attribute)
+-            if value is not None:
++            if value:
+                 parts.append(f'{attribute}={value!r}')
+-        parts.append(f'segments={self.segments!r}')
+-        return f'GPXTrack({", ".join(parts)})'
++        return f'GPX({", ".join(parts)})'
++
++    for track_no, track in enumerate(self.tracks if self.tracks else [] ):
++
++    def __repr__(self) -> str:
++        parts = []
++        for attribute in 'waypoints', 'routes', 'tracks':
++            value = getattr(self, attribute)
++            if value:
++                parts.append(f'{attribute}={value!r}')
++        return f'GPX({", ".join(parts)})'
++
++    for track_no, track in enumerate(self.tracks if self.tracks else [] ):
++
++    def __repr__(self) -> str:
++        parts = []
++        for attribute in 'waypoints', 'routes', 'tracks':
++            value = getattr(self, attribute, None)
++            if value is not None and value != []:
++                parts.append(f'{attribute}={value!r}')
++        return f'GPX({", ".join(parts)})'
+ 
+ 
+ class GPX:

@@ -1,0 +1,41 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -228,15 +228,31 @@
+     return stack
+ 
+ 
++fmt_width = width - len(pre)
++return lambda v: pre + _format_trace_value(v, fmt_width)
++
+ def _format_trace_value(value, maxlen):
+-    s = bbrepr(value).replace("\\'", "'")
+-    if len(s) > maxlen:
++    val_repr = bbrepr(value)
++    if len(val_repr) <= maxlen:
++        return val_repr
++    
++    # Try to add length hint for sized objects (but not strings)
++    if isinstance(value, (list, dict, tuple, set, frozenset)) and not isinstance(value, str):
+         try:
+-            suffix = '... (len=%s)' % len(value)
+-        except Exception:
+-            suffix = '...'
+-        s = s[:maxlen - len(suffix)] + suffix
+-    return s
++            length = len(value)
++            # Truncate the repr and add (len=N)
++            suffix = f'... (len={length})'
++            available = maxlen - len(suffix)
++            if available > 0:
++                return val_repr[:available] + suffix
++            return val_repr[:maxlen]
++        except (TypeError, AttributeError):
++            pass
++    
++    # For other types, just truncate with ...
++    if maxlen > 3:
++        return val_repr[:maxlen - 3] + '...'
++    return val_repr[:maxlen]
+ 
+ 
+ def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0, prev_target=_MISSING, last_branch=True):

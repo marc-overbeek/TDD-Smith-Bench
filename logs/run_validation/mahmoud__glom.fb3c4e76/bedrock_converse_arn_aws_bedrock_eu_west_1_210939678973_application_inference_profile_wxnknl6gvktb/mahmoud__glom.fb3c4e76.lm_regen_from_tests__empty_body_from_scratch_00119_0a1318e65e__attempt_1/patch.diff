@@ -1,0 +1,23 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1878,8 +1878,19 @@
+     def __init__(self, spec=None):
+         self.spec = spec
+ 
++    def glom(self, target, **kw):
++        scope = dict(self.scope)
++        scope.update(kw.get('scope', {}))
++        kw['scope'] = ChainMap(scope)
++        glom_ = scope.get(glom, glom)
++        return glom_(target, self.spec, **kw)
++
+     def glomit(self, target, scope):
+-        scope[MODE] = AUTO
++        # ... uses scope[glom] to recursively call glom
++        ret = scope[glom](target, subspec, scope)
++
++    def glomit(self, target, scope):
++        scope.update(self.scope)
+         return scope[glom](target, self.spec, scope)
+ 
+     def __repr__(self):

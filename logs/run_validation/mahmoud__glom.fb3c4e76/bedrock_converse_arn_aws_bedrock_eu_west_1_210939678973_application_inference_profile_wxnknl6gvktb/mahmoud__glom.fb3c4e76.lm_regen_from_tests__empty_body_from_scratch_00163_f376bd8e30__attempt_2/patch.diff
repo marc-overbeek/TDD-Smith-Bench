@@ -1,0 +1,17 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -318,6 +318,14 @@
+         self.op(acc, target)
+         return acc
+ 
++    def _agg(self, target, tree):
++        if self not in tree:
++            acc = tree[self] = self.init()
++        else:
++            acc = tree[self]
++        self.op(acc, target)
++        return acc
++
+ 
+ def merge(target, **kwargs):
+     """By default, ``merge()`` turns an iterable of mappings into a

@@ -1,0 +1,85 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -975,78 +975,10 @@
+     return fixes
+ 
+ 
+-def process_fixes_scan(
+-    file_to_fix: SafetyPolicyFile,
+-    to_fix_spec: List[SafetyRequirement],
+-    auto_remediation_limit: List[str],
+-    output: str,
+-    no_output: bool = True,
+-    prompt: bool = False
+-) -> List[Fix]:
+-    """
+-    Processes the fixes for the given file and specifications in scan mode.
+-
+-    Args:
+-        file_to_fix (SafetyPolicyFile): The file to fix.
+-        to_fix_spec (List[SafetyRequirement]): The specifications to fix.
+-        auto_remediation_limit (List[str]): The automatic remediation limits.
+-        output (str): The output format.
+-        no_output (bool): Whether to suppress output.
+-        prompt (bool): Whether to prompt for confirmation.
+-
+-    Returns:
+-        List[Fix]: The list of applied fixes.
+-    """
+-    to_fix_remediations =  []
+-
+-    def get_remmediation_from(spec):
+-        upper = None
+-        lower = None
+-        recommended = None
+-
+-        try:
+-            upper = Version(spec.remediation.closest_secure.upper) if spec.remediation.closest_secure.upper else None
+-        except Exception as e:
+-            LOG.error(f'Error getting upper remediation version, ignoring', exc_info=True)
+-
+-        try:
+-            lower = Version(spec.remediation.closest_secure.lower) if spec.remediation.closest_secure.lower else None
+-        except Exception as e:
+-            LOG.error(f'Error getting lower remediation version, ignoring', exc_info=True)
+-
+-        try:
+-            recommended = Version(spec.remediation.recommended)
+-        except Exception as e:
+-            LOG.error(f'Error getting recommended version for remediation, ignoring', exc_info=True)
+-
+-        return {
+-            "vulnerabilities_found": spec.remediation.vulnerabilities_found,
+-            "version": next(iter(spec.specifier)).version if spec.is_pinned() else None,
+-            "requirement": spec,
+-            "more_info_url": spec.remediation.more_info_url,
+-            "closest_secure_version": {
+-                'upper': upper,
+-                'lower': lower
+-                },
+-            "recommended_version": recommended,
+-            "other_recommended_versions": spec.remediation.other_recommended
+-        }
+-
+-    req_remediations = iter(get_remmediation_from(spec) for spec in to_fix_spec)
+-    SUPPORTED_FILE_TYPES = [FileType.REQUIREMENTS_TXT]
+-
+-    if file_to_fix.file_type in SUPPORTED_FILE_TYPES:
+-        files = (open(file_to_fix.location),)
+-        requirements = compute_fixes_per_requirements(files, req_remediations, auto_remediation_limit, prompt=prompt)
+-    else:
+-        requirements = {
+-            'files': {str(file_to_fix.location): {'content': None, 'fixes': {'TO_SKIP': [], 'TO_APPLY': [], 'TO_CONFIRM': []}, 'supported': False, 'filename': file_to_fix.location.name}},
+-            'dependencies': defaultdict(dict),
+-        }
+-
+-    fixes = apply_fixes(requirements, output, no_output, prompt, scan_flow=True, auto_remediation_limit=auto_remediation_limit)
+-
+-    return fixes
++def process_fixes_scan(file_to_fix: SafetyPolicyFile, to_fix_spec: List[
++    SafetyRequirement], auto_remediation_limit: List[str], output: str,
++    no_output: bool=True, prompt: bool=False) ->List[Fix]:
++    pass
+ 
+ 
+ def compute_fixes_per_requirements(

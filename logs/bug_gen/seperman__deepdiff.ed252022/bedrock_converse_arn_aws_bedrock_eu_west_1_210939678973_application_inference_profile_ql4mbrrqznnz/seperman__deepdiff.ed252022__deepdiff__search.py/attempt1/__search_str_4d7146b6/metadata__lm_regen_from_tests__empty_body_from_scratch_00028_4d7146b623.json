@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef __search_str(self, obj, item, parent):\n    \"\"\"Compare strings\"\"\"\n    obj_text = obj if self.case_sensitive else obj.lower()\n\n    is_matched = False\n    if self.use_regexp:\n        is_matched = item.search(obj_text)\n    elif (self.match_string and item == obj_text) or (not self.match_string and item in obj_text):\n        is_matched = True\n    if is_matched:\n        self.__report(report_key='matched_values', key=parent, value=obj)\n```",
+  "rewrite": "def __search_str(self, obj, item, parent):\n    \"\"\"Compare strings\"\"\"\n    obj_text = obj if self.case_sensitive else obj.lower()\n\n    is_matched = False\n    if self.use_regexp:\n        is_matched = item.search(obj_text)\n    elif (self.match_string and item == obj_text) or (not self.match_string and item in obj_text):\n        is_matched = True\n    if is_matched:\n        self.__report(report_key='matched_values', key=parent, value=obj)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

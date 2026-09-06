@@ -1,0 +1,33 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -27,17 +27,19 @@
+ LOG = logging.getLogger(__name__)
+ 
+ 
+-def is_a_remote_mirror(mirror: str) -> bool:
+-    """
+-    Check if a mirror URL is remote.
+-
+-    Args:
+-        mirror (str): The mirror URL.
+-
+-    Returns:
+-        bool: True if the mirror URL is remote, False otherwise.
+-    """
+-    return mirror.startswith("http://") or mirror.startswith("https://")
++def is_a_remote_mirror(mirror: str) ->bool:
++    if not mirror:
++        return False
++    # Check if it's a URL (remote) by looking for common URL schemes
++    if mirror.startswith(('http://', 'https://')):
++        return True
++    # Check if it's a file path (local) - this is a simplified check
++    if mirror.startswith('/') or mirror.startswith('./') or mirror.startswith('../'):
++        return False
++    # If it doesn't start with a scheme or local path indicators, assume it's remote
++    # This handles cases like 'https://example.com/db.json' or just 'db.json' 
++    # but we want to distinguish between local files and remote URLs
++    return True
+ 
+ 
+ def is_supported_by_parser(path: str) -> bool:

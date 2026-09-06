@@ -1,0 +1,37 @@
+--- a/safety/auth/server.py
++++ b/safety/auth/server.py
+@@ -123,32 +123,8 @@
+ 
+         self.do_redirect(location=CLI_LOGOUT_SUCCESS, params={})
+ 
+-    def do_GET(self) -> None:
+-        """
+-        Handle GET requests.
+-        """
+-        query = urllib.parse.urlparse(self.path).query
+-        params = urllib.parse.parse_qs(query)
+-        callback_type: Optional[str] = None
+-
+-        try:
+-            c_type = params.get('type', [])
+-            if isinstance(c_type, list) and len(c_type) == 1 and isinstance(c_type[0], str):
+-                callback_type = c_type[0]
+-        except Exception:
+-            click.secho("Unable to process the callback, try again.")
+-            return
+-
+-        if callback_type == 'logout':
+-            self.logout()
+-            return
+-
+-        code = params.get('code', [''])[0]
+-        state = params.get('state', [''])[0]
+-        err = params.get('error', [''])[0]
+-        error_description = params.get('error_description', [''])[0]
+-
+-        self.auth(code=code, state=state, err=err, error_description=error_description)
++    def do_GET(self) ->None:
++        pass
+ 
+     def do_redirect(self, location: str, params: Dict) -> None:
+         """

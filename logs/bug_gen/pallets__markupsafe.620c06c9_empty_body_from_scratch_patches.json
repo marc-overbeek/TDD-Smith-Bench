@@ -1,0 +1,292 @@
+[
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00000_128820d040",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/setup.py\n+++ b/setup.py\n@@ -38,10 +38,7 @@\n \n \n def run_setup(with_binary):\n-    setup(\n-        cmdclass={\"build_ext\": ve_build_ext},\n-        ext_modules=ext_modules if with_binary else [],\n-    )\n+    pass\n \n \n def show_message(*lines):\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00001_b68dbc86ec",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/setup.py\n+++ b/setup.py\n@@ -45,10 +45,7 @@\n \n \n def show_message(*lines):\n-    print(\"=\" * 74)\n-    for line in lines:\n-        print(line)\n-    print(\"=\" * 74)\n+    pass\n \n \n supports_speedups = platform.python_implementation() not in {\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00002_547304f04e",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/setup.py\n+++ b/setup.py\n@@ -20,10 +20,7 @@\n     \"\"\"This class allows C extension building to fail.\"\"\"\n \n     def run(self):\n-        try:\n-            super().run()\n-        except PlatformError as e:\n-            raise BuildFailed() from e\n+        pass\n \n     def build_extension(self, ext):\n         try:\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00003_2cc9e5c632",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/setup.py\n+++ b/setup.py\n@@ -26,15 +26,7 @@\n             raise BuildFailed() from e\n \n     def build_extension(self, ext):\n-        try:\n-            super().build_extension(ext)\n-        except (CCompilerError, ExecError, PlatformError) as e:\n-            raise BuildFailed() from e\n-        except ValueError as e:\n-            # this can happen on Windows 64 bit, see Python issue 7511\n-            if \"'path'\" in str(sys.exc_info()[1]):  # works with Python 2 and 3\n-                raise BuildFailed() from e\n-            raise\n+        pass\n \n \n def run_setup(with_binary):\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00004_1e11103ee1",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -21,28 +21,8 @@\n     def __call__(self, s: t.Any, /) -> Markup: ...\n \n \n-def escape(s: t.Any, /) -> Markup:\n-    \"\"\"Replace the characters ``&``, ``<``, ``>``, ``'``, and ``\"`` in\n-    the string with HTML-safe sequences. Use this if you need to display\n-    text that might contain such characters in HTML.\n-\n-    If the object has an ``__html__`` method, it is called and the\n-    return value is assumed to already be safe for HTML.\n-\n-    :param s: An object to be converted to a string and escaped.\n-    :return: A :class:`Markup` string with the escaped text.\n-    \"\"\"\n-    # If the object is already a plain string, skip __html__ check and string\n-    # conversion. This is the most common use case.\n-    # Use type(s) instead of s.__class__ because a proxy object may be reporting\n-    # the __class__ of the proxied value.\n-    if type(s) is str:\n-        return Markup(_escape_inner(s))\n-\n-    if hasattr(s, \"__html__\"):\n-        return Markup(s.__html__())\n-\n-    return Markup(_escape_inner(str(s)))\n+def escape(s: t.Any, /) ->Markup:\n+    pass\n \n \n def escape_silent(s: t.Any | None, /) -> Markup:\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00005_9f2b45902c",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -45,20 +45,8 @@\n     return Markup(_escape_inner(str(s)))\n \n \n-def escape_silent(s: t.Any | None, /) -> Markup:\n-    \"\"\"Like :func:`escape` but treats ``None`` as the empty string.\n-    Useful with optional values, as otherwise you get the string\n-    ``'None'`` when the value is ``None``.\n-\n-    >>> escape(None)\n-    Markup('None')\n-    >>> escape_silent(None)\n-    Markup('')\n-    \"\"\"\n-    if s is None:\n-        return Markup()\n-\n-    return escape(s)\n+def escape_silent(s: (t.Any | None), /) ->Markup:\n+    pass\n \n \n def soft_str(s: t.Any, /) -> str:\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00006_21603a0609",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -61,24 +61,8 @@\n     return escape(s)\n \n \n-def soft_str(s: t.Any, /) -> str:\n-    \"\"\"Convert an object to a string if it isn't already. This preserves\n-    a :class:`Markup` string rather than converting it back to a basic\n-    string, so it will still be marked as safe and won't be escaped\n-    again.\n-\n-    >>> value = escape(\"<User 1>\")\n-    >>> value\n-    Markup('&lt;User 1&gt;')\n-    >>> escape(str(value))\n-    Markup('&amp;lt;User 1&amp;gt;')\n-    >>> escape(soft_str(value))\n-    Markup('&lt;User 1&gt;')\n-    \"\"\"\n-    if not isinstance(s, str):\n-        return str(s)\n-\n-    return s\n+def soft_str(s: t.Any, /) ->str:\n+    pass\n \n \n class Markup(str):\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00007_c943245511",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -379,17 +379,5 @@\n         return float(self.obj)\n \n \n-def __getattr__(name: str) -> t.Any:\n-    if name == \"__version__\":\n-        import importlib.metadata\n-        import warnings\n-\n-        warnings.warn(\n-            \"The '__version__' attribute is deprecated and will be removed in\"\n-            \" MarkupSafe 3.1. Use feature detection, or\"\n-            ' `importlib.metadata.version(\"markupsafe\")`, instead.',\n-            stacklevel=2,\n-        )\n-        return importlib.metadata.version(\"markupsafe\")\n-\n-    raise AttributeError(name)\n+def __getattr__(name: str) ->t.Any:\n+    pass\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00008_a18538773f",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -14,7 +14,8 @@\n \n \n class _HasHTML(t.Protocol):\n-    def __html__(self, /) -> str: ...\n+    def __html__(self, /) ->str:\n+        pass\n \n \n class _TPEscape(t.Protocol):\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00009_f1cab5244e",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -18,7 +18,8 @@\n \n \n class _TPEscape(t.Protocol):\n-    def __call__(self, s: t.Any, /) -> Markup: ...\n+    def __call__(self, s: t.Any, /) ->Markup:\n+        pass\n \n \n def escape(s: t.Any, /) -> Markup:\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00010_86779673d3",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -119,16 +119,9 @@\n \n     __slots__ = ()\n \n-    def __new__(\n-        cls, object: t.Any = \"\", encoding: str | None = None, errors: str = \"strict\"\n-    ) -> te.Self:\n-        if hasattr(object, \"__html__\"):\n-            object = object.__html__()\n-\n-        if encoding is None:\n-            return super().__new__(cls, object)\n-\n-        return super().__new__(cls, object, encoding, errors)\n+    def __new__(cls, object: t.Any='', encoding: (str | None)=None, errors: str\n+        ='strict') ->te.Self:\n+        pass\n \n     def __html__(self, /) -> te.Self:\n         return self\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00011_a18538773f",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -130,8 +130,8 @@\n \n         return super().__new__(cls, object, encoding, errors)\n \n-    def __html__(self, /) -> te.Self:\n-        return self\n+    def __html__(self, /) ->te.Self:\n+        pass\n \n     def __add__(self, value: str | _HasHTML, /) -> te.Self:\n         if isinstance(value, str) or hasattr(value, \"__html__\"):\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00012_e7366973c4",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -133,11 +133,8 @@\n     def __html__(self, /) -> te.Self:\n         return self\n \n-    def __add__(self, value: str | _HasHTML, /) -> te.Self:\n-        if isinstance(value, str) or hasattr(value, \"__html__\"):\n-            return self.__class__(super().__add__(self.escape(value)))\n-\n-        return NotImplemented\n+    def __add__(self, value: (str | _HasHTML), /) ->te.Self:\n+        pass\n \n     def __radd__(self, value: str | _HasHTML, /) -> te.Self:\n         if isinstance(value, str) or hasattr(value, \"__html__\"):\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00013_733a2e5fe5",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -139,11 +139,8 @@\n \n         return NotImplemented\n \n-    def __radd__(self, value: str | _HasHTML, /) -> te.Self:\n-        if isinstance(value, str) or hasattr(value, \"__html__\"):\n-            return self.escape(value).__add__(self)\n-\n-        return NotImplemented\n+    def __radd__(self, value: (str | _HasHTML), /) ->te.Self:\n+        pass\n \n     def __mul__(self, value: t.SupportsIndex, /) -> te.Self:\n         return self.__class__(super().__mul__(value))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00014_a5b203e9a3",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -145,8 +145,8 @@\n \n         return NotImplemented\n \n-    def __mul__(self, value: t.SupportsIndex, /) -> te.Self:\n-        return self.__class__(super().__mul__(value))\n+    def __mul__(self, value: t.SupportsIndex, /) ->te.Self:\n+        pass\n \n     def __rmul__(self, value: t.SupportsIndex, /) -> te.Self:\n         return self.__class__(super().__mul__(value))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00015_6d34333ba3",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -148,8 +148,8 @@\n     def __mul__(self, value: t.SupportsIndex, /) -> te.Self:\n         return self.__class__(super().__mul__(value))\n \n-    def __rmul__(self, value: t.SupportsIndex, /) -> te.Self:\n-        return self.__class__(super().__mul__(value))\n+    def __rmul__(self, value: t.SupportsIndex, /) ->te.Self:\n+        pass\n \n     def __mod__(self, value: t.Any, /) -> te.Self:\n         if isinstance(value, tuple):\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00016_54e42ac9d8",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -151,18 +151,8 @@\n     def __rmul__(self, value: t.SupportsIndex, /) -> te.Self:\n         return self.__class__(super().__mul__(value))\n \n-    def __mod__(self, value: t.Any, /) -> te.Self:\n-        if isinstance(value, tuple):\n-            # a tuple of arguments, each wrapped\n-            value = tuple(_MarkupEscapeHelper(x, self.escape) for x in value)\n-        elif hasattr(type(value), \"__getitem__\") and not isinstance(value, str):\n-            # a mapping of arguments, wrapped\n-            value = _MarkupEscapeHelper(value, self.escape)\n-        else:\n-            # a single argument, wrapped with the helper and a tuple\n-            value = (_MarkupEscapeHelper(value, self.escape),)\n-\n-        return self.__class__(super().__mod__(value))\n+    def __mod__(self, value: t.Any, /) ->te.Self:\n+        pass\n \n     def __repr__(self, /) -> str:\n         return f\"{self.__class__.__name__}({super().__repr__()})\"\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00017_cc6c19bab4",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -164,8 +164,8 @@\n \n         return self.__class__(super().__mod__(value))\n \n-    def __repr__(self, /) -> str:\n-        return f\"{self.__class__.__name__}({super().__repr__()})\"\n+    def __repr__(self, /) ->str:\n+        pass\n \n     def join(self, iterable: cabc.Iterable[str | _HasHTML], /) -> te.Self:\n         return self.__class__(super().join(map(self.escape, iterable)))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00018_d7ff32752a",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -167,8 +167,8 @@\n     def __repr__(self, /) -> str:\n         return f\"{self.__class__.__name__}({super().__repr__()})\"\n \n-    def join(self, iterable: cabc.Iterable[str | _HasHTML], /) -> te.Self:\n-        return self.__class__(super().join(map(self.escape, iterable)))\n+    def join(self, iterable: cabc.Iterable[str | _HasHTML], /) ->te.Self:\n+        pass\n \n     def split(  # type: ignore[override]\n         self, /, sep: str | None = None, maxsplit: t.SupportsIndex = -1\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00019_89e7086d2d",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -170,10 +170,9 @@\n     def join(self, iterable: cabc.Iterable[str | _HasHTML], /) -> te.Self:\n         return self.__class__(super().join(map(self.escape, iterable)))\n \n-    def split(  # type: ignore[override]\n-        self, /, sep: str | None = None, maxsplit: t.SupportsIndex = -1\n-    ) -> list[te.Self]:\n-        return [self.__class__(v) for v in super().split(sep, maxsplit)]\n+    def split(self, /, sep: (str | None)=None, maxsplit: t.SupportsIndex=-1\n+        ) ->list[te.Self]:\n+        pass\n \n     def rsplit(  # type: ignore[override]\n         self, /, sep: str | None = None, maxsplit: t.SupportsIndex = -1\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00020_f150821677",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -175,10 +175,9 @@\n     ) -> list[te.Self]:\n         return [self.__class__(v) for v in super().split(sep, maxsplit)]\n \n-    def rsplit(  # type: ignore[override]\n-        self, /, sep: str | None = None, maxsplit: t.SupportsIndex = -1\n-    ) -> list[te.Self]:\n-        return [self.__class__(v) for v in super().rsplit(sep, maxsplit)]\n+    def rsplit(self, /, sep: (str | None)=None, maxsplit: t.SupportsIndex=-1\n+        ) ->list[te.Self]:\n+        pass\n \n     def splitlines(  # type: ignore[override]\n         self, /, keepends: bool = False\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00021_b24e70a815",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -180,10 +180,8 @@\n     ) -> list[te.Self]:\n         return [self.__class__(v) for v in super().rsplit(sep, maxsplit)]\n \n-    def splitlines(  # type: ignore[override]\n-        self, /, keepends: bool = False\n-    ) -> list[te.Self]:\n-        return [self.__class__(v) for v in super().splitlines(keepends)]\n+    def splitlines(self, /, keepends: bool=False) ->list[te.Self]:\n+        pass\n \n     def unescape(self, /) -> str:\n         \"\"\"Convert escaped markup back into a text string. This replaces\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00022_afc958c52d",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -185,16 +185,8 @@\n     ) -> list[te.Self]:\n         return [self.__class__(v) for v in super().splitlines(keepends)]\n \n-    def unescape(self, /) -> str:\n-        \"\"\"Convert escaped markup back into a text string. This replaces\n-        HTML entities with the characters they represent.\n-\n-        >>> Markup(\"Main &raquo; <em>About</em>\").unescape()\n-        'Main \u00bb <em>About</em>'\n-        \"\"\"\n-        from html import unescape\n-\n-        return unescape(str(self))\n+    def unescape(self, /) ->str:\n+        pass\n \n     def striptags(self, /) -> str:\n         \"\"\":meth:`unescape` the markup, remove tags, and normalize\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00023_a0cfb0c4a6",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -196,36 +196,8 @@\n \n         return unescape(str(self))\n \n-    def striptags(self, /) -> str:\n-        \"\"\":meth:`unescape` the markup, remove tags, and normalize\n-        whitespace to single spaces.\n-\n-        >>> Markup(\"Main &raquo;\\t<em>About</em>\").striptags()\n-        'Main \u00bb About'\n-        \"\"\"\n-        value = str(self)\n-\n-        # Look for comments then tags separately. Otherwise, a comment that\n-        # contains a tag would end early, leaving some of the comment behind.\n-\n-        # keep finding comment start marks\n-        while (start := value.find(\"<!--\")) != -1:\n-            # find a comment end mark beyond the start, otherwise stop\n-            if (end := value.find(\"-->\", start)) == -1:\n-                break\n-\n-            value = f\"{value[:start]}{value[end + 3:]}\"\n-\n-        # remove tags using the same method\n-        while (start := value.find(\"<\")) != -1:\n-            if (end := value.find(\">\", start)) == -1:\n-                break\n-\n-            value = f\"{value[:start]}{value[end + 1:]}\"\n-\n-        # collapse spaces\n-        value = \" \".join(value.split())\n-        return self.__class__(value).unescape()\n+    def striptags(self, /) ->str:\n+        pass\n \n     @classmethod\n     def escape(cls, s: t.Any, /) -> te.Self:\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00024_1e11103ee1",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -228,16 +228,8 @@\n         return self.__class__(value).unescape()\n \n     @classmethod\n-    def escape(cls, s: t.Any, /) -> te.Self:\n-        \"\"\"Escape a string. Calls :func:`escape` and ensures that for\n-        subclasses the correct type is returned.\n-        \"\"\"\n-        rv = escape(s)\n-\n-        if rv.__class__ is not cls:\n-            return cls(rv)\n-\n-        return rv  # type: ignore[return-value]\n+    def escape(cls, s: t.Any, /) ->te.Self:\n+        pass\n \n     def __getitem__(self, key: t.SupportsIndex | slice, /) -> te.Self:\n         return self.__class__(super().__getitem__(key))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00025_831eff0daa",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -239,8 +239,8 @@\n \n         return rv  # type: ignore[return-value]\n \n-    def __getitem__(self, key: t.SupportsIndex | slice, /) -> te.Self:\n-        return self.__class__(super().__getitem__(key))\n+    def __getitem__(self, key: (t.SupportsIndex | slice), /) ->te.Self:\n+        pass\n \n     def capitalize(self, /) -> te.Self:\n         return self.__class__(super().capitalize())\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00026_71479cf880",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -242,8 +242,8 @@\n     def __getitem__(self, key: t.SupportsIndex | slice, /) -> te.Self:\n         return self.__class__(super().__getitem__(key))\n \n-    def capitalize(self, /) -> te.Self:\n-        return self.__class__(super().capitalize())\n+    def capitalize(self, /) ->te.Self:\n+        pass\n \n     def title(self, /) -> te.Self:\n         return self.__class__(super().title())\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00027_e77d05f4ab",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -245,8 +245,8 @@\n     def capitalize(self, /) -> te.Self:\n         return self.__class__(super().capitalize())\n \n-    def title(self, /) -> te.Self:\n-        return self.__class__(super().title())\n+    def title(self, /) ->te.Self:\n+        pass\n \n     def lower(self, /) -> te.Self:\n         return self.__class__(super().lower())\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00028_ba25ca23be",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -248,8 +248,8 @@\n     def title(self, /) -> te.Self:\n         return self.__class__(super().title())\n \n-    def lower(self, /) -> te.Self:\n-        return self.__class__(super().lower())\n+    def lower(self, /) ->te.Self:\n+        pass\n \n     def upper(self, /) -> te.Self:\n         return self.__class__(super().upper())\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00029_2fc144b20d",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -251,8 +251,8 @@\n     def lower(self, /) -> te.Self:\n         return self.__class__(super().lower())\n \n-    def upper(self, /) -> te.Self:\n-        return self.__class__(super().upper())\n+    def upper(self, /) ->te.Self:\n+        pass\n \n     def replace(self, old: str, new: str, count: t.SupportsIndex = -1, /) -> te.Self:\n         return self.__class__(super().replace(old, self.escape(new), count))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00030_48b558004a",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -254,8 +254,8 @@\n     def upper(self, /) -> te.Self:\n         return self.__class__(super().upper())\n \n-    def replace(self, old: str, new: str, count: t.SupportsIndex = -1, /) -> te.Self:\n-        return self.__class__(super().replace(old, self.escape(new), count))\n+    def replace(self, old: str, new: str, count: t.SupportsIndex=-1, /) ->te.Self:\n+        pass\n \n     def ljust(self, width: t.SupportsIndex, fillchar: str = \" \", /) -> te.Self:\n         return self.__class__(super().ljust(width, self.escape(fillchar)))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00031_f9804d8776",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -257,8 +257,8 @@\n     def replace(self, old: str, new: str, count: t.SupportsIndex = -1, /) -> te.Self:\n         return self.__class__(super().replace(old, self.escape(new), count))\n \n-    def ljust(self, width: t.SupportsIndex, fillchar: str = \" \", /) -> te.Self:\n-        return self.__class__(super().ljust(width, self.escape(fillchar)))\n+    def ljust(self, width: t.SupportsIndex, fillchar: str=' ', /) ->te.Self:\n+        pass\n \n     def rjust(self, width: t.SupportsIndex, fillchar: str = \" \", /) -> te.Self:\n         return self.__class__(super().rjust(width, self.escape(fillchar)))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00032_9c731362af",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -260,8 +260,8 @@\n     def ljust(self, width: t.SupportsIndex, fillchar: str = \" \", /) -> te.Self:\n         return self.__class__(super().ljust(width, self.escape(fillchar)))\n \n-    def rjust(self, width: t.SupportsIndex, fillchar: str = \" \", /) -> te.Self:\n-        return self.__class__(super().rjust(width, self.escape(fillchar)))\n+    def rjust(self, width: t.SupportsIndex, fillchar: str=' ', /) ->te.Self:\n+        pass\n \n     def lstrip(self, chars: str | None = None, /) -> te.Self:\n         return self.__class__(super().lstrip(chars))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00033_4fa5e1637a",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -263,8 +263,8 @@\n     def rjust(self, width: t.SupportsIndex, fillchar: str = \" \", /) -> te.Self:\n         return self.__class__(super().rjust(width, self.escape(fillchar)))\n \n-    def lstrip(self, chars: str | None = None, /) -> te.Self:\n-        return self.__class__(super().lstrip(chars))\n+    def lstrip(self, chars: (str | None)=None, /) ->te.Self:\n+        pass\n \n     def rstrip(self, chars: str | None = None, /) -> te.Self:\n         return self.__class__(super().rstrip(chars))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00034_a2be7791dc",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -266,8 +266,8 @@\n     def lstrip(self, chars: str | None = None, /) -> te.Self:\n         return self.__class__(super().lstrip(chars))\n \n-    def rstrip(self, chars: str | None = None, /) -> te.Self:\n-        return self.__class__(super().rstrip(chars))\n+    def rstrip(self, chars: (str | None)=None, /) ->te.Self:\n+        pass\n \n     def center(self, width: t.SupportsIndex, fillchar: str = \" \", /) -> te.Self:\n         return self.__class__(super().center(width, self.escape(fillchar)))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00035_12e0eb8e1f",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -269,8 +269,8 @@\n     def rstrip(self, chars: str | None = None, /) -> te.Self:\n         return self.__class__(super().rstrip(chars))\n \n-    def center(self, width: t.SupportsIndex, fillchar: str = \" \", /) -> te.Self:\n-        return self.__class__(super().center(width, self.escape(fillchar)))\n+    def center(self, width: t.SupportsIndex, fillchar: str=' ', /) ->te.Self:\n+        pass\n \n     def strip(self, chars: str | None = None, /) -> te.Self:\n         return self.__class__(super().strip(chars))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00036_08be37c05f",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -272,8 +272,8 @@\n     def center(self, width: t.SupportsIndex, fillchar: str = \" \", /) -> te.Self:\n         return self.__class__(super().center(width, self.escape(fillchar)))\n \n-    def strip(self, chars: str | None = None, /) -> te.Self:\n-        return self.__class__(super().strip(chars))\n+    def strip(self, chars: (str | None)=None, /) ->te.Self:\n+        pass\n \n     def translate(\n         self,\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00037_b015a5b044",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -275,12 +275,8 @@\n     def strip(self, chars: str | None = None, /) -> te.Self:\n         return self.__class__(super().strip(chars))\n \n-    def translate(\n-        self,\n-        table: cabc.Mapping[int, str | int | None],  # type: ignore[override]\n-        /,\n-    ) -> str:\n-        return self.__class__(super().translate(table))\n+    def translate(self, table: cabc.Mapping[int, str | int | None], /) ->str:\n+        pass\n \n     def expandtabs(self, /, tabsize: t.SupportsIndex = 8) -> te.Self:\n         return self.__class__(super().expandtabs(tabsize))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00038_f322fef314",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -282,8 +282,8 @@\n     ) -> str:\n         return self.__class__(super().translate(table))\n \n-    def expandtabs(self, /, tabsize: t.SupportsIndex = 8) -> te.Self:\n-        return self.__class__(super().expandtabs(tabsize))\n+    def expandtabs(self, /, tabsize: t.SupportsIndex=8) ->te.Self:\n+        pass\n \n     def swapcase(self, /) -> te.Self:\n         return self.__class__(super().swapcase())\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00039_a11a787d1d",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -285,8 +285,8 @@\n     def expandtabs(self, /, tabsize: t.SupportsIndex = 8) -> te.Self:\n         return self.__class__(super().expandtabs(tabsize))\n \n-    def swapcase(self, /) -> te.Self:\n-        return self.__class__(super().swapcase())\n+    def swapcase(self, /) ->te.Self:\n+        pass\n \n     def zfill(self, width: t.SupportsIndex, /) -> te.Self:\n         return self.__class__(super().zfill(width))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00040_011e3d9a1b",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -288,8 +288,8 @@\n     def swapcase(self, /) -> te.Self:\n         return self.__class__(super().swapcase())\n \n-    def zfill(self, width: t.SupportsIndex, /) -> te.Self:\n-        return self.__class__(super().zfill(width))\n+    def zfill(self, width: t.SupportsIndex, /) ->te.Self:\n+        pass\n \n     def casefold(self, /) -> te.Self:\n         return self.__class__(super().casefold())\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00041_74ab3d35f2",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -291,8 +291,8 @@\n     def zfill(self, width: t.SupportsIndex, /) -> te.Self:\n         return self.__class__(super().zfill(width))\n \n-    def casefold(self, /) -> te.Self:\n-        return self.__class__(super().casefold())\n+    def casefold(self, /) ->te.Self:\n+        pass\n \n     def removeprefix(self, prefix: str, /) -> te.Self:\n         return self.__class__(super().removeprefix(prefix))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00042_2926ccb1ff",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -294,8 +294,8 @@\n     def casefold(self, /) -> te.Self:\n         return self.__class__(super().casefold())\n \n-    def removeprefix(self, prefix: str, /) -> te.Self:\n-        return self.__class__(super().removeprefix(prefix))\n+    def removeprefix(self, prefix: str, /) ->te.Self:\n+        pass\n \n     def removesuffix(self, suffix: str) -> te.Self:\n         return self.__class__(super().removesuffix(suffix))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00043_92d2668a43",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -297,8 +297,8 @@\n     def removeprefix(self, prefix: str, /) -> te.Self:\n         return self.__class__(super().removeprefix(prefix))\n \n-    def removesuffix(self, suffix: str) -> te.Self:\n-        return self.__class__(super().removesuffix(suffix))\n+    def removesuffix(self, suffix: str) ->te.Self:\n+        pass\n \n     def partition(self, sep: str, /) -> tuple[te.Self, te.Self, te.Self]:\n         left, sep, right = super().partition(sep)\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00044_0c73547ac1",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -300,10 +300,8 @@\n     def removesuffix(self, suffix: str) -> te.Self:\n         return self.__class__(super().removesuffix(suffix))\n \n-    def partition(self, sep: str, /) -> tuple[te.Self, te.Self, te.Self]:\n-        left, sep, right = super().partition(sep)\n-        cls = self.__class__\n-        return cls(left), cls(sep), cls(right)\n+    def partition(self, sep: str, /) ->tuple[te.Self, te.Self, te.Self]:\n+        pass\n \n     def rpartition(self, sep: str, /) -> tuple[te.Self, te.Self, te.Self]:\n         left, sep, right = super().rpartition(sep)\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00045_a0a56301fd",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -305,10 +305,8 @@\n         cls = self.__class__\n         return cls(left), cls(sep), cls(right)\n \n-    def rpartition(self, sep: str, /) -> tuple[te.Self, te.Self, te.Self]:\n-        left, sep, right = super().rpartition(sep)\n-        cls = self.__class__\n-        return cls(left), cls(sep), cls(right)\n+    def rpartition(self, sep: str, /) ->tuple[te.Self, te.Self, te.Self]:\n+        pass\n \n     def format(self, *args: t.Any, **kwargs: t.Any) -> te.Self:\n         formatter = EscapeFormatter(self.escape)\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00046_3fc5ae9cde",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -310,9 +310,8 @@\n         cls = self.__class__\n         return cls(left), cls(sep), cls(right)\n \n-    def format(self, *args: t.Any, **kwargs: t.Any) -> te.Self:\n-        formatter = EscapeFormatter(self.escape)\n-        return self.__class__(formatter.vformat(self, args, kwargs))\n+    def format(self, *args: t.Any, **kwargs: t.Any) ->te.Self:\n+        pass\n \n     def format_map(\n         self,\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00047_052ba2f180",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -314,13 +314,8 @@\n         formatter = EscapeFormatter(self.escape)\n         return self.__class__(formatter.vformat(self, args, kwargs))\n \n-    def format_map(\n-        self,\n-        mapping: cabc.Mapping[str, t.Any],  # type: ignore[override]\n-        /,\n-    ) -> te.Self:\n-        formatter = EscapeFormatter(self.escape)\n-        return self.__class__(formatter.vformat(self, (), mapping))\n+    def format_map(self, mapping: cabc.Mapping[str, t.Any], /) ->te.Self:\n+        pass\n \n     def __html_format__(self, format_spec: str, /) -> te.Self:\n         if format_spec:\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00048_c2acc3278b",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -322,11 +322,8 @@\n         formatter = EscapeFormatter(self.escape)\n         return self.__class__(formatter.vformat(self, (), mapping))\n \n-    def __html_format__(self, format_spec: str, /) -> te.Self:\n-        if format_spec:\n-            raise ValueError(\"Unsupported format specification for Markup.\")\n-\n-        return self\n+    def __html_format__(self, format_spec: str, /) ->te.Self:\n+        pass\n \n \n class EscapeFormatter(string.Formatter):\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00049_6b85acc402",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -332,9 +332,8 @@\n class EscapeFormatter(string.Formatter):\n     __slots__ = (\"escape\",)\n \n-    def __init__(self, escape: _TPEscape) -> None:\n-        self.escape: _TPEscape = escape\n-        super().__init__()\n+    def __init__(self, escape: _TPEscape) ->None:\n+        pass\n \n     def format_field(self, value: t.Any, format_spec: str) -> str:\n         if hasattr(value, \"__html_format__\"):\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00050_7a2bd18664",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -336,22 +336,8 @@\n         self.escape: _TPEscape = escape\n         super().__init__()\n \n-    def format_field(self, value: t.Any, format_spec: str) -> str:\n-        if hasattr(value, \"__html_format__\"):\n-            rv = value.__html_format__(format_spec)\n-        elif hasattr(value, \"__html__\"):\n-            if format_spec:\n-                raise ValueError(\n-                    f\"Format specifier {format_spec} given, but {type(value)} does not\"\n-                    \" define __html_format__. A class that defines __html__ must define\"\n-                    \" __html_format__ to work with format specifiers.\"\n-                )\n-            rv = value.__html__()\n-        else:\n-            # We need to make sure the format spec is str here as\n-            # otherwise the wrong callback methods are invoked.\n-            rv = super().format_field(value, str(format_spec))\n-        return str(self.escape(rv))\n+    def format_field(self, value: t.Any, format_spec: str) ->str:\n+        pass\n \n \n class _MarkupEscapeHelper:\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00051_9ee810136a",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -359,9 +359,8 @@\n \n     __slots__ = (\"obj\", \"escape\")\n \n-    def __init__(self, obj: t.Any, escape: _TPEscape) -> None:\n-        self.obj: t.Any = obj\n-        self.escape: _TPEscape = escape\n+    def __init__(self, obj: t.Any, escape: _TPEscape) ->None:\n+        pass\n \n     def __getitem__(self, key: t.Any, /) -> te.Self:\n         return self.__class__(self.obj[key], self.escape)\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00052_831eff0daa",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -363,8 +363,8 @@\n         self.obj: t.Any = obj\n         self.escape: _TPEscape = escape\n \n-    def __getitem__(self, key: t.Any, /) -> te.Self:\n-        return self.__class__(self.obj[key], self.escape)\n+    def __getitem__(self, key: t.Any, /) ->te.Self:\n+        pass\n \n     def __str__(self, /) -> str:\n         return str(self.escape(self.obj))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00053_fe4454eef3",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -366,8 +366,8 @@\n     def __getitem__(self, key: t.Any, /) -> te.Self:\n         return self.__class__(self.obj[key], self.escape)\n \n-    def __str__(self, /) -> str:\n-        return str(self.escape(self.obj))\n+    def __str__(self, /) ->str:\n+        pass\n \n     def __repr__(self, /) -> str:\n         return str(self.escape(repr(self.obj)))\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00054_cc6c19bab4",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -369,8 +369,8 @@\n     def __str__(self, /) -> str:\n         return str(self.escape(self.obj))\n \n-    def __repr__(self, /) -> str:\n-        return str(self.escape(repr(self.obj)))\n+    def __repr__(self, /) ->str:\n+        pass\n \n     def __int__(self, /) -> int:\n         return int(self.obj)\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00055_ed90b09abb",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -372,8 +372,8 @@\n     def __repr__(self, /) -> str:\n         return str(self.escape(repr(self.obj)))\n \n-    def __int__(self, /) -> int:\n-        return int(self.obj)\n+    def __int__(self, /) ->int:\n+        pass\n \n     def __float__(self, /) -> float:\n         return float(self.obj)\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00056_f8758a9423",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/__init__.py\n+++ b/src/markupsafe/__init__.py\n@@ -375,8 +375,8 @@\n     def __int__(self, /) -> int:\n         return int(self.obj)\n \n-    def __float__(self, /) -> float:\n-        return float(self.obj)\n+    def __float__(self, /) ->float:\n+        pass\n \n \n def __getattr__(name: str) -> t.Any:\n"
+  },
+  {
+    "instance_id": "pallets__markupsafe.620c06c9.empty_body_from_scratch_00057_6842a5e504",
+    "repo": "pallets__markupsafe.620c06c9",
+    "patch": "--- a/src/markupsafe/_native.py\n+++ b/src/markupsafe/_native.py\n@@ -1,8 +1,2 @@\n-def _escape_inner(s: str, /) -> str:\n-    return (\n-        s.replace(\"&\", \"&amp;\")\n-        .replace(\">\", \"&gt;\")\n-        .replace(\"<\", \"&lt;\")\n-        .replace(\"'\", \"&#39;\")\n-        .replace('\"', \"&#34;\")\n-    )\n+def _escape_inner(s: str, /) ->str:\n+    pass\n"
+  }
+]

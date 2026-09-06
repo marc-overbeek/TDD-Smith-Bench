@@ -1,0 +1,32 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -44,7 +44,7 @@
+     """
+     def get_message(self):
+         return ('could not delete %r on object at %r, got error: %r'
+-                % (self.dest_name, self.path, self.exc))
++                % (self.arg, self.path, self.exc))
+ 
+ 
+ def _apply_for_each(func, path, val):
+@@ -260,6 +260,11 @@
+     .. versionadded:: 20.5.0
+     """
+     def __init__(self, path, ignore_missing=False):
++        try:
++            basestring
++        except NameError:
++            basestring = str
++    
+         if isinstance(path, basestring):
+             path = Path.from_text(path)
+         elif type(path) is TType:
+@@ -283,7 +288,7 @@
+         if op == '[':
+             try:
+                 del dest[arg]
+-            except IndexError as e:
++            except (IndexError, KeyError) as e:
+                 if not self.ignore_missing:
+                     raise PathDeleteError(e, self.path, arg)
+         elif op == '.':

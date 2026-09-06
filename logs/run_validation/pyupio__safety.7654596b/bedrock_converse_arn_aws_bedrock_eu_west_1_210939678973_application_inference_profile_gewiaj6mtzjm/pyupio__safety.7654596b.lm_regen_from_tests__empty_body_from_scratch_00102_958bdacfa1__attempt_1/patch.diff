@@ -1,0 +1,111 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -590,50 +590,67 @@
+     return format_long_text("{0}".format(licenses_text), start_line_decorator=' ', **kwargs)
+ 
+ 
+-def format_long_text(text: str, color: str = '', columns: int = get_terminal_size().columns, start_line_decorator: str = ' ', end_line_decorator: str = ' ', max_lines: Optional[int] = None, styling: Optional[Dict[str, Any]] = None, indent: str = '', sub_indent: str = '') -> str:
+-    """
+-    Format long text with wrapping and styling.
+-
+-    Args:
+-        text (str): The text to format.
+-        color (str, optional): Color for the text. Defaults to ''.
+-        columns (int, optional): Number of columns for formatting. Defaults to terminal size.
+-        start_line_decorator (str, optional): Starting line decorator. Defaults to ' '.
+-        end_line_decorator (str, optional): Ending line decorator. Defaults to ' '.
+-        max_lines (Optional[int], optional): Maximum number of lines. Defaults to None.
+-        styling (Optional[Dict[str, Any]], optional): Additional styling options. Defaults to None.
+-        indent (str, optional): Indentation for the text. Defaults to ''.
+-        sub_indent (str, optional): Sub-indentation for the text. Defaults to ''.
+-
+-    Returns:
+-        str: Formatted text.
+-    """
+-    if not styling:
+-        styling = {}
+-
++def format_long_text(text: str, color: str='', columns: int=
++    get_terminal_size().columns, start_line_decorator: str=' ',
++    end_line_decorator: str=' ', max_lines: Optional[int]=None, styling:
++    Optional[Dict[str, Any]]=None, indent: str='', sub_indent: str='') ->str:
++    
++    if not text:
++        return ''
++    
++    # Apply color if specified
+     if color:
+-        styling.update({'fg': color})
+-
+-    columns -= len(start_line_decorator) + len(end_line_decorator)
++        text = click.style(text, fg=color)
++    
++    # Handle styling if provided
++    if styling:
++        text = click.style(text, **styling)
++    
++    # Split text into lines and process each line
++    lines = text.split('\n')
+     formatted_lines = []
+-    lines = text.replace('\r', '').splitlines()
+-
++    
+     for line in lines:
+-        base_format = "{:" + str(columns) + "}"
+-        if line == '':
+-            empty_line = base_format.format(" ")
+-            formatted_lines.append("{0}{1}{2}".format(start_line_decorator, empty_line, end_line_decorator))
+-        wrapped_lines = textwrap.wrap(line, width=columns, max_lines=max_lines, initial_indent=indent,
+-                                      subsequent_indent=sub_indent, placeholder='...')
+-        for wrapped_line in wrapped_lines:
+-            new_line = f'{wrapped_line}'
+-
+-            if styling:
+-                new_line = click.style(new_line, **styling)
+-
+-            formatted_lines.append(f"{start_line_decorator}{new_line}{end_line_decorator}")
+-
+-    return "\n".join(formatted_lines)
++        if not line.strip():
++            formatted_lines.append('')
++            continue
++            
++        # Apply indent to the beginning of the line
++        line = indent + line
++        
++        # Wrap the line to fit within columns
++        wrapped_lines = textwrap.wrap(
++            line, 
++            width=columns, 
++            initial_indent=start_line_decorator,
++            subsequent_indent=sub_indent,
++            break_long_words=False,
++            break_on_hyphens=False
++        )
++        
++        formatted_lines.extend(wrapped_lines)
++    
++    # Join the lines back together
++    result = '\n'.join(formatted_lines)
++    
++    # Apply end line decorator to the last line if it exists
++    if result and end_line_decorator:
++        lines = result.split('\n')
++        if lines:
++            lines[-1] = lines[-1] + end_line_decorator
++            result = '\n'.join(lines)
++    
++    # Limit number of lines if specified
++    if max_lines is not None and max_lines > 0:
++        lines = result.split('\n')
++        if len(lines) > max_lines:
++            lines = lines[:max_lines]
++            # Add ellipsis if we truncated
++            if len(lines) == max_lines:
++                lines[-1] = lines[-1] + '...'
++            result = '\n'.join(lines)
++    
++    return result
+ 
+ 
+ def get_printable_list_of_scanned_items(scanning_target: str) -> Tuple[List[Dict[str, Any]], List[str]]:

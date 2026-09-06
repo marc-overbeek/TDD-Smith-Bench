@@ -1,0 +1,65 @@
+--- a/glom/cli.py
++++ b/glom/cli.py
+@@ -50,31 +50,41 @@
+ # TODO: --default?
+ 
+ def glom_cli(target, spec, indent, debug, inspect, scalar):
+-    """Command-line interface to the glom library, providing nested data
+-    access and data restructuring with the power of Python.
+-    """
+-    if debug or inspect:
+-        stdin_open = not sys.stdin.closed
+-        spec = Inspect(spec,
+-                       echo=inspect,
+-                       recursive=inspect,
+-                       breakpoint=inspect and stdin_open,
+-                       post_mortem=debug and stdin_open)
+-
+     try:
++        if inspect:
++            spec = Inspect(spec)
++        
+         result = glom.glom(target, spec)
++        
++        # Handle scalar output
++        if scalar and is_scalar(result):
++            output = str(result)
++        else:
++            # Format as JSON
++            if indent == 0:
++                output = json.dumps(result, separators=(',', ':'))
++            else:
++                output = json.dumps(result, indent=indent)
++        
++        # Print output
++        if scalar and is_scalar(result):
++            sys.stdout.write(output)
++        else:
++            sys.stdout.write(output + '\n')
++        
++        return 0
+     except GlomError as ge:
+-        print(f'{ge.__class__.__name__}: {ge}')
++        if debug:
++            import pdb
++            pdb.post_mortem()
++        sys.stderr.write('glom error: %s\n' % ge)
+         return 1
+-
+-    if not indent:
+-        indent = None
+-    
+-    if scalar and is_scalar(result):
+-        print(result, end='')
+-    else:
+-        print(json.dumps(result, indent=indent, sort_keys=True))
+-    return
++    except Exception as e:
++        if debug:
++            import pdb
++            pdb.post_mortem()
++        sys.stderr.write('error: %s\n' % e)
++        return 1
+ 
+ 
+ def get_command():

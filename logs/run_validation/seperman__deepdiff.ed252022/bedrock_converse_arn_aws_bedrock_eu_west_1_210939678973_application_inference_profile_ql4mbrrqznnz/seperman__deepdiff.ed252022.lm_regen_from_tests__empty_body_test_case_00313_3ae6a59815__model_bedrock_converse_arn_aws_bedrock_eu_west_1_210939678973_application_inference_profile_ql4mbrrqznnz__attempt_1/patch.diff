@@ -1,0 +1,114 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -281,24 +281,10 @@
+         return deepcopy(dict(result))
+ 
+     def pretty(self, prefix: Optional[Union[str, Callable]]=None):
+-        """
+-        The pretty human readable string output for the diff object
+-        regardless of what view was used to generate the diff.
+-
+-        prefix can be a callable or a string or None.
+-
+-        Example:
+-            >>> t1={1,2,4}
+-            >>> t2={2,3}
+-            >>> print(DeepDiff(t1, t2).pretty())
+-            Item root[3] added to set.
+-            Item root[4] removed from set.
+-            Item root[1] removed from set.
+-        """
+         result = []
+         if prefix is None:
+             prefix = ''
+-        keys = sorted(self.tree.keys())  # sorting keys to guarantee constant order across python versions.
++        keys = sorted(self.tree.keys())
+         for key in keys:
+             for item_key in self.tree[key]:
+                 result += [pretty_print_diff(item_key)]
+@@ -409,47 +395,55 @@
+ 
+ 
+ def _get_pretty_form_text(verbose_level):
+-    pretty_form_texts = {
+-        "type_changes": "Type of {diff_path} changed from {type_t1} to {type_t2} and value changed from {val_t1} to {val_t2}.",
+-        "values_changed": "Value of {diff_path} changed from {val_t1} to {val_t2}.",
+-        "dictionary_item_added": "Item {diff_path} added to dictionary.",
+-        "dictionary_item_removed": "Item {diff_path} removed from dictionary.",
+-        "iterable_item_added": "Item {diff_path} added to iterable.",
+-        "iterable_item_removed": "Item {diff_path} removed from iterable.",
+-        "attribute_added": "Attribute {diff_path} added.",
+-        "attribute_removed": "Attribute {diff_path} removed.",
+-        "set_item_added": "Item root[{val_t2}] added to set.",
+-        "set_item_removed": "Item root[{val_t1}] removed from set.",
+-        "repetition_change": "Repetition change for item {diff_path}.",
++    from deepdiff.model import (
++        PrettyOrderedSet,
++        DiffLevel,
++    )
++    from deepdiff import model as diff_model
++    
++    PRETTY_FORM_TEXTS = {
++        'type_changes': 'Type of {diff_path} changed from {type_t1} to {type_t2} and value changed from {val_t1} to {val_t2}.',
++        'dictionary_item_added': 'Item {diff_path} added to dictionary.',
++        'dictionary_item_removed': 'Item {diff_path} removed from dictionary.',
++        'iterable_item_added': 'Item {diff_path} added to iterable.',
++        'iterable_item_removed': 'Item {diff_path} removed from iterable.',
++        'attribute_added': 'Attribute {diff_path} added.',
++        'attribute_removed': 'Attribute {diff_path} removed.',
++        'set_item_added': 'Item {diff_path} added to set.',
++        'set_item_removed': 'Item {diff_path} removed from set.',
++        'values_changed': 'Value of {diff_path} changed from {val_t1} to {val_t2}.',
++        'repetition_change': 'Repetition change for item {diff_path}.',
+     }
+-    if verbose_level == 2:
+-        pretty_form_texts.update(
+-            {
+-                "dictionary_item_added": "Item {diff_path} ({val_t2}) added to dictionary.",
+-                "dictionary_item_removed": "Item {diff_path} ({val_t1}) removed from dictionary.",
+-                "iterable_item_added": "Item {diff_path} ({val_t2}) added to iterable.",
+-                "iterable_item_removed": "Item {diff_path} ({val_t1}) removed from iterable.",
+-                "attribute_added": "Attribute {diff_path} ({val_t2}) added.",
+-                "attribute_removed": "Attribute {diff_path} ({val_t1}) removed.",
+-            }
+-        )
+-    return pretty_form_texts
++    return PRETTY_FORM_TEXTS
+ 
+ 
+ def pretty_print_diff(diff):
++    from deepdiff.model import DiffLevel
++    
++    type_t1 = get_type(diff.t1).__name__ if diff.t1 is not None or get_type(diff.t1) is not type(None) else 'None'
++    type_t2 = get_type(diff.t2).__name__ if diff.t2 is not None or get_type(diff.t2) is not type(None) else 'None'
++    
+     type_t1 = get_type(diff.t1).__name__
+     type_t2 = get_type(diff.t2).__name__
+-
+-    val_t1 = '"{}"'.format(str(diff.t1)) if type_t1 == "str" else str(diff.t1)
+-    val_t2 = '"{}"'.format(str(diff.t2)) if type_t2 == "str" else str(diff.t2)
+-
++    
++    val_t1 = '"{}"'.format(diff.t1) if isinstance(diff.t1, str) else diff.t1
++    val_t2 = '"{}"'.format(diff.t2) if isinstance(diff.t2, str) else diff.t2
++    
+     diff_path = diff.path(root='root')
+-    return _get_pretty_form_text(diff.verbose_level).get(diff.report_type, "").format(
++    
++    pretty_form_texts = _get_pretty_form_text(verbose_level=2)
++    
++    report_type = diff.report_type
++    
++    template = pretty_form_texts.get(report_type, 'Unknown change at {diff_path}.')
++    
++    return template.format(
+         diff_path=diff_path,
+         type_t1=type_t1,
+         type_t2=type_t2,
+         val_t1=val_t1,
+-        val_t2=val_t2)
++        val_t2=val_t2,
++    )
+ 
+ 
+ def load_path_content(path, file_type=None):

@@ -1,0 +1,40 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2298,35 +2298,8 @@
+                 result += length
+         return result
+ 
+-    def walk(self, only_points: bool=False) -> Iterator[Any]:
+-        """
+-        Generator used to iterates through points in GPX file
+-
+-        Parameters
+-        ----------
+-        only_point s: boolean
+-            Only yield points while walking
+-
+-        Yields
+-        ----------
+-        point : GPXTrackPoint
+-            Point in the track
+-        track_no : integer
+-            Index of track containing point. This is suppressed if only_points
+-            is True.
+-        segment_no : integer
+-            Index of segment containing point. This is suppressed if only_points
+-            is True.
+-        point_no : integer
+-            Index of point. This is suppressed if only_points is True.
+-        """
+-        for track_no, track in enumerate(self.tracks if self.tracks else [] ):
+-            for segment_no, segment in enumerate(track.segments if track.segments else []):
+-                for point_no, point in enumerate(segment.points if segment.points else []):
+-                    if only_points:
+-                        yield point
+-                    else:
+-                        yield point, track_no, segment_no, point_no
++    def walk(self, only_points: bool=False) ->Iterator[Any]:
++        pass
+ 
+     def get_track_points_no(self) -> int:
+         """ Number of track points, *without* route and waypoints """

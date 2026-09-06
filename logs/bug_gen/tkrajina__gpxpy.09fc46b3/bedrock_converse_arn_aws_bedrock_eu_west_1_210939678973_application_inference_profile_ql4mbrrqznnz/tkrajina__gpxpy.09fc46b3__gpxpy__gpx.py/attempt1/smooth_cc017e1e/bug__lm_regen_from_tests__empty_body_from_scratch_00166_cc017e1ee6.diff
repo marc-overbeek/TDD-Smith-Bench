@@ -1,0 +1,23 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1871,10 +1871,17 @@
+ 
+         return mod_geo.Location(latitude=sum_lat / n, longitude=sum_lon / n)
+ 
++    def smooth(self, vertical: bool, horizontal: bool, remove_extremes: bool)
++
+     def smooth(self, vertical: bool=True, horizontal: bool=False, remove_extremes: bool=False) -> None:
+-        """ See: GPXTrackSegment.smooth() """
+-        for track_segment in self.segments:
+-            track_segment.smooth(vertical, horizontal, remove_extremes)
++        """ See GPXTrackSegment.smooth(...) """
++        for track in self.tracks:
++            track.smooth(vertical=vertical, horizontal=horizontal, remove_extremes=remove_extremes)
++
++    def smooth(self, vertical: bool, horizontal: bool, remove_extremes: bool) ->None:
++        """ See GPXTrackSegment.smooth(...) """
++        for track in self.tracks:
++            track.smooth(vertical=vertical, horizontal=horizontal, remove_extremes=remove_extremes)
+ 
+     def has_times(self) -> bool:
+         """ See GPXTrackSegment.has_times() """

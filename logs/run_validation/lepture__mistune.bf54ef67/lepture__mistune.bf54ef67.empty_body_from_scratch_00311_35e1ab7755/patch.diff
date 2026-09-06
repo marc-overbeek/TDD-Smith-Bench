@@ -1,0 +1,33 @@
+--- a/src/mistune/directives/toc.py
++++ b/src/mistune/directives/toc.py
+@@ -60,28 +60,8 @@
+         }
+         return {'type': 'toc', 'text': title or '', 'attrs': attrs}
+ 
+-    def toc_hook(self, md: "Markdown", state: "BlockState") -> None:
+-        sections = []
+-        headings = []
+-
+-        for tok in state.tokens:
+-            if tok['type'] == 'toc':
+-                sections.append(tok)
+-            elif tok['type'] == 'heading':
+-                headings.append(tok)
+-
+-        if sections:
+-            toc_items = []
+-            # adding ID for each heading
+-            for i, tok in enumerate(headings):
+-                tok['attrs']['id'] = self.generate_heading_id(tok, i)
+-                toc_items.append(normalize_toc_item(md, tok))
+-
+-            for sec in sections:
+-                _min = sec['attrs']['min_level']
+-                _max = sec['attrs']['max_level']
+-                toc = [item for item in toc_items if _min <= item[0] <= _max]
+-                sec['attrs']['toc'] = toc
++    def toc_hook(self, md: 'Markdown', state: 'BlockState') ->None:
++        pass
+ 
+     def __call__(self, directive: BaseDirective, md: "Markdown") -> None:
+         if md.renderer and md.renderer.NAME == "html":

@@ -1,0 +1,17 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -284,6 +284,14 @@
+         """
+         return self._add_op('limit', (count,), lambda it, scope: islice(it, count))
+ 
++    def test_while():
++        cnt = count()
++        out = glom(cnt, Iter().takewhile(lambda x: x < 3))
++        assert list(out) == [0, 1, 2]
++        assert next(cnt) == 4
++        assert repr(Iter().takewhile(T.a) == 'Iter().takewhile(T.a)')
++        # ... more tests
++
+     def takewhile(self, key=T):
+         """Returns a new :class:`Iter()` spec which stops the stream once
+         *key* becomes falsy.

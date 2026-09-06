@@ -1,0 +1,53 @@
+--- a/safety/scan/finder/file_finder.py
++++ b/safety/scan/finder/file_finder.py
+@@ -12,32 +12,30 @@
+ 
+ LOG = logging.getLogger(__name__)
+ 
+-def should_exclude(excludes: Set[Path], to_analyze: Path) -> bool:
++def should_exclude(excludes: Set[Path], to_analyze: Path) ->bool:
+     """
+-    Determines whether a given path should be excluded based on the provided exclusion set.
+-
++    Check if a path should be excluded based on the excludes set.
++    
+     Args:
+-        excludes (Set[Path]): Set of paths to exclude.
+-        to_analyze (Path): The path to analyze.
+-
++        excludes: Set of paths to exclude
++        to_analyze: Path to check
++        
+     Returns:
+-        bool: True if the path should be excluded, False otherwise.
++        True if the path should be excluded, False otherwise
+     """
+-
+-    if not to_analyze.is_absolute():
+-        to_analyze = to_analyze.resolve()
+-
+-    for exclude in excludes:
+-        if not exclude.is_absolute():
+-            exclude = exclude.resolve()
+-
++    # Check if the path itself is in the excludes set
++    if to_analyze in excludes:
++        return True
++    
++    # Check if the path is a child of any excluded directory
++    for exclude_path in excludes:
+         try:
+-            if to_analyze == exclude or \
+-                to_analyze.relative_to(exclude):
+-                return True
++            to_analyze.relative_to(exclude_path)
++            return True
+         except ValueError:
+-            pass
+-
++            # to_analyze is not relative to exclude_path
++            continue
++    
+     return False
+ 
+ 

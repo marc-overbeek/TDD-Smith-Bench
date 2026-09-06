@@ -1,0 +1,25 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1174,6 +1174,13 @@
+         """
+         return cls(Spec(spec))
+ 
++    spec = Invoke(ret_args).constants(1).specs({}).constants(3)
++    assert glom({}, spec) == ((1, {}, 3), {})
++
++    spec = Invoke(ret_args).constants(a=1).specs(a=should_stay_empty.append).constants(a=3)
++    assert glom({}, spec) == ((), {'a': 3})
++    assert len(should_stay_empty) == 0
++
+     def constants(self, *a, **kw):
+         """Returns a new :class:`Invoke` spec, with the provided positional
+         and keyword argument values stored for passing to the
+@@ -1202,7 +1209,7 @@
+         ret = self.__class__(self.func)
+         ret._args = self._args + ('C', a, kw)
+         ret._cur_kwargs = dict(self._cur_kwargs)
+-        ret._cur_kwargs.update({k: kw for k, _ in kw.items()})
++        ret._cur_kwargs.update({k: kw for k in kw})
+         return ret
+ 
+     def specs(self, *a, **kw):

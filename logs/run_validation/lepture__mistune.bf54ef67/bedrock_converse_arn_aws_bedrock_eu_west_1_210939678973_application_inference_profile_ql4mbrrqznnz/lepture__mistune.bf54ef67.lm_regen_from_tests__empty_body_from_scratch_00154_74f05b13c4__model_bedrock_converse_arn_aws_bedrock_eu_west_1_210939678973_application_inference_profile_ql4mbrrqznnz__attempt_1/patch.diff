@@ -1,0 +1,43 @@
+--- a/src/mistune/plugins/task_lists.py
++++ b/src/mistune/plugins/task_lists.py
+@@ -60,14 +60,30 @@
+ 
+ 
+ def _rewrite_list_item(tok: Dict[str, Any]) -> None:
+-    children = tok['children']
+-    if children:
+-        first_child = children[0]
+-        text = first_child.get('text', '')
+-        m = TASK_LIST_ITEM.match(text)
+-        if m:
+-            mark = m.group(1)
+-            first_child['text'] = text[m.end():]
++    children = tok.get('children')
++    if not children:
++        return
+ 
+-            tok['type'] = 'task_list_item'
+-            tok['attrs'] = {'checked': mark != '[ ]'}
++    first_child = children[0]
++    if first_child['type'] == 'block_text':
++        text_children = first_child.get('children')
++        if text_children and text_children[0]['type'] == 'raw':
++            raw_text = text_children[0]['raw']
++            m = TASK_LIST_ITEM.match(raw_text)
++            if m:
++                mark = m.group(1)
++                checked = mark != '[ ]'
++                text_children[0]['raw'] = raw_text[m.end():]
++                tok['type'] = 'task_list_item'
++                tok['attrs'] = {'checked': checked}
++    elif first_child['type'] == 'paragraph':
++        text_children = first_child.get('children')
++        if text_children and text_children[0]['type'] == 'raw':
++            raw_text = text_children[0]['raw']
++            m = TASK_LIST_ITEM.match(raw_text)
++            if m:
++                mark = m.group(1)
++                checked = mark != '[ ]'
++                text_children[0]['raw'] = raw_text[m.end():]
++                tok['type'] = 'task_list_item'
++                tok['attrs'] = {'checked': checked}

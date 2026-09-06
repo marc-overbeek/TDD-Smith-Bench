@@ -1,0 +1,104 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -56,13 +56,7 @@
+ 
+     """
+     def __init__(self, subspec=T, **kwargs):
+-        self.subspec = subspec
+-        self._iter_stack = kwargs.pop('_iter_stack', [])
+-
+-        self.sentinel = kwargs.pop('sentinel', STOP)
+-        if kwargs:
+-            raise TypeError('unexpected keyword arguments: %r' % sorted(kwargs))
+-        return
++        pass
+ 
+     def __repr__(self):
+         base_args = ()
+@@ -83,34 +77,10 @@
+         return ''.join(chunks)
+ 
+     def glomit(self, target, scope):
+-        iterator = self._iterate(target, scope)
+-
+-        for _, _, callback in reversed(self._iter_stack):
+-            iterator = callback(iterator, scope)
+-
+-        return iter(iterator)
++        pass
+ 
+     def _iterate(self, target, scope):
+-        iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
+-        try:
+-            iterator = iterate(target)
+-        except Exception as e:
+-            raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+-                            % (target.__class__.__name__, Path(*scope[Path]), e))
+-
+-        base_path = scope[Path]
+-        for i, t in enumerate(iterator):
+-            scope[Path] = base_path + [i]
+-            yld = (t if self.subspec is T else scope[glom](t, self.subspec, scope))
+-            if yld is SKIP:
+-                continue
+-            elif yld is self.sentinel or yld is STOP:
+-                # NB: sentinel defaults to STOP so I was torn whether
+-                # to also check for STOP, and landed on the side of
+-                # never letting STOP through.
+-                return
+-            yield yld
+-        return
++        pass
+ 
+     def _add_op(self, opname, args, callback):
+         return type(self)(subspec=self.subspec, _iter_stack=[(opname, args, callback)] + self._iter_stack)
+@@ -279,46 +249,13 @@
+         return self._add_op('slice', args, lambda it, scope: islice(it, *args))
+ 
+     def limit(self, count):
+-        """A convenient alias for :meth:`~Iter.slice`, which takes a single
+-        argument, *count*, the max number of items to yield.
+-        """
+-        return self._add_op('limit', (count,), lambda it, scope: islice(it, count))
++        pass
+ 
+     def takewhile(self, key=T):
+-        """Returns a new :class:`Iter()` spec which stops the stream once
+-        *key* becomes falsy.
+-
+-        >>> glom([3, 2, 0, 1], Iter().takewhile().all())
+-        [3, 2]
+-
+-        :func:`itertools.takewhile` for more details.
+-        """
+-        return self._add_op(
+-            'takewhile',
+-            (key,),
+-            lambda it, scope: takewhile(
+-                lambda t: scope[glom](t, key, scope), it))
++        pass
+ 
+     def dropwhile(self, key=T):
+-        """Returns a new :class:`Iter()` spec which drops stream items until
+-        *key* becomes falsy.
+-
+-        >>> glom([0, 0, 3, 2, 0], Iter().dropwhile(lambda t: t < 1).all())
+-        [3, 2, 0]
+-
+-        Note that while similar to :meth:`Iter.filter()`, the filter
+-        only applies to the beginning of the stream. In a way,
+-        :meth:`Iter.dropwhile` can be thought of as
+-        :meth:`~str.lstrip()` for streams. See
+-        :func:`itertools.dropwhile` for more details.
+-
+-        """
+-
+-        return self._add_op(
+-            'dropwhile',
+-            (key,),
+-            lambda it, scope: dropwhile(
+-                lambda t: scope[glom](t, key, scope), it))
++        pass
+ 
+     # Terminal methods follow
+ 

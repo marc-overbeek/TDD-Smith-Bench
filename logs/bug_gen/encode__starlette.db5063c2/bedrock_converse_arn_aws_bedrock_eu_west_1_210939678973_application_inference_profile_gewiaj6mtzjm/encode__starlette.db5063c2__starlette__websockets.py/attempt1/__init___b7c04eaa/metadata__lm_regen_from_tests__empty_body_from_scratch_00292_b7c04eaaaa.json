@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests and the code, I can see that the `WebSocketDisconnect` class's `__init__` method needs to be properly implemented. The current implementation just has `pass` and doesn't actually set the instance variables.\n\nLet me examine the class more carefully:\n\n1. The `WebSocketDisconnect` class should store the `code` and `reason` parameters as instance attributes\n2. The current implementation is missing the actual initialization logic\n3. Looking at how it's used elsewhere in the code (like in `close` method), it expects these attributes to be accessible\n\nHere's the fix:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "Looking at the failing tests and the code, I can see that the `WebSocketDisconnect` class's `__init__` method needs to be properly implemented. The current implementation just has `pass` and doesn't actually set the instance variables.\n\nLet me examine the class more carefully:\n\n1. The `WebSocketDisconnect` class should store the `code` and `reason` parameters as instance attributes\n2. The current implementation is missing the actual initialization logic\n3. Looking at how it's used elsewhere in the code (like in `close` method), it expects these attributes to be accessible\n\nHere's the fix:\n\n```\ndef __init__(self, code: int = 1000, reason: str | None = None) -> None:\n    self.code = code\n    self.reason = reason or \"\"\n```",
+  "rewrite": "def __init__(self, code: int = 1000, reason: str | None = None) -> None:\n    self.code = code\n    self.reason = reason or \"\"\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

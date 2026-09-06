@@ -1,0 +1,30 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1826,6 +1826,27 @@
+     to a function.  Each time the spec is evaluated, the same arguments
+     will be referenced; so, think carefully about mutable data structures.
+     """
++    def __call__(self, *args, **kwargs):
++        if self is S:
++            if args:
++                raise TypeError(f'S() takes no positional arguments, got: {args!r}')
++            if not kwargs:
++                raise TypeError('S() expected at least one kwarg, got none')
++            # TODO: typecheck kwarg vals?
++        return _t_child(self, '(', (args, kwargs))
++
++    elif root is S and fetch_till > 1 and t_path[1] == '(':
++        # S(var='spec') style assignment
++        _, kwargs = t_path[2]
++        scope.update({
++            k: arg_val(target, v, scope) for k, v in kwargs.items()})
++        return target
++
++    def __init__(self, base=(), **kw):
++        dict(base)  # ensure it is a dict-compatible first arg
++        self.base = base
++        self.defaults = kw
++
+     def __init__(self, base=(), **kw):
+         dict(base)  # ensure it is a dict-compatible first arg
+         self.base = base

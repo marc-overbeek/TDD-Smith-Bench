@@ -1,0 +1,21 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2539,15 +2539,9 @@
+             track.add_missing_data(get_data_function, add_missing_function)
+ 
+     def add_missing_elevations(self) -> None:
+-        def _add(interval: List[GPXTrackPoint], start: GPXTrackPoint, end: GPXTrackPoint, distances_ratios: List[float]) -> None:
+-            if (start.elevation is None) or (end.elevation is None):
+-                return
+-            assert start
+-            assert end
+-            assert interval
+-            assert len(interval) == len(distances_ratios)
+-            for point, ratio in zip(interval, distances_ratios):
+-                point.elevation = start.elevation + ratio * (end.elevation - start.elevation)
++        def _add(interval: List[GPXTrackPoint], start: GPXTrackPoint, end:
++            GPXTrackPoint, distances_ratios: List[float]) ->None:
++            pass
+ 
+         self.add_missing_data(get_data_function=lambda point: point.elevation,
+                               add_missing_function=_add)

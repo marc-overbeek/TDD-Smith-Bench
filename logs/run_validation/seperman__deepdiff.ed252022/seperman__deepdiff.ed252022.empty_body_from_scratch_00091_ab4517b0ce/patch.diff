@@ -1,0 +1,42 @@
+--- a/deepdiff/model.py
++++ b/deepdiff/model.py
+@@ -791,38 +791,7 @@
+                                     child_relationship_param, child_relationship_param2, report_type)
+ 
+     def copy(self):
+-        """
+-        Get a deep copy of this comparision line.
+-        :return: The leaf ("downmost") object of the copy.
+-        """
+-        orig = self.all_up
+-        result = copy(orig)  # copy top level
+-
+-        while orig is not None:
+-            result.additional = copy(orig.additional)
+-
+-            if orig.down is not None:  # copy and create references to the following level
+-                # copy following level
+-                result.down = copy(orig.down)
+-
+-                if orig.t1_child_rel is not None:
+-                    result.t1_child_rel = ChildRelationship.create(
+-                        klass=orig.t1_child_rel.__class__,
+-                        parent=result.t1,
+-                        child=result.down.t1,
+-                        param=orig.t1_child_rel.param)
+-                if orig.t2_child_rel is not None:
+-                    result.t2_child_rel = ChildRelationship.create(
+-                        klass=orig.t2_child_rel.__class__,
+-                        parent=result.t2,
+-                        child=result.down.t2,
+-                        param=orig.t2_child_rel.param)
+-
+-            # descend to next level
+-            orig = orig.down
+-            if result.down is not None:
+-                result = result.down
+-        return result
++        pass
+ 
+ 
+ class ChildRelationship:

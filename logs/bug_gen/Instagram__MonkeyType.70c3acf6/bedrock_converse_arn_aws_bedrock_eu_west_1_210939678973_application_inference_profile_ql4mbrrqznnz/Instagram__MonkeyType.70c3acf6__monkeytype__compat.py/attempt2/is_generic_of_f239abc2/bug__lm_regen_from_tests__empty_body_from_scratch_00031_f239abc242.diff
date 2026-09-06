@@ -1,0 +1,21 @@
+--- a/monkeytype/compat.py
++++ b/monkeytype/compat.py
+@@ -47,7 +47,17 @@
+ 
+ 
+ def is_generic_of(typ: Any, gen: Any) -> bool:
+-    return is_generic(typ) and typ.__origin__ is gen.__origin__
++    if not is_generic(typ) or not hasattr(typ, '__origin__'):
++        return False
++    origin = typ.__origin__
++    if origin is gen:
++        return True
++    # Handle cases where gen is a typing generic (e.g., typing.Dict)
++    # and origin is the builtin (e.g., dict), or gen has an __origin__
++    gen_origin = getattr(gen, '__origin__', None)
++    if gen_origin is not None and origin is gen_origin:
++        return True
++    return False
+ 
+ 
+ def qualname_of_generic(typ: Any) -> str:

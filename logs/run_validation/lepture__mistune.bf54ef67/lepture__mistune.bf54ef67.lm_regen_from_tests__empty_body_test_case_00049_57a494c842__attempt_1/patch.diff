@@ -1,0 +1,60 @@
+--- a/src/mistune/plugins/formatting.py
++++ b/src/mistune/plugins/formatting.py
+@@ -66,24 +66,22 @@
+     return "<sub>" + text + "</sub>"
+ 
+ 
+-def _parse_to_end(
+-    inline: "InlineParser",
+-    m: Match[str],
+-    state: "InlineState",
+-    tok_type: str,
+-    end_pattern: Pattern[str],
+-) -> Optional[int]:
++def _parse_to_end(inline: 'InlineParser', m: Match[str], state: 'InlineState', tok_type: str, end_pattern: Pattern[str]) -> Optional[int]:
+     pos = m.end()
+-    m1 = end_pattern.search(state.src, pos)
+-    if not m1:
++    src = state.src
++    end_m = end_pattern.search(src, pos)
++    if not end_m:
+         return None
+-    end_pos = m1.end()
+-    text = state.src[pos:end_pos-2]
++    
++    text = src[pos:end_m.end() - 2]
+     new_state = state.copy()
+     new_state.src = text
+     children = inline.render(new_state)
+-    state.append_token({'type': tok_type, 'children': children})
+-    return end_pos
++    state.append_token({
++        'type': tok_type,
++        'children': children
++    })
++    return end_m.end()
+ 
+ 
+ def _parse_script(
+@@ -146,19 +144,10 @@
+         md.renderer.register('mark', render_mark)
+ 
+ 
+-def insert(md: "Markdown") -> None:
+-    """A mistune plugin to add ``<ins>`` tag. Spec defined at
+-    https://facelessuser.github.io/pymdown-extensions/extensions/caret/#insert:
+-
+-    .. code-block:: text
+-
+-        ^^insert me^^
+-
+-    :param md: Markdown instance
+-    """
++def insert(md: 'Markdown') -> None:
+     md.inline.register(
+         'insert',
+-        r'\^\^(?=[^\s\^])',
++        r'\^\^(?=[^\s^])',
+         parse_insert,
+         before='link',
+     )

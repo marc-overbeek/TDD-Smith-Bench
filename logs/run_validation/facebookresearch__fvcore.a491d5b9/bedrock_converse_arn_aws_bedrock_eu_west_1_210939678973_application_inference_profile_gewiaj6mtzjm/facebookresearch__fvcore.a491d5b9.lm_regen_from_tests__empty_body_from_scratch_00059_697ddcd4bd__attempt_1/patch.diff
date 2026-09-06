@@ -1,0 +1,31 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -300,8 +300,26 @@
+         self._param_schedule = values
+ 
+     def __call__(self, where: float) -> float:
+-        ind = int((where + self.WHERE_EPSILON) * len(self._param_schedule))
+-        return self._param_schedule[ind]
++        # Find scheduler corresponding to where
++        i = 0
++        running_total = self._lengths[i]
++        while (where + self.WHERE_EPSILON) > running_total and i < len(
++            self._schedulers
++        ) - 1:
++            i += 1
++            running_total += self._lengths[i]
++        scheduler = self._schedulers[i]
++        interval_scale = self._interval_scaling[i]
++    
++        if interval_scale == "rescaled":
++            # Calculate corresponding where % for scheduler
++            scheduler_start = running_total - self._lengths[i]
++            scheduler_where = (where - scheduler_start) / self._lengths[i]
++        else:  # fixed
++            # Use the global where directly for fixed scaling
++            scheduler_where = where
++    
++        return scheduler(scheduler_where)
+ 
+ 
+ class StepWithFixedGammaParamScheduler(ParamScheduler):

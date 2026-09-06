@@ -1,0 +1,16 @@
+--- a/src/mistune/renderers/rst.py
++++ b/src/mistune/renderers/rst.py
+@@ -76,8 +76,12 @@
+     def codespan(self, token: Dict[str, Any], state: BlockState) -> str:
+         return "``" + cast(str, token["raw"]) + "``"
+ 
++    lines = text.split('<linebreak>')
++    if len(lines) > 1:
++        text = '\n'.join('| ' + line for line in lines)
++
+     def linebreak(self, token: Dict[str, Any], state: BlockState) -> str:
+-        return '<linebreak>'
++        return '\\\n'
+ 
+     def softbreak(self, token: Dict[str, Any], state: BlockState) -> str:
+         return ' '

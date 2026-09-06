@@ -1,0 +1,17 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -321,6 +321,14 @@
+     def __delitem__(self, key: typing.Any) -> None:
+         self._list = [(k, v) for k, v in self._list if k != key]
+         del self._dict[key]
++
++    q = MultiDict([('a', '123'), ('a', '456'), ('b', '789')])
++    assert q.pop('a') == '456'
++    assert q.get('a', None) is None
++    assert repr(q) == "MultiDict([('b', '789')])"
++
++    def pop(self, key: typing.Any, default: typing.Any = None) -> typing.Any:
++        pass
+ 
+     def pop(self, key: typing.Any, default: typing.Any = None) -> typing.Any:
+         self._list = [(k, v) for k, v in self._list if k != key]

@@ -1,0 +1,22 @@
+--- a/fvcore/nn/parameter_count.py
++++ b/fvcore/nn/parameter_count.py
+@@ -98,17 +98,8 @@
+             return "{:.1f}K".format(x / 1e3)
+         return str(x)
+ 
+-    def fill(lvl: int, prefix: str) -> None:
+-        if lvl >= max_depth:
+-            return
+-        for name, v in count.items():
+-            if name.count(".") == lvl and name.startswith(prefix):
+-                indent = " " * (lvl + 1)
+-                if name in param_shape:
+-                    table.append((indent + name, indent + str(param_shape[name])))
+-                else:
+-                    table.append((indent + name, indent + format_size(v)))
+-                    fill(lvl + 1, name + ".")
++    def fill(lvl: int, prefix: str) ->None:
++        pass
+ 
+     table.append(("model", format_size(count.pop(""))))
+     fill(0, "")

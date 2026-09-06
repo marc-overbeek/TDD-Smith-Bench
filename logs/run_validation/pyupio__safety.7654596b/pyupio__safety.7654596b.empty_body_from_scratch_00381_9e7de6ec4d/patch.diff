@@ -1,0 +1,46 @@
+--- a/safety/alerts/utils.py
++++ b/safety/alerts/utils.py
+@@ -144,40 +144,9 @@
+     return template.render(context)
+ 
+ 
+-def generate_issue_body(pkg: str, remediation: Dict[str, Any], vulns: List[Dict[str, Any]], *, api_key: str) -> Optional[str]:
+-    """
+-    Generates the body content for an issue.
+-
+-    Args:
+-        pkg (str): The package name.
+-        remediation (Dict[str, Any]): The remediation data.
+-        vulns (List[Dict[str, Any]]): The list of vulnerabilities.
+-        api_key (str): The API key for fetching changelog data.
+-
+-    Returns:
+-        str: The generated body content.
+-    """
+-    changelog = fetch_changelog(pkg, remediation['version'], remediation['recommended_version'],
+-                                api_key=api_key, from_spec=remediation.get('requirement', {}).get('specifier', None))
+-
+-    p = Path(__file__).parent / 'templates'
+-    env = jinja2.Environment(loader=jinja2.FileSystemLoader(Path(p)))
+-    template = env.get_template('issue.jinja2')
+-
+-    overall_impact = cvss3_score_to_label(highest_base_score(vulns))
+-
+-    context = {"pkg": pkg, "remediation": remediation, "vulns": vulns, "changelog": changelog,
+-               "overall_impact": overall_impact, "summary_changelog": False, "hint": get_hint(remediation)}
+-
+-    result = template.render(context)
+-
+-    # GitHub has a PR body length limit of 65536. If we're going over that, skip the changelog and just use a link.
+-    if len(result) < 65500:
+-        return result
+-
+-    context["summary_changelog"] = True
+-
+-    return template.render(context)
++def generate_issue_body(pkg: str, remediation: Dict[str, Any], vulns: List[
++    Dict[str, Any]], *, api_key: str) ->Optional[str]:
++    pass
+ 
+ 
+ def generate_commit_message(pkg: str, remediation: Dict[str, Any]) -> str:

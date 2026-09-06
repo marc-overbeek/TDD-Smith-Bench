@@ -1,0 +1,25 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -689,6 +689,13 @@
+         coords[:, 1] -= self.y0
+         return coords
+ 
++    def test_crop_invalid_polygons(self):
++        transform = T.CropTransform(3, 4, 20, 20)
++        polygon = [(0, 0), (0, 3), (3, 3), (3, 0), (2, 0), (2, 2), (1, 2), (1, 
++            1), (2, 1), (2, 0), (0, 0)]
++        cropped_polygons = transform.apply_polygons([polygon])
++        self.assertEqual(0, len(cropped_polygons))
++
+     def apply_polygons(self, polygons: list) -> list:
+         """
+         Apply crop transform on a list of polygons, each represented by a Nx2 array.
+@@ -699,7 +706,7 @@
+             polygon (list[ndarray]): each is a Nx2 floating point array of
+                 (x, y) format in absolute coordinates.
+         Returns:
+-            ndarray: cropped polygons.
++            ndarry: cropped polygons.
+         """
+         import shapely.geometry as geometry
+ 

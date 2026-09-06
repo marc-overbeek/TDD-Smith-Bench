@@ -1,0 +1,58 @@
+--- a/safety/alerts/utils.py
++++ b/safety/alerts/utils.py
+@@ -209,52 +209,9 @@
+     return hashlib.sha1(b"blob " + str(len(raw_contents)).encode('ascii') + b"\0" + raw_contents).hexdigest()
+ 
+ 
+-def fetch_changelog(package: str, from_version: Optional[str], to_version: str, *, api_key: str, from_spec: Optional[str] = None) -> Dict[str, Any]:
+-    """
+-    Fetches the changelog for a package from a specified version to another version.
+-
+-    Args:
+-        package (str): The package name.
+-        from_version (Optional[str]): The starting version.
+-        to_version (str): The ending version.
+-        api_key (str): The API key for fetching changelog data.
+-        from_spec (Optional[str]): The specifier for the starting version.
+-
+-    Returns:
+-        Dict[str, Any]: The fetched changelog data.
+-    """
+-    to_version = parse_version(to_version)
+-
+-    if from_version:
+-        from_version = parse_version(from_version)
+-    else:
+-        from_spec = SpecifierSet(from_spec)
+-
+-    changelog = {}
+-
+-    r = requests.get(
+-        "https://pyup.io/api/v1/changelogs/{}/".format(package),
+-        headers={"X-Api-Key": api_key}
+-    )
+-
+-    if r.status_code == 200:
+-        data = r.json()
+-        if data:
+-            # sort the changelog by release
+-            sorted_log = sorted(data.items(), key=lambda v: parse_version(v[0]), reverse=True)
+-
+-            # go over each release and add it to the log if it's within the "upgrade
+-            # range" e.g. update from 1.2 to 1.3 includes a changelog for 1.2.1 but
+-            # not for 0.4.
+-            for version, log in sorted_log:
+-                parsed_version = parse_version(version)
+-                version_check = from_version and (parsed_version > from_version)
+-                spec_check = from_spec and isinstance(from_spec, SpecifierSet) and from_spec.contains(parsed_version)
+-
+-                if version_check or spec_check and parsed_version <= to_version:
+-                    changelog[version] = log
+-
+-    return changelog
++def fetch_changelog(package: str, from_version: Optional[str], to_version:
++    str, *, api_key: str, from_spec: Optional[str]=None) ->Dict[str, Any]:
++    pass
+ 
+ 
+ def cvss3_score_to_label(score: float) -> Optional[str]:

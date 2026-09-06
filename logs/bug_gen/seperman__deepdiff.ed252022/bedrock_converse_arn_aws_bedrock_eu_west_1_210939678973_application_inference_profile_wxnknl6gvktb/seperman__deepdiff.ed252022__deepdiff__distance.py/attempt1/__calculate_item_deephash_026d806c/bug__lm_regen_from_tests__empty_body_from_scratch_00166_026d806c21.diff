@@ -1,0 +1,18 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -65,6 +65,15 @@
+             self.__calculate_item_deephash(item)
+             length = DeepHash.get_key(self.hashes, key=item, default=None, extract_index=1)
+         return length
++
++    def __calculate_item_deephash(self, item):
++        DeepHash(
++            item,
++            hashes=self.hashes,
++            parent='root',
++            apply_hash=True,
++            **self.deephash_parameters,
++        )
+ 
+     def __calculate_item_deephash(self, item):
+         DeepHash(

@@ -1,0 +1,89 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -617,8 +617,10 @@
+         _iterable_opcodes = self.diff.get('_iterable_opcodes', {})
+         if _iterable_opcodes:
+             for path, opcodes in _iterable_opcodes.items():
+-                transformed = []
+-                # elements = _path_to_elements(path)
++                # Sort opcodes by their positions to ensure correct order of operations
++                sorted_opcodes = sorted(opcodes, key=lambda x: (x.t1_from_index, x.t2_from_index))
++            
++                # Get the object at the path
+                 elem_and_details = self._get_elements_and_details(path)
+                 if elem_and_details:
+                     elements, parent, parent_to_obj_elem, parent_to_obj_action, obj, elem, action = elem_and_details
+@@ -628,29 +630,59 @@
+                         parent_to_obj_elem = 'root'
+                         parent_to_obj_action = GETATTR
+                 else:
+-                    continue  # pragma: no cover. Due to cPython peephole optimizer, this line doesn't get covered. https://github.com/nedbat/coveragepy/issues/198
+-                # import pytest; pytest.set_trace()
+-                obj = self.get_nested_obj(obj=self, elements=elements)
+-                is_obj_tuple = isinstance(obj, tuple)
+-                for opcode in opcodes:    
++                    continue
++                
++                # Apply opcodes to build the new sequence
++                transformed = []
++                obj_copy = list(obj) if isinstance(obj, tuple) else obj[:]
++            
++                # Process opcodes in order
++                last_t1_index = 0
++                last_t2_index = 0
++            
++                for opcode in sorted_opcodes:    
+                     if opcode.tag == 'replace':
+-                        # Replace items in list a[i1:i2] with b[j1:j2]
+-                        transformed.extend(opcode.new_values)
++                        # Add unchanged items before this replacement
++                        if last_t1_index < opcode.t1_from_index:
++                            transformed.extend(obj_copy[last_t1_index:opcode.t1_from_index])
++                        # Add the new values
++                        if opcode.new_values:
++                            transformed.extend(opcode.new_values)
++                        # Update indices
++                        last_t1_index = opcode.t1_to_index
++                        last_t2_index = opcode.t2_to_index
+                     elif opcode.tag == 'delete':
+-                        # Delete items from list a[i1:i2], so we do nothing here
+-                        continue
++                        # Delete items from list a[i1:i2], so we skip those items
++                        # Update indices
++                        last_t1_index = opcode.t1_to_index
+                     elif opcode.tag == 'insert':
+                         # Insert items from list b[j1:j2] into the new list
+-                        transformed.extend(opcode.new_values)
++                        if opcode.new_values:
++                            transformed.extend(opcode.new_values)
++                        # Update indices
++                        last_t2_index = opcode.t2_to_index
+                     elif opcode.tag == 'equal':
+                         # Items are the same in both lists, so we add them to the result
+-                        transformed.extend(obj[opcode.t1_from_index:opcode.t1_to_index])
+-                if is_obj_tuple:
+-                    obj = tuple(obj)
++                        if last_t1_index < opcode.t1_from_index:
++                            transformed.extend(obj_copy[last_t1_index:opcode.t1_from_index])
++                        # Add the equal items
++                        if opcode.t1_from_index < opcode.t1_to_index:
++                            transformed.extend(obj_copy[opcode.t1_from_index:opcode.t1_to_index])
++                        # Update indices
++                        last_t1_index = opcode.t1_to_index
++                        last_t2_index = opcode.t2_to_index
++            
++                # Handle remaining items
++                if last_t1_index < len(obj_copy):
++                    transformed.extend(obj_copy[last_t1_index:])
++                
++                # Apply the final result back to the object
++                if isinstance(obj, tuple):
++                    new_obj = tuple(transformed)
+                     # Making sure that the object is re-instated inside the parent especially if it was immutable
+                     # and we had to turn it into a mutable one. In such cases the object has a new id.
+                     self._simple_set_elem_value(obj=parent, path_for_err_reporting=path, elem=parent_to_obj_elem,
+-                                                value=obj, action=parent_to_obj_action)
++                                                value=new_obj, action=parent_to_obj_action)
+                 else:
+                     obj[:] = transformed
+ 

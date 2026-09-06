@@ -1,0 +1,36 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -553,10 +553,33 @@
+                 yield from obj.items()  # which contains (column name, series tuples)
+             result, counts = self._prep_iterable(obj=gen(), parent=parent, parents_ids=parents_ids)
+         elif (polars and isinstance(obj, polars.DataFrame)):
++            df_hash = DeepHashPrep(df)[df]
++
++            elif (pandas and isinstance(obj, pandas.DataFrame)):
++                def gen():
++                    yield ('dtype', obj.dtypes)
++                    yield ('index', obj.index)
++                    yield from obj.items()
++                result, counts = self._prep_iterable(obj=gen(), parent=parent, parents_ids=parents_ids)
++            elif (polars and isinstance(obj, polars.DataFrame)):
++                def gen():
++                    yield from obj.columns
++                    yield from list(obj.schema.items())
++                    yield from obj.rows()
++                result, counts = self._prep_iterable(obj=gen(), parent=parent, parents_ids=parents_ids)
++
+             def gen():
+                 yield from obj.columns
+                 yield from list(obj.schema.items())
+                 yield from obj.rows()
++
++            def gen():
++                global DeepHashPrep
++                DeepHashPrep = DeepHash
++
++            def gen():
++                global DeepHashPrep
++                DeepHashPrep = DeepHash
+             result, counts = self._prep_iterable(obj=gen(), parent=parent, parents_ids=parents_ids)
+ 
+         elif isinstance(obj, Iterable):

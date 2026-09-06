@@ -1,0 +1,20 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2564,6 +2564,17 @@
+                 for point, ratio in zip(interval, distances_ratios):
+                     point.time = start.time + mod_datetime.timedelta(seconds=ratio * seconds_between)
+ 
++        def _add(interval: List[GPXTrackPoint], start: GPXTrackPoint, end: GPXTrackPoint, distances_ratios: List[float]) -> None:
++            if (not start) or (not end) or (not start.time) or (not end.time):
++                return
++            assert interval
++            assert len(interval) == len(distances_ratios)
++
++            if end.time and start.time:
++                seconds_between = float(mod_utils.total_seconds(end.time - start.time))
++                for point, ratio in zip(interval, distances_ratios):
++                    point.time = start.time + mod_datetime.timedelta(seconds=ratio * seconds_between)
++
+         self.add_missing_data(get_data_function=lambda point: point.time,
+                               add_missing_function=_add)
+ 

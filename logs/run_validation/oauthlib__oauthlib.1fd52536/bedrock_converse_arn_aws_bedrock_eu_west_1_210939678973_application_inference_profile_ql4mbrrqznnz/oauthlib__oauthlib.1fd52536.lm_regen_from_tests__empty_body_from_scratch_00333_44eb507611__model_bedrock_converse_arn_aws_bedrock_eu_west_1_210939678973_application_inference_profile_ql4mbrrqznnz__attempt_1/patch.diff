@@ -1,0 +1,17 @@
+--- a/oauthlib/oauth2/rfc6749/grant_types/base.py
++++ b/oauthlib/oauth2/rfc6749/grant_types/base.py
+@@ -133,6 +133,14 @@
+                               oauthlib.oauth2.BearerToken.
+         """
+         raise NotImplementedError('Subclasses must implement this method.')
++
++    def add_token(self, token, token_handler, request):
++        # Only add a hybrid access token on auth step if asked for
++        if request.response_type not in ["token", "code token", "id_token token", "code id_token token"]:
++            return token
++
++        token.update(token_handler.create_token(request, refresh_token=False))
++        return token
+ 
+     def add_token(self, token, token_handler, request):
+         """

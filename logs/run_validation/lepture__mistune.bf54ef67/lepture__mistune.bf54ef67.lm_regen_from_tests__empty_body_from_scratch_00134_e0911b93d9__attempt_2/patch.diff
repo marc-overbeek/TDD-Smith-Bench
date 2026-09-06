@@ -1,0 +1,100 @@
+--- a/src/mistune/plugins/ruby.py
++++ b/src/mistune/plugins/ruby.py
+@@ -14,35 +14,75 @@
+ _ruby_re = re.compile(RUBY_PATTERN)
+ 
+ 
+-def parse_ruby(inline: "InlineParser", m: Match[str], state: "InlineState") -> int:
+-    text = m.group(0)[1:-2]
+-    items = text.split(')')
++def parse_ruby(inline: 'InlineParser', m: Match[str], state: 'InlineState'
++    ) ->int:
++    text = m.group(0)
++    # Remove outer brackets
++    content = text[1:-1]
++    
++    # Parse ruby pairs: word(ruby)
++    ruby_pattern = r'(\w+)\((\w+)\)'
++    pairs = re.findall(ruby_pattern, content)
++    
++    if not pairs:
++        return 0
++    
+     tokens = []
+-    for item in items:
+-        rb, rt = item.split('(')
++    for base_text, rt in pairs:
+         tokens.append({
+             'type': 'ruby',
+-            'raw': rb,
+-            'attrs': {'rt': rt}
++            'children': [{'type': 'text', 'raw': base_text}],
++            'attrs': {'rt': rt},
+         })
+-
+-    end_pos = m.end()
+-
+-    next_match = _ruby_re.match(state.src, end_pos)
+-    if next_match:
+-        for tok in tokens:
+-            state.append_token(tok)
+-        return parse_ruby(inline, next_match, state)
+-
+-    # repeat link logic
+-    if end_pos < len(state.src):
+-        link_pos = _parse_ruby_link(inline, state, end_pos, tokens)
++    
++    pos = m.end()
++    
++    # Check if there's a link following
++    if pos < len(state.src):
++        link_pos = _parse_ruby_link(inline, state, pos, tokens)
+         if link_pos:
+             return link_pos
++    
++    # No link, just append the ruby tokens
++    for token in tokens:
++        state.append_token(token)
++    
++    return pos
+ 
+-    for tok in tokens:
+-        state.append_token(tok)
+-    return end_pos
++def parse_ruby(inline: 'InlineParser', m: Match[str], state: 'InlineState'
++    ) ->int:
++    text = m.group(0)
++    # Remove outer brackets
++    content = text[1:-1]
++    
++    # Parse ruby pairs: word(ruby)
++    ruby_pattern = r'(\w+)\((\w+)\)'
++    pairs = re.findall(ruby_pattern, content)
++    
++    if not pairs:
++        return 0
++    
++    tokens = []
++    for base_text, rt in pairs:
++        tokens.append({
++            'type': 'ruby',
++            'children': [{'type': 'text', 'raw': base_text}],
++            'attrs': {'rt': rt},
++        })
++    
++    pos = m.end()
++    
++    # Check if there's a link following
++    if pos < len(state.src):
++        link_pos = _parse_ruby_link(inline, state, pos, tokens)
++        if link_pos:
++            return link_pos
++    
++    # No link, just append the ruby tokens
++    for token in tokens:
++        state.append_token(token)
++    
++    return pos
+ 
+ 
+ def _parse_ruby_link(

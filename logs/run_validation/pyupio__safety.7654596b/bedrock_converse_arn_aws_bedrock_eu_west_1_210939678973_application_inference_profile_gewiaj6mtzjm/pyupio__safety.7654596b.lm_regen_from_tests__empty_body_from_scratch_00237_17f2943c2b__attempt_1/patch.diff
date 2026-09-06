@@ -1,0 +1,43 @@
+--- a/safety/scan/render.py
++++ b/safety/scan/render.py
+@@ -27,26 +27,22 @@
+ 
+ import datetime
+ 
+-def render_header(targets: List[Path], is_system_scan: bool) -> Text:
+-    """
+-    Render the header text for the scan.
+-
+-    Args:
+-        targets (List[Path]): List of target paths for the scan.
+-        is_system_scan (bool): Indicates if the scan is a system scan.
+-
+-    Returns:
+-        Text: Rendered header text.
+-    """
++def render_header(targets: List[Path], is_system_scan: bool) ->Text:
+     version = get_safety_version()
+-    scan_datetime = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
+-
+-    action = f"scanning {', '.join([str(t) for t in targets])}"
++    timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
++    
+     if is_system_scan:
+-        action = "running [bold]system scan[/bold]"
+-
+-    return Text.from_markup(
+-        f"[bold]Safety[/bold] {version} {action}\n{scan_datetime}")
++        header_text = f"Safety {version} running system scan"
++    else:
++        if targets:
++            target_str = ", ".join([str(t) for t in targets])
++            header_text = f"Safety {version} scanning {target_str}"
++        else:
++            header_text = f"Safety {version} scanning"
++    
++    header_text += f"\n{timestamp}"
++    
++    return Text(header_text)
+ 
+ def print_header(console, targets: List[Path], is_system_scan: bool = False) -> None:
+     """

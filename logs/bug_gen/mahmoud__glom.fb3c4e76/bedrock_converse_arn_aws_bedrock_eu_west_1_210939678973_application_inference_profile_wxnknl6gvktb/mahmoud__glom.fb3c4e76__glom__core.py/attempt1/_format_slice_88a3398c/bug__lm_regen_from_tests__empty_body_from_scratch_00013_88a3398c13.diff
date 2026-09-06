@@ -1,0 +1,38 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1712,13 +1712,30 @@
+ ROOT = make_sentinel('ROOT')
+ 
+ 
++elif op == '[':
++    if type(arg) is tuple:
++        index = ", ".join([_format_slice(x) for x in arg])
++    else:
++        index = _format_slice(arg)
++    prepr.append(f"[{index}]")
++
++assert repr(T[1:]) == 'T[1:]'
++assert repr(T[::3, 1:, 1:2, :2:3]) == 'T[::3, 1:, 1:2, :2:3]'
++
+ def _format_slice(x):
+-    if type(x) is not slice:
++    if isinstance(x, slice):
++        # Format slice objects as start:stop:step
++        start = '' if x.start is None else str(x.start)
++        stop = '' if x.stop is None else str(x.stop)
++        step = '' if x.step is None else str(x.step)
++        
++        if x.step is None:
++            return f'{start}:{stop}'
++        else:
++            return f'{start}:{stop}:{step}'
++    else:
++        # For non-slice objects, use bbrepr
+         return bbrepr(x)
+-    fmt = lambda v: "" if v is None else bbrepr(v)
+-    if x.step is None:
+-        return fmt(x.start) + ":" + fmt(x.stop)
+-    return fmt(x.start) + ":" + fmt(x.stop) + ":" + fmt(x.step)
+ 
+ 
+ def _format_t(path, root=T):

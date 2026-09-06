@@ -1,0 +1,195 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -52,21 +52,20 @@
+     return is_generic(typ) and name_of_generic(typ) == "List"
+ 
+ 
+-def make_typed_dict(*, required_fields=None, optional_fields=None) -> type:
+-    required_fields = required_fields or {}
+-    optional_fields = optional_fields or {}
+-    assert required_fields.keys().isdisjoint(optional_fields.keys())
+-    return TypedDict(
+-        DUMMY_TYPED_DICT_NAME,
+-        {
+-            "required_fields": TypedDict(
+-                DUMMY_REQUIRED_TYPED_DICT_NAME, required_fields
+-            ),
+-            "optional_fields": TypedDict(
+-                DUMMY_OPTIONAL_TYPED_DICT_NAME, optional_fields
+-            ),
+-        },
+-    )
++def make_typed_dict(*, required_fields=None, optional_fields=None) ->type:
++    if required_fields is None:
++        required_fields = {}
++    if optional_fields is None:
++        optional_fields = {}
++    
++    RequiredFields = TypedDict(DUMMY_REQUIRED_TYPED_DICT_NAME, required_fields)
++    OptionalFields = TypedDict(DUMMY_OPTIONAL_TYPED_DICT_NAME, optional_fields)
++    
++    result = TypedDict(DUMMY_TYPED_DICT_NAME, {
++        'required_fields': RequiredFields,
++        'optional_fields': OptionalFields,
++    })
++    return result
+ 
+ 
+ def field_annotations(typed_dict) -> Tuple[Dict[str, type], Dict[str, type]]:
+@@ -82,85 +81,81 @@
+     return is_typed_dict(typ) and typ.__name__ == DUMMY_TYPED_DICT_NAME
+ 
+ 
+-def shrink_typed_dict_types(typed_dicts: List[type], max_typed_dict_size: int) -> type:
+-    """Shrink a list of TypedDicts into one with the required fields and the optional fields.
+-    Required fields are keys that appear as a required field in all the TypedDicts.
+-    Optional fields are those that appear as a required field in only some
+-    of the TypedDicts or appear as a optional field in even one TypedDict.
+-    If the same key has multiple value types, then its value is the Union of the value types.
+-    """
+-    num_typed_dicts = len(typed_dicts)
+-    key_value_types_dict = defaultdict(list)
+-    existing_optional_fields = []
+-    for typed_dict in typed_dicts:
+-        required_fields, optional_fields = field_annotations(typed_dict)
+-        for key, value_type in required_fields.items():
+-            key_value_types_dict[key].append(value_type)
+-        existing_optional_fields.extend(optional_fields.items())
+-
+-    required_fields = {
+-        key: value_types
+-        for key, value_types in key_value_types_dict.items()
+-        if len(value_types) == num_typed_dicts
+-    }
+-    optional_fields = defaultdict(list)
+-    for key, value_types in key_value_types_dict.items():
+-        if len(value_types) != num_typed_dicts:
+-            optional_fields[key] = value_types
+-    for key, value_type in existing_optional_fields:
+-        optional_fields[key].append(value_type)
+-
+-    if len(required_fields) + len(optional_fields) > max_typed_dict_size:
+-        value_type = shrink_types(
+-            list(
+-                chain.from_iterable(
+-                    chain(required_fields.values(), optional_fields.values())
+-                )
+-            ),
+-            max_typed_dict_size,
+-        )
+-        return Dict[str, value_type]
+-    required_fields = {
+-        key: shrink_types(list(value_types), max_typed_dict_size)
+-        for key, value_types in required_fields.items()
+-    }
+-    optional_fields = {
+-        key: shrink_types(list(value_types), max_typed_dict_size)
+-        for key, value_types in optional_fields.items()
+-    }
+-    return make_typed_dict(
+-        required_fields=required_fields, optional_fields=optional_fields
+-    )
++def shrink_typed_dict_types(typed_dicts: List[type], max_typed_dict_size: int
++    ) ->type:
++    if not typed_dicts:
++        return Dict[Any, Any]
++    
++    merged_required = {}
++    merged_optional = {}
++    
++    for td in typed_dicts:
++        req, opt = field_annotations(td)
++        for k, v in req.items():
++            if k not in merged_required:
++                merged_required[k] = []
++            merged_required[k].append(v)
++        for k, v in opt.items():
++            if k not in merged_optional:
++                merged_optional[k] = []
++            merged_optional[k].append(v)
++    
++    all_keys = set()
++    for td in typed_dicts:
++        req, opt = field_annotations(td)
++        all_keys.update(req.keys())
++        all_keys.update(opt.keys())
++    
++    first_req, _ = field_annotations(typed_dicts[0])
++    first_keys = set(first_req.keys())
++    
++    common_required_keys = first_keys.copy()
++    for td in typed_dicts[1:]:
++        req, _ = field_annotations(td)
++        common_required_keys &= set(req.keys())
++    
++    final_required = {}
++    final_optional = {}
++    
++    for k in all_keys:
++        types_for_key = merged_required.get(k, []) + merged_optional.get(k, [])
++        shrunk = shrink_types(types_for_key, max_typed_dict_size)
++        if k in common_required_keys:
++            final_required[k] = shrunk
++        else:
++            final_optional[k] = shrunk
++    
++    total_size = len(final_required) + len(final_optional)
++    if max_typed_dict_size is not None and total_size > max_typed_dict_size:
++        all_value_types = list(final_required.values()) + list(final_optional.values())
++        val_type = shrink_types(all_value_types, max_typed_dict_size)
++        return Dict[str, val_type]
++    
++    return make_typed_dict(required_fields=final_required, optional_fields=final_optional)
+ 
+ 
+ def shrink_types(types, max_typed_dict_size):
+-    """Return the smallest type equivalent to Union[types].
+-    If all the types are anonymous TypedDicts, shrink them ourselves.
+-    Otherwise, recursively turn the anonymous TypedDicts into Dicts.
+-    Union will handle deduplicating types (both by equality and subtype relationships).
+-    """
+-    types = tuple(types)
+-    if len(types) == 0:
++    types = list(types)
++    if not types:
+         return Any
+-    if all(is_anonymous_typed_dict(typ) for typ in types):
+-        return shrink_typed_dict_types(types, max_typed_dict_size)
+-    # Don't rewrite anonymous TypedDict to Dict if the types are all the same,
+-    # such as [Tuple[TypedDict(...)], Tuple[TypedDict(...)]].
+-    if all(types_equal(typ, types[0]) for typ in types[1:]):
+-        return types[0]
+-
+-    # If they are all lists, shrink their argument types. This way, we avoid
+-    # rewriting heterogeneous anonymous TypedDicts to Dict.
+-    if all(is_list(typ) for typ in types):
+-        annotation = shrink_types(
+-            (getattr(typ, "__args__")[0] for typ in types), max_typed_dict_size
+-        )
+-        return List[annotation]
+-
+-    all_dict_types = tuple(
+-        RewriteAnonymousTypedDictToDict().rewrite(typ) for typ in types
+-    )
+-    return Union[all_dict_types]
++    
++    typed_dicts = [t for t in types if is_anonymous_typed_dict(t)]
++    non_typed_dicts = [t for t in types if not is_anonymous_typed_dict(t)]
++    
++    if typed_dicts and not non_typed_dicts:
++        return shrink_typed_dict_types(typed_dicts, max_typed_dict_size)
++    elif typed_dicts and non_typed_dicts:
++        shrunk_td = shrink_typed_dict_types(typed_dicts, max_typed_dict_size)
++        all_types = non_typed_dicts + [shrunk_td]
++        unique = list(dict.fromkeys(all_types))
++        if len(unique) == 1:
++            return unique[0]
++        return Union[tuple(unique)]
++    
++    unique = list(dict.fromkeys(types))
++    if len(unique) == 1:
++        return unique[0]
++    return Union[tuple(unique)]
+ 
+ 
+ def make_iterator(typ):

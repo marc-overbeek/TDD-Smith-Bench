@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef create_request_token(self, request, credentials):\n    \"\"\"Create and save a new request token.\n\n    :param request: OAuthlib request.\n    :type request: oauthlib.common.Request\n    :param credentials: A dict of extra token credentials.\n    :returns: The token as an urlencoded string.\n    \"\"\"\n    token = {\n        'oauth_token': self.token_generator(),\n        'oauth_token_secret': self.token_generator(),\n        'oauth_callback_confirmed': 'true'\n    }\n    token.update(credentials)\n    self.request_validator.save_request_token(token, request)\n    return urlencode(token.items())\n```",
+  "rewrite": "def create_request_token(self, request, credentials):\n    \"\"\"Create and save a new request token.\n\n    :param request: OAuthlib request.\n    :type request: oauthlib.common.Request\n    :param credentials: A dict of extra token credentials.\n    :returns: The token as an urlencoded string.\n    \"\"\"\n    token = {\n        'oauth_token': self.token_generator(),\n        'oauth_token_secret': self.token_generator(),\n        'oauth_callback_confirmed': 'true'\n    }\n    token.update(credentials)\n    self.request_validator.save_request_token(token, request)\n    return urlencode(token.items())\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

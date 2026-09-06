@@ -1,0 +1,46 @@
+--- a/src/mistune/markdown.py
++++ b/src/mistune/markdown.py
+@@ -70,40 +70,9 @@
+                 tok['children'] = self.inline(text.strip(' \r\n\t\f'), state.env)
+             yield tok
+ 
+-    def parse(
+-        self, s: str, state: Optional[BlockState] = None
+-    ) -> Tuple[Union[str, List[Dict[str, Any]]], BlockState]:
+-        """Parse and convert the given markdown string. If renderer is None,
+-        the returned **result** will be parsed markdown tokens.
+-
+-        :param s: markdown string
+-        :param state: instance of BlockState
+-        :returns: result, state
+-        """
+-        if state is None:
+-            state = self.block.state_cls()
+-
+-        # normalize line separator
+-        s = s.replace('\r\n', '\n')
+-        s = s.replace('\r', '\n')
+-        if not s.endswith('\n'):
+-            s += '\n'
+-
+-        state.process(s)
+-
+-        for hook in self.before_parse_hooks:
+-            hook(self, state)
+-
+-        self.block.parse(state)
+-
+-        for hook2 in self.before_render_hooks:
+-            hook2(self, state)
+-
+-        result = self.render_state(state)
+-
+-        for hook3 in self.after_render_hooks:
+-            result = hook3(self, result, state)
+-        return result, state
++    def parse(self, s: str, state: Optional[BlockState]=None) ->Tuple[Union[str,
++        List[Dict[str, Any]]], BlockState]:
++        pass
+ 
+     def read(
+         self, filepath: str, encoding: str = "utf-8", state: Optional[BlockState] = None

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef __delitem__(self, key: str) -> None:\n    del_key = key.lower().encode(\"latin-1\")\n\n    pop_indexes: list[int] = []\n    for idx, (item_key, item_value) in enumerate(self._list):\n        if item_key == del_key:\n            pop_indexes.append(idx)\n\n    for idx in reversed(pop_indexes):\n        del self._list[idx]\n```\n\n```\ndef raw(self) -> list[tuple[bytes, bytes]]:\n    return self._list\n```\n\n```\ndef setdefault(self, key: str, value: str) -> str:\n    set_key = key.lower().encode(\"latin-1\")\n    set_value = value.encode(\"latin-1\")\n\n    for idx, (item_key, item_value) in enumerate(self._list):\n        if item_key == set_key:\n            return item_value.decode(\"latin-1\")\n    self._list.append((set_key, set_value))\n    return value\n```",
+  "rewrite": "def __delitem__(self, key: str) -> None:\n    del_key = key.lower().encode(\"latin-1\")\n\n    pop_indexes: list[int] = []\n    for idx, (item_key, item_value) in enumerate(self._list):\n        if item_key == del_key:\n            pop_indexes.append(idx)\n\n    for idx in reversed(pop_indexes):\n        del self._list[idx]\n\ndef raw(self) -> list[tuple[bytes, bytes]]:\n    return self._list\n\ndef setdefault(self, key: str, value: str) -> str:\n    set_key = key.lower().encode(\"latin-1\")\n    set_value = value.encode(\"latin-1\")\n\n    for idx, (item_key, item_value) in enumerate(self._list):\n        if item_key == set_key:\n            return item_value.decode(\"latin-1\")\n    self._list.append((set_key, set_value))\n    return value",
+  "strategy": "lm_regen_from_tests_combined"
+}

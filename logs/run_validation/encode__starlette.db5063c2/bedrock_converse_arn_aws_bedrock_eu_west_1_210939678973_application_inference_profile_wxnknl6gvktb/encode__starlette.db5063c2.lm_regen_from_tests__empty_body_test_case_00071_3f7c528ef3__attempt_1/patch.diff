@@ -1,0 +1,68 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -78,21 +78,15 @@
+     return app
+ 
+ 
+-def websocket_session(
+-    func: typing.Callable[[WebSocket], typing.Awaitable[None]],
+-) -> ASGIApp:
+-    """
+-    Takes a coroutine `func(session)`, and returns an ASGI application.
+-    """
+-    # assert asyncio.iscoroutinefunction(func), "WebSocket endpoints must be async"
++def websocket_session(func: typing.Callable[[WebSocket], typing.Awaitable[
++    None]]) ->ASGIApp:
++    f: typing.Callable[[WebSocket], typing.Awaitable[None]] = (
++        func if is_async_callable(func) else functools.partial(run_in_threadpool, func)  # type:ignore
++    )
+ 
+     async def app(scope: Scope, receive: Receive, send: Send) -> None:
+-        session = WebSocket(scope, receive=receive, send=send)
+-
+-        async def app(scope: Scope, receive: Receive, send: Send) -> None:
+-            await func(session)
+-
+-        await wrap_app_handling_exceptions(app, session)(scope, receive, send)
++        websocket = WebSocket(scope, receive=receive, send=send)
++        await wrap_app_handling_exceptions(f, websocket)(websocket)
+ 
+     return app
+ 
+@@ -398,34 +392,16 @@
+ 
+     def matches(self, scope: Scope) -> tuple[Match, Scope]:
+         path_params: dict[str, typing.Any]
+-        if scope["type"] in ("http", "websocket"):
+-            root_path = scope.get("root_path", "")
++        if scope["type"] == "websocket":
+             route_path = get_route_path(scope)
+             match = self.path_regex.match(route_path)
+             if match:
+                 matched_params = match.groupdict()
+                 for key, value in matched_params.items():
+                     matched_params[key] = self.param_convertors[key].convert(value)
+-                remaining_path = "/" + matched_params.pop("path")
+-                matched_path = route_path[: -len(remaining_path)]
+                 path_params = dict(scope.get("path_params", {}))
+                 path_params.update(matched_params)
+-                child_scope = {
+-                    "path_params": path_params,
+-                    # app_root_path will only be set at the top level scope,
+-                    # initialized with the (optional) value of a root_path
+-                    # set above/before Starlette. And even though any
+-                    # mount will have its own child scope with its own respective
+-                    # root_path, the app_root_path will always be available in all
+-                    # the child scopes with the same top level value because it's
+-                    # set only once here with a default, any other child scope will
+-                    # just inherit that app_root_path default value stored in the
+-                    # scope. All this is needed to support Request.url_for(), as it
+-                    # uses the app_root_path to build the URL path.
+-                    "app_root_path": scope.get("app_root_path", root_path),
+-                    "root_path": root_path + matched_path,
+-                    "endpoint": self.app,
+-                }
++                child_scope = {"endpoint": self.endpoint, "path_params": path_params}
+                 return Match.FULL, child_scope
+         return Match.NONE, {}
+ 

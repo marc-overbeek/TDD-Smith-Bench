@@ -1,0 +1,40 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -164,19 +164,25 @@
+             lambda iterable, scope: ifilter(
+                 lambda t: scope[glom](t, check_spec, scope) is not SKIP, iterable))
+ 
++    def test_chunked():
++        int_list = list(range(9))
++        spec = Iter().chunked(3)
++        out = glom(int_list, spec)
++        assert list(out) == [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
++        spec = Iter().chunked(3).map(sum)
++        out = glom(int_list, spec)
++        assert list(out) == [3, 12, 21]
++
+     def chunked(self, size, fill=_MISSING):
+-        """Return a new :class:`Iter()` spec which groups elements in the iterable
+-        into lists of length *size*.
+-
+-        If the optional *fill* argument is provided, iterables not
+-        evenly divisible by *size* will be padded out by the *fill*
+-        constant. Otherwise, the final chunk will be shorter than *size*.
+-
+-        >>> list(glom(range(10), Iter().chunked(3)))
+-        [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]
+-        >>> list(glom(range(10), Iter().chunked(3, fill=None)))
+-        [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, None, None]]
+-        """
++        kw = {'size': size}
++        args = size,
++        if fill is not _MISSING:
++            kw['fill'] = fill
++            args += (fill,)
++        return self._add_op(
++            'chunked', args, lambda it, scope: chunked_iter(it, **kw))
++
++    def chunked(self, size, fill=_MISSING):
+         kw = {'size': size}
+         args = size,
+         if fill is not _MISSING:

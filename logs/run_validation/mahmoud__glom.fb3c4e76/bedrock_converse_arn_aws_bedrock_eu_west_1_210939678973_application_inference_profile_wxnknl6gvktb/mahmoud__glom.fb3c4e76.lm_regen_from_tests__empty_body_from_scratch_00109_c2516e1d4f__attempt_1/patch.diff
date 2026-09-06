@@ -1,0 +1,43 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1804,9 +1804,37 @@
+     access or by converting to a dict.
+ 
+     """
+-    def __init__(self, base, defaults):
+-        self.__dict__ = dict(base)
+-        self.__dict__.update(defaults)
++    let = S(v=Vars({'b': 2}, c=3))
++    assert glom(1, (let, A.v.a, S.v.a)) == 1
++    assert glom(1, (let, S.v.b)) == 2
++    assert glom(1, (let, S.v.c)) == 3
++    assert repr(Vars(a=1, b=2)) in ('Vars(a=1, b=2)', 'Vars(b=2, a=1)')
++
++    class Vars:
++        def __init__(self, base=(), **kw):
++            dict(base)  # ensure it is a dict-compatible first arg
++            self.base = base
++            self.defaults = kw
++
++        def glomit(self, target, spec):
++            return ScopeVars(self.base, self.defaults)
++
++    class ScopeVars:
++        def __init__(self, base, defaults):
++            self.__dict__ = dict(base)
++            self.__dict__.update(defaults)
++
++    def __repr__(self):
++        ret = format_invocation(self.__class__.__name__,
++                                args=(self.base,) if self.base else (),
++                                kwargs=self.defaults,
++                                repr=bbrepr)
++        return ret
++
++    def __init__(self, base=(), **kw):
++        dict(base)  # ensure it is a dict-compatible first arg
++        self.base = base
++        self.defaults = kw
+ 
+     def __iter__(self):
+         return iter(self.__dict__.items())

@@ -1,0 +1,64 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -552,15 +552,52 @@
+     """
+     A click option that depends on other options.
+     """
+-    def __init__(self, *args, **kwargs):
+-        self.required_options = set(kwargs.pop('required_options', []))
+-        help = kwargs.get('help', '')
+-        if self.required_options:
+-            ex_str = ', '.join(self.required_options)
+-            kwargs['help'] = help + (
+-                f" Requires: [ {ex_str} ]"
+-            )
+-        super(DependentOption, self).__init__(*args, **kwargs)
++    class SafetyContext(metaclass=SingletonMeta):
++        """
++        A singleton class to hold the Safety context.
++        """
++        packages = []
++        key = False
++        db_mirror = False
++        cached = None
++        ignore_vulns = None
++        ignore_severity_rules = None
++        proxy = None
++        include_ignored = False
++        telemetry = None
++        files = None
++        stdin = None
++        is_env_scan = None
++        command: Optional[str] = None
++        subcommand: Optional[str] = None
++        review = None
++        params = {}
++        safety_source = 'code'
++        local_announcements = []
++        scanned_full_path = []
++        account = None
++
++    def __init__(self):
++        self.packages = []
++        self.key = False
++        self.db_mirror = False
++        self.cached = None
++        self.ignore_vulns = None
++        self.ignore_severity_rules = None
++        self.proxy = None
++        self.include_ignored = False
++        self.telemetry = None
++        self.files = None
++        self.stdin = None
++        self.is_env_scan = None
++        self.command = None
++        self.subcommand = None
++        self.review = None
++        self.params = {}
++        self.safety_source = 'code'
++        self.local_announcements = []
++        self.scanned_full_path = []
++        self.account = None
+ 
+     def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+         """

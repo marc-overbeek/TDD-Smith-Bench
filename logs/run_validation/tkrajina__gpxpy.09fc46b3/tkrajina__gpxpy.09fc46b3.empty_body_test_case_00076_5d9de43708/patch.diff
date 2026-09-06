@@ -1,0 +1,79 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -78,22 +78,8 @@
+         return self.offset == other.offset # type: ignore
+ 
+ 
+-def parse_time(string: str) -> Optional[mod_datetime.datetime]:
+-    from . import gpx as mod_gpx
+-    if not string:
+-        return None
+-    m = RE_TIMESTAMP.match(string)
+-    if m:
+-        dt = [int(m.group(i)) for i in range(1, 7)]
+-        if m.group(7):
+-            f = m.group(7)[1:7]
+-            dt.append(int(f + "0" * (6 - len(f))))
+-        else:
+-            dt.append(0)
+-        if m.group(8):
+-            dt.append(SimpleTZ(m.group(8))) # type: ignore
+-        return mod_datetime.datetime(*dt) # type: ignore
+-    raise mod_gpx.GPXException(f'Invalid time: {string}')
++def parse_time(string: str) ->Optional[mod_datetime.datetime]:
++    pass
+ 
+ 
+ def format_time(time: mod_datetime.datetime) -> str:
+@@ -119,11 +105,8 @@
+ 
+ 
+ class TimeConverter:
+-    def from_string(self, string: str) -> Optional[mod_datetime.datetime]:
+-        try:
+-            return parse_time(string)
+-        except:
+-            return None
++    def from_string(self, string: str) ->Optional[mod_datetime.datetime]:
++        pass
+ 
+     def to_string(self, time: Optional[mod_datetime.datetime]) -> Optional[str]:
+         return format_time(time) if time else None
+@@ -178,35 +161,8 @@
+         self.possible = possible
+         self.mandatory = mandatory
+ 
+-    def from_xml(self, node: Any, version: str) -> Any:
+-        if self.attribute:
+-            if node is not None:
+-                result = node.get(self.attribute)
+-        else:
+-            __node = node.find(self.tag)
+-            if __node is not None:
+-                result = __node.text
+-            else:
+-                result = None
+-        if result is None:
+-            if self.mandatory:
+-                from . import gpx as mod_gpx
+-                raise mod_gpx.GPXException(f'{self.name} is mandatory in {self.tag} (got {result})')
+-            return None
+-
+-        if self.type_converter:
+-            try:
+-                result = self.type_converter.from_string(result)
+-            except Exception as e:
+-                from . import gpx as mod_gpx
+-                raise mod_gpx.GPXException(f'Invalid value for <{self.tag}>... {result} ({e})')
+-
+-        if self.possible:
+-            if not (result in self.possible):
+-                from . import gpx as mod_gpx
+-                raise mod_gpx.GPXException(f'Invalid value "{result}", possible: {self.possible}')
+-
+-        return result
++    def from_xml(self, node: Any, version: str) ->Any:
++        pass
+ 
+     def to_xml(self, value: Any, version: str, nsmap: Any=None, prettyprint: bool=True, indent: str='') -> Optional[str]:
+         if value is None:

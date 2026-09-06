@@ -1,0 +1,57 @@
+--- a/safety/formatters/text.py
++++ b/safety/formatters/text.py
+@@ -137,51 +137,9 @@
+             table
+         )
+ 
+-    def render_licenses(self, announcements: List[Dict], licenses: List[Dict]) -> str:
+-        """
+-        Render the licenses section of the report.
+-
+-        Args:
+-            announcements (List[Dict]): List of announcement dictionaries.
+-            licenses (List[Dict]): List of license dictionaries.
+-
+-        Returns:
+-            str: Rendered licenses report.
+-        """
+-        unique_license_types = set([lic['license'] for lic in licenses])
+-
+-        report_brief_section = click.unstyle(
+-            build_report_brief_section(columns=80, primary_announcement=get_primary_announcement(announcements),
+-                                       licenses_found=len(unique_license_types)))
+-
+-        packages_licenses = licenses
+-        announcements_table = self.__build_announcements_section(announcements)
+-
+-        final_brief = click.unstyle(
+-            get_final_brief_license(unique_license_types, kwargs={'columns': 80}))
+-
+-        table = [self.TEXT_REPORT_BANNER] + announcements_table + [
+-            report_brief_section,
+-            self.SMALL_DIVIDER_SECTIONS,
+-            " LICENSES",
+-            self.SMALL_DIVIDER_SECTIONS,
+-            add_empty_line(),
+-        ]
+-
+-        if not packages_licenses:
+-            table.append("  No packages licenses found.")
+-            table += [final_brief, add_empty_line(), self.SMALL_DIVIDER_SECTIONS]
+-
+-            return "\n".join(table)
+-
+-        for pkg_license in packages_licenses:
+-            text = "  {0}, version {1}, license {2}\n".format(pkg_license['package'], pkg_license['version'],
+-                                                              pkg_license['license'])
+-            table.append(text)
+-
+-        table += [final_brief, add_empty_line(), self.SMALL_DIVIDER_SECTIONS]
+-
+-        return "\n".join(table)
++    def render_licenses(self, announcements: List[Dict], licenses: List[Dict]
++        ) ->str:
++        pass
+ 
+     def render_announcements(self, announcements: List[Dict]) -> str:
+         """

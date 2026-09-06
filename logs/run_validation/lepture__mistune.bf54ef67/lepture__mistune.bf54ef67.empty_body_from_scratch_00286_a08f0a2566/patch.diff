@@ -1,0 +1,41 @@
+--- a/src/mistune/directives/admonition.py
++++ b/src/mistune/directives/admonition.py
+@@ -14,35 +14,9 @@
+         "important", "note", "tip", "warning",
+     }
+ 
+-    def parse(
+-        self, block: "BlockParser", m: Match[str], state: "BlockState"
+-    ) -> Dict[str, Any]:
+-        name = self.parse_type(m)
+-        attrs = {'name': name}
+-        options = dict(self.parse_options(m))
+-        if 'class' in options:
+-            attrs['class'] = options['class']
+-
+-        title = self.parse_title(m)
+-        if not title:
+-            title = name.capitalize()
+-
+-        content = self.parse_content(m)
+-        children = [
+-            {
+-                'type': 'admonition_title',
+-                'text': title,
+-            },
+-            {
+-                'type': 'admonition_content',
+-                'children': self.parse_tokens(block, content, state),
+-            }
+-        ]
+-        return {
+-            'type': 'admonition',
+-            'children': children,
+-            'attrs': attrs,
+-        }
++    def parse(self, block: 'BlockParser', m: Match[str], state: 'BlockState'
++        ) ->Dict[str, Any]:
++        pass
+ 
+     def __call__(self, directive: "BaseDirective", md: "Markdown") -> None:
+         for name in self.SUPPORTED_NAMES:

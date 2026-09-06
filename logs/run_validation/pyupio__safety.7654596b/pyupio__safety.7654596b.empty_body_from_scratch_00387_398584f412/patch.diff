@@ -1,0 +1,38 @@
+--- a/safety/alerts/utils.py
++++ b/safety/alerts/utils.py
+@@ -281,33 +281,6 @@
+ 
+ def require_files_report(func):
+     @wraps(func)
+-    def inner(obj: Any, *args: Any, **kwargs: Any) -> Any:
+-        """
+-        Decorator that ensures a report is generated against a file.
+-
+-        Args:
+-            obj (Any): The object containing the report.
+-            *args (Any): Additional arguments.
+-            **kwargs (Any): Additional keyword arguments.
+-
+-        Returns:
+-            Any: The result of the decorated function.
+-        """
+-        if obj.report['report_meta']['scan_target'] != "files":
+-            click.secho("This report was generated against an environment, but this alert command requires "
+-                        "a scan report that was generated against a file. To learn more about the "
+-                        "`safety alert` command visit https://docs.pyup.io/docs/safety-2-alerts", fg='red')
+-            sys.exit(1)
+-
+-        files = obj.report['report_meta']['scanned']
+-        obj.requirements_files = {}
+-        for f in files:
+-            if not os.path.exists(f):
+-                cwd = os.getcwd()
+-                click.secho("A requirements file scanned in the report, {}, does not exist (looking in {}).".format(f, cwd), fg='red')
+-                sys.exit(1)
+-
+-            obj.requirements_files[f] = open(f, "rb").read()
+-
+-        return func(obj, *args, **kwargs)
++    def inner(obj: Any, *args: Any, **kwargs: Any) ->Any:
++        pass
+     return inner

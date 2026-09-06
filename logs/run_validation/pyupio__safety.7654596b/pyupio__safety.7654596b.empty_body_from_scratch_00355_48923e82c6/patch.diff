@@ -1,0 +1,29 @@
+--- a/safety/alerts/requirements.py
++++ b/safety/alerts/requirements.py
+@@ -138,24 +138,8 @@
+         self.parse_dependencies(filetypes.setup_cfg)
+         self.is_setup_cfg = True
+ 
+-    def _parse(self) -> None:
+-        """
+-        Parses the requirements file to extract dependencies and other files.
+-        """
+-        self._requirements, self._other_files = [], []
+-        if self.path.endswith('.yml') or self.path.endswith(".yaml"):
+-            self._parse_conda_yml()
+-        elif self.path.endswith('.ini'):
+-            self._parse_tox_ini()
+-        elif self.path.endswith("Pipfile"):
+-            self._parse_pipfile()
+-        elif self.path.endswith("Pipfile.lock"):
+-            self._parse_pipfile_lock()
+-        elif self.path.endswith('setup.cfg'):
+-            self._parse_setup_cfg()
+-        else:
+-            self._parse_requirements_txt()
+-        self._is_valid = len(self._requirements) > 0 or len(self._other_files) > 0
++    def _parse(self) ->None:
++        pass
+ 
+     def parse_dependencies(self, file_type: str) -> None:
+         """

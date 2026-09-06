@@ -1,0 +1,63 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -22,19 +22,10 @@
+ Handle = Callable[[List[Any], List[Any]], Union[typing.Counter[str], Number]]
+ 
+ 
+-def get_shape(val: Any) -> Optional[List[int]]:
+-    """
+-    Get the shapes from a jit value object.
+-
+-    Args:
+-        val (torch._C.Value): jit value object.
+-
+-    Returns:
+-        list(int): return a list of ints.
+-    """
+-    if val.isCompleteTensor():
+-        return val.type().sizes()
+-    else:
++def get_shape(val: Any) ->Optional[List[int]]:
++    try:
++        return list(val.type().sizes())
++    except Exception:
+         return None
+ 
+ 
+@@ -216,16 +207,27 @@
+         raise NotImplementedError("Unsupported einsum operation.")
+ 
+ 
+-def matmul_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-    """
+-    Count flops for matmul.
+-    """
+-    # Inputs should be a list of length 2.
+-    # Inputs contains the shapes of two matrices.
++def matmul_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:
+     input_shapes = [get_shape(v) for v in inputs]
+-    assert len(input_shapes) == 2, input_shapes
+-    assert input_shapes[0][-1] == input_shapes[1][-2], input_shapes
+-    flop = prod(input_shapes[0]) * input_shapes[-1][-1]
++    if len(input_shapes[0]) == 1:
++        # Vector-matrix multiplication
++        m, n = input_shapes[0][0], input_shapes[1][0]
++        flop = m * n
++    elif len(input_shapes[0]) == 2:
++        # Matrix-matrix multiplication
++        m, n, p = input_shapes[0][0], input_shapes[0][1], input_shapes[1][1]
++        flop = m * n * p
++    else:
++        # Broadcasting case
++        # We need to compute the broadcasted shape
++        # For simplicity, we'll compute the total number of elements
++        # and multiply by the number of operations needed
++        # This is a simplified approach
++        batch_size = 1
++        for i in range(len(input_shapes[0]) - 2):
++            batch_size *= input_shapes[0][i]
++        m, n, p = input_shapes[0][-2], input_shapes[0][-1], input_shapes[1][-1]
++        flop = batch_size * m * n * p
+     return flop
+ 
+ 

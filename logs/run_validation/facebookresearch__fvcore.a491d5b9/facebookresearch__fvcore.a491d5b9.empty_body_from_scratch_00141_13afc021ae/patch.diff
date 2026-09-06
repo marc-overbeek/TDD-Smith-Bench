@@ -1,0 +1,31 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -296,26 +296,8 @@
+             summed_counts[mod] = sum(results.values())
+         return summed_counts
+ 
+-    def unsupported_ops(self, module_name: str = "") -> typing.Counter[str]:
+-        """
+-        Lists the number of operators that were encountered but unsupported
+-        because no operator handle is available for them. Does not include
+-        operators that are explicitly ignored.
+-
+-        Args:
+-            module_name (str) : The submodule to list unsupported ops.
+-                Defaults to the entire model.
+-
+-        Returns:
+-            Counter(str) : The number of occurences each unsupported operator.
+-        """
+-        if self._stats is None:
+-            raise RuntimeError(
+-                "Analysis results should be computed "
+-                "before calling unsupported_ops()"
+-            )
+-        module_name = self.canonical_module_name(module_name)
+-        return self._stats.unsupported_ops[module_name]  # pyre-fixme
++    def unsupported_ops(self, module_name: str='') ->typing.Counter[str]:
++        pass
+ 
+     def uncalled_modules(self) -> Set[str]:
+         """

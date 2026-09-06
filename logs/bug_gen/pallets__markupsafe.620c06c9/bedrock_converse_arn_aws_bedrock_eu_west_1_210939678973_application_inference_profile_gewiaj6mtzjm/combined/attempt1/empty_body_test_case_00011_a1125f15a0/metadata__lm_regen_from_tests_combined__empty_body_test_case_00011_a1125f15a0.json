@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef __mod__(self, value: t.Any, /) ->te.Self:\n        if isinstance(value, tuple):\n            # a tuple of arguments, each wrapped\n            value = tuple(_MarkupEscapeHelper(x, self.escape) for x in value)\n        elif hasattr(type(value), \"__getitem__\") and not isinstance(value, str):\n            # a mapping of arguments, wrapped\n            value = _MarkupEscapeHelper(value, self.escape)\n        else:\n            # a single argument, wrapped with the helper and a tuple\n            value = (_MarkupEscapeHelper(value, self.escape),)\n\n        return self.__class__(super().__mod__(value))\n\ndef __int__(self, /) ->int:\n        return int(self.obj)\n```",
+  "rewrite": "def __mod__(self, value: t.Any, /) ->te.Self:\n        if isinstance(value, tuple):\n            # a tuple of arguments, each wrapped\n            value = tuple(_MarkupEscapeHelper(x, self.escape) for x in value)\n        elif hasattr(type(value), \"__getitem__\") and not isinstance(value, str):\n            # a mapping of arguments, wrapped\n            value = _MarkupEscapeHelper(value, self.escape)\n        else:\n            # a single argument, wrapped with the helper and a tuple\n            value = (_MarkupEscapeHelper(value, self.escape),)\n\n        return self.__class__(super().__mod__(value))\n\ndef __int__(self, /) ->int:\n        return int(self.obj)",
+  "strategy": "lm_regen_from_tests_combined"
+}

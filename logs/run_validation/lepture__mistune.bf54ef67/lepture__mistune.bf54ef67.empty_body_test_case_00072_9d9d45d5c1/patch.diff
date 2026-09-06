@@ -1,0 +1,95 @@
+--- a/src/mistune/inline_parser.py
++++ b/src/mistune/inline_parser.py
+@@ -120,75 +120,8 @@
+         })
+         return m.end()
+ 
+-    def parse_link(self, m: Match[str], state: InlineState) -> Optional[int]:
+-        pos = m.end()
+-
+-        marker = m.group(0)
+-        is_image = marker[0] == '!'
+-        if is_image and state.in_image:
+-            state.append_token({'type': 'text', 'raw': marker})
+-            return pos
+-        elif not is_image and state.in_link:
+-            state.append_token({'type': 'text', 'raw': marker})
+-            return pos
+-
+-        text = None
+-        label, end_pos = parse_link_label(state.src, pos)
+-        if label is None:
+-            text, end_pos = parse_link_text(state.src, pos)
+-            if text is None:
+-                return None
+-
+-        assert end_pos is not None
+-
+-        if text is None:
+-            text = label
+-
+-        assert text is not None
+-
+-        if end_pos >= len(state.src) and label is None:
+-            return None
+-
+-        rules = ['codespan', 'prec_auto_link', 'prec_inline_html']
+-        prec_pos = self.precedence_scan(m, state, end_pos, rules)
+-        if prec_pos:
+-            return prec_pos
+-
+-        if end_pos < len(state.src):
+-            c = state.src[end_pos]
+-            if c == '(':
+-                # standard link [text](<url> "title")
+-                attrs, pos2 = parse_link(state.src, end_pos + 1)
+-                if pos2:
+-                    token = self.__parse_link_token(is_image, text, attrs, state)
+-                    state.append_token(token)
+-                    return pos2
+-
+-            elif c == '[':
+-                # standard ref link [text][label]
+-                label2, pos2 = parse_link_label(state.src, end_pos + 1)
+-                if pos2:
+-                    end_pos = pos2
+-                    if label2:
+-                        label = label2
+-
+-        if label is None:
+-            return None
+-
+-        ref_links = state.env.get('ref_links')
+-        if not ref_links:
+-            return None
+-
+-        key = unikey(label)
+-        env = ref_links.get(key)
+-        if env:
+-            attrs = {'url': env['url'], 'title': env.get('title')}
+-            token = self.__parse_link_token(is_image, text, attrs, state)
+-            token['ref'] = key
+-            token['label'] = label
+-            state.append_token(token)
+-            return end_pos
+-        return None
++    def parse_link(self, m: Match[str], state: InlineState) ->Optional[int]:
++        pass
+ 
+     def __parse_link_token(
+         self,
+@@ -238,12 +171,8 @@
+         self._add_auto_link(url, text, state)
+         return pos
+ 
+-    def _add_auto_link(self, url: str, text: str, state: InlineState) -> None:
+-        state.append_token({
+-            'type': 'link',
+-            'children': [{'type': 'text', 'raw': text}],
+-            'attrs': {'url': escape_url(url)},
+-        })
++    def _add_auto_link(self, url: str, text: str, state: InlineState) ->None:
++        pass
+ 
+     def parse_emphasis(self, m: Match[str], state: InlineState) -> int:
+         pos = m.end()

@@ -1,0 +1,46 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -1835,6 +1835,7 @@
+         return result
+ 
+     @property
++    @property
+     def affected_root_keys(self):
+         """
+         Get the list of root keys that were affected.
+@@ -1855,18 +1856,24 @@
+             >>> ddiff.affected_root_keys
+             SetOrdered([3, 4, 5, 6, 2])
+         """
++        import re
+         result = SetOrdered()
+-        for key in REPORT_KEYS:
+-            value = self.tree.get(key)
+-            if value:
+-                if isinstance(value, SetOrdered):
+-                    values_list = value
+-                else:
+-                    values_list = value.keys()
+-                for item in values_list:
+-                    root_key = item.get_root_key()
+-                    if root_key is not notpresent:
+-                        result.add(root_key)
++        root_key_re = re.compile(r'^root\[(.+?)\]')
++        for path in self.affected_paths:
++            m = root_key_re.match(path)
++            if m:
++                raw_key = m.group(1)
++                # Try to parse as int first, then as a quoted string, then as-is
++                try:
++                    key = int(raw_key)
++                except ValueError:
++                    # Check if it's a quoted string like 'include_me' or "include_me"
++                    if (raw_key.startswith("'") and raw_key.endswith("'")) or \
++                       (raw_key.startswith('"') and raw_key.endswith('"')):
++                        key = raw_key[1:-1]
++                    else:
++                        key = raw_key
++                result.add(key)
+         return result
+ 
+ 

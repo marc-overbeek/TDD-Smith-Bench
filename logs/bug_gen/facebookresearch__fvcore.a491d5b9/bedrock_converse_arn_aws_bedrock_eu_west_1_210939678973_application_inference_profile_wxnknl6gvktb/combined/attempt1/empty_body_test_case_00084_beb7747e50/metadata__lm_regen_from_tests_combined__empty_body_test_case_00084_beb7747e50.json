@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef c2_xavier_fill(module: nn.Module) ->None:\n    for name, param in module.named_parameters():\n        if \"weight\" in name:\n            nn.init.xavier_uniform_(param)\n        elif \"bias\" in name:\n            nn.init.constant_(param, 0)\n\n\ndef c2_msra_fill(module: nn.Module) ->None:\n    for name, param in module.named_parameters():\n        if \"weight\" in name:\n            nn.init.kaiming_normal_(param, mode=\"fan_out\", nonlinearity=\"relu\")\n        elif \"bias\" in name:\n            nn.init.constant_(param, 0)\n```",
+  "rewrite": "def c2_xavier_fill(module: nn.Module) ->None:\n    for name, param in module.named_parameters():\n        if \"weight\" in name:\n            nn.init.xavier_uniform_(param)\n        elif \"bias\" in name:\n            nn.init.constant_(param, 0)\n\n\ndef c2_msra_fill(module: nn.Module) ->None:\n    for name, param in module.named_parameters():\n        if \"weight\" in name:\n            nn.init.kaiming_normal_(param, mode=\"fan_out\", nonlinearity=\"relu\")\n        elif \"bias\" in name:\n            nn.init.constant_(param, 0)",
+  "strategy": "lm_regen_from_tests_combined"
+}

@@ -1,0 +1,21 @@
+--- a/oauthlib/oauth2/rfc6749/utils.py
++++ b/oauthlib/oauth2/rfc6749/utils.py
+@@ -13,12 +13,14 @@
+ 
+ def list_to_scope(scope):
+     """Convert a list of scopes to a space separated string."""
+-    if isinstance(scope, str) or scope is None:
++    if isinstance(scope, (tuple, list, set)):
++        return " ".join([str(s) for s in scope])
++    elif isinstance(scope, str):
+         return scope
+-    elif isinstance(scope, (set, tuple, list)):
+-        return " ".join([str(s) for s in scope])
++    elif scope is None:
++        return None
+     else:
+-        raise ValueError("Invalid scope (%s), must be string, tuple, set, or list." % scope)
++        raise ValueError("Invalid scope, must be a string, tuple, list or set.")
+ 
+ 
+ def scope_to_list(scope):

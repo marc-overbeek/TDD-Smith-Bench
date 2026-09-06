@@ -1,0 +1,36 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1128,21 +1128,20 @@
+         if not self.points or len(self.points) < 2:
+             return 0.0
+ 
+-        # Search for start:
+-        first = self.points[0]
+-        if not first.time:
+-            first = self.points[1]
+-
+-        last = self.points[-1]
+-        if not last.time:
+-            last = self.points[-2]
+-
+-        if not last.time or not first.time:
+-            log.debug('Can\'t find time')
+-            return None
++        # Search for start and end times:
++        first = None
++        last = None
++    
++        for point in self.points:
++            if point.time:
++                if first is None:
++                    first = point
++                last = point
++
++        if not first or not last:
++            return 0.0
+ 
+         if last.time < first.time:
+-            log.debug('Not enough time data')
+             return None
+ 
+         return mod_utils.total_seconds(last.time - first.time)

@@ -1,0 +1,32 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -376,27 +376,8 @@
+         self._stats = None
+         return self
+ 
+-    def canonical_module_name(self, name: str) -> str:
+-        """
+-        Returns the canonical module name of the given ``name``, which might be
+-        different from the given ``name`` if the module is shared.
+-        This is the name that will be used as a key when statistics are
+-        output using .by_module() and .by_module_and_operator().
+-
+-        Args:
+-            name (str) : The name of the module to find the canonical name for.
+-        Returns:
+-            str : The canonical name of the module.
+-        """
+-        # Blocks access by a direct module reference
+-        assert isinstance(name, str), "Module name must be a string."
+-        if name in self._aliases:
+-            return self._aliases[name]
+-        else:
+-            raise KeyError(
+-                "Requested module name is not among "
+-                "the descendants of the analyzed model."
+-            )
++    def canonical_module_name(self, name: str) ->str:
++        pass
+ 
+     def copy(
+         self,

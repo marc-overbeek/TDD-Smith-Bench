@@ -1,0 +1,35 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -816,6 +816,7 @@
+             )
+ 
+     def _diff_iterable_in_order(self, level, parents_ids=frozenset(), _original_type=None, local_tree=None):
++        """Difference of iterables in order"""
+         # We're handling both subscriptable and non-subscriptable iterables. Which one is it?
+         subscriptable = self._iterables_subscriptable(level.t1, level.t2)
+         if subscriptable:
+@@ -823,6 +824,7 @@
+         else:
+             child_relationship_class = NonSubscriptableIterableRelationship
+ 
++        # Handle the case where we can use difflib for better detection of changes
+         if (
+             not self.zip_ordered_iterables
+             and isinstance(level.t1, Sequence)
+@@ -839,7 +841,7 @@
+                 child_relationship_class=child_relationship_class,
+                 local_tree=local_tree_pass,
+             )
+-            # Sometimes DeepDiff's old iterable diff does a better job than DeepDiff
++            # Use the better approach if it produces fewer diffs
+             if len(local_tree_pass) > 1:
+                 local_tree_pass2 = TreeResult()
+                 self._diff_by_forming_pairs_and_comparing_one_by_one(
+@@ -857,6 +859,7 @@
+                 if levels:
+                     self.tree[report_type] |= levels
+         else:
++            # Fall back to the standard pairwise comparison
+             self._diff_by_forming_pairs_and_comparing_one_by_one(
+                 level,
+                 parents_ids=parents_ids,

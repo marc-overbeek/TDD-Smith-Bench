@@ -1,0 +1,27 @@
+--- a/oauthlib/oauth2/rfc8628/clients/device.py
++++ b/oauthlib/oauth2/rfc8628/clients/device.py
+@@ -33,23 +33,7 @@
+         self.client_secret = kwargs.get('client_secret')
+ 
+     def prepare_request_uri(self, uri, scope=None, **kwargs):
+-        if not is_secure_transport(uri):
+-            raise InsecureTransportError()
+-
+-        scope = self.scope if scope is None else scope
+-        params = [(('client_id', self.client_id)), (('grant_type', self.grant_type))]
+-
+-        if self.client_secret is not None:
+-            params.append(('client_secret', self.client_secret))
+-
+-        if scope:
+-            params.append(('scope', list_to_scope(scope)))
+-
+-        for k in kwargs:
+-            if kwargs[k]:
+-                params.append((str(k), kwargs[k]))
+-
+-        return add_params_to_uri(uri, params)
++        pass
+ 
+     def prepare_request_body(self, device_code, body='', scope=None,
+                              include_client_id=False, **kwargs):

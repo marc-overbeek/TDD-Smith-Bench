@@ -1,0 +1,62 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -370,56 +370,9 @@
+                     break
+         return qname
+ 
+-    def _ETree_to_xml(self, node: Any, nsmap: Dict[str, str]={}, prettyprint: bool=True, indent: str='') -> str:
+-        """
+-        Serialize ETree element and all subelements.
+-
+-        Creates a string of the ETree and all children. The prefixes are
+-        resolved through the nsmap for easier to read XML.
+-
+-        Args:
+-            node: ETree with the extension data
+-            version: string of GPX version, must be 1.1
+-            nsmap: dict of prefixes and URIs
+-            prettyprint: boolean, when true, indent line
+-            indent: string prepended to tag, usually 2 spaces per level
+-
+-        Returns:
+-            string with all the prefixed tags and data for the node
+-            and its children as XML.
+-
+-        """
+-        if not prettyprint:
+-            indent = ''
+-
+-        # Build element tag and text
+-        result = []
+-        prefixedname = self._resolve_prefix(node.tag, nsmap)
+-        result.append(f'\n{indent}<{prefixedname}')
+-        for attrib, value in node.attrib.items():
+-            attrib = self._resolve_prefix(attrib, nsmap)
+-            result.append(f' {attrib}="{value}"')
+-        result.append('>')
+-        if node.text is not None:
+-            result.append(mod_saxutils.escape(node.text).strip())
+-
+-        # Build subelement nodes
+-        for child in node:
+-            result.append(self._ETree_to_xml(child, nsmap,
+-                                             prettyprint=prettyprint,
+-                                             indent=f'{indent}  '))
+-
+-        # Add tail and close tag
+-        tail = node.tail
+-        if tail is not None:
+-            tail = mod_saxutils.escape(tail.strip())
+-        else:
+-            tail = ''
+-        if len(node) > 0:
+-            result.append(f'\n{indent}')
+-        result.append(f'</{prefixedname}>{tail}')
+-
+-        return ''.join(result)
++    def _ETree_to_xml(self, node: Any, nsmap: Dict[str, str]={}, prettyprint:
++        bool=True, indent: str='') ->str:
++        pass
+ 
+     def to_xml(self, value: Any, version: str, nsmap: Dict[str, str]={}, prettyprint: bool=True, indent: str='') -> str:
+         """

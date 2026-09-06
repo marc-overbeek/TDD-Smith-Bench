@@ -1,0 +1,22 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/resource.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/resource.py
+@@ -71,6 +71,13 @@
+                   request.token_type, token_type_handler)
+         return token_type_handler.validate_request(request), request
+ 
++    def test_defaults(self):
++        uri = 'http://a.b/path?some=query'
++        self.mock_validator.validate_bearer_token.return_value = False
++        valid, request = self.endpoint.verify_request(uri)
++        self.assertFalse(valid)
++        self.assertEqual(request.token_type, 'Bearer')
++
+     def find_token_type(self, request):
+         """Token type identification.
+ 
+@@ -81,4 +88,4 @@
+         """
+         estimates = sorted(((t.estimate_type(request), n)
+                             for n, t in self.tokens.items()), reverse=True)
+-        return estimates[0][1] if len(estimates) else None
++        return estimates[0][1] if len(estimates) else self.default_token

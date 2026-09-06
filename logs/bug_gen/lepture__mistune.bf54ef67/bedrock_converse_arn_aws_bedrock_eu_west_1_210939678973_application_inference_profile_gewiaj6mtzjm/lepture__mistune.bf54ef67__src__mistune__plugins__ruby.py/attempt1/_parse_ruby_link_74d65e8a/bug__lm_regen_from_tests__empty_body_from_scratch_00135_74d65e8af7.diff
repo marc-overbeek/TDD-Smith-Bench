@@ -1,0 +1,64 @@
+--- a/src/mistune/plugins/ruby.py
++++ b/src/mistune/plugins/ruby.py
+@@ -45,43 +45,24 @@
+     return end_pos
+ 
+ 
+-def _parse_ruby_link(
+-    inline: "InlineParser", state: "InlineState", pos: int, tokens: List[Dict[str, Any]]
+-) -> Optional[int]:
+-    c = state.src[pos]
+-    if c == '(':
+-        # standard link [text](<url> "title")
+-        attrs, link_pos = parse_link(state.src, pos + 1)
+-        if link_pos:
+-            state.append_token({
+-                'type': 'link',
+-                'children': tokens,
+-                'attrs': attrs,
+-            })
+-            return link_pos
+-
+-    elif c == '[':
+-        # standard ref link [text][label]
+-        label, link_pos = parse_link_label(state.src, pos + 1)
+-        if label and link_pos:
+-            ref_links = state.env['ref_links']
+-            key = unikey(label)
+-            env = ref_links.get(key)
+-            if env:
+-                attrs = {'url': env['url'], 'title': env.get('title')}
+-                state.append_token({
+-                    'type': 'link',
+-                    'children': tokens,
+-                    'attrs': attrs,
+-                })
+-            else:
+-                for tok in tokens:
+-                    state.append_token(tok)
+-                state.append_token({
+-                    'type': 'text',
+-                    'raw': '[' + label + ']',
+-                })
+-            return link_pos
++def _parse_ruby_link(inline: 'InlineParser', state: 'InlineState', pos: int,
++    tokens: List[Dict[str, Any]]) ->Optional[int]:
++    src = state.src
++    if pos >= len(src):
++        return None
++    if src[pos] != '[':
++        return None
++    
++    # Try to parse a link after the ruby text
++    link_pos = parse_link(inline, state, pos, tokens)
++    if link_pos:
++        return link_pos
++    
++    # If no link found, try to parse a link label
++    label_pos = parse_link_label(inline, state, pos, tokens)
++    if label_pos:
++        return label_pos
++        
+     return None
+ 
+ 

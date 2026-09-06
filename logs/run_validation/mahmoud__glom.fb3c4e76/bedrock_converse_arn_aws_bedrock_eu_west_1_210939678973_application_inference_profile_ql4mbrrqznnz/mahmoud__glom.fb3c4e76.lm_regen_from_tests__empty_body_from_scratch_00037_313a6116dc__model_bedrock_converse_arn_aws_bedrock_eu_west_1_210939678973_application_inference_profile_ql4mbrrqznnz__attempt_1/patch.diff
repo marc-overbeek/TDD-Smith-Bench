@@ -1,0 +1,28 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -374,6 +374,25 @@
+         self.exc = exc
+         self.path = path
+         self.dest_name = dest_name
++
++    def __str__(self):
++        if getattr(self, '_finalized_str', None):
++            return self._finalized_str
++        elif getattr(self, '_scope', None) is not None:
++            ...
++        # else, not finalized
++        try:
++            exc_get_message = self.get_message
++        except AttributeError:
++            exc_get_message = super().__str__
++        return exc_get_message()
++
++    def get_message(self):
++        pass
++
++    def __repr__(self):
++        cn = self.__class__.__name__
++        return f'{cn}({self.exc!r}, {self.path!r}, {self.dest_name!r})'
+ 
+     def get_message(self):
+         return ('could not assign %r on object at %r, got error: %r'

@@ -1,0 +1,24 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -482,6 +482,21 @@
+     def inverse(self) -> Transform:
+         return self
+ 
++    def test_noop_transform_no_register(self):
++        """
++            NoOpTransform does not need register - it's by default no-op.
++            """
++        t = T.NoOpTransform()
++        self.assertEqual(t.apply_anything(1), 1)
++
++    def __getattr__(self, name: str):
++        if name.startswith("apply_"):
++            return lambda x: x
++        raise AttributeError("NoOpTransform object has no attribute {}".format(name))
++
++    def __getattr__(self, name: str):
++        pass
++
+     def __getattr__(self, name: str):
+         if name.startswith("apply_"):
+             return lambda x: x

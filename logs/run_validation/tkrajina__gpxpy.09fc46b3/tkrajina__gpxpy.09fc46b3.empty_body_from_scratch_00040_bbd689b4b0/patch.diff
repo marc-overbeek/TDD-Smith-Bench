@@ -1,0 +1,45 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -589,40 +589,5 @@
+ 
+     return result
+ 
+-def gpx_check_slots_and_default_values(classs: Callable[[], Any]) -> None:
+-    """
+-    Will fill the default values for this class. Instances will inherit those
+-    values so we don't need to fill default values for every instance.
+-    """
+-    fields = classs.gpx_10_fields + classs.gpx_11_fields # type: ignore
+-
+-    instance = classs()
+-
+-    try:
+-        attributes = [x for x in dir(instance)
+-                      if not x.startswith(('_', 'gpx_'))
+-                      and not callable(getattr(instance, x))]
+-    except Exception as e:
+-        raise Exception(f'Error reading attributes for {classs.__name__}: {e}')
+-
+-    attributes.sort()
+-    slots = list(classs.__slots__)
+-    slots.sort()
+-
+-    if attributes != slots:
+-        raise Exception(f'Attributes for {classs.__name__} is\n{attributes} but should be\n{slots}')
+-
+-    for field in fields:
+-        if not isinstance(field, str):
+-            value: Any = None
+-            if field.is_list:
+-                value = []
+-            try:
+-                actual_value = getattr(instance, field.name)
+-            except:
+-                raise Exception(f'{classs.__name__} has no attribute {field.name}')
+-            if field.name != "latitude" and field.name != "longitude" and value != actual_value:
+-                raise Exception(
+-                    f'Invalid default value {classs.__name__}.{field.name} '
+-                    f'is {actual_value} but should be {value}'
+-                )
++def gpx_check_slots_and_default_values(classs: Callable[[], Any]) ->None:
++    pass

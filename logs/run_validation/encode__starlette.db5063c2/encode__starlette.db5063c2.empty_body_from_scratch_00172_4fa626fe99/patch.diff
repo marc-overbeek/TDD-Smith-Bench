@@ -1,0 +1,62 @@
+--- a/starlette/responses.py
++++ b/starlette/responses.py
+@@ -442,56 +442,9 @@
+         return http_if_range == self.headers["last-modified"] or http_if_range == self.headers["etag"]
+ 
+     @staticmethod
+-    def _parse_range_header(http_range: str, file_size: int) -> list[tuple[int, int]]:
+-        ranges: list[tuple[int, int]] = []
+-        try:
+-            units, range_ = http_range.split("=", 1)
+-        except ValueError:
+-            raise MalformedRangeHeader()
+-
+-        units = units.strip().lower()
+-
+-        if units != "bytes":
+-            raise MalformedRangeHeader("Only support bytes range")
+-
+-        ranges = [
+-            (
+-                int(_[0]) if _[0] else file_size - int(_[1]),
+-                int(_[1]) + 1 if _[0] and _[1] and int(_[1]) < file_size else file_size,
+-            )
+-            for _ in _RANGE_PATTERN.findall(range_)
+-            if _ != ("", "")
+-        ]
+-
+-        if len(ranges) == 0:
+-            raise MalformedRangeHeader("Range header: range must be requested")
+-
+-        if any(not (0 <= start < file_size) for start, _ in ranges):
+-            raise RangeNotSatisfiable(file_size)
+-
+-        if any(start > end for start, end in ranges):
+-            raise MalformedRangeHeader("Range header: start must be less than end")
+-
+-        if len(ranges) == 1:
+-            return ranges
+-
+-        # Merge ranges
+-        result: list[tuple[int, int]] = []
+-        for start, end in ranges:
+-            for p in range(len(result)):
+-                p_start, p_end = result[p]
+-                if start > p_end:
+-                    continue
+-                elif end < p_start:
+-                    result.insert(p, (start, end))  # THIS IS NOT REACHED!
+-                    break
+-                else:
+-                    result[p] = (min(start, p_start), max(end, p_end))
+-                    break
+-            else:
+-                result.append((start, end))
+-
+-        return result
++    def _parse_range_header(http_range: str, file_size: int) ->list[tuple[int, int]
++        ]:
++        pass
+ 
+     def generate_multipart(
+         self,

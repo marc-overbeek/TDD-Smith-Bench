@@ -1,0 +1,32 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -464,17 +464,9 @@
+     SOUTH = 180
+     WEST = 270
+ 
+-    def __init__(self, distance: Optional[float]=None, angle: Optional[float]=None,
+-                 latitude_diff: Optional[float]=None,longitude_diff: Optional[float]=None) -> None:
+-        """
+-        Version 1:
+-            Distance (in meters).
+-            angle_from_north *clockwise*.
+-            ...must be given
+-        Version 2:
+-            latitude_diff and longitude_diff
+-            ...must be given
+-        """
++    def __init__(self, distance: Optional[float]=None, angle: Optional[float]=
++        None, latitude_diff: Optional[float]=None, longitude_diff: Optional[
++        float]=None) ->None:
+         if (distance is not None) and (angle is not None):
+             if (latitude_diff is not None) or (longitude_diff is not None):
+                 raise Exception('No lat/lon diff if using distance and angle!')
+@@ -517,7 +509,7 @@
+         return f'LocationDelta(latitude_diff={self.latitude_diff}, ' \
+                f'longitude_diff={self.longitude_diff})'
+ 
+-    def __eq__(self, other: object) -> bool:
++    def __eq__(self, other: object) ->bool:
+         if not isinstance(other, self.__class__):
+             return False
+         if (hasattr(self, 'distance') and not hasattr(other, 'distance')) \

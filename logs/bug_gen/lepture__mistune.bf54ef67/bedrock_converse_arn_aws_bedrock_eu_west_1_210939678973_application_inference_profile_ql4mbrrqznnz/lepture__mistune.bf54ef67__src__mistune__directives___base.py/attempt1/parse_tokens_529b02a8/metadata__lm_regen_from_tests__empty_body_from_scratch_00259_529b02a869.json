@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef parse_tokens(cls, block: 'BlockParser', text: str, state: 'BlockState'\n    ) ->Iterable[Dict[str, Any]]:\n    if state.depth() >= block.max_nested_level - 1 and cls.name in block.rules:\n        rules = list(block.rules)\n        rules.remove(cls.name)\n    else:\n        rules = block.rules\n    child = state.child_state(text)\n    block.parse(child, rules)\n    return child.tokens\n```",
+  "rewrite": "def parse_tokens(cls, block: 'BlockParser', text: str, state: 'BlockState'\n    ) ->Iterable[Dict[str, Any]]:\n    if state.depth() >= block.max_nested_level - 1 and cls.name in block.rules:\n        rules = list(block.rules)\n        rules.remove(cls.name)\n    else:\n        rules = block.rules\n    child = state.child_state(text)\n    block.parse(child, rules)\n    return child.tokens",
+  "strategy": "lm_regen_from_tests"
+}

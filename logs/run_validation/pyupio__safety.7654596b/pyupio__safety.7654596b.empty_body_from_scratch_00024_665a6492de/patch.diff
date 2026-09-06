@@ -1,0 +1,36 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -467,30 +467,9 @@
+     return ignore, ignore_severity_rules, exit_code, ignore_unpinned_requirements, project
+ 
+ 
+-def get_fix_options(policy_file: Dict[str, Any], auto_remediation_limit: int) -> int:
+-    """
+-    Get fix options from the policy file.
+-
+-    Args:
+-        policy_file (Dict[str, Any]): The policy file.
+-        auto_remediation_limit (int): The auto remediation limit.
+-
+-    Returns:
+-        int: The auto remediation limit.
+-    """
+-    auto_fix = []
+-
+-    source = click.get_current_context().get_parameter_source("auto_remediation_limit")
+-    if source == click.core.ParameterSource.COMMANDLINE:
+-        return auto_remediation_limit
+-
+-    if policy_file:
+-        fix = policy_file.get('security-updates', {})
+-        auto_fix = fix.get('auto-security-updates-limit', None)
+-        if not auto_fix:
+-            auto_fix = []
+-
+-    return auto_fix
++def get_fix_options(policy_file: Dict[str, Any], auto_remediation_limit: int
++    ) ->int:
++    pass
+ 
+ 
+ class MutuallyExclusiveOption(click.Option):

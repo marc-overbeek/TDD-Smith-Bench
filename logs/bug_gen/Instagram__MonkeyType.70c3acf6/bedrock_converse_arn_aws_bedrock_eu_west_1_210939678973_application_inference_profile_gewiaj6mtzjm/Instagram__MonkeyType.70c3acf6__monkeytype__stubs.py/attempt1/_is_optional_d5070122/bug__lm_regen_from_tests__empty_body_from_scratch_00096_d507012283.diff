@@ -1,0 +1,23 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -283,12 +283,14 @@
+         return "ImportBlockStub(%s)" % (repr(self.imports),)
+ 
+ 
+-def _is_optional(anno: Any) -> bool:
+-    """Is the supplied annotation an instance of the 'virtual' Optional type?
+-
+-    Optional isn't really a type. It's an alias to Union[T, NoneType]
+-    """
+-    return is_union(anno) and NoneType in anno.__args__
++def _is_optional(anno: Any) ->bool:
++    if is_union(anno):
++        # Check if this is a Union containing None
++        args = getattr(anno, "__args__", None)
++        if args is not None:
++            # A Union is optional if it contains NoneType
++            return any(arg is NoneType or arg == NoneType for arg in args)
++    return False
+ 
+ 
+ def _get_optional_elem(anno: Any) -> Any:

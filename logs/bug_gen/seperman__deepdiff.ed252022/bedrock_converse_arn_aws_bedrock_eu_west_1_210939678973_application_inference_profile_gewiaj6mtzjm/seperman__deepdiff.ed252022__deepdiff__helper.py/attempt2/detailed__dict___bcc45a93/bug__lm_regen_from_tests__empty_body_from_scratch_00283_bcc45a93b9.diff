@@ -1,0 +1,84 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -701,40 +701,49 @@
+         return False
+ 
+ 
+-def detailed__dict__(obj, ignore_private_variables=True, ignore_keys=frozenset(), include_keys=None):
+-    """
+-    Get the detailed dictionary of an object.
+-
+-    This is used so we retrieve object properties too.
+-    """
+-    if include_keys:
++def detailed__dict__(obj, ignore_private_variables=True, ignore_keys=
++    frozenset(), include_keys=None):
++    """
++    Get the dictionary representation of an object, including private variables if specified.
++    
++    Args:
++        obj: The object to convert to dictionary
++        ignore_private_variables: If True, ignore private variables (starting with underscore)
++        ignore_keys: Set of keys to ignore
++        include_keys: Set of keys to include (if not None, only these keys will be included)
++        
++    Returns:
++        dict: Dictionary representation of the object
++    """
++    if include_keys is not None:
++        include_keys = set(include_keys)
++    
++    # Handle enum objects specially
++    if hasattr(obj, '__class__') and hasattr(obj.__class__, '__members__'):
++        # For enums, we want to include the special attributes
++        ignore_keys = ignore_keys.union({'name', 'value'})
++        # For enums, we also need to handle the __objclass__ attribute
++        ignore_keys = ignore_keys.union({'__objclass__'})
++    
++    # Handle objects with __dict__
++    if hasattr(obj, '__dict__'):
+         result = {}
+-        for key in include_keys:
+-            try:
+-                value = getattr(obj, key)
+-            except Exception:
+-                pass
+-            else:
+-                if not callable(value) or key == '__objclass__':  # We don't want to compare functions, however for backward compatibility, __objclass__ needs to be reported.
+-                    result[key] = value
++        for key, value in obj.__dict__.items():
++            # Skip private variables if requested
++            if ignore_private_variables and key.startswith('_') and not key.startswith('__'):
++                if key not in ignore_keys:
++                    continue
++            # Skip ignored keys
++            if key in ignore_keys:
++                continue
++            # Handle include_keys filtering
++            if include_keys is not None and key not in include_keys:
++                continue
++            result[key] = value
++        return result
+     else:
+-        result = obj.__dict__.copy()  # A shallow copy
+-        private_var_prefix = f"_{obj.__class__.__name__}__"  # The semi private variables in Python get this prefix
+-        for key in ignore_keys:
+-            if key in result or (
+-                ignore_private_variables and key.startswith('__') and not key.startswith(private_var_prefix)
+-            ):
+-                del result[key]
+-        for key in dir(obj):
+-            if key not in result and key not in ignore_keys and (
+-                    not ignore_private_variables or (
+-                        ignore_private_variables and not key.startswith('__') and not key.startswith(private_var_prefix)
+-                    )
+-            ):
+-                value = getattr(obj, key)
+-                if not callable(value):
+-                    result[key] = value
+-    return result
++        # For non-class objects, return empty dict or handle appropriately
++        return {}
+ 
+ 
+ def named_tuple_repr(self):

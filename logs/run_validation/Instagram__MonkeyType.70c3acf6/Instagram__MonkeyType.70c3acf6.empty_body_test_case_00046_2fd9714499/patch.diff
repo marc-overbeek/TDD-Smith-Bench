@@ -1,0 +1,58 @@
+--- a/monkeytype/encoding.py
++++ b/monkeytype/encoding.py
+@@ -37,51 +37,12 @@
+ TypeDict = Dict[str, Any]
+ 
+ 
+-def typed_dict_to_dict(typ: type) -> TypeDict:
+-    elem_types: Dict[str, Any] = {}
+-    for k, v in typ.__annotations__.items():
+-        elem_types[k] = type_to_dict(v)
+-    return {
+-        "module": typ.__module__,
+-        "qualname": typ.__qualname__,
+-        "elem_types": elem_types,
+-        "is_typed_dict": True,
+-    }
++def typed_dict_to_dict(typ: type) ->TypeDict:
++    pass
+ 
+ 
+-def type_to_dict(typ: type) -> TypeDict:
+-    """Convert a type into a dictionary representation that we can store.
+-
+-    The dictionary must:
+-        1. Be encodable as JSON
+-        2. Contain enough information to let us reify the type
+-    """
+-    if is_typed_dict(typ):
+-        return typed_dict_to_dict(typ)
+-
+-    # Union and Any are special cases that aren't actually types.
+-    if is_union(typ):
+-        qualname = "Union"
+-    elif is_any(typ):
+-        qualname = "Any"
+-    elif is_generic(typ):
+-        qualname = qualname_of_generic(typ)
+-    else:
+-        qualname = typ.__qualname__
+-    d: TypeDict = {
+-        "module": typ.__module__,
+-        "qualname": qualname,
+-    }
+-    elem_types = getattr(typ, "__args__", None)
+-    # In Python < 3.9, bare generics still have args
+-    is_bare_generic = typ in {Dict, List, Tuple}
+-    if not is_bare_generic and elem_types is not None and is_generic(typ):
+-        # empty typing.Tuple is weird; the spec says it should be Tuple[()],
+-        # which results in __args__ of `((),)` pre-Python 3.11
+-        if elem_types == ((),):
+-            elem_types = ()
+-        d["elem_types"] = [type_to_dict(t) for t in elem_types]
+-    return d
++def type_to_dict(typ: type) ->TypeDict:
++    pass
+ 
+ 
+ _HIDDEN_BUILTIN_TYPES: Dict[str, type] = {

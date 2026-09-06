@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef generate_plain_text(self, exc: Exception) -> str:\n    return \"\".join(traceback.format_exception(type(exc), exc, exc.__traceback__))\n\ndef debug_response(self, request: Request, exc: Exception) -> Response:\n    accept = request.headers.get(\"accept\", \"\")\n\n    if \"text/html\" in accept:\n        content = self.generate_html(exc)\n        return HTMLResponse(content, status_code=500)\n    content = self.generate_plain_text(exc)\n    return PlainTextResponse(content, status_code=500)\n```",
+  "rewrite": "def generate_plain_text(self, exc: Exception) -> str:\n    return \"\".join(traceback.format_exception(type(exc), exc, exc.__traceback__))\n\ndef debug_response(self, request: Request, exc: Exception) -> Response:\n    accept = request.headers.get(\"accept\", \"\")\n\n    if \"text/html\" in accept:\n        content = self.generate_html(exc)\n        return HTMLResponse(content, status_code=500)\n    content = self.generate_plain_text(exc)\n    return PlainTextResponse(content, status_code=500)",
+  "strategy": "lm_regen_from_tests_combined"
+}

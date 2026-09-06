@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```python\ndef highest_base_score(vulns: List[Dict[str, Any]]) ->float:\n    if not vulns:\n        return 10.0\n    \n    scores = []\n    for vuln in vulns:\n        severity = vuln.get('severity', {})\n        if severity:\n            cvssv3 = severity.get('cvssv3', {})\n            if cvssv3:\n                base_score = cvssv3.get('base_score')\n                if base_score is not None:\n                    scores.append(base_score)\n    \n    if not scores:\n        return 10.0\n    \n    return max(scores)\n```",
+  "rewrite": "def highest_base_score(vulns: List[Dict[str, Any]]) ->float:\n    if not vulns:\n        return 10.0\n    \n    scores = []\n    for vuln in vulns:\n        severity = vuln.get('severity', {})\n        if severity:\n            cvssv3 = severity.get('cvssv3', {})\n            if cvssv3:\n                base_score = cvssv3.get('base_score')\n                if base_score is not None:\n                    scores.append(base_score)\n    \n    if not scores:\n        return 10.0\n    \n    return max(scores)",
+  "strategy": "lm_regen_from_tests"
+}

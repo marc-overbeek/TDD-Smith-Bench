@@ -1,0 +1,20 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -597,9 +597,14 @@
+         self.key, self.default = key, default
+ 
+     def glomit(self, target, scope):
+-        if target != self.key:
+-            raise MatchError("target {0} != spec {1}", target, self.key)
+-        return target
++        scope[MODE] = _glom_match
++        try:
++            ret = scope[glom](target, self.spec, scope)
++        except GlomError:
++            if self.default is _MISSING:
++                raise
++            ret = arg_val(target, self.default, scope)
++        return ret
+ 
+     def __repr__(self):
+         return f'{self.__class__.__name__}({bbrepr(self.key)})'

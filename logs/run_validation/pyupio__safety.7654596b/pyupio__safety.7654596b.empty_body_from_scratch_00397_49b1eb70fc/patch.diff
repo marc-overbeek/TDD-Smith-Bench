@@ -1,0 +1,32 @@
+--- a/safety/auth/main.py
++++ b/safety/auth/main.py
+@@ -124,26 +124,9 @@
+ 
+     return info
+ 
+-def get_token_data(token: str, keys: Any, silent_if_expired: bool = False) -> Optional[Dict]:
+-    """
+-    Decode and validate the token data.
+-
+-    Args:
+-        token (str): The token to decode.
+-        keys (Any): The keys to use for decoding.
+-        silent_if_expired (bool): Whether to silently ignore expired tokens.
+-
+-    Returns:
+-        Optional[Dict]: The decoded token data, or None if invalid.
+-    """
+-    claims = jwt.decode(token, keys, claims_cls=CodeIDToken)
+-    try:
+-        claims.validate()
+-    except ExpiredTokenError as e:
+-        if not silent_if_expired:
+-            raise e
+-
+-    return claims
++def get_token_data(token: str, keys: Any, silent_if_expired: bool=False
++    ) ->Optional[Dict]:
++    pass
+ 
+ def get_token(name: str = 'access_token') -> Optional[str]:
+     """"

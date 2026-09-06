@@ -1,0 +1,58 @@
+--- a/oauthlib/oauth2/rfc6749/errors.py
++++ b/oauthlib/oauth2/rfc6749/errors.py
+@@ -386,14 +386,45 @@
+ 
+ 
+ def raise_from_error(error, params=None):
+-    import inspect
+-    import sys
+-    kwargs = {
+-        'description': params.get('error_description'),
+-        'uri': params.get('error_uri'),
+-        'state': params.get('state')
++    if params is None:
++        params = {}
++    
++    error_type = params.get('error', error)
++    
++    # Map error types to their corresponding exception classes
++    error_map = {
++        'access_denied': AccessDeniedError,
++        'invalid_request': InvalidRequestError,
++        'invalid_client': InvalidClientError,
++        'invalid_grant': InvalidGrantError,
++        'unauthorized_client': UnauthorizedClientError,
++        'unsupported_grant_type': UnsupportedGrantTypeError,
++        'invalid_scope': InvalidScopeError,
++        'server_error': ServerError,
++        'temporarily_unavailable': TemporarilyUnavailableError,
++        'missing_code': MissingCodeError,
++        'missing_token': MissingTokenError,
++        'token_expired': TokenExpiredError,
++        'insecure_transport': InsecureTransportError,
++        'mismatching_state': MismatchingStateError,
++        'missing_token_type': MissingTokenTypeError,
++        'unsupported_token_type': UnsupportedTokenTypeError,
++        'invalid_token': InvalidTokenError,
++        'insufficient_scope': InsufficientScopeError,
++        'consent_required': ConsentRequired,
++        'login_required': LoginRequired,
+     }
+-    for _, cls in inspect.getmembers(sys.modules[__name__], inspect.isclass):
+-        if cls.error == error:
+-            raise cls(**kwargs)
+-    raise CustomOAuth2Error(error=error, **kwargs)
++    
++    # Check if we have a specific error class for this error type
++    error_class = error_map.get(error_type)
++    
++    if error_class:
++        raise error_class(description=params.get('error_description'), 
++                         uri=params.get('error_uri'),
++                         state=params.get('state'))
++    else:
++        # For custom errors, create a CustomOAuth2Error
++        raise CustomOAuth2Error(error_type,
++                               description=params.get('error_description'),
++                               uri=params.get('error_uri'),
++                               state=params.get('state'))

@@ -1,0 +1,164 @@
+--- a/src/mistune/block_parser.py
++++ b/src/mistune/block_parser.py
+@@ -136,53 +136,8 @@
+         state.append_token({'type': 'block_code', 'raw': code, 'style': 'indent'})
+         return m.end()
+ 
+-    def parse_fenced_code(self, m: Match[str], state: BlockState) -> Optional[int]:
+-        """Parse token for fenced code block. A fenced code block is started with
+-        3 or more backtick(`) or tilde(~).
+-
+-        An example of a fenced code block:
+-
+-        .. code-block:: markdown
+-
+-            ```python
+-            def markdown(text):
+-                return mistune.html(text)
+-            ```
+-        """
+-        spaces = m.group('fenced_1')
+-        marker = m.group('fenced_2')
+-        info = m.group('fenced_3')
+-
+-        c = marker[0]
+-        if info and c == '`':
+-            # CommonMark Example 145
+-            # Info strings for backtick code blocks cannot contain backticks
+-            if info.find(c) != -1:
+-                return None
+-
+-        _end = re.compile(
+-            r'^ {0,3}' + c + '{' + str(len(marker)) + r',}[ \t]*(?:\n|$)', re.M)
+-        cursor_start = m.end() + 1
+-
+-        m2 = _end.search(state.src, cursor_start)
+-        if m2:
+-            code = state.src[cursor_start:m2.start()]
+-            end_pos = m2.end()
+-        else:
+-            code = state.src[cursor_start:]
+-            end_pos = state.cursor_max
+-
+-        if spaces and code:
+-            _trim_pattern = re.compile('^ {0,' + str(len(spaces)) + '}', re.M)
+-            code = _trim_pattern.sub('', code)
+-
+-        token = {'type': 'block_code', 'raw': code, 'style': 'fenced', 'marker': marker}
+-        if info:
+-            info = unescape_char(info)
+-            token['attrs'] = {'info': info.strip()}
+-
+-        state.append_token(token)
+-        return end_pos
++    def parse_fenced_code(self, m: Match[str], state: BlockState) ->Optional[int]:
++        pass
+ 
+     def parse_atx_heading(self, m: Match[str], state: BlockState) -> int:
+         """Parse token for ATX heading. An ATX heading is started with 1 to 6
+@@ -288,99 +243,12 @@
+             state.env['ref_links'][key] = data
+         return end_pos
+ 
+-    def extract_block_quote(
+-        self, m: Match[str], state: BlockState
+-    ) -> Tuple[str, Optional[int]]:
+-        """Extract text and cursor end position of a block quote."""
+-
+-        # cleanup at first to detect if it is code block
+-        text = m.group('quote_1') + '\n'
+-        text = expand_leading_tab(text, 3)
+-        text = _BLOCK_QUOTE_TRIM.sub('', text)
+-
+-        sc = self.compile_sc(['blank_line', 'indent_code', 'fenced_code'])
+-        require_marker = bool(sc.match(text))
+-
+-        state.cursor = m.end() + 1
+-
+-        end_pos: Optional[int] = None
+-        if require_marker:
+-            m2 = _STRICT_BLOCK_QUOTE.match(state.src, state.cursor)
+-            if m2:
+-                quote = m2.group(0)
+-                quote = _BLOCK_QUOTE_LEADING.sub('', quote)
+-                quote = expand_leading_tab(quote, 3)
+-                quote = _BLOCK_QUOTE_TRIM.sub('', quote)
+-                text += quote
+-                state.cursor = m2.end()
+-        else:
+-            prev_blank_line = False
+-            break_sc = self.compile_sc([
+-                'blank_line', 'thematic_break', 'fenced_code',
+-                'list', 'block_html',
+-            ])
+-            while state.cursor < state.cursor_max:
+-                m3 = _STRICT_BLOCK_QUOTE.match(state.src, state.cursor)
+-                if m3:
+-                    quote = m3.group(0)
+-                    quote = _BLOCK_QUOTE_LEADING.sub('', quote)
+-                    quote = expand_leading_tab(quote, 3)
+-                    quote = _BLOCK_QUOTE_TRIM.sub('', quote)
+-                    text += quote
+-                    state.cursor = m3.end()
+-                    if not quote.strip():
+-                        prev_blank_line = True
+-                    else:
+-                        prev_blank_line = bool(_LINE_BLANK_END.search(quote))
+-                    continue
+-
+-                if prev_blank_line:
+-                    # CommonMark Example 249
+-                    # because of laziness, a blank line is needed between
+-                    # a block quote and a following paragraph
+-                    break
+-
+-                m4 = break_sc.match(state.src, state.cursor)
+-                if m4:
+-                    end_pos = self.parse_method(m4, state)
+-                    if end_pos:
+-                        break
+-
+-                # lazy continuation line
+-                pos = state.find_line_end()
+-                line = state.get_text(pos)
+-                line = expand_leading_tab(line, 3)
+-                text += line
+-                state.cursor = pos
+-
+-        # according to CommonMark Example 6, the second tab should be
+-        # treated as 4 spaces
+-        return expand_tab(text), end_pos
+-
+-    def parse_block_quote(self, m: Match[str], state: BlockState) -> int:
+-        """Parse token for block quote. Here is an example of the syntax:
+-
+-        .. code-block:: markdown
+-
+-            > a block quote starts
+-            > with right arrows
+-        """
+-        text, end_pos = self.extract_block_quote(m, state)
+-        # scan children state
+-        child = state.child_state(text)
+-        if state.depth() >= self.max_nested_level - 1:
+-            rules = list(self.block_quote_rules)
+-            rules.remove('block_quote')
+-        else:
+-            rules = self.block_quote_rules
+-
+-        self.parse(child, rules)
+-        token = {'type': 'block_quote', 'children': child.tokens}
+-        if end_pos:
+-            state.prepend_token(token)
+-            return end_pos
+-        state.append_token(token)
+-        return state.cursor
++    def extract_block_quote(self, m: Match[str], state: BlockState) ->Tuple[str,
++        Optional[int]]:
++        pass
++
++    def parse_block_quote(self, m: Match[str], state: BlockState) ->int:
++        pass
+ 
+     def parse_list(self, m: Match[str], state: BlockState) -> int:
+         """Parse tokens for ordered and unordered list."""

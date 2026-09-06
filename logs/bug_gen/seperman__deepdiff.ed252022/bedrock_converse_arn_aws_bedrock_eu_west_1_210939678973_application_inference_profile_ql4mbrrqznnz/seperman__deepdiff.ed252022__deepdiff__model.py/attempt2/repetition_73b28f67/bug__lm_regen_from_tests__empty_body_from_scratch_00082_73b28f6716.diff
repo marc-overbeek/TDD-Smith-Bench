@@ -1,0 +1,19 @@
+--- a/deepdiff/model.py
++++ b/deepdiff/model.py
+@@ -605,6 +605,16 @@
+         yield self.t2
+ 
+     @property
++    def test_repetition_attribute_and_repr(self):
++        t1 = [1, 1]
++        t2 = [1]
++        some_repetition = 'some repetition'
++        node = DiffLevel(t1, t2)
++        node.additional['repetition'] = some_repetition
++        assert node.repetition == some_repetition
++        assert repr(node) == "<root {'repetition': 'some repetition'}>"
++
++    @property
+     def repetition(self):
+         return self.additional['repetition']
+ 

@@ -1,0 +1,261 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -59,7 +59,7 @@
+     DJANGO_CACHED_PROPERTY = 5
+ 
+     @classmethod
+-    def from_callable(cls, func: Callable[..., Any]) -> "FunctionKind":
++    def from_callable(cls, func: Callable[..., Any]) ->'FunctionKind':
+         if "." not in func.__qualname__:
+             return FunctionKind.MODULE
+         func_or_desc = get_name_in_module(
+@@ -283,22 +283,20 @@
+         return "ImportBlockStub(%s)" % (repr(self.imports),)
+ 
+ 
+-def _is_optional(anno: Any) -> bool:
+-    """Is the supplied annotation an instance of the 'virtual' Optional type?
+-
+-    Optional isn't really a type. It's an alias to Union[T, NoneType]
+-    """
+-    return is_union(anno) and NoneType in anno.__args__
+-
+-
+-def _get_optional_elem(anno: Any) -> Any:
+-    """Get the non-null type from an optional."""
+-    if not _is_optional(anno):
+-        raise TypeError("Supplied annotation isn't an optional")
+-    elems = tuple(e for e in anno.__args__ if e is not NoneType)
+-    if len(elems) == 1:
+-        return elems[0]
+-    return Union[elems]
++def _is_optional(anno: Any) ->bool:
++    if not is_union(anno):
++        return False
++    args = anno.__args__
++    if args is None:
++        return False
++    return len(args) == 2 and type(None) in args
++
++
++def _get_optional_elem(anno: Any) ->Any:
++    args = anno.__args__
++    for arg in args:
++        if arg is not type(None):
++            return arg
+ 
+ 
+ class RenderAnnotation(GenericTypeRewriter[str]):
+@@ -320,7 +318,7 @@
+             f" but was called with name={name}, annotations={annotations}, total={total}."
+         )
+ 
+-    def generic_rewrite(self, typ: Any) -> str:
++    def generic_rewrite(self, typ: Any) ->str:
+         if hasattr(typ, "__supertype__"):
+             rendered = str(typ.__name__)
+         elif is_forward_ref(typ):
+@@ -362,7 +360,7 @@
+     def make_container_type(self, container_type: str, elements: str) -> str:
+         return f"{container_type}[{elements}]"
+ 
+-    def rewrite_Union(self, union: type) -> str:
++    def rewrite_Union(self, union: type) ->str:
+         if _is_optional(union):
+             elem_type = _get_optional_elem(union)
+             return "Optional[" + self.rewrite(elem_type) + "]"
+@@ -382,109 +380,47 @@
+     return RenderAnnotation().rewrite(anno)
+ 
+ 
+-def render_parameter(param: inspect.Parameter) -> str:
+-    """Convert a parameter into its stub representation.
+-
+-    NB: This is copied almost entirely from https://github.com/python/cpython/blob/3.6/Lib/inspect.py
+-    with the modification that it calls our own rendering functions for annotations.
+-
+-    TODO: push a patch upstream so we don't have to do this on Python 3.x.
+-    """
+-    kind = param.kind
+-    formatted = param.name
+-
+-    # Add annotation and default value
++def render_parameter(param: inspect.Parameter) ->str:
++    result = param.name
+     if param.annotation is not inspect.Parameter.empty:
+         anno = param.annotation
+         if not _is_optional(anno) and param.default is None:
+-            anno = Optional[anno]
+-        rendered = render_annotation(anno)
+-        formatted = "{}: {}".format(formatted, rendered)
+-
++            rendered_anno = "Optional[" + render_annotation(anno) + "]"
++        else:
++            rendered_anno = render_annotation(anno)
++        result += ": " + rendered_anno
+     if param.default is not inspect.Parameter.empty:
+-        formatted = "{} = ...".format(formatted)
+-
+-    if kind == inspect.Parameter.VAR_POSITIONAL:
+-        formatted = "*" + formatted
+-    elif kind == inspect.Parameter.VAR_KEYWORD:
+-        formatted = "**" + formatted
+-
+-    return formatted
+-
+-
+-def render_signature(
+-    sig: inspect.Signature, max_line_len: Optional[int] = None, prefix: str = ""
+-) -> str:
+-    """Convert a signature into its stub representation.
+-
+-    NB: This is copied almost entirely from https://github.com/python/cpython/blob/3.6/Lib/inspect.py
+-    with the modification that it calls our own rendering functions for annotations.
+-
+-    TODO: push a patch upstream so we don't have to do this on Python 3.x.
+-    """
+-    formatted_params = []
+-    render_pos_only_separator = False
+-    render_kw_only_separator = True
+-    for param in sig.parameters.values():
+-        formatted = render_parameter(param)
+-        kind = param.kind
+-
+-        if kind == inspect.Parameter.POSITIONAL_ONLY:
+-            render_pos_only_separator = True
+-        elif render_pos_only_separator:
+-            # It's not a positional-only parameter, and the flag
+-            # is set to 'True' (there were pos-only params before.)
+-            formatted_params.append("/")
+-            render_pos_only_separator = False
+-
+-        if kind == inspect.Parameter.VAR_POSITIONAL:
+-            # OK, we have an '*args'-like parameter, so we won't need
+-            # a '*' to separate keyword-only arguments
+-            render_kw_only_separator = False
+-        elif kind == inspect.Parameter.KEYWORD_ONLY and render_kw_only_separator:
+-            # We have a keyword-only parameter to render and we haven't
+-            # rendered an '*args'-like parameter before, so add a '*'
+-            # separator to the parameters list ("foo(arg1, *, arg2)" case)
+-            formatted_params.append("*")
+-            # This condition should be only triggered once, so
+-            # reset the flag
+-            render_kw_only_separator = False
+-
+-        formatted_params.append(formatted)
+-
+-    if render_pos_only_separator:
+-        # There were only positional-only parameters, hence the
+-        # flag was not reset to 'False'
+-        formatted_params.append("/")
+-
+-    rendered_return = ""
++        result += " = ..."
++    return result
++
++
++def render_signature(sig: inspect.Signature, max_line_len: Optional[int]=
++    None, prefix: str='') ->str:
++    params = [render_parameter(p) for p in sig.parameters.values()]
+     if sig.return_annotation is not inspect.Signature.empty:
+-        anno = render_annotation(sig.return_annotation)
+-        rendered_return = " -> {}".format(anno)
+-
+-    # first try render it into one single line, if it doesn't exceed
+-    # the limit then just use it
+-    rendered_single_line = "({})".format(", ".join(formatted_params)) + rendered_return
+-    if max_line_len is None or len(rendered_single_line) <= max_line_len:
+-        return rendered_single_line
+-
+-    # add prefix to all lines except the first one
+-    rendered_multi_lines = ["("]
+-    for i, f_param in enumerate(formatted_params):
+-        line = "    " + f_param
+-        if i != len(formatted_params) - 1:
+-            line += ","
+-        rendered_multi_lines.append(prefix + line)
+-    rendered_multi_lines.append(prefix + ")" + rendered_return)
+-    return "\n".join(rendered_multi_lines)
++        return_annotation = render_annotation(sig.return_annotation)
++        return_str = " -> " + return_annotation
++    else:
++        return_str = ""
++    
++    single_line = "(" + ", ".join(params) + ")" + return_str
++    
++    if max_line_len is None or len(single_line) <= max_line_len:
++        return single_line
++    
++    inner_prefix = prefix + "    "
++    lines = ["("]
++    for i, param in enumerate(params):
++        if i < len(params) - 1:
++            lines.append(inner_prefix + param + ",")
++        else:
++            lines.append(inner_prefix + param)
++    lines.append(prefix + ")" + return_str)
++    return "\n".join(lines)
+ 
+ 
+ class AttributeStub(Stub):
+-    def __init__(
+-        self,
+-        name: str,
+-        typ: type,
+-    ) -> None:
++    def __init__(self, name: str, typ: type) ->None:
+         self.name = name
+         self.typ = typ
+ 
+@@ -510,14 +446,12 @@
+         self.strip_modules = strip_modules or []
+         self.is_async = is_async
+ 
+-    def render(self, prefix: str = "") -> str:
++    def render(self, prefix: str='') ->str:
+         s = prefix
+         if self.is_async:
+             s += "async "
+         s += "def " + self.name
+         s += render_signature(self.signature, 120 - len(s), prefix) + ": ..."
+-        # Yes, this is a horrible hack, but inspect.py gives us no way to
+-        # specify the function that should be used to format annotations.
+         for module in self.strip_modules:
+             s = s.replace(module + ".", "")
+         if self.kind == FunctionKind.CLASS:
+@@ -553,7 +487,7 @@
+         if function_stubs is not None:
+             self.function_stubs = {stub.name: stub for stub in function_stubs}
+ 
+-    def render(self) -> str:
++    def render(self) ->str:
+         parts = [
+             f"class {self.name}:",
+             *[
+@@ -668,13 +602,10 @@
+ 
+ 
+ class ModuleStub(Stub):
+-    def __init__(
+-        self,
+-        function_stubs: Optional[Iterable[FunctionStub]] = None,
+-        class_stubs: Optional[Iterable[ClassStub]] = None,
+-        imports_stub: Optional[ImportBlockStub] = None,
+-        typed_dict_class_stubs: Optional[Iterable[ClassStub]] = None,
+-    ) -> None:
++    def __init__(self, function_stubs: Optional[Iterable[FunctionStub]]=None,
++        class_stubs: Optional[Iterable[ClassStub]]=None, imports_stub: Optional
++        [ImportBlockStub]=None, typed_dict_class_stubs: Optional[Iterable[
++        ClassStub]]=None) ->None:
+         self.function_stubs: Dict[str, FunctionStub] = {}
+         if function_stubs is not None:
+             self.function_stubs = {stub.name: stub for stub in function_stubs}
+@@ -686,7 +617,7 @@
+         if typed_dict_class_stubs is not None:
+             self.typed_dict_class_stubs = list(typed_dict_class_stubs)
+ 
+-    def render(self) -> str:
++    def render(self) ->str:
+         parts = []
+         if self.imports_stub.imports:
+             parts.append(self.imports_stub.render())

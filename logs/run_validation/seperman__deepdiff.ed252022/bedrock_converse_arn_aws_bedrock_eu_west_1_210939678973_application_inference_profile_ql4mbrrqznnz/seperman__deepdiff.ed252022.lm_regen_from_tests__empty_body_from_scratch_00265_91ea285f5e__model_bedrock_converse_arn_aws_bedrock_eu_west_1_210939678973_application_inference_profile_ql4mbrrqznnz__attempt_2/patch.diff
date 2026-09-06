@@ -1,0 +1,20 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -376,7 +376,16 @@
+ 
+ 
+ def type_in_type_group(item, type_group):
+-    return get_type(item) in type_group
++    for type_ in type_group:
++        if type_ is None:
++            # None in type_group means NoneType
++            if item is type(None) or item is None:
++                return True
++        elif item is type_:
++            return True
++        elif isinstance(type_, type) and isinstance(item, type_):
++            return True
++    return False
+ 
+ 
+ def type_is_subclass_of_type_group(item, type_group):

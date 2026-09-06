@@ -1,0 +1,58 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1800,6 +1800,19 @@
+ 
+         return UphillDownhill(uphill, downhill)
+ 
++    def test_get_location_at(self) ->None:
++        # ...
++        self.assertEqual(gpx.tracks[0].get_location_at(mod_datetime.datetime(
++            2013, 1, 2, 12, 29, 30)), [])  # Before first point - empty list
++        self.assertEqual(gpx.tracks[0].get_location_at(mod_datetime.datetime(
++            2013, 1, 2, 12, 30, 0))[0], p0)  # At first point - returns list with p0
++        self.assertEqual(gpx.tracks[0].get_location_at(mod_datetime.datetime(
++            2013, 1, 2, 12, 30, 30))[0], p1)  # Between points - returns list with p1
++        self.assertEqual(gpx.tracks[0].get_location_at(mod_datetime.datetime(
++            2013, 1, 2, 12, 31, 0))[0], p1)  # At second point - returns list with p1
++        self.assertEqual(gpx.tracks[0].get_location_at(mod_datetime.datetime(
++            2013, 1, 2, 12, 31, 30)), [])  # After last point - empty list
++
+     def get_location_at(self, time: mod_datetime.datetime) -> List[GPXTrackPoint]:
+         """
+         Gets approx. location at given time. Note that, at the moment this
+@@ -1807,13 +1820,28 @@
+         be a mod_geo.Location instance with approximated latitude, longitude
+         and elevation!
+         """
+-        result = []
+-        for track_segment in self.segments:
+-            location = track_segment.get_location_at(time)
+-            if location:
+-                result.append(location)
+-
+-        return result
++        if not self.points:
++            return []
++
++        if not time:
++            return []
++
++        first_time = self.points[0].time
++        last_time = self.points[-1].time
++
++        if not first_time or not last_time:
++            log.debug('No times for track segment')
++            return []
++
++        if not (first_time <= time <= last_time):
++            log.debug(f'Not in track (search for:{time}, start:{first_time}, end:{last_time})')
++            return []
++
++        for point in self.points:
++            if point.time and time <= point.time:
++                return [point]
++    
++        return []
+ 
+     def get_elevation_extremes(self) -> MinimumMaximum:
+         """

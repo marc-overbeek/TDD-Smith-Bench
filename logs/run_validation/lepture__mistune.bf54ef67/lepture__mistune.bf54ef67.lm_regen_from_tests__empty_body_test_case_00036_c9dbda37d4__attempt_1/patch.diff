@@ -1,0 +1,27 @@
+--- a/src/mistune/directives/_rst.py
++++ b/src/mistune/directives/_rst.py
+@@ -31,9 +31,7 @@
+ 
+     @staticmethod
+     def parse_content(m: Match[str]) -> str:
+-        full_content = m.group(0)
+         text = m.group('text')
+-        pretext = full_content[:-len(text)]
+         leading = len(m.group(1)) + 2
+         return '\n'.join(line[leading:] for line in text.splitlines()) + '\n'
+ 
+@@ -67,13 +65,10 @@
+     parser = RSTParser
+     directive_pattern = r'^\.\. +[a-zA-Z0-9_-]+\:\:'
+ 
+-    def parse_directive(
+-        self, block: "BlockParser", m: Match[str], state: "BlockState"
+-    ) -> Optional[int]:
++    def parse_directive(self, block: 'BlockParser', m: Match[str], state: 'BlockState') -> Optional[int]:
+         m2 = _directive_re.match(state.src, state.cursor)
+         if not m2:
+             return None
+-
+         self.parse_method(block, m2, state)
+         return m2.end()
+ 

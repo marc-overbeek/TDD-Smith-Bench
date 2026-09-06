@@ -1,0 +1,55 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -281,11 +281,11 @@
+ 
+     def glomit(self, target, scope):
+         try:
+-            return self._glomit(target, scope)
++            scope[glom](target, self.child, scope)
+         except GlomError:
+-            if self.default is not _MISSING:
+-                return arg_val(target, self.default, scope)
+-            raise
++            return target
++        else:
++            raise MatchError("child shouldn't have passed", self.child)
+ 
+     def _m_repr(self):
+         """should this Or() repr as M |?"""
+@@ -314,10 +314,9 @@
+     __slots__ = ('children',)
+ 
+     def _glomit(self, target, scope):
+-        # all children must match without exception
+-        result = target  # so that And() == True, similar to all([]) == True
++        result = target
+         for child in self.children:
+-            result = scope[glom](target, child, scope)
++            result = scope[glom](result, child, scope)
+         return result
+ 
+     def __and__(self, other):
+@@ -336,7 +335,7 @@
+ 
+     def _glomit(self, target, scope):
+         for child in self.children[:-1]:
+-            try:  # one child must match without exception
++            try:
+                 return scope[glom](target, child, scope)
+             except GlomError:
+                 pass
+@@ -361,12 +360,9 @@
+         self.child = child
+ 
+     def glomit(self, target, scope):
+-        try:  # one child must match without exception
+-            scope[glom](target, self.child, scope)
+-        except GlomError:
++        if target:
+             return target
+-        else:
+-            raise GlomError("child shouldn't have passed", self.child)
++        raise MatchError("{0!r} not truthy", target)
+ 
+     def _m_repr(self):
+         if isinstance(self.child, (_MType, _MExpr)):

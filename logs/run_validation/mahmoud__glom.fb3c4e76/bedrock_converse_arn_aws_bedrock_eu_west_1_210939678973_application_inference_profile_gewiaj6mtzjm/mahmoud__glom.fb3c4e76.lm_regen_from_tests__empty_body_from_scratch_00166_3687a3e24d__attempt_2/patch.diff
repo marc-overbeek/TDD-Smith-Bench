@@ -1,0 +1,19 @@
+--- a/glom/cli.py
++++ b/glom/cli.py
+@@ -100,7 +100,15 @@
+ 
+ def main(argv):
+     cmd = get_command()
+-    return cmd.run(argv) or 0
++    try:
++        args = cmd.parse(argv[1:])
++        return glom_cli(**args)
++    except CommandLineError as e:
++        print(str(e), file=sys.stderr)
++        return 1
++    except UsageError as e:
++        print(str(e), file=sys.stderr)
++        return 1
+ 
+ 
+ def console_main():

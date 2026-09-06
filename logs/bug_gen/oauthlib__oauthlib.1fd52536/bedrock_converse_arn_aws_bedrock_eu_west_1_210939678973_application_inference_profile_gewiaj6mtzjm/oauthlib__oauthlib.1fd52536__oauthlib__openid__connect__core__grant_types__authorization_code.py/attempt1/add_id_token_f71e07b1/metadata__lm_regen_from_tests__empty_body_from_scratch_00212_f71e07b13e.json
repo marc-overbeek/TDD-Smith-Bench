@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef add_id_token(self, token, token_handler, request):\n    \"\"\"\n    Construct an initial version of id_token, and let the\n    request_validator sign or encrypt it.\n\n    The authorization_code version of this method is used to\n    retrieve the nonce accordingly to the code storage.\n    \"\"\"\n    # Treat it as normal OAuth 2 auth code request if openid is not present\n    if not request.scopes or 'openid' not in request.scopes:\n        return token\n\n    nonce = self.request_validator.get_authorization_code_nonce(\n        request.client_id,\n        request.code,\n        request.redirect_uri,\n        request\n    )\n    return super().add_id_token(token, token_handler, request, nonce=nonce)\n```",
+  "rewrite": "def add_id_token(self, token, token_handler, request):\n    \"\"\"\n    Construct an initial version of id_token, and let the\n    request_validator sign or encrypt it.\n\n    The authorization_code version of this method is used to\n    retrieve the nonce accordingly to the code storage.\n    \"\"\"\n    # Treat it as normal OAuth 2 auth code request if openid is not present\n    if not request.scopes or 'openid' not in request.scopes:\n        return token\n\n    nonce = self.request_validator.get_authorization_code_nonce(\n        request.client_id,\n        request.code,\n        request.redirect_uri,\n        request\n    )\n    return super().add_id_token(token, token_handler, request, nonce=nonce)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

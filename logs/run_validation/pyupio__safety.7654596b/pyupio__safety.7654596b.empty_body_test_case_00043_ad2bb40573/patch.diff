@@ -1,0 +1,116 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -177,112 +177,7 @@
+ 
+ 
+ def clean_check_command(f):
+-    """
+-    Main entry point for validation.
+-    """
+-    @wraps(f)
+-    def inner(ctx, *args, **kwargs):
+-
+-        save_json = kwargs["save_json"]
+-        output = kwargs["output"]
+-        authenticated: bool = ctx.obj.auth.client.is_using_auth_credentials()
+-        files = kwargs["files"]
+-        policy_file = kwargs["policy_file"]
+-        auto_remediation_limit = kwargs["auto_remediation_limit"]
+-        audit_and_monitor = kwargs["audit_and_monitor"]
+-        exit_code = kwargs["exit_code"]
+-
+-        # This is handled in the custom subgroup Click class
+-        # TODO: Remove this soon, for now it keeps a legacy behavior
+-        kwargs.pop("key", None)
+-        kwargs.pop('proxy_protocol', None)
+-        kwargs.pop('proxy_host', None)
+-        kwargs.pop('proxy_port', None)
+-
+-        if ctx.get_parameter_source("json_version") != click.core.ParameterSource.DEFAULT and not (
+-                save_json or json or output == 'json'):
+-            raise click.UsageError(
+-                "Illegal usage: `--json-version` only works with JSON related outputs."
+-            )
+-
+-        try:
+-
+-            if ctx.get_parameter_source("apply_remediations") != click.core.ParameterSource.DEFAULT:
+-                if not authenticated:
+-                    raise InvalidCredentialError(message="The --apply-security-updates option needs authentication. See {link}.")
+-                if not files:
+-                    raise SafetyError(message='--apply-security-updates only works with files; use the "-r" option to '
+-                                              'specify files to remediate.')
+-
+-            auto_remediation_limit = get_fix_options(policy_file, auto_remediation_limit)
+-            policy_file, server_audit_and_monitor = safety.get_server_policies(ctx.obj.auth.client, policy_file=policy_file,
+-                                                                               proxy_dictionary=None)
+-            audit_and_monitor = (audit_and_monitor and server_audit_and_monitor)
+-
+-            kwargs.update({"auto_remediation_limit": auto_remediation_limit,
+-                           "policy_file":policy_file,
+-                           "audit_and_monitor": audit_and_monitor})
+-
+-        except SafetyError as e:
+-            LOG.exception('Expected SafetyError happened: %s', e)
+-            output_exception(e, exit_code_output=exit_code)
+-        except Exception as e:
+-            LOG.exception('Unexpected Exception happened: %s', e)
+-            exception = e if isinstance(e, SafetyException) else SafetyException(info=e)
+-            output_exception(exception, exit_code_output=exit_code)
+-
+-        return f(ctx, *args, **kwargs)
+-
+-    return inner
+-
+-def print_deprecation_message(
+-    old_command: str, 
+-    deprecation_date: datetime, 
+-    new_command: Optional[str] = None
+-) -> None:
+-    """
+-    Print a formatted deprecation message for a command.
+-
+-    This function uses the click library to output a visually distinct
+-    message in the console, warning users about the deprecation of a
+-    specified command. It includes information about the deprecation date
+-    and suggests an alternative command to use, if provided.
+-
+-    The message is formatted with colors and styles for emphasis:
+-    - Yellow for the border and general information
+-    - Red for the 'DEPRECATED' label
+-    - Green for the suggestion of the new command (if provided)
+-
+-    Parameters:
+-    - old_command (str): The name of the deprecated command.
+-    - deprecation_date (datetime): The date when the command will no longer be supported.
+-    - new_command (str, optional): The name of the alternative command to suggest. Default is None.
+-    """
+-    click.echo("\n")
+-    click.echo(click.style(BAR_LINE, fg="yellow", bold=True))
+-    click.echo("\n")
+-    click.echo(click.style("DEPRECATED: ", fg="red", bold=True) +
+-               click.style(f"this command (`{old_command}`) has been DEPRECATED, and will be unsupported beyond {deprecation_date.strftime('%d %B %Y')}.", fg="yellow", bold=True))
+-    
+-    if new_command:
+-        click.echo("\n")
+-        click.echo(click.style("We highly encourage switching to the new ", fg="green") +
+-                   click.style(f"`{new_command}`", fg="green", bold=True) +
+-                   click.style(" command which is easier to use, more powerful, and can be set up to mimic the deprecated command if required.", fg="green"))
+-    
+-    click.echo("\n")
+-    click.echo(click.style(BAR_LINE, fg="yellow", bold=True))
+-    click.echo("\n")
+-
+-
+-
+-@cli.command(cls=SafetyCLILegacyCommand, utility_command=True, help=CLI_CHECK_COMMAND_HELP)
+-@proxy_options
+-@auth_options(stage=False)
+-@click.option("--db", default="",
+-              help="Path to a local or remote vulnerability database. Default: empty")
+-@click.option("--full-report/--short-report", default=False, cls=MutuallyExclusiveOption,
+-              mutually_exclusive=["output", "json", "bare"],
++    pass
+               with_values={"output": ['json', 'bare'], "json": [True, False], "html": [True, False], "bare": [True, False]},
+               help='Full reports include a security advisory (if available). Default: --short-report')
+ @click.option("--cache", is_flag=False, flag_value=60, default=0,

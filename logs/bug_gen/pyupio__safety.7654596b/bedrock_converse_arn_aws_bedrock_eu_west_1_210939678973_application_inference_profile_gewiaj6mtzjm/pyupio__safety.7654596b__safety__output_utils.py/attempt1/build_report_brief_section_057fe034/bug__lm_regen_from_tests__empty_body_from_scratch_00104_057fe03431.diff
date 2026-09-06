@@ -1,0 +1,81 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -691,49 +691,37 @@
+ REPORT_HEADING = format_long_text(click.style('REPORT', bold=True))
+ 
+ 
+-def build_report_brief_section(columns: Optional[int] = None, primary_announcement: Optional[Dict[str, Any]] = None, report_type: int = 1, **kwargs: Any) -> str:
+-    """
+-    Build the brief section of the report.
+-
+-    Args:
+-        columns (Optional[int], optional): Number of columns for formatting. Defaults to None.
+-        primary_announcement (Optional[Dict[str, Any]], optional): Primary announcement details. Defaults to None.
+-        report_type (int, optional): Type of the report. Defaults to 1.
+-        **kwargs: Additional arguments for formatting.
+-
+-    Returns:
+-        str: Brief section of the report.
+-    """
+-    if not columns:
++def build_report_brief_section(columns: Optional[int]=None,
++    primary_announcement: Optional[Dict[str, Any]]=None, report_type: int=1,
++    **kwargs: Any) ->str:
++    
++    if columns is None:
+         columns = get_terminal_size().columns
+-
+-    styled_brief_lines = []
+-
++    
++    sections = []
++    
+     if primary_announcement:
+-        styled_brief_lines.append(
+-            build_primary_announcement(columns=columns, primary_announcement=primary_announcement))
+-
+-    for line in get_report_brief_info(report_type=report_type, **kwargs):
+-        ln = ''
+-        padding = ' ' * 2
+-
+-        for i, words in enumerate(line):
+-            processed_words = words.get('value', '')
+-            if words.get('style', False):
+-                text = ''
+-                if i == 0:
+-                    text = padding
+-                    padding = ''
+-                text += processed_words
+-
+-                processed_words = click.style(text, bold=True)
+-
+-            ln += processed_words
+-
+-        styled_brief_lines.append(format_long_text(ln, color='', columns=columns, start_line_decorator='',
+-                                                   indent=padding, end_line_decorator='', sub_indent=' ' * 2))
+-
+-    return "\n".join([add_empty_line(), REPORT_HEADING, add_empty_line(), '\n'.join(styled_brief_lines)])
++        announcement_content = build_primary_announcement(primary_announcement, columns=columns)
++        sections.append(announcement_content)
++    
++    # Add report heading
++    sections.append(REPORT_HEADING)
++    
++    # Get report brief info
++    brief_info = get_report_brief_info(report_type=report_type, **kwargs)
++    
++    # Format brief info
++    formatted_brief = []
++    for line_group in brief_info:
++        for item in line_group:
++            if item.get('style'):
++                formatted_brief.append(item['value'])
++            else:
++                formatted_brief.append(item['value'])
++    
++    sections.extend(formatted_brief)
++    
++    return '\n'.join(sections)
+ 
+ 
+ def build_report_for_review_vuln_report(as_dict: bool = False) -> Union[Dict[str, Any], List[List[Dict[str, Any]]]]:

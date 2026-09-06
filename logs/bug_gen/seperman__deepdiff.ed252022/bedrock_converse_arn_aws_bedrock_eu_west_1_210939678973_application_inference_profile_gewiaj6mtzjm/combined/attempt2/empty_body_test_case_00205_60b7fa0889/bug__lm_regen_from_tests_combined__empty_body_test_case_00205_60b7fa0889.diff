@@ -1,0 +1,60 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -190,34 +190,26 @@
+     return length
+ 
+ 
+-def _get_numbers_distance(num1, num2, max_=1, use_log_scale=False, log_scale_similarity_threshold=0.1):
++def _get_numbers_distance(num1, num2, max_=1, use_log_scale=False,
++    log_scale_similarity_threshold=0.1):
+     """
+     Get the distance of 2 numbers. The output is a number between 0 to the max.
+     The reason is the
+     When max is returned means the 2 numbers are really far, and 0 means they are equal.
+     """
+-    if num1 == num2:
+-        return 0
+     if use_log_scale:
+-        distance = logarithmic_distance(num1, num2)
+-        if distance < logarithmic_distance:
++        num1 = logarithmic_distance(num1, num2)
++        num2 = 0
++    else:
++        num1 = float(num1)
++        num2 = float(num2)
++        if num1 == num2:
+             return 0
+-        return distance
+-    if not isinstance(num1, float):
+-        num1 = float(num1)
+-    if not isinstance(num2, float):
+-        num2 = float(num2)
+-    # Since we have a default cutoff of 0.3 distance when
+-    # getting the pairs of items during the ingore_order=True
+-    # calculations, we need to make the divisor of comparison very big
+-    # so that any 2 numbers can be chosen as pairs.
+-    divisor = (num1 + num2) / max_
+-    if divisor == 0:
+-        return max_
+-    try:
+-        return min(max_, abs((num1 - num2) / divisor))
+-    except Exception:  # pragma: no cover. I don't think this line will ever run but doesn't hurt to leave it.
+-        return max_  # pragma: no cover
++        divisor = (num1 + num2) / max_
++        if divisor == 0:
++            return max_
++        result = (num1 - num2) / divisor
++        return abs(result)
+ 
+ 
+ def _numpy_div(a, b, replace_inf_with=1):
+@@ -297,7 +289,8 @@
+     return _get_numbers_distance(timedelta1.total_seconds(), timedelta2.total_seconds(), max_)
+ 
+ 
+-def _get_time_distance(time1, time2, max_, use_log_scale, log_scale_similarity_threshold):
++def _get_time_distance(time1, time2, max_, use_log_scale,
++    log_scale_similarity_threshold):
+     return _get_numbers_distance(time_to_seconds(time1), time_to_seconds(time2), max_)
+ 
+ 

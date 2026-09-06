@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef _process_row(text: str, aligns: List[str]) ->Optional[Dict[str, Any]]:\n    cells = CELL_SPLIT.split(text.strip())\n    # Remove empty strings from leading/trailing pipes\n    if cells and cells[0] == '':\n        cells = cells[1:]\n    if cells and cells[-1] == '':\n        cells = cells[:-1]\n    \n    children = []\n    for i, cell_text in enumerate(cells):\n        if i < len(aligns):\n            align = aligns[i]\n        else:\n            align = None\n        children.append({\n            'type': 'table_cell',\n            'text': cell_text.strip(),\n            'attrs': {'align': align, 'head': False}\n        })\n    \n    return {'type': 'table_row', 'children': children}\n```",
+  "rewrite": "def _process_row(text: str, aligns: List[str]) ->Optional[Dict[str, Any]]:\n    cells = CELL_SPLIT.split(text.strip())\n    # Remove empty strings from leading/trailing pipes\n    if cells and cells[0] == '':\n        cells = cells[1:]\n    if cells and cells[-1] == '':\n        cells = cells[:-1]\n    \n    children = []\n    for i, cell_text in enumerate(cells):\n        if i < len(aligns):\n            align = aligns[i]\n        else:\n            align = None\n        children.append({\n            'type': 'table_cell',\n            'text': cell_text.strip(),\n            'attrs': {'align': align, 'head': False}\n        })\n    \n    return {'type': 'table_row', 'children': children}",
+  "strategy": "lm_regen_from_tests"
+}

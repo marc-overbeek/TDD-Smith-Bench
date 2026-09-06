@@ -1,0 +1,68 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -45,18 +45,8 @@
+     :meth:`register_type` method.
+     """
+ 
+-    def _set_attributes(self, params: Optional[List[Any]] = None) -> None:
+-        """
+-        Set attributes from the input list of parameters.
+-
+-        Args:
+-            params (list): list of parameters.
+-        """
+-
+-        if params:
+-            for k, v in params.items():
+-                if k != "self" and not k.startswith("_"):
+-                    setattr(self, k, v)
++    def _set_attributes(self, params: Optional[List[Any]]=None) ->None:
++        pass
+ 
+     @abstractmethod
+     def apply_image(self, img: np.ndarray):
+@@ -365,8 +355,7 @@
+     """
+ 
+     def __init__(self, width: int):
+-        super().__init__()
+-        self._set_attributes(locals())
++        pass
+ 
+     def apply_image(self, img: np.ndarray) -> np.ndarray:
+         """
+@@ -386,29 +375,11 @@
+         else:
+             return np.flip(img, axis=-2)
+ 
+-    def apply_coords(self, coords: np.ndarray) -> np.ndarray:
+-        """
+-        Flip the coordinates.
+-
+-        Args:
+-            coords (ndarray): floating point array of shape Nx2. Each row is
+-                (x, y).
+-        Returns:
+-            ndarray: the flipped coordinates.
+-
+-        Note:
+-            The inputs are floating point coordinates, not pixel indices.
+-            Therefore they are flipped by `(W - x, H - y)`, not
+-            `(W - 1 - x, H - 1 - y)`.
+-        """
+-        coords[:, 0] = self.width - coords[:, 0]
+-        return coords
+-
+-    def inverse(self) -> Transform:
+-        """
+-        The inverse is to flip again
+-        """
+-        return self
++    def apply_coords(self, coords: np.ndarray) ->np.ndarray:
++        pass
++
++    def inverse(self) ->Transform:
++        pass
+ 
+ 
+ class VFlipTransform(Transform):

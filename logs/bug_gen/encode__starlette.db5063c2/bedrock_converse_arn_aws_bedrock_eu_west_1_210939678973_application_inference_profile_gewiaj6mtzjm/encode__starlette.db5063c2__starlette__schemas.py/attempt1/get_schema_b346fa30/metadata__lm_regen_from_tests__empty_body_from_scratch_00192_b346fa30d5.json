@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef get_schema(self, routes: list[BaseRoute]) -> dict[str, typing.Any]:\n        schema = dict(self.base_schema)\n        schema.setdefault(\"paths\", {})\n        endpoints_info = self.get_endpoints(routes)\n\n        for endpoint in endpoints_info:\n            parsed = self.parse_docstring(endpoint.func)\n\n            if not parsed:\n                continue\n\n            if endpoint.path not in schema[\"paths\"]:\n                schema[\"paths\"][endpoint.path] = {}\n\n            schema[\"paths\"][endpoint.path][endpoint.http_method] = parsed\n\n        return schema\n```",
+  "rewrite": "def get_schema(self, routes: list[BaseRoute]) -> dict[str, typing.Any]:\n        schema = dict(self.base_schema)\n        schema.setdefault(\"paths\", {})\n        endpoints_info = self.get_endpoints(routes)\n\n        for endpoint in endpoints_info:\n            parsed = self.parse_docstring(endpoint.func)\n\n            if not parsed:\n                continue\n\n            if endpoint.path not in schema[\"paths\"]:\n                schema[\"paths\"][endpoint.path] = {}\n\n            schema[\"paths\"][endpoint.path][endpoint.http_method] = parsed\n\n        return schema",
+  "strategy": "lm_regen_from_tests"
+}

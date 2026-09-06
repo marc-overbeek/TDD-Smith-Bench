@@ -1,0 +1,135 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -747,10 +747,8 @@
+         for track_point in self.points:
+             track_point.remove_time()
+ 
+-    def remove_elevation(self) -> None:
+-        """ Removes elevation data for all points in the segment. """
+-        for track_point in self.points:
+-            track_point.remove_elevation()
++    def remove_elevation(self) ->None:
++        pass
+ 
+     def length_2d(self) -> Optional[float]:
+         """
+@@ -1468,10 +1466,8 @@
+         for segment in self.segments:
+             segment.remove_time()
+ 
+-    def remove_elevation(self) -> None:
+-        """ Removes elevation data for all points in all segments of track. """
+-        for segment in self.segments:
+-            segment.remove_elevation()
++    def remove_elevation(self) ->None:
++        pass
+ 
+     def remove_empty(self) -> None:
+         """ Removes empty segments in track """
+@@ -2103,17 +2099,9 @@
+             for route in self.routes:
+                 route.remove_time()
+ 
+-    def remove_elevation(self, tracks: bool=True, routes: bool=False, waypoints: bool=False) -> None:
+-        """ Removes elevation data. """
+-        if tracks:
+-            for track in self.tracks:
+-                track.remove_elevation()
+-        if routes:
+-            for route in self.routes:
+-                route.remove_elevation()
+-        if waypoints:
+-            for waypoint in self.waypoints:
+-                waypoint.remove_elevation()
++    def remove_elevation(self, tracks: bool=True, routes: bool=False, waypoints:
++        bool=False) ->None:
++        pass
+ 
+     def get_time_bounds(self) -> TimeBounds:
+         """
+@@ -2298,35 +2286,8 @@
+                 result += length
+         return result
+ 
+-    def walk(self, only_points: bool=False) -> Iterator[Any]:
+-        """
+-        Generator used to iterates through points in GPX file
+-
+-        Parameters
+-        ----------
+-        only_point s: boolean
+-            Only yield points while walking
+-
+-        Yields
+-        ----------
+-        point : GPXTrackPoint
+-            Point in the track
+-        track_no : integer
+-            Index of track containing point. This is suppressed if only_points
+-            is True.
+-        segment_no : integer
+-            Index of segment containing point. This is suppressed if only_points
+-            is True.
+-        point_no : integer
+-            Index of point. This is suppressed if only_points is True.
+-        """
+-        for track_no, track in enumerate(self.tracks if self.tracks else [] ):
+-            for segment_no, segment in enumerate(track.segments if track.segments else []):
+-                for point_no, point in enumerate(segment.points if segment.points else []):
+-                    if only_points:
+-                        yield point
+-                    else:
+-                        yield point, track_no, segment_no, point_no
++    def walk(self, only_points: bool=False) ->Iterator[Any]:
++        pass
+ 
+     def get_track_points_no(self) -> int:
+         """ Number of track points, *without* route and waypoints """
+@@ -2671,45 +2632,8 @@
+         for track in self.tracks:
+             track.move(location_delta)
+ 
+-    def to_xml(self, version: Optional[str]=None, prettyprint: bool=True) -> str:
+-        """
+-        FIXME: Note, this method will change self.version
+-        """
+-        if not version:
+-            if self.version:
+-                version = self.version
+-            else:
+-                version = '1.1'
+-
+-        if version != '1.0' and version != '1.1':
+-            raise GPXException(f'Invalid version {version}')
+-
+-        self.version = version
+-        if not self.creator:
+-            self.creator = 'gpx.py -- https://github.com/tkrajina/gpxpy'
+-
+-        self.nsmap['xsi'] = 'http://www.w3.org/2001/XMLSchema-instance'
+-
+-        version_path = version.replace('.', '/')
+-
+-        self.nsmap['defaultns'] = f'http://www.topografix.com/GPX/{version_path}'
+-
+-        if not self.schema_locations:
+-            self.schema_locations = [
+-                f'http://www.topografix.com/GPX/{version_path}',
+-                f'http://www.topografix.com/GPX/{version_path}/gpx.xsd',
+-            ]
+-
+-        content = mod_gpxfield.gpx_fields_to_xml(
+-            self, 'gpx', version,
+-            custom_attributes={
+-                'xsi:schemaLocation': ' '.join(self.schema_locations)
+-            },
+-            nsmap=self.nsmap,
+-            prettyprint=prettyprint
+-        )
+-
+-        return f'<?xml version="1.0" encoding="UTF-8"?>\n{content.strip()}'
++    def to_xml(self, version: Optional[str]=None, prettyprint: bool=True) ->str:
++        pass
+ 
+     def has_times(self) -> bool:
+         """ See GPXTrackSegment.has_times() """

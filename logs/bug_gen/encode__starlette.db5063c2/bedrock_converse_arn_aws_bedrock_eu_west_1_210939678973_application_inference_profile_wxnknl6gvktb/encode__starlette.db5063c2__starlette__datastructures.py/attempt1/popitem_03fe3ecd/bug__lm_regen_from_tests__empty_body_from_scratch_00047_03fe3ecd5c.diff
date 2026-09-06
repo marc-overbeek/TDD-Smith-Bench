@@ -1,0 +1,18 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -325,6 +325,15 @@
+     def pop(self, key: typing.Any, default: typing.Any = None) -> typing.Any:
+         self._list = [(k, v) for k, v in self._list if k != key]
+         return self._dict.pop(key, default)
++
++    q = MultiDict([('a', '123'), ('a', '456'), ('b', '789')])
++    item = q.popitem()
++    assert q.get(item[0]) is None
++
++    def popitem(self) -> tuple[typing.Any, typing.Any]:
++        key, value = self._dict.popitem()
++        self._list = [(k, v) for k, v in self._list if k != key]
++        return key, value
+ 
+     def popitem(self) -> tuple[typing.Any, typing.Any]:
+         key, value = self._dict.popitem()

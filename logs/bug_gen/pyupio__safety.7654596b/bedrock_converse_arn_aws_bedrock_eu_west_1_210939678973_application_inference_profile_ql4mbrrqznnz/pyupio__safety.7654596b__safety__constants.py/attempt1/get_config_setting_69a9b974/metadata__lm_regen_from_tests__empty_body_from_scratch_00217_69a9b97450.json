@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the function, it needs to read configuration settings from a config file, falling back to the `URLSettings` enum defaults.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the function, it needs to read configuration settings from a config file, falling back to the `URLSettings` enum defaults.\n\n```python\ndef get_config_setting(name: str) ->Optional[str]:\n    config = configparser.ConfigParser()\n    \n    if CONFIG and CONFIG.exists():\n        config.read(CONFIG)\n        \n        # Check in the config file sections\n        for section in config.sections():\n            if config.has_option(section, name):\n                return config.get(section, name)\n    \n    # Fall back to URLSettings enum defaults\n    try:\n        return URLSettings[name].value\n    except KeyError:\n        return None\n```",
+  "rewrite": "def get_config_setting(name: str) ->Optional[str]:\n    config = configparser.ConfigParser()\n    \n    if CONFIG and CONFIG.exists():\n        config.read(CONFIG)\n        \n        # Check in the config file sections\n        for section in config.sections():\n            if config.has_option(section, name):\n                return config.get(section, name)\n    \n    # Fall back to URLSettings enum defaults\n    try:\n        return URLSettings[name].value\n    except KeyError:\n        return None",
+  "strategy": "lm_regen_from_tests"
+}

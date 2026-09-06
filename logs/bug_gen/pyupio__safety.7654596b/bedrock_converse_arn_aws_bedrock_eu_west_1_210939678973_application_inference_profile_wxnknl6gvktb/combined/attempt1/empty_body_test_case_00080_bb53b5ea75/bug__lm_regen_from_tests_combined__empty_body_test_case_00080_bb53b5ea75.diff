@@ -1,0 +1,172 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -138,73 +138,44 @@
+             LOG.debug('Safety updated the cache file for %s database.', db_name)
+ 
+ 
+-def fetch_database_url(
+-    session: requests.Session,
+-    mirror: str,
+-    db_name: str,
+-    cached: int,
+-    telemetry: bool = True,
+-    ecosystem: Ecosystem = Ecosystem.PYTHON,
+-    from_cache: bool = True
+-) -> Dict[str, Any]:
+-    """
+-    Fetches the database from a URL.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        mirror (str): The URL of the mirror.
+-        db_name (str): The name of the database.
+-        cached (int): The cache validity in seconds.
+-        telemetry (bool): Whether to include telemetry data.
+-        ecosystem (Ecosystem): The ecosystem.
+-        from_cache (bool): Whether to fetch from cache.
+-
+-    Returns:
+-        Dict[str, Any]: The fetched database.
+-    """
+-    headers = {'schema-version': JSON_SCHEMA_VERSION, 'ecosystem': ecosystem.value}
+-
+-    if cached and from_cache:
+-        cached_data = get_from_cache(db_name=db_name, cache_valid_seconds=cached)
+-        if cached_data:
+-            LOG.info('Database %s returned from cache.', db_name)
+-            return cached_data
+-    url = mirror + db_name
+-
+-
+-    telemetry_data = {
+-        'telemetry': json.dumps(build_telemetry_data(telemetry=telemetry),
+-                                default=pydantic_encoder)}
+-
++def fetch_database_url(session: requests.Session, mirror: str, db_name: str,
++    cached: int, telemetry: bool=True, ecosystem: Ecosystem=Ecosystem.
++    PYTHON, from_cache: bool=True) ->Dict[str, Any]:
++    if from_cache:
++        data = get_from_cache(db_name, cache_valid_seconds=cached)
++        if data:
++            return data
++    
++    url = f"{mirror}{ecosystem.value}/{db_name}"
++    
+     try:
+-        r = session.get(url=url, timeout=REQUEST_TIMEOUT,
+-                        headers=headers, params=telemetry_data)
++        LOG.debug(f'Getting the database from {url}')
++        r = session.get(url=url, timeout=REQUEST_TIMEOUT)
++        LOG.debug(r.text)
++        
++        if r.status_code == 200:
++            data = r.json()
++            if cached:
++                LOG.info('Writing %s to cache because cached value was %s', db_name, cached)
++                write_to_cache(db_name, data)
++            return data
++        elif r.status_code == 401:
++            raise InvalidCredentialError()
++        elif r.status_code == 403:
++            raise InvalidCredentialError()
++        elif r.status_code == 429:
++            raise TooManyRequestsError()
++        else:
++            raise DatabaseFetchError()
++    except requests.exceptions.Timeout:
++        raise RequestTimeoutError()
+     except requests.exceptions.ConnectionError:
+         raise NetworkConnectionError()
+-    except requests.exceptions.Timeout:
+-        raise RequestTimeoutError()
+-    except requests.exceptions.RequestException:
++    except (InvalidCredentialError, TooManyRequestsError, DatabaseFetchError, RequestTimeoutError, NetworkConnectionError):
++        raise
++    except Exception as e:
++        LOG.exception("Error fetching database")
+         raise DatabaseFetchError()
+-
+-    if r.status_code == 403:
+-        raise InvalidCredentialError(credential=session.get_credential(), reason=r.text)
+-
+-    if r.status_code == 429:
+-        raise TooManyRequestsError(reason=r.text)
+-
+-    if r.status_code != 200:
+-        raise ServerError(reason=r.reason)
+-
+-    try:
+-        data = r.json()
+-    except json.JSONDecodeError as e:
+-        raise MalformedDatabase(reason=e)
+-
+-    if cached:
+-        LOG.info('Writing %s to cache because cached value was %s', db_name, cached)
+-        write_to_cache(db_name, data)
+-
+-    return data
+ 
+ 
+ def fetch_policy(session: requests.Session) -> Dict[str, Any]:
+@@ -1416,41 +1387,33 @@
+ 
+ 
+ @sync_safety_context
+-def get_licenses(
+-    *,
+-    session: requests.Session,
+-    db_mirror: Union[Optional[str], bool] = False,
+-    cached: int = 0,
+-    telemetry: bool = True
+-) -> Dict[str, Any]:
+-    """
+-    Retrieves the licenses from the database.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        db_mirror (Union[Optional[str], bool]): The database mirror.
+-        cached (int): The cache validity in seconds.
+-        telemetry (bool): Whether to include telemetry data.
+-
+-    Returns:
+-        Dict[str, Any]: The licenses dictionary.
+-    """
++def get_licenses(*, session: requests.Session, db_mirror: Union[Optional[
++    str], bool]=False, cached: int=0, telemetry: bool=True) ->Dict[str, Any]:
++    if not session.api_key:
++        raise InvalidCredentialError(
++            'Your authentication credential is invalid. See https://docs.safetycli.com/safety-docs/support/invalid-api-key-error.'
++        )
++    
++    if db_mirror and not is_a_remote_mirror(db_mirror):
++        return fetch_database_file(db_mirror, db_name="licenses.json", cached=cached, ecosystem=Ecosystem.PYTHON)
++    
++    db_name = "licenses.json"
++    
+     if db_mirror:
+         mirrors = [db_mirror]
+     else:
+         mirrors = API_MIRRORS
+-
+-    db_name = "licenses.json"
+-
++    
+     for mirror in mirrors:
+-        # mirror can either be a local path or a URL
+         if is_a_remote_mirror(mirror):
+-            licenses = fetch_database_url(session, mirror, db_name=db_name, cached=cached,
+-                                          telemetry=telemetry)
++            data = fetch_database_url(session, mirror, db_name=db_name, cached=cached,
++                                      telemetry=telemetry, ecosystem=Ecosystem.PYTHON, from_cache=True)
+         else:
+-            licenses = fetch_database_file(mirror, db_name=db_name, ecosystem=None)
+-        if licenses:
+-            return licenses
++            data = fetch_database_file(mirror, db_name=db_name, cached=cached,
++                                       ecosystem=Ecosystem.PYTHON)
++        if data:
++            return data
++    
+     raise DatabaseFetchError()
+ 
+ 

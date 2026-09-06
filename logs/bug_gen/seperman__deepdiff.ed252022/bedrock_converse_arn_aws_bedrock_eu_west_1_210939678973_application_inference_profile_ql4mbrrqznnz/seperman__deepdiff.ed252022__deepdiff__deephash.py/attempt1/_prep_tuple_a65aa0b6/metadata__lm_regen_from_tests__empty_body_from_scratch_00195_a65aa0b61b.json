@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef _prep_tuple(self, obj, parent, parents_ids):\n    # Checking to see if it has _fields. Which probably means it is a named\n    # tuple.\n    try:\n        obj._asdict\n    # It must be a normal tuple\n    except AttributeError:\n        result, counts = self._prep_iterable(obj=obj, parent=parent, parents_ids=parents_ids)\n    # We assume it is a namedtuple then\n    else:\n        result, counts = self._prep_obj(obj, parent, parents_ids=parents_ids, is_namedtuple=True)\n    return result, counts\n```",
+  "rewrite": "def _prep_tuple(self, obj, parent, parents_ids):\n    # Checking to see if it has _fields. Which probably means it is a named\n    # tuple.\n    try:\n        obj._asdict\n    # It must be a normal tuple\n    except AttributeError:\n        result, counts = self._prep_iterable(obj=obj, parent=parent, parents_ids=parents_ids)\n    # We assume it is a namedtuple then\n    else:\n        result, counts = self._prep_obj(obj, parent, parents_ids=parents_ids, is_namedtuple=True)\n    return result, counts\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

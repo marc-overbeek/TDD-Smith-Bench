@@ -1,0 +1,21 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2513,10 +2513,17 @@
+         return result
+ 
+ 
++    nearest_location_data = gpx.get_nearest_location(location)
++    found_location, track_no, segment_no, point_no = gpx.get_nearest_location(location)
++    self.assertEqual(found_location, nearest_location_data.location)
++    self.assertEqual(track_no, nearest_location_data.track_no)
++    self.assertEqual(segment_no, nearest_location_data.segment_no)
++    self.assertEqual(point_no, nearest_location_data.point_no)
++
+     def get_nearest_location(self, location: mod_geo.Location) -> Optional[NearestLocationData]:
+         """ Returns (location, track_no, track_segment_no, track_point_no) for the
+         nearest location on map """
+-        return min((NearestLocationData(pt, tr, seg, pt_no) for (pt,tr, seg, pt_no) in self.walk()) # type:ignore
++        return min((NearestLocationData(pt, tr, seg, pt_no) for (pt, tr, seg, pt_no) in self.walk()) # type: ignore
+                    ,key=lambda x: x.location.distance_2d(location) if x is not None else mod_math.inf
+                    ,default=None)
+ 

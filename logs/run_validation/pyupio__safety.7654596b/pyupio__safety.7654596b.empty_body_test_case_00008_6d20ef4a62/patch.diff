@@ -1,0 +1,58 @@
+--- a/safety/cli_util.py
++++ b/safety/cli_util.py
+@@ -710,28 +710,8 @@
+         proxy = options if options['proxy_host'] else None
+         return proxy, key
+ 
+-    def invoke(self, ctx: click.Context) -> None:
+-        """
+-        Invoke the command, handling legacy arguments.
+-
+-        Args:
+-            ctx (click.Context): Click context.
+-        """
+-        args = ctx.args
+-
+-        # Workaround for legacy check options, that now are global options
+-        subcommand_args = set(args)
+-        PROXY_HOST_OPTIONS = set(["--proxy-host", "-ph"])
+-        if "check" in ctx.protected_args or "license" in ctx.protected_args and (bool(PROXY_HOST_OPTIONS.intersection(subcommand_args) or "--key" in subcommand_args)) :
+-            proxy_options, key = self.parse_legacy_args(args)
+-            if proxy_options:
+-                ctx.params.update(proxy_options)
+-
+-            if key:
+-                ctx.params.update({"key": key})
+-
+-        # Now, invoke the original behavior
+-        super(SafetyCLILegacyGroup, self).invoke(ctx)
++    def invoke(self, ctx: click.Context) ->None:
++        pass
+ 
+ 
+     def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+@@ -776,23 +756,7 @@
+     """
+     @wraps(func)
+     def inner(ctx, output: Optional[ScanOutput], *args, **kwargs):
+-        if output:
+-            kwargs.update({"output": output})
+-
+-            if output is ScanOutput.NONE:
+-                return func(ctx, *args, **kwargs)
+-
+-        try:
+-            return func(ctx, *args, **kwargs)
+-        except click.ClickException as e:
+-            raise e
+-        except SafetyError as e:
+-            LOG.exception('Expected SafetyError happened: %s', e)
+-            output_exception(e, exit_code_output=True)
+-        except Exception as e:
+-            LOG.exception('Unexpected Exception happened: %s', e)
+-            exception = e if isinstance(e, SafetyException) else SafetyException(info=e)
+-            output_exception(exception, exit_code_output=True)
++        pass
+ 
+     return inner
+ 

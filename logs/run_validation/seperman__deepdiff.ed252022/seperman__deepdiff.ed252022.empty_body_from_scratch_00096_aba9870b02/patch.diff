@@ -1,0 +1,53 @@
+--- a/deepdiff/model.py
++++ b/deepdiff/model.py
+@@ -881,49 +881,7 @@
+         return self.stringify_param(force)
+ 
+     def stringify_param(self, force=None):
+-        """
+-        Convert param to a string. Return None if there is no string representation.
+-        This is called by get_param_repr()
+-        :param force: Bends the meaning of "no string representation".
+-                      If None:
+-                        Will strictly return Python-parsable expressions. The result those yield will compare
+-                        equal to the objects in question.
+-                      If 'yes':
+-                        Will return '(unrepresentable)' instead of None if there is no string representation
+-
+-        TODO: stringify_param has issues with params that when converted to string via repr,
+-        it is not straight forward to turn them back into the original object.
+-        Although repr is meant to be able to reconstruct the original object but for complex objects, repr
+-        often does not recreate the original object.
+-        Perhaps we should log that the repr reconstruction failed so the user is aware.
+-        """
+-        param = self.param
+-        if isinstance(param, strings):
+-            result = stringify_element(param, quote_str=self.quote_str)
+-        elif isinstance(param, tuple):  # Currently only for numpy ndarrays
+-            result = ']['.join(map(repr, param))
+-        elif hasattr(param, '__dataclass_fields__'):
+-            attrs_to_values = [f"{key}={value}" for key, value in [(i, getattr(param, i)) for i in param.__dataclass_fields__]]
+-            result = f"{param.__class__.__name__}({','.join(attrs_to_values)})"
+-        else:
+-            candidate = repr(param)
+-            try:
+-                resurrected = literal_eval_extended(candidate)
+-                # Note: This will miss string-representable custom objects.
+-                # However, the only alternative I can currently think of is using eval() which is inherently dangerous.
+-            except (SyntaxError, ValueError) as err:
+-                logger.error(
+-                    f'stringify_param was not able to get a proper repr for "{param}". '
+-                    "This object will be reported as None. Add instructions for this object to DeepDiff's "
+-                    f"helper.literal_eval_extended to make it work properly: {err}")
+-                result = None
+-            else:
+-                result = candidate if resurrected == param else None
+-
+-        if result:
+-            result = ':' if self.param_repr_format is None else self.param_repr_format.format(result)
+-
+-        return result
++        pass
+ 
+ 
+ class DictRelationship(ChildRelationship):

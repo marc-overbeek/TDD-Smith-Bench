@@ -1,0 +1,17 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2741,6 +2741,14 @@
+                 parts.append(f'{attribute}={value!r}')
+         return f'GPX({", ".join(parts)})'
+ 
++    def __repr__(self) -> str:
++        parts = []
++        for attribute in 'waypoints', 'routes', 'tracks':
++            value = getattr(self, attribute)
++            if value:
++                parts.append(f'{attribute}={value!r}')
++        return f'GPX({", ".join(parts)})'
++
+     def clone(self) -> "GPX":
+         return mod_copy.deepcopy(self)
+ 

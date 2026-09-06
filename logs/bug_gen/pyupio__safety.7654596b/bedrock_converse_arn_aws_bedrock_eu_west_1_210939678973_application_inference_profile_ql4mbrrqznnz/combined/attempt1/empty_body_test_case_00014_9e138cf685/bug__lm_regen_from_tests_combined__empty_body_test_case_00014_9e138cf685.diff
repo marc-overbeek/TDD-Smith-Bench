@@ -1,0 +1,31 @@
+--- a/safety/formatter.py
++++ b/safety/formatter.py
+@@ -71,13 +71,6 @@
+     Formatter class that implements the FormatterAPI to render reports in various formats.
+     """
+     def __init__(self, output: str, **kwargs: Any) -> None:
+-        """
+-        Initialize the SafetyFormatter with the specified output format.
+-
+-        Args:
+-            output (str): The output format (e.g., 'json', 'html', 'bare', 'text').
+-            **kwargs: Additional keyword arguments.
+-        """
+         from safety.formatters.screen import ScreenReport
+         from safety.formatters.text import TextReport
+         from safety.formatters.json import JsonReport
+@@ -128,14 +121,5 @@
+         return self.format.render_licenses(announcements, licenses)
+ 
+     def render_announcements(self, announcements: List[Dict[str, Any]]):
+-        """
+-        Render the announcements.
+-
+-        Args:
+-            announcements (List[Dict[str, Any]]): List of announcements.
+-
+-        Returns:
+-            Optional[str]: Rendered announcements.
+-        """
+         LOG.info('Safety is going to render_announcements with format: %s', self.format)
+         return self.format.render_announcements(announcements)

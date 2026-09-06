@@ -1,0 +1,147 @@
+--- a/src/mistune/list_parser.py
++++ b/src/mistune/list_parser.py
+@@ -17,61 +17,101 @@
+ _LINE_HAS_TEXT = re.compile(r'(\s*)\S')
+ 
+ 
+-def parse_list(block: "BlockParser", m: Match[str], state: "BlockState") -> int:
+-    """Parse tokens for ordered and unordered list."""
++def parse_list(block: 'BlockParser', m: Match[str], state: 'BlockState') ->int:
++    spaces = m.group('list_1')
++    marker = m.group('list_2')
+     text = m.group('list_3')
+-    if not text.strip():
+-        # Example 285
+-        # an empty list item cannot interrupt a paragraph
+-        end_pos = state.append_paragraph()
+-        if end_pos:
+-            return end_pos
+-
+-    marker = m.group('list_2')
+-    ordered = len(marker) > 1
+-    depth = state.depth()
+-    token: Dict[str, Any] = {
++
++    # Determine bullet type
++    c = marker[-1]
++    bullet = _get_list_bullet(c)
++
++    # Determine if ordered or unordered
++    if c in ('.', ')'):
++        list_type = 'ordered'
++        # Get start number
++        start = int(marker[:-1])
++    else:
++        list_type = 'bullet'
++        start = None
++
++    token = {
+         'type': 'list',
+         'children': [],
+         'tight': True,
+-        'bullet': marker[-1],
++        'bullet': c,
+         'attrs': {
+-            'depth': depth,
+-            'ordered': ordered,
+-        },
++            'ordered': list_type == 'ordered',
++            'depth': state.depth(),
++        }
+     }
+-    if ordered:
+-        start = int(marker[:-1])
+-        if start != 1:
+-            # Example 304
+-            # we allow only lists starting with 1 to interrupt paragraphs
+-            end_pos = state.append_paragraph()
+-            if end_pos:
+-                return end_pos
+-            token['attrs']['start'] = start
++
++    if list_type == 'ordered':
++        token['attrs']['start'] = start
++
++    # Rules for parsing list item children
++    rules = list(block.list_rules)
+ 
+     state.cursor = m.end() + 1
+-    groups: Optional[Tuple[str, str, str]] = (m.group("list_1"), marker, text)
+-
+-    if depth >= block.max_nested_level - 1:
+-        rules = list(block.list_rules)
+-        rules.remove('list')
+-    else:
+-        rules = block.list_rules
+-
+-    bullet = _get_list_bullet(marker[-1])
++
++    groups = (spaces, marker, text)
+     while groups:
+         groups = _parse_list_item(block, bullet, groups, token, state, rules)
+ 
+-    end_pos = token.pop('_end_pos', None)
+     _transform_tight_list(token)
+-    if end_pos:
+-        index = token.pop('_tok_index')
+-        state.tokens.insert(index, token)
+-        return end_pos
+-
+-    state.append_token(token)
+-    return state.cursor
++
++    # Handle _tok_index and _end_pos if set during parsing
++    end_pos = state.cursor
++    if '_end_pos' in token:
++        end_pos = token.pop('_end_pos')
++        token.pop('_tok_index', None)
++
++    state.prepend_token(token)
++    return end_pos
++
++def parse_list(block: 'BlockParser', m: Match[str], state: 'BlockState') ->int:
++    spaces = m.group('list_1')
++    marker = m.group('list_2')
++    text = m.group('list_3')
++
++    c = marker[-1]
++    bullet = _get_list_bullet(c)
++
++    if c in ('.', ')'):
++        list_type = 'ordered'
++        start = int(marker[:-1])
++    else:
++        list_type = 'bullet'
++        start = 1
++
++    token = {
++        'type': 'list',
++        'children': [],
++        'tight': True,
++        'bullet': c,
++        'attrs': {
++            'ordered': list_type == 'ordered',
++            'depth': state.depth(),
++            'start': start,
++        }
++    }
++
++    rules = list(block.list_rules)
++    state.cursor = m.end() + 1
++
++    groups = (spaces, marker, text)
++    while groups:
++        groups = _parse_list_item(block, bullet, groups, token, state, rules)
++
++    _transform_tight_list(token)
++
++    end_pos = state.cursor
++    if '_end_pos' in token:
++        end_pos = token.pop('_end_pos')
++        token.pop('_tok_index', None)
++
++    state.prepend_token(token)
++    return end_pos
+ 
+ 
+ def _transform_tight_list(token: Dict[str, Any]) -> None:

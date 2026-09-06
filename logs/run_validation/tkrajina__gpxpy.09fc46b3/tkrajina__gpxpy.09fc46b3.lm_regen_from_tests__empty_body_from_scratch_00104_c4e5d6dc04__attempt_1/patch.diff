@@ -1,0 +1,27 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -551,14 +551,17 @@
+         self.dgps_id: Optional[int] = None
+         self.extensions: List[Any] = []
+ 
++    class NearestLocationData(NamedTuple):  # this is also what walk() returns/iterates over
++        location: "GPXTrackPoint"
++        track_no: int
++        segment_no: int
++        point_no: int
++
++    nearest_loc_info = gpx_part.get_nearest_location(loc)
++    print(gpx_part, nearest_loc_info)
++
+     def __repr__(self) -> str:
+-        parts = [f'{self.latitude}, {self.longitude}']
+-        for attribute in 'elevation', 'time', 'symbol', 'comment', 'horizontal_dilution', \
+-                'vertical_dilution', 'position_dilution', 'speed', 'name':
+-            value = getattr(self, attribute)
+-            if value is not None:
+-                parts.append(f'{attribute}={value!r}')
+-        return f'GPXTrackPoint({", ".join(parts)})'
++        return f'NearestLocationData(location={self.location!r}, track_no={self.track_no}, segment_no={self.segment_no}, point_no={self.point_no})'
+ 
+     def adjust_time(self, delta: mod_datetime.timedelta) -> None:
+         """

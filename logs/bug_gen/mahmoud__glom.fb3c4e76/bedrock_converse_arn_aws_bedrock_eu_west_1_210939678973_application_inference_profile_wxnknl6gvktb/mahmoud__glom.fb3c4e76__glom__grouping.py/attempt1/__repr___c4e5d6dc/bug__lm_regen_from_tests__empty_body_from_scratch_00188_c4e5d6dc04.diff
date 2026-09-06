@@ -1,0 +1,23 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -269,6 +269,20 @@
+         tree[self][0] += 1
+         return sample
+ 
++    def test_sample():
++        spec = Group(Sample(5))
++        assert glom([1, 2, 3], spec) == [1, 2, 3]
++        assert repr(spec) == 'Group(Sample(5))'
++        s = glom([1, 2, 3], Group(Sample(2)))
++        assert s in [[1, 2], [1, 3], [2, 1], [2, 3], [3, 1], [3, 2]]
++
++    def __repr__(self):
++        cn = self.__class__.__name__
++        return f'{cn}({self.spec!r})'
++
++    def __repr__(self):
++        return f'{self.__class__.__name__}({self.size!r})'
++
+     def __repr__(self):
+         return f'{self.__class__.__name__}({self.size!r})'
+ 

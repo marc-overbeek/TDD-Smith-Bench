@@ -1,0 +1,13 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -481,7 +481,9 @@
+ 
+ class NoOpRewriter(TypeRewriter):
+     def rewrite(self, typ):
+-        return typ
++            for rw in self.rewriters:
++                typ = rw.rewrite(typ)
++            return typ
+ 
+ 
+ class RewriteGenerator(TypeRewriter):

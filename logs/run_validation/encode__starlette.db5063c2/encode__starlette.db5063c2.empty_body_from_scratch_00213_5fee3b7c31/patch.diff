@@ -1,0 +1,21 @@
+--- a/starlette/endpoints.py
++++ b/starlette/endpoints.py
+@@ -14,16 +14,8 @@
+ 
+ 
+ class HTTPEndpoint:
+-    def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
+-        assert scope["type"] == "http"
+-        self.scope = scope
+-        self.receive = receive
+-        self.send = send
+-        self._allowed_methods = [
+-            method
+-            for method in ("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+-            if getattr(self, method.lower(), None) is not None
+-        ]
++    def __init__(self, scope: Scope, receive: Receive, send: Send) ->None:
++        pass
+ 
+     def __await__(self) -> typing.Generator[typing.Any, None, None]:
+         return self.dispatch().__await__()

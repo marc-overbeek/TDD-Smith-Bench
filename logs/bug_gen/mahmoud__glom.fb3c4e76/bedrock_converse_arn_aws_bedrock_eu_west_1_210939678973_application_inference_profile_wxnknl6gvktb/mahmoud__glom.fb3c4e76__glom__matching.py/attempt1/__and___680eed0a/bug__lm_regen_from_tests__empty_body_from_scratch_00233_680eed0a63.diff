@@ -1,0 +1,19 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -426,6 +426,16 @@
+ 
+     def __init__(self, lhs, op, rhs):
+         self.lhs, self.op, self.rhs = lhs, op, rhs
++
++    def __and__(self, other):
++        return And(self, other)
++
++    def __and__(self, other):
++        # reduce number of layers of spec
++        return And(*(self.children + (other,)))
++
++    def __and__(self, other):
++        return And(self, other)
+ 
+     def __and__(self, other):
+         return And(self, other)

@@ -1,0 +1,26 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -65,22 +65,7 @@
+         return
+ 
+     def __repr__(self):
+-        base_args = ()
+-        if self.subspec != T:
+-            base_args = (self.subspec,)
+-        base = format_invocation(self.__class__.__name__, base_args, repr=bbrepr)
+-        chunks = [base]
+-        for fname, args, _ in reversed(self._iter_stack):
+-            meth = getattr(self, fname)
+-            fb = FunctionBuilder.from_func(meth)
+-            fb.args = fb.args[1:]  # drop self
+-            arg_names = fb.get_arg_names()
+-            # TODO: something fancier with defaults:
+-            kwargs = []
+-            if len(args) > 1 and arg_names:
+-                args, kwargs = (), zip(arg_names, args)
+-            chunks.append('.' + format_invocation(fname, args, kwargs, repr=bbrepr))
+-        return ''.join(chunks)
++        pass
+ 
+     def glomit(self, target, scope):
+         iterator = self._iterate(target, scope)

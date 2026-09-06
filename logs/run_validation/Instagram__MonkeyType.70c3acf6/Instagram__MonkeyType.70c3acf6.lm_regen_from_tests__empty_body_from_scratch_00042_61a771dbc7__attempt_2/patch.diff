@@ -1,0 +1,83 @@
+--- a/monkeytype/encoding.py
++++ b/monkeytype/encoding.py
+@@ -49,39 +49,52 @@
+     }
+ 
+ 
+-def type_to_dict(typ: type) -> TypeDict:
+-    """Convert a type into a dictionary representation that we can store.
+-
+-    The dictionary must:
+-        1. Be encodable as JSON
+-        2. Contain enough information to let us reify the type
+-    """
++def type_to_dict(typ: type) ->TypeDict:
+     if is_typed_dict(typ):
+         return typed_dict_to_dict(typ)
+-
+-    # Union and Any are special cases that aren't actually types.
++    if is_any(typ):
++        return {"module": "typing", "qualname": "Any"}
+     if is_union(typ):
+-        qualname = "Union"
+-    elif is_any(typ):
+-        qualname = "Any"
+-    elif is_generic(typ):
+-        qualname = qualname_of_generic(typ)
+-    else:
+-        qualname = typ.__qualname__
+-    d: TypeDict = {
++        args = typ.__args__ if hasattr(typ, "__args__") else ()
++        elem_types = [type_to_dict(arg) for arg in args]
++        return {
++            "module": "typing",
++            "qualname": "Union",
++            "elem_types": elem_types,
++        }
++    if is_generic(typ):
++        if hasattr(typ, "__origin__"):
++            origin = typ.__origin__
++            if hasattr(origin, "__name__"):
++                qualname = origin.__name__
++            else:
++                qualname = qualname_of_generic(typ)
++            elem_types = []
++            if hasattr(typ, "__args__") and typ.__args__ is not None:
++                elem_types = [type_to_dict(arg) for arg in typ.__args__]
++            return {
++                "module": origin.__module__,
++                "qualname": qualname,
++                "elem_types": elem_types,
++            }
++        else:
++            return {
++                "module": typ.__module__,
++                "qualname": typ.__qualname__,
++            }
++    
++    # Handle hidden builtin types
++    if typ is NoneType:
++        return {"module": "builtins", "qualname": "NoneType"}
++    if typ is NotImplementedType:
++        return {"module": "builtins", "qualname": "NotImplementedType"}
++    if typ is mappingproxy:
++        return {"module": "types", "qualname": "mappingproxy"}
++    
++    return {
+         "module": typ.__module__,
+-        "qualname": qualname,
++        "qualname": typ.__qualname__,
+     }
+-    elem_types = getattr(typ, "__args__", None)
+-    # In Python < 3.9, bare generics still have args
+-    is_bare_generic = typ in {Dict, List, Tuple}
+-    if not is_bare_generic and elem_types is not None and is_generic(typ):
+-        # empty typing.Tuple is weird; the spec says it should be Tuple[()],
+-        # which results in __args__ of `((),)` pre-Python 3.11
+-        if elem_types == ((),):
+-            elem_types = ()
+-        d["elem_types"] = [type_to_dict(t) for t in elem_types]
+-    return d
+ 
+ 
+ _HIDDEN_BUILTIN_TYPES: Dict[str, type] = {

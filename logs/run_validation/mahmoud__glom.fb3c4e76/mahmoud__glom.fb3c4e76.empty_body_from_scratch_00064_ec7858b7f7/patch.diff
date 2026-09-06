@@ -1,0 +1,28 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -897,24 +897,7 @@
+ 
+     """
+     def __init__(self, *subspecs, **kwargs):
+-        self.subspecs = subspecs
+-        self._orig_kwargs = dict(kwargs)
+-        self.default = kwargs.pop('default', _MISSING)
+-        self.default_factory = kwargs.pop('default_factory', _MISSING)
+-        if self.default and self.default_factory:
+-            raise ValueError('expected one of "default" or "default_factory", not both')
+-        self.skip = kwargs.pop('skip', _MISSING)
+-        if self.skip is _MISSING:
+-            self.skip_func = lambda v: False
+-        elif callable(self.skip):
+-            self.skip_func = self.skip
+-        elif isinstance(self.skip, tuple):
+-            self.skip_func = lambda v: v in self.skip
+-        else:
+-            self.skip_func = lambda v: v == self.skip
+-        self.skip_exc = kwargs.pop('skip_exc', GlomError)
+-        if kwargs:
+-            raise TypeError(f'unexpected keyword args: {sorted(kwargs.keys())!r}')
++        pass
+ 
+     def glomit(self, target, scope):
+         skipped = []

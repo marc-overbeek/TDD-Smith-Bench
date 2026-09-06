@@ -1,0 +1,25 @@
+--- a/src/mistune/renderers/rst.py
++++ b/src/mistune/renderers/rst.py
+@@ -21,12 +21,10 @@
+     }
+     INLINE_IMAGE_PREFIX = 'img-'
+ 
+-    def iter_tokens(
+-        self, tokens: Iterable[Dict[str, Any]], state: BlockState
+-    ) -> Iterable[str]:
++    def iter_tokens(self, tokens: Iterable[Dict[str, Any]], state: BlockState
++        ) -> Iterable[str]:
+         prev = None
+         for tok in tokens:
+-            # ignore blank line
+             if tok['type'] == 'blank_line':
+                 continue
+             tok['prev'] = prev
+@@ -83,7 +81,6 @@
+         return ' '
+ 
+     def inline_html(self, token: Dict[str, Any], state: BlockState) -> str:
+-        # rst does not support inline html
+         return ''
+ 
+     def paragraph(self, token: Dict[str, Any], state: BlockState) -> str:

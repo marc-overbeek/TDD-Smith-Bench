@@ -1,0 +1,24 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -389,10 +389,20 @@
+         if dictionary_item_added:
+             self._do_item_added(dictionary_item_added, sort=False)
+ 
++    def _do_attribute_removed(self):
++        attribute_removed = self.diff.get('attribute_removed')
++        if attribute_removed:
++            self._do_item_removed(attribute_removed)
++
++    def _do_dictionary_item_added(self):
++        dictionary_item_added = self.diff.get('dictionary_item_added')
++        if dictionary_item_added:
++            self._do_item_added(dictionary_item_added, sort=False)
++
+     def _do_attribute_added(self):
+         attribute_added = self.diff.get('attribute_added')
+         if attribute_added:
+-            self._do_item_added(attribute_added)
++            self._do_item_added(attribute_added, sort=False)
+ 
+     @staticmethod
+     def _sort_key_for_item_added(path_and_value):

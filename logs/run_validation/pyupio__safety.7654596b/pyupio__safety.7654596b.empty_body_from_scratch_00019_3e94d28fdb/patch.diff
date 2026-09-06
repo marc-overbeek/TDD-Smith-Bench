@@ -1,0 +1,45 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -296,39 +296,9 @@
+             announcement.get('type', '').lower() == by_type]
+ 
+ 
+-def build_telemetry_data(telemetry: bool = True,
+-                         command: Optional[str] = None,
+-                         subcommand: Optional[str] = None) -> TelemetryModel:
+-    """Build telemetry data for the Safety context.
+-
+-    Args:
+-        telemetry (bool): Whether telemetry is enabled.
+-        command (Optional[str]): The command.
+-        subcommand (Optional[str]): The subcommand.
+-
+-    Returns:
+-        TelemetryModel: The telemetry data model.
+-    """
+-    context = SafetyContext()
+-
+-    body = {
+-        'os_type': os.environ.get("SAFETY_OS_TYPE", None) or platform.system(),
+-        'os_release': os.environ.get("SAFETY_OS_RELEASE", None) or platform.release(),
+-        'os_description': os.environ.get("SAFETY_OS_DESCRIPTION", None) or platform.platform(),
+-        'python_version': platform.python_version(),
+-        'safety_command': command if command else context.command,
+-        'safety_options': get_used_options()
+-    } if telemetry else {}
+-
+-    body['safety_version'] = get_safety_version()
+-    body['safety_source'] = os.environ.get("SAFETY_SOURCE", None) or context.safety_source
+-
+-    if not 'safety_options' in body:
+-        body['safety_options'] = {}
+-
+-    LOG.debug(f'Telemetry body built: {body}')
+-
+-    return TelemetryModel(**body)
++def build_telemetry_data(telemetry: bool=True, command: Optional[str]=None,
++    subcommand: Optional[str]=None) ->TelemetryModel:
++    pass
+ 
+ 
+ def build_git_data() -> Dict[str, Any]:

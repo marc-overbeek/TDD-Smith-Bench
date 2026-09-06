@@ -1,0 +1,40 @@
+--- a/safety/auth/cli_utils.py
++++ b/safety/auth/cli_utils.py
+@@ -81,35 +81,8 @@
+     return client_session, openid_config
+ 
+ 
+-def load_auth_session(click_ctx: click.Context) -> None:
+-    """
+-    Loads the authentication session from the context.
+-
+-    Args:
+-        click_ctx (click.Context): The Click context object.
+-    """
+-    if not click_ctx:
+-        LOG.warn("Click context is needed to be able to load the Auth data.")
+-        return
+-
+-    client = click_ctx.obj.auth.client
+-    keys = click_ctx.obj.auth.keys
+-
+-    access_token: str = get_token(name='access_token')
+-    refresh_token: str = get_token(name='refresh_token')
+-    id_token: str = get_token(name='id_token')
+-
+-    if access_token and keys:
+-        try:
+-            token = get_token_data(access_token, keys, silent_if_expired=True)
+-            client.token = {'access_token': access_token,
+-                                    'refresh_token': refresh_token,
+-                                    'id_token': id_token,
+-                                    'token_type': 'bearer',
+-                                    'expires_at': token.get('exp', None)}
+-        except Exception as e:
+-            print(e)
+-            clean_session(client)
++def load_auth_session(click_ctx: click.Context) ->None:
++    pass
+ 
+ def proxy_options(func: Callable) -> Callable:
+     """

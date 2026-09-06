@@ -1,0 +1,70 @@
+--- a/monkeytype/encoding.py
++++ b/monkeytype/encoding.py
+@@ -38,50 +38,35 @@
+ 
+ 
+ def typed_dict_to_dict(typ: type) -> TypeDict:
+-    elem_types: Dict[str, Any] = {}
+-    for k, v in typ.__annotations__.items():
+-        elem_types[k] = type_to_dict(v)
++    """Convert a TypedDict to a dictionary representation."""
++    hints = typ.__annotations__
+     return {
+         "module": typ.__module__,
+         "qualname": typ.__qualname__,
+-        "elem_types": elem_types,
++        "elem_types": {name: type_to_dict(field_type) for name, field_type in hints.items()},
+         "is_typed_dict": True,
+     }
+ 
+ 
+ def type_to_dict(typ: type) -> TypeDict:
+-    """Convert a type into a dictionary representation that we can store.
+-
+-    The dictionary must:
+-        1. Be encodable as JSON
+-        2. Contain enough information to let us reify the type
+-    """
++    """Convert a type to a dictionary representation."""
+     if is_typed_dict(typ):
+         return typed_dict_to_dict(typ)
+-
+-    # Union and Any are special cases that aren't actually types.
+-    if is_union(typ):
+-        qualname = "Union"
+-    elif is_any(typ):
+-        qualname = "Any"
+-    elif is_generic(typ):
+-        qualname = qualname_of_generic(typ)
+-    else:
+-        qualname = typ.__qualname__
+-    d: TypeDict = {
+-        "module": typ.__module__,
++    
++    module = typ.__module__
++    qualname = qualname_of_generic(typ) if is_generic(typ) else typ.__qualname__
++    
++    result: TypeDict = {
++        "module": module,
+         "qualname": qualname,
+     }
+-    elem_types = getattr(typ, "__args__", None)
+-    # In Python < 3.9, bare generics still have args
+-    is_bare_generic = typ in {Dict, List, Tuple}
+-    if not is_bare_generic and elem_types is not None and is_generic(typ):
+-        # empty typing.Tuple is weird; the spec says it should be Tuple[()],
+-        # which results in __args__ of `((),)` pre-Python 3.11
+-        if elem_types == ((),):
+-            elem_types = ()
+-        d["elem_types"] = [type_to_dict(t) for t in elem_types]
+-    return d
++    
++    if is_generic(typ):
++        args = getattr(typ, "__args__", None)
++        if args:
++            result["elem_types"] = [type_to_dict(arg) for arg in args]
++    
++    return result
+ 
+ 
+ _HIDDEN_BUILTIN_TYPES: Dict[str, type] = {

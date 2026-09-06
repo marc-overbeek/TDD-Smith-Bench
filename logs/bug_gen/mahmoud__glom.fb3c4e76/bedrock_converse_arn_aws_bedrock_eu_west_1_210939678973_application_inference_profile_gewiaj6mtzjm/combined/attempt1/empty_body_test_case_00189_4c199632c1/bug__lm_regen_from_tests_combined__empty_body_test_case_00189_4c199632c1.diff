@@ -1,0 +1,44 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -279,20 +279,9 @@
+         return self._add_op('slice', args, lambda it, scope: islice(it, *args))
+ 
+     def limit(self, count):
+-        """A convenient alias for :meth:`~Iter.slice`, which takes a single
+-        argument, *count*, the max number of items to yield.
+-        """
+         return self._add_op('limit', (count,), lambda it, scope: islice(it, count))
+ 
+     def takewhile(self, key=T):
+-        """Returns a new :class:`Iter()` spec which stops the stream once
+-        *key* becomes falsy.
+-
+-        >>> glom([3, 2, 0, 1], Iter().takewhile().all())
+-        [3, 2]
+-
+-        :func:`itertools.takewhile` for more details.
+-        """
+         return self._add_op(
+             'takewhile',
+             (key,),
+@@ -300,20 +289,6 @@
+                 lambda t: scope[glom](t, key, scope), it))
+ 
+     def dropwhile(self, key=T):
+-        """Returns a new :class:`Iter()` spec which drops stream items until
+-        *key* becomes falsy.
+-
+-        >>> glom([0, 0, 3, 2, 0], Iter().dropwhile(lambda t: t < 1).all())
+-        [3, 2, 0]
+-
+-        Note that while similar to :meth:`Iter.filter()`, the filter
+-        only applies to the beginning of the stream. In a way,
+-        :meth:`Iter.dropwhile` can be thought of as
+-        :meth:`~str.lstrip()` for streams. See
+-        :func:`itertools.dropwhile` for more details.
+-
+-        """
+-
+         return self._add_op(
+             'dropwhile',
+             (key,),

@@ -1,0 +1,85 @@
+--- a/src/mistune/plugins/def_list.py
++++ b/src/mistune/plugins/def_list.py
+@@ -44,42 +44,48 @@
+     return pos
+ 
+ 
+-def _parse_def_item(block: "BlockParser", m: Match[str]) -> Iterable[Dict[str, Any]]:
+-    head = m.group("def_list_head")
+-    for line in head.splitlines():
+-        yield {
+-          'type': 'def_list_head',
+-          'text': line,
+-        }
+-
++def _parse_def_item(block: 'BlockParser', m: Match[str]) ->Iterable[Dict[
++    str, Any]]:
+     src = m.group(0)
+-    end = len(head)
+-
+-    m2 = DD_START_RE.search(src, end)
+-    assert m2 is not None
+-    start = m2.start()
+-    prev_blank_line = src[end:start] == '\n'
+-    while m2:
+-        m2 = DD_START_RE.search(src, start + 1)
+-        if not m2:
++    
++    # Split the content into head and definitions
++    lines = src.split('\n')
++    i = 0
++    
++    # Process definition terms (head)
++    while i < len(lines):
++        line = lines[i]
++        if line.startswith(':'):
+             break
+-
+-        end = m2.start()
+-        text = src[start:end].replace(':', ' ', 1)
+-        children = _process_text(block, text, prev_blank_line)
+-        prev_blank_line = bool(HAS_BLANK_LINE_RE.search(text))
+-        yield {
+-          'type': 'def_list_item',
+-          'children': children,
+-        }
+-        start = end
+-
+-    text = src[start:].replace(':', ' ', 1)
+-    children = _process_text(block, text, prev_blank_line)
+-    yield {
+-      'type': 'def_list_item',
+-      'children': children,
+-    }
++        if line.strip():
++            yield {
++                'type': 'def_list_head',
++                'children': _process_text(block, line, False),
++            }
++        i += 1
++    
++    # Process definition descriptions (dd content)
++    if i < len(lines):
++        # Collect all description lines that start with ':'
++        desc_lines = []
++        while i < len(lines):
++            line = lines[i]
++            if line.startswith(':'):
++                # Remove the leading ': ' and add to description
++                content = line[2:].strip() if len(line) > 2 else ''
++                if content:
++                    desc_lines.append(content)
++            elif line.strip():  # If it's a continuation line
++                desc_lines.append(line.strip())
++            i += 1
++        
++        if desc_lines:
++            # Join all description lines and process as one item
++            desc_content = '\n'.join(desc_lines)
++            yield {
++                'type': 'def_list_item',
++                'children': _process_text(block, desc_content, False),
++            }
+ 
+ 
+ def _process_text(block: "BlockParser", text: str, loose: bool) -> List[Any]:

@@ -1,0 +1,14 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -857,7 +857,10 @@
+         raise MatchError("no matches for target in %s"  % self.__class__.__name__)
+ 
+     def __repr__(self):
+-        return f'{self.__class__.__name__}({bbrepr(self.cases)})'
++        cn = self.__class__.__name__
++        if self.default is _MISSING:
++            return f'{cn}({bbrepr(self.cases)})'
++        return f'{cn}({bbrepr(self.cases)}, default={bbrepr(self.default)})'
+ 
+ 
+ RAISE = make_sentinel('RAISE')  # flag object for "raise on check failure"

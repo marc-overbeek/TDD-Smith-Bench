@@ -1,0 +1,17 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -295,8 +295,13 @@
+         except (KeyError, IndexError, AttributeError, TypeError) as e:
+             self._raise_or_log('Failed to set {} due to {}'.format(path_for_err_reporting, e))
+ 
++    obj = self._coerce_obj(
++        parent, obj, path, parent_to_obj_elem,
++        parent_to_obj_action, elements,
++        to_type=list, from_type=tuple)
++
+     def _coerce_obj(self, parent, obj, path, parent_to_obj_elem,
+-                    parent_to_obj_action, elements, to_type, from_type):
++        parent_to_obj_action, elements, to_type, from_type):
+         """
+         Coerce obj and mark it in post_process_paths_to_convert for later to be converted back.
+         Also reassign it to its parent to replace the old object.

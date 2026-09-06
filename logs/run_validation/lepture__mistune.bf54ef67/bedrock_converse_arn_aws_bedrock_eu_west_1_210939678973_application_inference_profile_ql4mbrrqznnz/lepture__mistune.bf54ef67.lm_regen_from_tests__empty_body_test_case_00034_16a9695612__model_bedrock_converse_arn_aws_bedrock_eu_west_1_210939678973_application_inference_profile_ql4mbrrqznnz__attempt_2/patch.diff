@@ -1,0 +1,34 @@
+--- a/src/mistune/directives/toc.py
++++ b/src/mistune/directives/toc.py
+@@ -32,12 +32,10 @@
+     def generate_heading_id(self, token: Dict[str, Any], index: int) -> str:
+         return 'toc_' + str(index + 1)
+ 
+-    def parse(
+-        self, block: "BlockParser", m: Match[str], state: "BlockState"
+-    ) -> Dict[str, Any]:
++    def parse(self, block: 'BlockParser', m: Match[str], state: 'BlockState') -> Dict[str, Any]:
+         title = self.parse_title(m)
+         options = self.parse_options(m)
+-        if options:
++        if options is not None:
+             d_options = dict(options)
+             collapse = 'collapse' in d_options
+             min_level = _normalize_level(d_options, 'min-level', self.min_level)
+@@ -106,10 +104,9 @@
+ 
+ 
+ def _normalize_level(options: Dict[str, Any], name: str, default: Any) -> Any:
+-    level = options.get(name)
+-    if not level:
+-        return default
+-    try:
+-        return int(level)
+-    except (ValueError, TypeError):
+-        raise ValueError(f'"{name}" option MUST be integer')
++    if name in options:
++        try:
++            return int(options[name])
++        except (ValueError, TypeError):
++            raise ValueError(f'"{name}" option MUST be an integer')
++    return default

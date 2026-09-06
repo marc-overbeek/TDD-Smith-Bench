@@ -1,0 +1,64 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1656,20 +1656,48 @@
+     return cur
+ 
+ 
++_assign_op(dest=cur, op=op, arg=arg, val=target, path=_t, scope=scope)
++
+ def _assign_op(dest, op, arg, val, path, scope):
+-    """helper method for doing the assignment on a T operation"""
+-    if op == '[':
+-        dest[arg] = val
+-    elif op == '.':
+-        setattr(dest, arg, val)
+-    elif op == 'P':
+-        _assign = scope[TargetRegistry].get_handler('assign', dest)
+-        try:
+-            _assign(dest, arg, val)
+-        except Exception as e:
+-            raise PathAssignError(e, path, arg)
+-    else:  # pragma: no cover
+-        raise ValueError('unsupported T operation for assignment')
++    try:
++        if op == '[':
++            dest[arg] = val
++        elif op == '.':
++            setattr(dest, arg, val)
++        elif op == 'P':
++            # Path type stuff - use registry to get assign handler
++            assign_handler = scope[TargetRegistry].get_handler('assign', dest, path=path)
++            assign_handler(dest, arg, val)
++        else:
++            raise ValueError(f'unexpected assignment operation: {op!r}')
++    except Exception as e:
++        if isinstance(e, PathAssignError):
++            raise
++        raise PathAssignError(e, path, arg)
++
++def _assign_op(dest, op, arg, val, path, scope):
++    try:
++        if op == '[':
++            dest[arg] = val
++        elif op == '.':
++            setattr(dest, arg, val)
++        elif op == 'P':
++            # Path type stuff - try to use registry's assign handler if available
++            try:
++                assign_handler = scope[TargetRegistry].get_handler('assign', dest, path=path, raise_exc=True)
++                assign_handler(dest, arg, val)
++            except UnregisteredTarget:
++                # Fall back to trying setitem then setattr
++                try:
++                    dest[arg] = val
++                except (TypeError, KeyError):
++                    setattr(dest, arg, val)
++        else:
++            raise ValueError(f'unexpected assignment operation: {op!r}')
++    except Exception as e:
++        if isinstance(e, PathAssignError):
++            raise
++        raise PathAssignError(e, path, arg)
+ 
+ 
+ def _extend_children(children, item, get_handler):

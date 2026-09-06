@@ -1,0 +1,45 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -51,34 +51,14 @@
+ """
+ 
+ 
+-def generic_activation_jit(op_name: Optional[str] = None) -> Handle:
+-    """
+-    This method return a handle that counts the number of activation from the
+-    output shape for the specified operation.
+-
+-    Args:
+-        op_name (str): The name of the operation. If given, the handle will
+-            return a counter using this name.
+-
+-    Returns:
+-        Callable: An activation handle for the given operation.
+-    """
+-
+-    def _generic_activation_jit(
+-        i: Any, outputs: List[Any]
+-    ) -> Union[typing.Counter[str], Number]:
+-        """
+-        This is a generic jit handle that counts the number of activations for any
+-        operation given the output shape.
+-        """
+-        out_shape = get_shape(outputs[0])
+-        ac_count = prod(out_shape)
+-        if op_name is None:
+-            return ac_count
+-        else:
+-            return Counter({op_name: ac_count})
+-
+-    return _generic_activation_jit
++def generic_activation_jit(op_name: Optional[str]=None) ->Handle:
++    def handle(inputs: List[Any], outputs: List[Any]) -> Number:
++        # For generic operations, count the number of elements in the output
++        output_shape = get_shape(outputs[0])
++        if output_shape is None:
++            return 0
++        return prod(output_shape)
++    return handle
+ 
+ 
+ def addmm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:

@@ -1,0 +1,20 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -551,6 +551,17 @@
+     def __len__(self) -> int:
+         return len(self._list)
+ 
++    def test_headers() ->None:
++        h = Headers(raw=[(b'a', b'123'), (b'a', b'456'), (b'b', b'789')])
++        # ...
++        assert h == Headers(raw=[(b'a', b'123'), (b'b', b'789'), (b'a', b'456')])
++        assert h != [(b'a', b'123'), (b'A', b'456'), (b'b', b'789')]
++
++    def __eq__(self, other: typing.Any) -> bool:
++        if not isinstance(other, Headers):
++            return False
++        return sorted(self._list) == sorted(other._list)
++
+     def __eq__(self, other: typing.Any) -> bool:
+         if not isinstance(other, Headers):
+             return False

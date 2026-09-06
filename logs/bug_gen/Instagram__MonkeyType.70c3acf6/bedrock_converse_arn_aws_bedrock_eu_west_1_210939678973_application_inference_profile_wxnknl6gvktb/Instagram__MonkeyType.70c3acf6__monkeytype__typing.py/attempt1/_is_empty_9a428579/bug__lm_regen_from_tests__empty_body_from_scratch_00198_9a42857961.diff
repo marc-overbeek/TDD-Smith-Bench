@@ -1,0 +1,21 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -396,6 +396,18 @@
+         args = getattr(typ, "__args__", [])
+         return args and all(is_any(e) for e in args)
+ 
++    def _is_empty(self, typ):
++        args = getattr(typ, "__args__", [])
++        return args and all(is_any(e) for e in args)
++
++    def _is_empty(self, typ):
++        args = getattr(typ, "__args__", [])
++        return bool(args) and all(is_any(e) for e in args)
++
++    def _is_empty(self, typ):
++        args = getattr(typ, "__args__", [])
++        return args and all(is_any(e) for e in args)
++
+     def rewrite_Union(self, union):
+         elems = tuple(self.rewrite(e) for e in union.__args__ if not self._is_empty(e))
+         if elems:

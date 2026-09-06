@@ -1,0 +1,173 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -560,64 +560,116 @@
+ @click.argument('version', required=False)
+ @click.pass_context
+ def validate(ctx, name, version, path):
+-    """Verify that a local policy file is valid. NAME is the name of the file type to validate. Valid values are: policy_file
+-    """
+     if name != 'policy_file':
+-        click.secho(f'This Safety version only supports "policy_file" validation. "{name}" is not supported.', fg='red',
+-                    file=sys.stderr)
+-        sys.exit(EXIT_CODE_FAILURE)
+-
+-    LOG.info('Running validate %s', name)
+-
+-    if not os.path.exists(path):
+-        click.secho(f'The path "{path}" does not exist.', fg='red', file=sys.stderr)
+-        sys.exit(EXIT_CODE_FAILURE)
+-
+-    if version not in ["3.0", "2.0", None]:
+-        click.secho(f'Version "{version}" is not a valid value, allowed values are 3.0 and 2.0. Use --path to specify the target file.', fg='red', file=sys.stderr)
+-        sys.exit(EXIT_CODE_FAILURE)
+-
+-    def fail_validation(e):
+-        click.secho(str(e).lstrip(), fg='red', file=sys.stderr)
+-        sys.exit(EXIT_CODE_FAILURE)
+-
+-    if not version:
+-        version = "3.0"
+-
+-    result = ""
+-
+-    if version == "3.0":
+-        policy = None
+-
++        msg = f'This Safety version only supports "policy_file" validation. "{name}" is not supported.\n'
++        raise click.BadParameter(msg, param_hint='name')
++    
++    path_obj = Path(path)
++    if not path_obj.exists():
++        msg = f'The path "{path}" does not exist.\n'
++        raise click.BadParameter(msg, param_hint='path')
++    
++    if version == '2.0':
+         try:
+-            from .scan.main import load_policy_file
+-            policy = load_policy_file(Path(path))
++            from safety.util import SafetyPolicyFile
++            policy_file = SafetyPolicyFile()
++            policy_data = policy_file.load(path_obj)
++            
++            # Validate the policy data structure
++            from safety_schemas.models import PolicyV2Model
++            validated_data = PolicyV2Model(**policy_data)
++            
++            # Prepare the output
++            output_data = {
++                'project-id': validated_data.project_id or '',
++                'security': {
++                    'ignore-cvss-severity-below': validated_data.security.ignore_cvss_severity_below,
++                    'ignore-cvss-unknown-severity': validated_data.security.ignore_cvss_unknown_severity,
++                    'ignore-vulnerabilities': validated_data.security.ignore_vulnerabilities,
++                    'continue-on-vulnerability-error': validated_data.security.continue_on_vulnerability_error
++                },
++                'filename': str(path_obj)
++            }
++            
++            msg = 'The Safety policy file (Valid only for the check command) was successfully parsed with the following values:\n'
++            output_str = json.dumps(output_data, indent=2) + '\n'
++            click.echo(msg + output_str)
++            
+         except Exception as e:
+-            fail_validation(e)
+-
+-        click.secho(f"The Safety policy ({version}) file " \
+-                    "(Used for scan and system-scan commands) " \
+-                    "was successfully parsed " \
+-                    "with the following values:", fg="green")
+-        if policy and policy.config:
+-            result = policy.config.as_v30().json()
++            if "not a valid keyword" in str(e) or "is not a valid keyword" in str(e):
++                msg = f'Unable to load the Safety Policy file "{path}".\n{str(e)}\n'
++                raise click.BadParameter(msg, param_hint='path')
++            else:
++                msg = f'Unable to load the Safety Policy file "{path}".\n{str(e)}\n'
++                raise click.BadParameter(msg, param_hint='path')
++                
++    elif version == '3.0':
++        try:
++            from safety.util import SafetyPolicyFile
++            policy_file = SafetyPolicyFile()
++            policy_data = policy_file.load(path_obj)
++            
++            # Validate the policy data structure
++            from safety_schemas.models import ConfigModel
++            validated_data = ConfigModel(**policy_data)
++            
++            # Prepare the output
++            output_data = {
++                'version': '3.0',
++                'scan': {
++                    'max_depth': validated_data.scan.max_depth,
++                    'exclude': validated_data.scan.exclude,
++                    'include_files': validated_data.scan.include_files,
++                    'system': {
++                        'targets': validated_data.scan.system.targets
++                    }
++                },
++                'report': {
++                    'dependency_vulnerabilities': {
++                        'enabled': validated_data.report.dependency_vulnerabilities.enabled,
++                        'auto_ignore': {
++                            'python': {
++                                'ignore_environment_results': validated_data.report.dependency_vulnerabilities.auto_ignore.python.ignore_environment_results,
++                                'ignore_unpinned_requirements': validated_data.report.dependency_vulnerabilities.auto_ignore.python.ignore_unpinned_requirements
++                            },
++                            'vulnerabilities': validated_data.report.dependency_vulnerabilities.auto_ignore.vulnerabilities,
++                            'cvss_severity': validated_data.report.dependency_vulnerabilities.auto_ignore.cvss_severity
++                        }
++                    }
++                },
++                'fail_scan': {
++                    'dependency_vulnerabilities': {
++                        'enabled': validated_data.fail_scan.dependency_vulnerabilities.enabled,
++                        'fail_on_any_of': {
++                            'cvss_severity': validated_data.fail_scan.dependency_vulnerabilities.fail_on_any_of.cvss_severity,
++                            'exploitability': validated_data.fail_scan.dependency_vulnerabilities.fail_on_any_of.exploitability
++                        }
++                    }
++                },
++                'security_updates': {
++                    'dependency_vulnerabilities': {
++                        'auto_security_updates_limit': validated_data.security_updates.dependency_vulnerabilities.auto_security_updates_limit
++                    }
++                }
++            }
++            
++            # Remove installation key if present
++            output_data.pop('installation', None)
++            
++            msg = 'The Safety policy (3.0) file (Used for scan and system-scan commands) was successfully parsed with the following values:\n'
++            output_str = json.dumps(output_data, indent=2) + '\n'
++            click.echo(msg + output_str)
++            
++        except Exception as e:
++            if "this command only supports version 3.0" in str(e):
++                msg = f'Unable to load the Safety Policy file ("{path}"), this command only supports version 3.0, details: {str(e)}\n'
++                raise click.BadParameter(msg, param_hint='path')
++            else:
++                msg = f'Unable to load the Safety Policy file "{path}".\n{str(e)}\n'
++                raise click.BadParameter(msg, param_hint='path')
+     else:
+-        try:
+-            values = SafetyPolicyFile().convert(path, None, None)
+-        except Exception as e:
+-            click.secho(str(e).lstrip(), fg='red', file=sys.stderr)
+-            sys.exit(EXIT_CODE_FAILURE)
+-
+-        del values['raw']
+-
+-        result = json.dumps(values, indent=4, default=str)
+-
+-        click.secho("The Safety policy file " \
+-                    "(Valid only for the check command) " \
+-                    "was successfully parsed with the " \
+-                    "following values:", fg="green")
+-
+-    console.print_json(result)
++        msg = f'Unsupported version "{version}". Only versions 2.0 and 3.0 are supported.\n'
++        raise click.BadParameter(msg, param_hint='version')
+ 
+ 
+ @cli.command(cls=SafetyCLILegacyCommand,

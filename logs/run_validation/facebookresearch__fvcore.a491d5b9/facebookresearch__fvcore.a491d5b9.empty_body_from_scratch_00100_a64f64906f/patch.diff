@@ -1,0 +1,32 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -470,26 +470,9 @@
+     return ret
+ 
+ 
+-def _fastforward(
+-    name: str, statistics: Dict[str, Dict[str, str]]
+-) -> Tuple[str, Dict[str, str]]:
+-    """
+-    If the given module has only a single child and matches statistics
+-    with that child, merge statistics and their names into one row.
+-    Then repeat until the condition isn't met.
+-
+-    Returns:
+-        str: the new name
+-        dict: the combined statistics of this row
+-    """
+-    single_child = _get_single_child(name, statistics)
+-    if single_child is None:
+-        return name, statistics[name]
+-    combined = _try_combine(statistics[name], statistics[single_child])
+-    if combined is None:
+-        return name, statistics[name]
+-    statistics[single_child] = combined
+-    return _fastforward(single_child, statistics)
++def _fastforward(name: str, statistics: Dict[str, Dict[str, str]]) ->Tuple[
++    str, Dict[str, str]]:
++    pass
+ 
+ 
+ def _model_stats_table(

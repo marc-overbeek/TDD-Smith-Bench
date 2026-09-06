@@ -1,0 +1,72 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -180,49 +180,26 @@
+     return speeds[index]
+ 
+ 
+-def calculate_uphill_downhill(elevations: List[Optional[float]]) -> Tuple[float, float]:
+-    """
+-    Compute the total uphill and downhill elevation for a list of elevations.
+-    Note that the result is smoothened.
+-
+-    Parameters
+-    ----------
+-    elevations: list
+-        List of elevations to calculate the total up-/downhill elevation between.
+-        If elevation is missing for a point, None can be used.
+-
+-    Returns
+-    ----------
+-    uphill_downhill: tuple
+-        Tuple of total (uphill, downhill) elevation. (smoothened)
+-    """
+-    if not elevations:
+-        return 0, 0
+-
+-    elevations = list(filter(lambda e: e is not None, elevations))
+-    size = len(elevations)
+-
+-    def __filter(n: int) -> float:
+-        current_ele = elevations[n]
+-        if current_ele is None:
+-            return False
+-        if 0 < n < size - 1:
+-            previous_ele = elevations[n-1]
+-            next_ele = elevations[n+1]
+-            if previous_ele is not None and current_ele is not None and next_ele is not None:
+-                return previous_ele*.3 + current_ele*.4 + next_ele*.3
+-        return current_ele
+-
+-    smoothed_elevations = list(map(__filter, range(size)))
+-
+-    uphill, downhill = 0., 0.
+-    for prev, cur in zip(smoothed_elevations, smoothed_elevations[1:]):
+-        if prev is not None and cur is not None:
+-            d = cur - prev
+-            if d > 0:
+-                uphill += d
+-            else:
+-                downhill -= d
++def calculate_uphill_downhill(elevations: List[Optional[float]]) ->Tuple[
++    float, float]:
++    uphill = 0.0
++    downhill = 0.0
++    
++    # Filter out None values to get only valid elevations
++    valid_elevations = [e for e in elevations if e is not None]
++    
++    # If we have less than 2 valid elevations, we can't calculate uphill/downhill
++    if len(valid_elevations) < 2:
++        return uphill, downhill
++    
++    # Calculate uphill and downhill between consecutive valid elevations
++    for i in range(len(valid_elevations) - 1):
++        elevation_diff = valid_elevations[i + 1] - valid_elevations[i]
++        if elevation_diff > 0:
++            uphill += elevation_diff
++        else:
++            downhill += abs(elevation_diff)
++    
+     return uphill, downhill
+ 
+ 

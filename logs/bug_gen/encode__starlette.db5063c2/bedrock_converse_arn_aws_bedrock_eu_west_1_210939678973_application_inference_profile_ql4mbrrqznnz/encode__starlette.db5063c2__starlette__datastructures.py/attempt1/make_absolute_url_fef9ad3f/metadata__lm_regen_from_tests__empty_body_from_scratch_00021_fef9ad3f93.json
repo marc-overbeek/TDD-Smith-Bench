@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef make_absolute_url(self, base_url: str | URL) -> URL:\n    if isinstance(base_url, str):\n        base_url = URL(base_url)\n    if self.protocol:\n        scheme = {\n            \"http\": {True: \"https\", False: \"http\"},\n            \"websocket\": {True: \"wss\", False: \"ws\"},\n        }[self.protocol][base_url.is_secure]\n    else:\n        scheme = base_url.scheme\n\n    if self.host:\n        netloc = self.host\n        path = str(self)\n    else:\n        netloc = base_url.netloc\n        path = base_url.path.rstrip(\"/\") + str(self)\n    return URL(scheme=scheme, netloc=netloc, path=path)\n```",
+  "rewrite": "def make_absolute_url(self, base_url: str | URL) -> URL:\n    if isinstance(base_url, str):\n        base_url = URL(base_url)\n    if self.protocol:\n        scheme = {\n            \"http\": {True: \"https\", False: \"http\"},\n            \"websocket\": {True: \"wss\", False: \"ws\"},\n        }[self.protocol][base_url.is_secure]\n    else:\n        scheme = base_url.scheme\n\n    if self.host:\n        netloc = self.host\n        path = str(self)\n    else:\n        netloc = base_url.netloc\n        path = base_url.path.rstrip(\"/\") + str(self)\n    return URL(scheme=scheme, netloc=netloc, path=path)",
+  "strategy": "lm_regen_from_tests"
+}

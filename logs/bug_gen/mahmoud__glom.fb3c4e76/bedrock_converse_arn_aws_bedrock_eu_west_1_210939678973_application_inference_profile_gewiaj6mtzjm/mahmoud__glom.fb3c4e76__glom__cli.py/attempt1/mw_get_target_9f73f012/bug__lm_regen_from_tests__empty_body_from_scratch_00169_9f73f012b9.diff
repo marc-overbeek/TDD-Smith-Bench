@@ -1,0 +1,96 @@
+--- a/glom/cli.py
++++ b/glom/cli.py
+@@ -165,50 +165,49 @@
+ 
+ 
+ @face_middleware(provides=['spec', 'target'])
+-def mw_get_target(next_, posargs_, target_file, target_format, spec_file, spec_format):
+-    spec_text, target_text = None, None
+-    if len(posargs_) == 2:
+-        spec_text, target_text = posargs_
+-    elif len(posargs_) == 1:
+-        spec_text, target_text = posargs_[0], None
+-
+-    if spec_text and spec_file:
+-        raise UsageError('expected spec file or spec argument, not both')
+-    elif spec_file:
+-        try:
+-            with open(spec_file) as f:
+-                spec_text = f.read()
+-        except OSError as ose:
+-            raise UsageError(f'could not read spec file {spec_file!r}, got: {ose}')
+-
+-    if not spec_text:
+-        spec = Path()
+-    elif spec_format == 'python':
+-        if spec_text[0] not in ('"', "'", "[", "{", "("):
+-            # intention: handle trivial path access, assume string
+-            spec_text = repr(spec_text)
+-        spec = ast.literal_eval(spec_text)
+-    elif spec_format == 'json':
+-        spec = json.loads(spec_text)
+-    elif spec_format == 'python-full':
+-        spec = _eval_python_full_spec(spec_text)
+-    else:
+-        raise UsageError('expected spec-format to be one of json, python, or python-full')
+-
+-    if target_text and target_file:
+-        raise UsageError('expected target file or target argument, not both')
+-    elif target_text == '-' or target_file == '-':
+-        target_text = sys.stdin.read()
+-    elif target_file:
+-        try:
+-            target_text = open(target_file).read()
+-        except OSError as ose:
+-            raise UsageError(f'could not read target file {target_file!r}, got: {ose}')
+-    elif not target_text and not isatty(sys.stdin):
+-        target_text = sys.stdin.read()
+-
+-    target = mw_handle_target(target_text, target_format)
+-
++def mw_get_target(next_, posargs_, target_file, target_format, spec_file,
++    spec_format):
++    # Handle positional arguments
++    spec_arg = None
++    target_arg = None
++    if posargs_:
++        spec_arg = posargs_[0]
++        if len(posargs_) > 1:
++            target_arg = posargs_[1]
++    
++    # Handle spec from file or argument
++    if spec_file:
++        with open(spec_file, 'r') as f:
++            spec_text = f.read()
++        if spec_format == 'python':
++            spec = ast.literal_eval(spec_text)
++        elif spec_format == 'json':
++            spec = json.loads(spec_text)
++        elif spec_format == 'python-full':
++            spec = _eval_python_full_spec(spec_text)
++        else:
++            raise UsageError('expected spec-format to be one of python, json, or python-full')
++    else:
++        if spec_arg is None:
++            # Default to empty dict when no spec provided
++            spec = {}
++        else:
++            spec = spec_arg
++    
++    # Handle target from file, stdin, or argument
++    if target_file:
++        with open(target_file, 'r') as f:
++            target_text = f.read()
++        target = mw_handle_target(target_text, target_format)
++    elif target_arg is not None:
++        target = mw_handle_target(target_arg, target_format)
++    else:
++        # Read from stdin if no target provided
++        import sys
++        target_text = sys.stdin.read() if not sys.stdin.isatty() else '{}'
++        target = mw_handle_target(target_text, target_format)
++    
++    # Call the next middleware with parsed values
+     return next_(spec=spec, target=target)
+ 
+ 

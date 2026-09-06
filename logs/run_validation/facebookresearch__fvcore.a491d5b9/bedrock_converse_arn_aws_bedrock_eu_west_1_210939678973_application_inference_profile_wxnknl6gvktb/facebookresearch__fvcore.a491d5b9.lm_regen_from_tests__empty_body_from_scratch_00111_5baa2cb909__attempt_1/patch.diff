@@ -1,0 +1,161 @@
+--- a/fvcore/nn/parameter_count.py
++++ b/fvcore/nn/parameter_count.py
+@@ -32,91 +32,76 @@
+     return r
+ 
+ 
+-def parameter_count_table(model: nn.Module, max_depth: int = 3) -> str:
++def test_param_with_same_prefix(self) ->None:
++    net = NetWithDupPrefix()
++    table = parameter_count_table(net)
++    c = [('conv111.weight' in line) for line in table.split('\n')]
++    self.assertEqual(sum(c), 1)
++
++def parameter_count_table(model: nn.Module, max_depth: int=3) ->str:
+     """
+-    Format the parameter count of the model (and its submodules or parameters)
+-    in a nice table. It looks like this:
+-
+-    ::
+-
+-        | name                            | #elements or shape   |
+-        |:--------------------------------|:---------------------|
+-        | model                           | 37.9M                |
+-        |  backbone                       |  31.5M               |
+-        |   backbone.fpn_lateral3         |   0.1M               |
+-        |    backbone.fpn_lateral3.weight |    (256, 512, 1, 1)  |
+-        |    backbone.fpn_lateral3.bias   |    (256,)            |
+-        |   backbone.fpn_output3          |   0.6M               |
+-        |    backbone.fpn_output3.weight  |    (256, 256, 3, 3)  |
+-        |    backbone.fpn_output3.bias    |    (256,)            |
+-        |   backbone.fpn_lateral4         |   0.3M               |
+-        |    backbone.fpn_lateral4.weight |    (256, 1024, 1, 1) |
+-        |    backbone.fpn_lateral4.bias   |    (256,)            |
+-        |   backbone.fpn_output4          |   0.6M               |
+-        |    backbone.fpn_output4.weight  |    (256, 256, 3, 3)  |
+-        |    backbone.fpn_output4.bias    |    (256,)            |
+-        |   backbone.fpn_lateral5         |   0.5M               |
+-        |    backbone.fpn_lateral5.weight |    (256, 2048, 1, 1) |
+-        |    backbone.fpn_lateral5.bias   |    (256,)            |
+-        |   backbone.fpn_output5          |   0.6M               |
+-        |    backbone.fpn_output5.weight  |    (256, 256, 3, 3)  |
+-        |    backbone.fpn_output5.bias    |    (256,)            |
+-        |   backbone.top_block            |   5.3M               |
+-        |    backbone.top_block.p6        |    4.7M              |
+-        |    backbone.top_block.p7        |    0.6M              |
+-        |   backbone.bottom_up            |   23.5M              |
+-        |    backbone.bottom_up.stem      |    9.4K              |
+-        |    backbone.bottom_up.res2      |    0.2M              |
+-        |    backbone.bottom_up.res3      |    1.2M              |
+-        |    backbone.bottom_up.res4      |    7.1M              |
+-        |    backbone.bottom_up.res5      |    14.9M             |
+-        |    ......                       |    .....             |
+-
++    Create a table of parameter counts for a model and its submodules.
++    
+     Args:
+         model: a torch module
+-        max_depth (int): maximum depth to recursively print submodules or
+-            parameters
++        max_depth: maximum depth of module hierarchy to display
++        
++    Returns:
++        str: a formatted table of parameter counts
++    """
++    param_counts = parameter_count(model)
++    
++    # Filter and organize by depth
++    rows = []
++    for name, count in sorted(param_counts.items()):
++        if name == "":
++            continue  # Skip the total for now, we'll add it at the end
++        
++        depth = name.count(".") if name else 0
++        if depth > max_depth:
++            continue
++            
++        # Format the name with indentation based on depth
++        indent = "  " * depth
++        display_name = indent + name.split(".")[-1] if name else "Total"
++        rows.append([display_name, count])
++    
++    # Add total row
++    if "" in param_counts:
++        rows.append(["Total", param_counts[""]])
++    
++    # Create table
++    table = tabulate.tabulate(rows, headers=["name", "#params"], tablefmt="simple")
++    return table
+ 
++def parameter_count_table(model: nn.Module, max_depth: int=3) ->str:
++    """
++    Create a table of parameter counts for a model and its submodules.
++    
++    Args:
++        model: a torch module
++        max_depth: maximum depth of module hierarchy to display
++        
+     Returns:
+-        str: the table to be printed
++        str: a formatted table of parameter counts
+     """
+-    count: typing.DefaultDict[str, int] = parameter_count(model)
+-    # pyre-fixme[24]: Generic type `tuple` expects at least 1 type parameter.
+-    param_shape: typing.Dict[str, typing.Tuple] = {
+-        k: tuple(v.shape) for k, v in model.named_parameters()
+-    }
+-
+-    # pyre-fixme[24]: Generic type `tuple` expects at least 1 type parameter.
+-    table: typing.List[typing.Tuple] = []
+-
+-    def format_size(x: int) -> str:
+-        if x > 1e8:
+-            return "{:.1f}G".format(x / 1e9)
+-        if x > 1e5:
+-            return "{:.1f}M".format(x / 1e6)
+-        if x > 1e2:
+-            return "{:.1f}K".format(x / 1e3)
+-        return str(x)
+-
+-    def fill(lvl: int, prefix: str) -> None:
+-        if lvl >= max_depth:
+-            return
+-        for name, v in count.items():
+-            if name.count(".") == lvl and name.startswith(prefix):
+-                indent = " " * (lvl + 1)
+-                if name in param_shape:
+-                    table.append((indent + name, indent + str(param_shape[name])))
+-                else:
+-                    table.append((indent + name, indent + format_size(v)))
+-                    fill(lvl + 1, name + ".")
+-
+-    table.append(("model", format_size(count.pop(""))))
+-    fill(0, "")
+-
+-    old_ws = tabulate.PRESERVE_WHITESPACE
+-    tabulate.PRESERVE_WHITESPACE = True
+-    tab = tabulate.tabulate(
+-        table, headers=["name", "#elements or shape"], tablefmt="pipe"
+-    )
+-    tabulate.PRESERVE_WHITESPACE = old_ws
+-    return tab
++    param_counts = parameter_count(model)
++    
++    rows = []
++    for name in sorted(param_counts.keys()):
++        if name == "":
++            continue
++        
++        depth = name.count(".")
++        if depth > max_depth:
++            continue
++        
++        count = param_counts[name]
++        rows.append([name, count])
++    
++    # Add total
++    if "" in param_counts:
++        rows.append(["Total", param_counts[""]])
++    
++    table = tabulate.tabulate(rows, headers=["name", "#params"], tablefmt="simple")
++    return table

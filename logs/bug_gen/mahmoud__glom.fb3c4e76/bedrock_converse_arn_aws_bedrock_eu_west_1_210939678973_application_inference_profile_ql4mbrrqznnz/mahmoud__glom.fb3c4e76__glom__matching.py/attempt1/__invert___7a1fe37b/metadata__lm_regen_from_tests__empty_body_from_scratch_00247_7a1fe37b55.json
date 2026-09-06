@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, I need to implement `__invert__` for the `_MType` class. The tests show:\n\n- `repr(~M)` should work\n- `glom(False, ~M) == False` - `~M` should match when M fails (i.e., when target is falsy)\n- `repr(~M | 'default') == \"~M | 'default'\"`\n\nThe `_MType.__invert__` should return `Not(self)`, similar to how `_MExpr.__invert__` and `_Bool.__invert__` work.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing tests, I need to implement `__invert__` for the `_MType` class. The tests show:\n\n- `repr(~M)` should work\n- `glom(False, ~M) == False` - `~M` should match when M fails (i.e., when target is falsy)\n- `repr(~M | 'default') == \"~M | 'default'\"`\n\nThe `_MType.__invert__` should return `Not(self)`, similar to how `_MExpr.__invert__` and `_Bool.__invert__` work.\n\n```python\ndef __invert__(self):\n    return Not(self)\n```",
+  "rewrite": "def __invert__(self):\n    return Not(self)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

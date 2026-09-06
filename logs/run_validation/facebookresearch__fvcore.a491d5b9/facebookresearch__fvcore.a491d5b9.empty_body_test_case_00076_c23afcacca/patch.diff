@@ -1,0 +1,146 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -45,18 +45,8 @@
+     :meth:`register_type` method.
+     """
+ 
+-    def _set_attributes(self, params: Optional[List[Any]] = None) -> None:
+-        """
+-        Set attributes from the input list of parameters.
+-
+-        Args:
+-            params (list): list of parameters.
+-        """
+-
+-        if params:
+-            for k, v in params.items():
+-                if k != "self" and not k.startswith("_"):
+-                    setattr(self, k, v)
++    def _set_attributes(self, params: Optional[List[Any]]=None) ->None:
++        pass
+ 
+     @abstractmethod
+     def apply_image(self, img: np.ndarray):
+@@ -214,37 +204,7 @@
+         raise NotImplementedError
+ 
+     def __repr__(self):
+-        """
+-        Produce something like:
+-        "MyTransform(field1={self.field1}, field2={self.field2})"
+-        """
+-        try:
+-            sig = inspect.signature(self.__init__)
+-            classname = type(self).__name__
+-            argstr = []
+-            for name, param in sig.parameters.items():
+-                assert (
+-                    param.kind != param.VAR_POSITIONAL
+-                    and param.kind != param.VAR_KEYWORD
+-                ), "The default __repr__ doesn't support *args or **kwargs"
+-                assert hasattr(self, name), (
+-                    "Attribute {} not found! "
+-                    "Default __repr__ only works if attributes match the constructor.".format(
+-                        name
+-                    )
+-                )
+-                attr = getattr(self, name)
+-                default = param.default
+-                if default is attr:
+-                    continue
+-                attr_str = pprint.pformat(attr)
+-                if "\n" in attr_str:
+-                    # don't show it if pformat decides to use >1 lines
+-                    attr_str = "..."
+-                argstr.append("{}={}".format(name, attr_str))
+-            return "{}({})".format(classname, ", ".join(argstr))
+-        except AssertionError:
+-            return super().__repr__()
++        pass
+ 
+ 
+ _T = TypeVar("_T")
+@@ -259,24 +219,7 @@
+     """
+ 
+     def __init__(self, transforms: List[Transform]):
+-        """
+-        Args:
+-            transforms (list[Transform]): list of transforms to perform.
+-        """
+-        super().__init__()
+-        # "Flatten" the list so that TransformList do not recursively contain TransfomList.
+-        # The additional hierarchy does not change semantic of the class, but cause extra
+-        # complexities in e.g, telling whether a TransformList contains certain Transform
+-        tfms_flatten = []
+-        for t in transforms:
+-            assert isinstance(
+-                t, Transform
+-            ), f"TransformList requires a list of Transform. Got type {type(t)}!"
+-            if isinstance(t, TransformList):
+-                tfms_flatten.extend(t.transforms)
+-            else:
+-                tfms_flatten.append(t)
+-        self.transforms = tfms_flatten
++        pass
+ 
+     def _apply(self, x: _T, meth: str) -> _T:
+         """
+@@ -292,10 +235,7 @@
+         return x
+ 
+     def __getattribute__(self, name: str):
+-        # use __getattribute__ to win priority over any registered dtypes
+-        if name.startswith("apply_"):
+-            return lambda x: self._apply(x, name)
+-        return super().__getattribute__(name)
++        pass
+ 
+     def __add__(self, other: "TransformList") -> "TransformList":
+         """
+@@ -344,9 +284,8 @@
+         """
+         return TransformList([x.inverse() for x in self.transforms[::-1]])
+ 
+-    def __repr__(self) -> str:
+-        msgs = [str(t) for t in self.transforms]
+-        return "TransformList[{}]".format(", ".join(msgs))
++    def __repr__(self) ->str:
++        pass
+ 
+     __str__ = __repr__
+ 
+@@ -365,8 +304,7 @@
+     """
+ 
+     def __init__(self, width: int):
+-        super().__init__()
+-        self._set_attributes(locals())
++        pass
+ 
+     def apply_image(self, img: np.ndarray) -> np.ndarray:
+         """
+@@ -815,20 +753,9 @@
+     Transforms pixel colors with PIL enhance functions.
+     """
+ 
+-    def __init__(self, src_image: np.ndarray, src_weight: float, dst_weight: float):
+-        """
+-        Blends the input image (dst_image) with the src_image using formula:
+-        ``src_weight * src_image + dst_weight * dst_image``
+-
+-        Args:
+-            src_image (ndarray): Input image is blended with this image.
+-                The two images must have the same shape, range, channel order
+-                and dtype.
+-            src_weight (float): Blend weighting of src_image
+-            dst_weight (float): Blend weighting of dst_image
+-        """
+-        super().__init__()
+-        self._set_attributes(locals())
++    def __init__(self, src_image: np.ndarray, src_weight: float, dst_weight: float
++        ):
++        pass
+ 
+     def apply_image(self, img: np.ndarray, interp: str = None) -> np.ndarray:
+         """

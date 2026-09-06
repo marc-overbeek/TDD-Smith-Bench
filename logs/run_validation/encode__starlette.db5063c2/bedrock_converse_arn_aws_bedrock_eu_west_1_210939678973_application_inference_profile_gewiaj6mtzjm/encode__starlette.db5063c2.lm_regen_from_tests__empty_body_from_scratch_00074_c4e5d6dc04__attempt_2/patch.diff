@@ -1,0 +1,22 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -558,10 +558,16 @@
+ 
+     def __repr__(self) -> str:
+         class_name = self.__class__.__name__
+-        as_dict = dict(self.items())
+-        if len(as_dict) == len(self):
++        # Check if we have a simple dict-like representation
++        # This is tricky without tracking the original constructor args
++        # But we can check if all keys are unique (dict case) vs having duplicates (raw case)
++        if len(self._list) == len(dict(self._list)):
++            # All keys are unique, likely from dict constructor
++            as_dict = dict(self.items())
+             return f"{class_name}({as_dict!r})"
+-        return f"{class_name}(raw={self.raw!r})"
++        else:
++            # Has duplicate keys, likely from raw constructor
++            return f"{class_name}(raw={self.raw!r})"
+ 
+ 
+ class MutableHeaders(Headers):

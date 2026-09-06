@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef link(self, token: Dict[str, Any], state: BlockState) -> str:\n    label = cast(str, token.get(\"label\"))\n    text = self.render_children(token, state)\n    out = '[' + text + ']'\n    if label:\n        return out + '[' + label + ']'\n\n    attrs = token['attrs']\n    url = attrs['url']\n    title = attrs.get('title')\n    if text == url and not title:\n        return '<' + text + '>'\n    elif 'mailto:' + text == url and not title:\n        return '<' + text + '>'\n\n    out += '('\n    if '(' in url or ')' in url:\n        out += '<' + url + '>'\n    else:\n        out += url\n    if title:\n        out += ' \"' + title + '\"'\n    return out + ')'\n```",
+  "rewrite": "def link(self, token: Dict[str, Any], state: BlockState) -> str:\n    label = cast(str, token.get(\"label\"))\n    text = self.render_children(token, state)\n    out = '[' + text + ']'\n    if label:\n        return out + '[' + label + ']'\n\n    attrs = token['attrs']\n    url = attrs['url']\n    title = attrs.get('title')\n    if text == url and not title:\n        return '<' + text + '>'\n    elif 'mailto:' + text == url and not title:\n        return '<' + text + '>'\n\n    out += '('\n    if '(' in url or ')' in url:\n        out += '<' + url + '>'\n    else:\n        out += url\n    if title:\n        out += ' \"' + title + '\"'\n    return out + ')'\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

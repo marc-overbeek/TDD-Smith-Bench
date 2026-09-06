@@ -1,0 +1,33 @@
+--- a/safety/formatters/json.py
++++ b/safety/formatters/json.py
+@@ -103,27 +103,9 @@
+ 
+         return json_parser.dumps(template, indent=4, cls=SafetyEncoder)
+ 
+-    def render_licenses(self, announcements: List[Dict], licenses: List[Dict]) -> str:
+-        """
+-        Render licenses in JSON format.
+-
+-        Args:
+-            announcements (List[Dict]): List of announcements.
+-            licenses (List[Dict]): List of licenses.
+-
+-        Returns:
+-            str: Rendered JSON licenses report.
+-        """
+-        unique_license_types = set([lic['license'] for lic in licenses])
+-        report = get_report_brief_info(as_dict=True, report_type=2, licenses_found=len(unique_license_types))
+-
+-        template = {
+-            "report_meta": report,
+-            "announcements": get_basic_announcements(announcements),
+-            "licenses": licenses,
+-        }
+-
+-        return json_parser.dumps(template, indent=4)
++    def render_licenses(self, announcements: List[Dict], licenses: List[Dict]
++        ) ->str:
++        pass
+ 
+     def render_announcements(self, announcements: List[Dict]) -> str:
+         """

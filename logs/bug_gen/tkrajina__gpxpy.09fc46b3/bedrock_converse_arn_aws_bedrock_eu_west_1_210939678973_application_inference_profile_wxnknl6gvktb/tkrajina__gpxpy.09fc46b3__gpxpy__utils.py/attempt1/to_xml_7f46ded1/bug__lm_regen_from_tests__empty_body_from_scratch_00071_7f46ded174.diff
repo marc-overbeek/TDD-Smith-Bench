@@ -1,0 +1,150 @@
+--- a/gpxpy/utils.py
++++ b/gpxpy/utils.py
+@@ -19,28 +19,131 @@
+ 
+ from typing import Any, AnyStr, List, Optional, cast
+ 
+-def to_xml(tag: str, attributes: Any=None, content: Any=None, default: Any=None, escape: bool=False, prettyprint: bool=True, indent: str='') -> str:
+-    if not prettyprint:
+-        indent = ''
+-    attributes = attributes or {}
+-    result: List[str] = [f'\n{indent}<{tag}']
++def to_xml(tag: str, attributes: Any=None, content: Any=None, default: Any=
++    None, escape: bool=False, prettyprint: bool=True, indent: str='') ->str:
++    if content is None:
++        content = default
++    
++    if content is None:
++        return ''
++    
++    # Build opening tag with attributes
++    opening_tag = f'<{tag}'
++    
++    if attributes:
++        for key, value in attributes.items():
++            if value is not None:
++                attr_value = mod_saxutils.quoteattr(str(value))
++                opening_tag += f' {key}={attr_value}'
++    
++    # Handle content
++    if isinstance(content, (list, tuple)):
++        # Multiple child elements
++        if prettyprint:
++            inner_indent = indent + '  '
++            inner_content = '\n'.join(
++                [f'{inner_indent}{item}' if isinstance(item, str) else item 
++                 for item in content if item]
++            )
++            return f'{opening_tag}>\n{inner_content}\n{indent}</{tag}>'
++        else:
++            inner_content = ''.join(str(item) for item in content if item)
++            return f'{opening_tag}>{inner_content}</{tag}>'
++    else:
++        # Text content
++        content_str = make_str(content)
++        if escape:
++            content_str = mod_saxutils.escape(content_str)
++        
++        if prettyprint and '\n' in content_str:
++            inner_indent = indent + '  '
++            return f'{opening_tag}>\n{inner_indent}{content_str}\n{indent}</{tag}>'
++        else:
++            return f'{opening_tag}>{content_str}</{tag}>'
+ 
+-    if content is None and default:
++def to_xml(tag: str, attributes: Any=None, content: Any=None, default: Any=
++    None, escape: bool=False, prettyprint: bool=True, indent: str='') ->str:
++    if content is None:
+         content = default
++    
++    if content is None:
++        return ''
++    
++    # Build opening tag with attributes
++    opening_tag = f'<{tag}'
++    
++    if attributes:
++        for key, value in attributes.items():
++            if value is not None:
++                attr_value = mod_saxutils.quoteattr(make_str(value))
++                opening_tag += f' {key}={attr_value}'
++    
++    # Handle content
++    if isinstance(content, (list, tuple)):
++        # Multiple child elements
++        content_list = [str(item) for item in content if item is not None and str(item).strip()]
++        if not content_list:
++            return f'{opening_tag} />'
++        
++        if prettyprint:
++            inner_indent = indent + '  '
++            inner_content = '\n'.join([f'{inner_indent}{item}' for item in content_list])
++            return f'{opening_tag}>\n{inner_content}\n{indent}</{tag}>'
++        else:
++            inner_content = ''.join(content_list)
++            return f'{opening_tag}>{inner_content}</{tag}>'
++    else:
++        # Text content
++        content_str = make_str(content)
++        if escape:
++            content_str = mod_saxutils.escape(content_str)
++        
++        if not content_str or (isinstance(content_str, str) and not content_str.strip()):
++            return f'{opening_tag} />'
++        
++        return f'{opening_tag}>{content_str}</{tag}>'
+ 
++def to_xml(tag: str, attributes: Any=None, content: Any=None, default: Any=
++    None, escape: bool=False, prettyprint: bool=True, indent: str='') ->str:
++    if content is None:
++        content = default
++    
++    if content is None:
++        return ''
++    
++    # Build opening tag with attributes
++    opening_tag = f'<{tag}'
++    
+     if attributes:
+-        for attribute in attributes.keys():
+-            result.append(make_str(f' {attribute}="{attributes[attribute]}"'))
+-
+-    if content is None:
+-        result.append('/>')
++        for key, value in attributes.items():
++            if value is not None:
++                attr_value = mod_saxutils.quoteattr(make_str(value))
++                opening_tag += f' {key}={attr_value}'
++    
++    # Handle content
++    if isinstance(content, (list, tuple)):
++        # Multiple child elements
++        content_list = [str(item) for item in content if item is not None and str(item).strip()]
++        if not content_list:
++            return f'{opening_tag} />'
++        
++        if prettyprint:
++            inner_indent = indent + '  '
++            inner_content = '\n'.join([f'{inner_indent}{item}' for item in content_list])
++            return f'{opening_tag}>\n{inner_content}\n{indent}</{tag}>'
++        else:
++            inner_content = ''.join(content_list)
++            return f'{opening_tag}>{inner_content}</{tag}>'
+     else:
++        # Text content
++        content_str = make_str(content)
+         if escape:
+-            result.append(make_str(f'>{mod_saxutils.escape(content)}</{tag}>'))
+-        else:
+-            result.append(make_str(f'>{content}</{tag}>'))
+-
+-    return make_str(''.join(result))
++            content_str = mod_saxutils.escape(content_str)
++        
++        if not content_str or (isinstance(content_str, str) and not content_str.strip()):
++            return f'{opening_tag} />'
++        
++        return f'{opening_tag}>{content_str}</{tag}>'
+ 
+ 
+ def is_numeric(object: Any) -> bool:

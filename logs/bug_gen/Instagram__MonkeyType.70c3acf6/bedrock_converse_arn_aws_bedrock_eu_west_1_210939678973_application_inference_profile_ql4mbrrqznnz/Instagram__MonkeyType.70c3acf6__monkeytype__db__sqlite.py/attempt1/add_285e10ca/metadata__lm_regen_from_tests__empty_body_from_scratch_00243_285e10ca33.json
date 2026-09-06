@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef add(self, traces: Iterable[CallTrace]) -> None:\n    values = []\n    for row in serialize_traces(traces):\n        values.append(\n            (\n                datetime.datetime.now(),\n                row.module,\n                row.qualname,\n                row.arg_types,\n                row.return_type,\n                row.yield_type,\n            )\n        )\n    with self.conn:\n        self.conn.executemany(\n            \"INSERT INTO {table} VALUES (?, ?, ?, ?, ?, ?)\".format(\n                table=self.table\n            ),\n            values,\n        )\n```",
+  "rewrite": "def add(self, traces: Iterable[CallTrace]) -> None:\n    values = []\n    for row in serialize_traces(traces):\n        values.append(\n            (\n                datetime.datetime.now(),\n                row.module,\n                row.qualname,\n                row.arg_types,\n                row.return_type,\n                row.yield_type,\n            )\n        )\n    with self.conn:\n        self.conn.executemany(\n            \"INSERT INTO {table} VALUES (?, ?, ?, ?, ?, ?)\".format(\n                table=self.table\n            ),\n            values,\n        )\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,70 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -101,18 +101,15 @@
+     return getattr(endpoint, "__name__", endpoint.__class__.__name__)
+ 
+ 
+-def replace_params(
+-    path: str,
+-    param_convertors: dict[str, Convertor[typing.Any]],
+-    path_params: dict[str, str],
+-) -> tuple[str, dict[str, str]]:
+-    for key, value in list(path_params.items()):
+-        if "{" + key + "}" in path:
+-            convertor = param_convertors[key]
++def replace_params(path: str, param_convertors: dict[str, Convertor[typing.
++    Any]], path_params: dict[str, str]) ->tuple[str, dict[str, str]]:
++    for key, convertor in param_convertors.items():
++        if key in path_params:
++            value = path_params[key]
+             value = convertor.to_string(value)
+-            path = path.replace("{" + key + "}", value)
+-            path_params.pop(key)
+-    return path, path_params
++            path = path.replace("{%s}" % key, value)
++    remaining_params = {k: v for k, v in path_params.items() if k not in param_convertors}
++    return path, remaining_params
+ 
+ 
+ # Match parameters in URL paths, eg. '{param}', and '{param:int}'
+@@ -469,7 +466,7 @@
+ 
+ 
+ class Host(BaseRoute):
+-    def __init__(self, host: str, app: ASGIApp, name: str | None = None) -> None:
++    def __init__(self, host: str, app: ASGIApp, name: (str | None)=None) ->None:
+         assert not host.startswith("/"), "Host must not start with '/'"
+         self.host = host
+         self.app = app
+@@ -496,26 +493,11 @@
+         return Match.NONE, {}
+ 
+     def url_path_for(self, name: str, /, **path_params: typing.Any) -> URLPath:
+-        if self.name is not None and name == self.name and "path" in path_params:
+-            # 'name' matches "<mount_name>".
+-            path = path_params.pop("path")
+-            host, remaining_params = replace_params(self.host_format, self.param_convertors, path_params)
+-            if not remaining_params:
+-                return URLPath(path=path, host=host)
+-        elif self.name is None or name.startswith(self.name + ":"):
+-            if self.name is None:
+-                # No mount name.
+-                remaining_name = name
+-            else:
+-                # 'name' matches "<mount_name>:<child_name>".
+-                remaining_name = name[len(self.name) + 1 :]
+-            host, remaining_params = replace_params(self.host_format, self.param_convertors, path_params)
+-            for route in self.routes or []:
+-                try:
+-                    url = route.url_path_for(remaining_name, **remaining_params)
+-                    return URLPath(path=str(url), protocol=url.protocol, host=host)
+-                except NoMatchFound:
+-                    pass
++        for route in self.routes:
++            try:
++                return route.url_path_for(name, **path_params)
++            except NoMatchFound:
++                pass
+         raise NoMatchFound(name, path_params)
+ 
+     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:

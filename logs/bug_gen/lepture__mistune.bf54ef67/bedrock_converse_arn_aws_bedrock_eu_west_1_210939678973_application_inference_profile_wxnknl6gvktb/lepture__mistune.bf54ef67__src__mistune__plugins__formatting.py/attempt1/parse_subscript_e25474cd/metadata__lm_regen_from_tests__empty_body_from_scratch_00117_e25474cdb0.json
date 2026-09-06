@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the code, I need to implement `parse_subscript`. \n\nBy examining the similar function `parse_superscript` right above it, I can see the pattern:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "Looking at the code, I need to implement `parse_subscript`. \n\nBy examining the similar function `parse_superscript` right above it, I can see the pattern:\n\n```python\ndef parse_superscript(\n    inline: \"InlineParser\", m: Match[str], state: \"InlineState\"\n) -> int:\n    return _parse_script(inline, m, state, \"superscript\")\n```\n\nThe `parse_subscript` function should follow the same pattern, just with `\"subscript\"` as the token type instead of `\"superscript\"`. Both functions use the `_parse_script` helper function.\n\n```python\ndef parse_subscript(inline: 'InlineParser', m: Match[str], state: 'InlineState'\n    ) ->int:\n    return _parse_script(inline, m, state, \"subscript\")\n```",
+  "rewrite": "def parse_superscript(\n    inline: \"InlineParser\", m: Match[str], state: \"InlineState\"\n) -> int:\n    return _parse_script(inline, m, state, \"superscript\")\n\ndef parse_subscript(inline: 'InlineParser', m: Match[str], state: 'InlineState'\n    ) ->int:\n    return _parse_script(inline, m, state, \"subscript\")",
+  "strategy": "lm_regen_from_tests"
+}

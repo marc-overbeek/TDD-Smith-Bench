@@ -1,0 +1,157 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -55,24 +55,8 @@
+     return path.endswith(supported_types)
+ 
+ 
+-def parse_requirement(dep: Any, found: str) -> SafetyRequirement:
+-    """
+-    Parse a requirement.
+-
+-    Args:
+-        dep (Any): The dependency.
+-        found (str): The location where the dependency was found.
+-
+-    Returns:
+-        SafetyRequirement: The parsed requirement.
+-    """
+-    req = SafetyRequirement(dep)
+-    req.found = found
+-
+-    if req.specifier == SpecifierSet(''):
+-        req.specifier = SpecifierSet('>=0')
+-
+-    return req
++def parse_requirement(dep: Any, found: str) ->SafetyRequirement:
++    pass
+ 
+ 
+ def find_version(requirements: List[SafetyRequirement]) -> Optional[str]:
+@@ -170,22 +154,9 @@
+     return None
+ 
+ 
+-def get_license_name_by_id(license_id: int, db: Dict[str, Any]) -> Optional[str]:
+-    """
+-    Get the license name by its ID.
+-
+-    Args:
+-        license_id (int): The license ID.
+-        db (Dict[str, Any]): The database containing license information.
+-
+-    Returns:
+-        Optional[str]: The license name if found, None otherwise.
+-    """
+-    licenses = db.get('licenses', [])
+-    for name, id in licenses.items():
+-        if id == license_id:
+-            return name
+-    return None
++def get_license_name_by_id(license_id: int, db: Dict[str, Any]) ->Optional[str
++    ]:
++    pass
+ 
+ 
+ def get_flags_from_context() -> Dict[str, str]:
+@@ -1067,100 +1038,7 @@
+ 
+ 
+ def sync_safety_context(f):
+-    """
+-    Decorator to sync the Safety context with the function arguments.
+-    """
+-    def new_func(*args, **kwargs):
+-        ctx = SafetyContext()
+-
+-        legacy_key_added = False
+-        if "session" in kwargs:
+-            legacy_key_added = True
+-            kwargs["key"] = kwargs.get("session").api_key
+-
+-        for attr in dir(ctx):
+-            if attr in kwargs:
+-                setattr(ctx, attr, kwargs.get(attr))
+-
+-        if legacy_key_added:
+-            kwargs.pop("key")
+-
+-        return f(*args, **kwargs)
+-
+-    return new_func
+-
+-
+-@sync_safety_context
+-def get_packages_licenses(*, packages: Optional[List[Package]] = None, licenses_db: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+-    """
+-    Get the licenses for the specified packages based on their version.
+-
+-    Args:
+-        packages (Optional[List[Package]]): The list of packages.
+-        licenses_db (Optional[Dict[str, Any]]): The licenses database.
+-
+-    Returns:
+-        List[Dict[str, Any]]: The list of packages and their licenses.
+-    """
+-    SafetyContext().command = 'license'
+-
+-    if not packages:
+-        packages = []
+-    if not licenses_db:
+-        licenses_db = {}
+-
+-    packages_licenses_db = licenses_db.get('packages', {})
+-    filtered_packages_licenses = []
+-
+-    for pkg in packages:
+-        # Ignore recursive files not resolved
+-        if isinstance(pkg, RequirementFile):
+-            continue
+-        # normalize the package name
+-        pkg_name = canonicalize_name(pkg.name)
+-        # packages may have different licenses depending their version.
+-        pkg_licenses = packages_licenses_db.get(pkg_name, [])
+-        if not pkg.version:
+-            for req in pkg.requirements:
+-                if is_pinned_requirement(req.specifier):
+-                    pkg.version = next(iter(req.specifier)).version
+-                    break
+-
+-            if not pkg.version:
+-                continue
+-        version_requested = parse_version(pkg.version)
+-        license_id = None
+-        license_name = None
+-        for pkg_version in pkg_licenses:
+-            license_start_version = parse_version(pkg_version['start_version'])
+-            # Stops and return the previous stored license when a new
+-            # license starts on a version above the requested one.
+-            if version_requested >= license_start_version:
+-                license_id = pkg_version['license_id']
+-            else:
+-                # We found the license for the version requested
+-                break
+-
+-        if license_id:
+-            license_name = get_license_name_by_id(license_id, licenses_db)
+-        if not license_id or not license_name:
+-            license_name = "unknown"
+-
+-        filtered_packages_licenses.append({
+-            "package": pkg_name,
+-            "version": pkg.version,
+-            "license": license_name
+-        })
+-
+-    return filtered_packages_licenses
+-
+-
+-def get_requirements_content(files: List[click.File]) -> Dict[str, str]:
+-    """
+-    Get the content of the requirements files.
+-
+-    Args:
+-        files (List[click.File]): The list of requirement files.
++    pass
+ 
+     Returns:
+         Dict[str, str]: The content of the requirement files.

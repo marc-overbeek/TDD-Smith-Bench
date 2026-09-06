@@ -1,0 +1,33 @@
+--- a/src/markupsafe/__init__.py
++++ b/src/markupsafe/__init__.py
+@@ -170,20 +170,16 @@
+     def join(self, iterable: cabc.Iterable[str | _HasHTML], /) -> te.Self:
+         return self.__class__(super().join(map(self.escape, iterable)))
+ 
+-    def split(  # type: ignore[override]
+-        self, /, sep: str | None = None, maxsplit: t.SupportsIndex = -1
+-    ) -> list[te.Self]:
+-        return [self.__class__(v) for v in super().split(sep, maxsplit)]
+-
+-    def rsplit(  # type: ignore[override]
+-        self, /, sep: str | None = None, maxsplit: t.SupportsIndex = -1
+-    ) -> list[te.Self]:
+-        return [self.__class__(v) for v in super().rsplit(sep, maxsplit)]
+-
+-    def splitlines(  # type: ignore[override]
+-        self, /, keepends: bool = False
+-    ) -> list[te.Self]:
+-        return [self.__class__(v) for v in super().splitlines(keepends)]
++    def split(self, /, sep: (str | None)=None, maxsplit: t.SupportsIndex=-1
++        ) ->list[te.Self]:
++            return [self.__class__(v) for v in super().split(sep, maxsplit)]
++
++    def rsplit(self, /, sep: (str | None)=None, maxsplit: t.SupportsIndex=-1
++        ) ->list[te.Self]:
++            return [self.__class__(v) for v in super().rsplit(sep, maxsplit)]
++
++    def splitlines(self, /, keepends: bool=False) ->list[te.Self]:
++            return [self.__class__(v) for v in super().splitlines(keepends)]
+ 
+     def unescape(self, /) -> str:
+         """Convert escaped markup back into a text string. This replaces

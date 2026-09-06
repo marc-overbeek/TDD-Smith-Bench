@@ -1,0 +1,101 @@
+--- a/monkeytype/encoding.py
++++ b/monkeytype/encoding.py
+@@ -50,38 +50,20 @@
+ 
+ 
+ def type_to_dict(typ: type) -> TypeDict:
+-    """Convert a type into a dictionary representation that we can store.
+-
+-    The dictionary must:
+-        1. Be encodable as JSON
+-        2. Contain enough information to let us reify the type
+-    """
+     if is_typed_dict(typ):
+         return typed_dict_to_dict(typ)
+-
+-    # Union and Any are special cases that aren't actually types.
++    if is_any(typ):
++        return {'module': 'typing', 'qualname': 'Any'}
+     if is_union(typ):
+-        qualname = "Union"
+-    elif is_any(typ):
+-        qualname = "Any"
+-    elif is_generic(typ):
++        args = typ.__args__
++        elem_types = [type_to_dict(arg) for arg in args]
++        return {'module': 'typing', 'qualname': 'Union', 'elem_types': elem_types}
++    if is_generic(typ):
+         qualname = qualname_of_generic(typ)
+-    else:
+-        qualname = typ.__qualname__
+-    d: TypeDict = {
+-        "module": typ.__module__,
+-        "qualname": qualname,
+-    }
+-    elem_types = getattr(typ, "__args__", None)
+-    # In Python < 3.9, bare generics still have args
+-    is_bare_generic = typ in {Dict, List, Tuple}
+-    if not is_bare_generic and elem_types is not None and is_generic(typ):
+-        # empty typing.Tuple is weird; the spec says it should be Tuple[()],
+-        # which results in __args__ of `((),)` pre-Python 3.11
+-        if elem_types == ((),):
+-            elem_types = ()
+-        d["elem_types"] = [type_to_dict(t) for t in elem_types]
+-    return d
++        args = typ.__args__ if typ.__args__ is not None else []
++        elem_types = [type_to_dict(arg) for arg in args]
++        return {'module': 'typing', 'qualname': qualname, 'elem_types': elem_types}
++    return {'module': typ.__module__, 'qualname': typ.__qualname__}
+ 
+ 
+ _HIDDEN_BUILTIN_TYPES: Dict[str, type] = {
+@@ -99,31 +81,28 @@
+ 
+ 
+ def type_from_dict(d: TypeDict) -> type:
+-    """Given a dictionary produced by type_to_dict, return the equivalent type.
+-
+-    Raises:
+-        NameLookupError if we can't reify the specified type
+-        InvalidTypeError if the named type isn't actually a type
+-    """
+-    module, qualname = d["module"], d["qualname"]
+-    if d.get("is_typed_dict", False):
++    if d.get('is_typed_dict'):
+         return typed_dict_from_dict(d)
+-    if module == "builtins" and qualname in _HIDDEN_BUILTIN_TYPES:
+-        typ = _HIDDEN_BUILTIN_TYPES[qualname]
++    module = d['module']
++    qualname = d['qualname']
++    elem_types_raw = d.get('elem_types', None)
++    if elem_types_raw is not None:
++        elem_types = [type_from_dict(e) for e in elem_types_raw]
+     else:
+-        typ = get_name_in_module(module, qualname)
+-    if not (isinstance(typ, type) or is_any(typ) or is_generic(typ)):
++        elem_types = None
++    if module == '__builtin__' or module == 'builtins':
++        if qualname in _HIDDEN_BUILTIN_TYPES:
++            typ = _HIDDEN_BUILTIN_TYPES[qualname]
++        else:
++            typ = get_name_in_module(module, qualname, _HIDDEN_BUILTIN_TYPES)
++    else:
++        typ = get_name_in_module(module, qualname, _HIDDEN_BUILTIN_TYPES)
++    if not isinstance(typ, type) and not is_any(typ) and not is_generic(typ) and not is_union(typ):
+         raise InvalidTypeError(
+-            f"Attribute specified by '{qualname}' in module '{module}' "
+-            f"is of type {type(typ)}, not type."
++            f"Attribute specified by {module}.{qualname} is not a type: {typ!r}"
+         )
+-    elem_type_dicts = d.get("elem_types")
+-    if elem_type_dicts is not None and is_generic(typ):
+-        elem_types = tuple(type_from_dict(e) for e in elem_type_dicts)
+-        # mypy complains that a value of type `type` isn't indexable. That's
+-        # true, but we know typ is a subtype that is indexable. Even checking
+-        # with hasattr(typ, '__getitem__') doesn't help
+-        typ = typ[elem_types]  # type: ignore[index]
++    if elem_types is not None:
++        typ = typ[tuple(elem_types)]
+     return typ
+ 
+ 

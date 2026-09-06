@@ -1,0 +1,64 @@
+--- a/safety/scan/render.py
++++ b/safety/scan/render.py
+@@ -670,58 +670,9 @@
+     return doc_pkgs
+ 
+ 
+-def create_spdx_document(*, report: ReportModel, spdx_version: str) -> Optional[Any]:
+-    """
+-    Create an SPDX document.
+-
+-    Args:
+-        report (ReportModel): The scan report model.
+-        spdx_version (str): The SPDX version.
+-
+-    Returns:
+-        Optional[Any]: The SPDX document.
+-    """
+-    from spdx_tools.spdx.model import (
+-        Document,
+-        Relationship,
+-        RelationshipType,
+-    )
+-
+-    project =  report.projects[0] if any(report.projects) else None
+-
+-    if not project:
+-        return None
+-
+-    prj_id = project.id
+-
+-    if not prj_id:
+-        parent_name = project.project_path.parent.name
+-        prj_id = parent_name if parent_name else str(int(time.time()))
+-
+-    creation_info = generate_spdx_creation_info(spdx_version=spdx_version, project_identifier=prj_id)
+-
+-    depedencies = iter([])
+-    for file in project.files:
+-        depedencies = itertools.chain(depedencies, file.results.dependencies)
+-
+-    packages = create_packages(depedencies)
+-
+-    # Requirement for document to have atleast one relationship
+-    relationship = Relationship(
+-        "SPDXRef-DOCUMENT",
+-        RelationshipType.DESCRIBES,
+-        "SPDXRef-DOCUMENT"
+-    )
+-    spdx_doc = Document(
+-        creation_info,
+-        packages,
+-        [],
+-        [],
+-        [],
+-        [relationship],
+-        []
+-    )
+-    return spdx_doc
++def create_spdx_document(*, report: ReportModel, spdx_version: str) ->Optional[
++    Any]:
++    pass
+ 
+ 
+ def render_scan_spdx(report: ReportModel, obj: Any, spdx_version: Optional[str]) -> Optional[Any]:

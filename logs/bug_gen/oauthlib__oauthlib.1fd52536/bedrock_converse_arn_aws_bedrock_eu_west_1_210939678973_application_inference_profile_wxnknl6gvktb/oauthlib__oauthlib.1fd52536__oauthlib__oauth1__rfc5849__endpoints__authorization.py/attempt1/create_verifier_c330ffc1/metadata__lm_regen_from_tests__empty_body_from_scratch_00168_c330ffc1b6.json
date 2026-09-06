@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef create_verifier(self, request, credentials):\n    \"\"\"Create and save a new request token.\n\n    :param request: OAuthlib request.\n    :type request: oauthlib.common.Request\n    :param credentials: A dict of extra token credentials.\n    :returns: The verifier as a dict.\n    \"\"\"\n    verifier = {\n        'oauth_token': request.resource_owner_key,\n        'oauth_verifier': self.token_generator(),\n    }\n    verifier.update(credentials)\n    self.request_validator.save_verifier(\n        request.resource_owner_key, verifier, request)\n    return verifier\n```",
+  "rewrite": "def create_verifier(self, request, credentials):\n    \"\"\"Create and save a new request token.\n\n    :param request: OAuthlib request.\n    :type request: oauthlib.common.Request\n    :param credentials: A dict of extra token credentials.\n    :returns: The verifier as a dict.\n    \"\"\"\n    verifier = {\n        'oauth_token': request.resource_owner_key,\n        'oauth_verifier': self.token_generator(),\n    }\n    verifier.update(credentials)\n    self.request_validator.save_verifier(\n        request.resource_owner_key, verifier, request)\n    return verifier\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

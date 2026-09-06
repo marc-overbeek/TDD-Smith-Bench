@@ -1,0 +1,26 @@
+--- a/starlette/responses.py
++++ b/starlette/responses.py
+@@ -287,18 +287,11 @@
+ class FileResponse(Response):
+     chunk_size = 64 * 1024
+ 
+-    def __init__(
+-        self,
+-        path: str | os.PathLike[str],
+-        status_code: int = 200,
+-        headers: typing.Mapping[str, str] | None = None,
+-        media_type: str | None = None,
+-        background: BackgroundTask | None = None,
+-        filename: str | None = None,
+-        stat_result: os.stat_result | None = None,
+-        method: str | None = None,
+-        content_disposition_type: str = "attachment",
+-    ) -> None:
++    def __init__(self, path: (str | os.PathLike[str]), status_code: int=200,
++        headers: (typing.Mapping[str, str] | None)=None, media_type: (str |
++        None)=None, background: (BackgroundTask | None)=None, filename: (str |
++        None)=None, stat_result: (os.stat_result | None)=None, method: (str |
++        None)=None, content_disposition_type: str='attachment') ->None:
+         self.path = path
+         self.status_code = status_code
+         self.filename = filename

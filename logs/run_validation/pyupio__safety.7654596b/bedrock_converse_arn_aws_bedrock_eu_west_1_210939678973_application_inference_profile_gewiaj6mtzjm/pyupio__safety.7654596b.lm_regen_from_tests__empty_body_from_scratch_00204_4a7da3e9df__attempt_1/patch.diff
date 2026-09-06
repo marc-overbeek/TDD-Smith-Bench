@@ -1,0 +1,49 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1312,27 +1312,25 @@
+     return skip + apply + confirm
+ 
+ 
+-def find_vulnerabilities_fixed(
+-    vulnerabilities: Dict[str, Any],
+-    fixes: List[Fix]
+-) -> List[Vulnerability]:
+-    """
+-    Finds the vulnerabilities that have been fixed.
+-
+-    Args:
+-        vulnerabilities (Dict[str, Any]): The dictionary of vulnerabilities.
+-        fixes (List[Fix]): The list of applied fixes.
+-
+-    Returns:
+-        List[Vulnerability]: The list of fixed vulnerabilities.
+-    """
+-    fixed_specs = set(fix.previous_spec for fix in fixes)
+-
+-    if not fixed_specs:
+-        return []
+-
+-    return [vulnerability for vulnerability in vulnerabilities if
+-            str(vulnerability['analyzed_requirement'].specifier) in fixed_specs]
++def find_vulnerabilities_fixed(vulnerabilities: Dict[str, Any], fixes: List
++    [Fix]) ->List[Vulnerability]:
++    fixed_vulnerabilities = []
++    
++    # Create a set of fixed package names and versions for quick lookup
++    fixed_packages = set()
++    for fix in fixes:
++        if fix.status == 'APPLIED':
++            fixed_packages.add((fix.package, fix.previous_version))
++    
++    # Check each vulnerability to see if it was fixed
++    for vuln in vulnerabilities.values():
++        if hasattr(vuln, 'pkg') and vuln.pkg:
++            pkg_name = vuln.pkg.name
++            version = vuln.analyzed_version
++            if (pkg_name, version) in fixed_packages:
++                fixed_vulnerabilities.append(vuln)
++    
++    return fixed_vulnerabilities
+ 
+ 
+ @sync_safety_context

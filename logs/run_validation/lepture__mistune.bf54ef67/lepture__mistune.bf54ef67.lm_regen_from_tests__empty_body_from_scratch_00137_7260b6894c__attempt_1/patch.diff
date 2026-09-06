@@ -1,0 +1,41 @@
+--- a/src/mistune/plugins/ruby.py
++++ b/src/mistune/plugins/ruby.py
+@@ -89,22 +89,23 @@
+     return "<ruby><rb>" + text + "</rb><rt>" + rt + "</rt></ruby>"
+ 
+ 
+-def ruby(md: "Markdown") -> None:
+-    """A mistune plugin to support ``<ruby>`` tag. The syntax is defined
+-    at https://lepture.com/en/2022/markdown-ruby-markup:
++def ruby(md: 'Markdown') ->None:
++    md.inline.register('ruby', RUBY_PATTERN, parse_ruby)
++    if md.renderer and hasattr(md.renderer, 'register'):
++        md.renderer.register('ruby', render_ruby)
+ 
+-    .. code-block:: text
++def ruby(md: 'Markdown') ->None:
++    md.inline.register('ruby', RUBY_PATTERN, parse_ruby)
++    md.renderer.ruby = render_ruby.__get__(md.renderer, type(md.renderer))
+ 
+-        [漢字(ㄏㄢˋㄗˋ)]
+-        [漢(ㄏㄢˋ)字(ㄗˋ)]
++def ruby(md: 'Markdown') ->None:
++    md.inline.register('ruby', RUBY_PATTERN, parse_ruby)
++    md.renderer.ruby = lambda text, rt: render_ruby(md.renderer, text, rt)
+ 
+-        [漢字(ㄏㄢˋㄗˋ)][link]
+-        [漢字(ㄏㄢˋㄗˋ)](/url "title")
++def ruby(md: 'Markdown') ->None:
++    md.inline.register('ruby', RUBY_PATTERN, parse_ruby)
++    md.renderer.ruby = render_ruby
+ 
+-        [link]: /url "title"
+-
+-    :param md: Markdown instance
+-    """
+-    md.inline.register('ruby', RUBY_PATTERN, parse_ruby, before='link')
+-    if md.renderer and md.renderer.NAME == 'html':
+-        md.renderer.register('ruby', render_ruby)
++def ruby(md: 'Markdown') ->None:
++    md.inline.register('ruby', RUBY_PATTERN, parse_ruby)
++    md.renderer.ruby = lambda text, rt: render_ruby(md.renderer, text, rt)

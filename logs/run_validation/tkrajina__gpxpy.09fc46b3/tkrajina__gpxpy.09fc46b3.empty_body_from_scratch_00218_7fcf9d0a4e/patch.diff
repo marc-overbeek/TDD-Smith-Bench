@@ -1,0 +1,31 @@
+--- a/xsd/pretty_print_schemas.py
++++ b/xsd/pretty_print_schemas.py
+@@ -21,25 +21,9 @@
+         result += parse_1_1_element_node(gpx_element_node, complex_type_nodes)
+     return result
+ 
+-def parse_1_1_element_node(gpx_element_node: Any, complex_type_nodes: Dict[str, Any], depth: int=0) -> str:
+-    result = ''
+-    node_type = gpx_element_node.attributes['type'].value
+-    node_name = gpx_element_node.attributes['name'].value
+-    result += get_indented(depth, f'{node_name} ({node_type})')
+-    if node_type in complex_type_nodes:
+-        # Complex node => parse:
+-        attribute_nodes = get_children_by_tag_name(complex_type_nodes[node_type], 'xsd:attribute')
+-        for attribute_node in attribute_nodes:
+-            attribute_node_name = attribute_node.attributes['name'].value
+-            attribute_node_type = attribute_node.attributes['type'].value
+-            attribute_node_required = attribute_node.attributes['required'].value if attribute_node.attributes.has_key('required') else None
+-            result += get_indented(depth + 1, f'- attr: {attribute_node_name} ({attribute_node_type}) {attribute_node_required}')
+-        sequence_nodes = get_children_by_tag_name(complex_type_nodes[node_type], 'xsd:sequence')
+-        if len(sequence_nodes) > 0:
+-            sequence_node = sequence_nodes[0]
+-            for element_node in get_children_by_tag_name(sequence_node, 'xsd:element'):
+-                result += parse_1_1_element_node(element_node, complex_type_nodes, depth=depth+1)
+-    return result
++def parse_1_1_element_node(gpx_element_node: Any, complex_type_nodes: Dict[
++    str, Any], depth: int=0) ->str:
++    pass
+ 
+ def parse_1_1_find_elements(node: Any) -> List[str]:
+     result = []

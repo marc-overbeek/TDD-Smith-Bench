@@ -1,0 +1,29 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -60,20 +60,12 @@
+ 
+ 
+ def combine_hashes_lists(items, prefix):
+-    """
+-    Combines lists of hashes into one hash
+-    This can be optimized in future.
+-    It needs to work with both murmur3 hashes (int) and sha256 (str)
+-    Although murmur3 is not used anymore.
+-    """
+-    if isinstance(prefix, bytes):
+-        prefix = prefix.decode('utf-8')
+-    hashes_bytes = b''
+-    for item in items:
+-        # In order to make sure the order of hashes in each item does not affect the hash
+-        # we resort them.
+-        hashes_bytes += (''.join(map(str, sorted(item))) + '--').encode('utf-8')
+-    return prefix + str(default_hasher(hashes_bytes))
++    if not items:
++        return ""
++    if len(items) == 1:
++        return f"{prefix}:{items[0]}"
++    items_str = ",".join(items)
++    return f"{prefix}({items_str})"
+ 
+ 
+ class BoolObj(Enum):

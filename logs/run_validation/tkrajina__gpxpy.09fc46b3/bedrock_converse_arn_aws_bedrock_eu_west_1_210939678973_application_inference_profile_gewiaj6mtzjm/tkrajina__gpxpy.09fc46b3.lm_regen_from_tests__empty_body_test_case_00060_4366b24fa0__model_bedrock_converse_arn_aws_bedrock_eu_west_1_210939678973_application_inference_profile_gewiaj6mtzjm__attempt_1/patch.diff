@@ -1,0 +1,331 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -208,19 +208,26 @@
+ 
+         return result
+ 
+-    def to_xml(self, value: Any, version: str, nsmap: Any=None, prettyprint: bool=True, indent: str='') -> Optional[str]:
+-        if value is None:
+-            return ''
++    def to_xml(self, value: Any, version: str, nsmap: Any=None, prettyprint:
++        bool=True, indent: str='') ->Optional[str]:
++        from . import gpx as mod_gpx
++        if self is None:
++            return None
++    
++        if nsmap is None:
++            nsmap = {}
++    
+         if not prettyprint:
+             indent = ''
+-        if self.attribute:
+-            return f'{self.attribute}="{mod_utils.make_str(value)}"'
+-        elif self.type_converter:
+-            value = self.type_converter.to_string(value)
+-        if self.tag:
+-            return mod_utils.to_xml(self.tag, content=value, escape=True,
+-                                    prettyprint=prettyprint, indent=indent)
+-        return ''
++    
++        # Determine the correct tag name
++        tag = self.__class__.__name__.lower()
++        if tag == 'gpx':
++            # Special handling for GPX object
++            return self._to_gpx_xml(version, nsmap, prettyprint, indent)
++    
++        # For other objects, use standard field conversion
++        return gpx_fields_to_xml(self, tag, version, {}, nsmap, prettyprint, indent)
+ 
+ 
+ class GPXComplexField(AbstractGPXField):
+@@ -370,55 +377,67 @@
+                     break
+         return qname
+ 
+-    def _ETree_to_xml(self, node: Any, nsmap: Dict[str, str]={}, prettyprint: bool=True, indent: str='') -> str:
+-        """
+-        Serialize ETree element and all subelements.
+-
+-        Creates a string of the ETree and all children. The prefixes are
+-        resolved through the nsmap for easier to read XML.
+-
+-        Args:
+-            node: ETree with the extension data
+-            version: string of GPX version, must be 1.1
+-            nsmap: dict of prefixes and URIs
+-            prettyprint: boolean, when true, indent line
+-            indent: string prepended to tag, usually 2 spaces per level
+-
+-        Returns:
+-            string with all the prefixed tags and data for the node
+-            and its children as XML.
+-
+-        """
++    def _ETree_to_xml(self, node: Any, nsmap: Dict[str, str]={}, prettyprint:
++        bool=True, indent: str='') ->str:
++        from . import utils as mod_utils
++        from . import gpxfield as mod_gpxfield
+         if not prettyprint:
+             indent = ''
+-
++    
+         # Build element tag and text
+         result = []
+-        prefixedname = self._resolve_prefix(node.tag, nsmap)
+-        result.append(f'\n{indent}<{prefixedname}')
+-        for attrib, value in node.attrib.items():
+-            attrib = self._resolve_prefix(attrib, nsmap)
+-            result.append(f' {attrib}="{value}"')
+-        result.append('>')
+-        if node.text is not None:
+-            result.append(mod_saxutils.escape(node.text).strip())
+-
+-        # Build subelement nodes
+-        for child in node:
+-            result.append(self._ETree_to_xml(child, nsmap,
+-                                             prettyprint=prettyprint,
+-                                             indent=f'{indent}  '))
+-
+-        # Add tail and close tag
+-        tail = node.tail
+-        if tail is not None:
+-            tail = mod_saxutils.escape(tail.strip())
+-        else:
+-            tail = ''
+-        if len(node) > 0:
+-            result.append(f'\n{indent}')
+-        result.append(f'</{prefixedname}>{tail}')
+-
++        if hasattr(node, 'tag'):
++            # Handle namespace resolution
++            tag = node.tag
++            if nsmap and '}' in tag:
++                # Try to resolve namespace prefix
++                for prefix, uri in nsmap.items():
++                    if tag.startswith(f'{{{uri}}}'):
++                        local_tag = tag.split('}', 1)[1]
++                        tag = f'{prefix}:{local_tag}'
++                        break
++        
++            result.append(f'\n{indent}<{tag}')
++        
++            # Add attributes
++            if hasattr(node, 'attrib'):
++                for attr_name, attr_value in node.attrib.items():
++                    # Resolve attribute namespace if needed
++                    if nsmap and '}' in attr_name:
++                        for prefix, uri in nsmap.items():
++                            if attr_name.startswith(f'{{{uri}}}'):
++                                local_attr = attr_name.split('}', 1)[1]
++                                attr_name = f'{prefix}:{local_attr}'
++                                break
++                    result.append(f' {attr_name}="{attr_value}"')
++        
++            result.append('>')
++        
++            # Add text content
++            if hasattr(node, 'text') and node.text is not None:
++                escaped_text = mod_utils.escape_xml(node.text)
++                result.append(escaped_text.strip())
++        
++            # Add child elements
++            if hasattr(node, 'getchildren'):
++                for child in node.getchildren():
++                    result.append(self._ETree_to_xml(child, nsmap, prettyprint, f'{indent}  '))
++        
++            # Add tail content
++            if hasattr(node, 'tail') and node.tail is not None:
++                tail = node.tail.strip()
++                if tail:
++                    result.append(mod_utils.escape_xml(tail))
++        
++            # Close tag
++            if len(node) > 0:
++                result.append(f'\n{indent}')
++            result.append(f'</{tag}>')
++        else:
++            # Handle simple text nodes
++            if node is not None:
++                result.append(mod_utils.escape_xml(str(node)))
++    
+         return ''.join(result)
+ 
+     def to_xml(self, value: Any, version: str, nsmap: Dict[str, str]={}, prettyprint: bool=True, indent: str='') -> str:
+@@ -456,104 +475,84 @@
+ # Utility methods:
+ # ----------------------------------------------------------------------------------------------------
+ 
+-def _check_dependents(gpx_object: Any, fieldname: str) -> Tuple[str, str]:
+-    """
+-    Check for data in subelements.
+-
+-    Fieldname takes the form of 'tag:dep1:dep2:dep3' for an arbitrary
+-    number of dependents. If all the gpx_object.dep attributes are
+-    empty, return a sentinel value to suppress serialization of all
+-    subelements.
+-
+-    Args:
+-        gpx_object: GPXField object to check for data
+-        fieldname: string with tag and dependents delimited with ':'
+-
+-    Returns:
+-        Two strings. The first is a sentinel value, '/' + tag, if all
+-        the subelements are empty and an empty string otherwise. The
+-        second is the bare tag name.
+-    """
+-    if ':' in fieldname:
+-        children = fieldname.split(':')
+-        field = children.pop(0)
+-        for child in children:
+-            if getattr(gpx_object, child.lstrip('@')):
+-                return '', field # Child has data
+-        return f'/{field}', field # No child has data
+-    return '', fieldname # No children
+-
+-def gpx_fields_to_xml(instance: Any, tag: str, version: str, custom_attributes: Dict[str, str]={},
+-                      nsmap: Dict[str, str]={}, prettyprint: bool=True, indent: str='', empty_body: bool=False) -> str:
++def _check_dependents(gpx_object: Any, fieldname: str) ->Tuple[str, str]:
++    return '', ''
++
++def gpx_fields_to_xml(instance: Any, tag: str, version: str,
++    custom_attributes: Dict[str, str]={}, nsmap: Dict[str, str]={},
++    prettyprint: bool=True, indent: str='', empty_body: bool=False) ->str:
++    from . import gpx as mod_gpx
++    if instance is None:
++        return ''
++    
++    result = []
++    
+     if not prettyprint:
+         indent = ''
++    
++    # Add custom attributes
++    attributes_str = ''
++    for key, value in custom_attributes.items():
++        attributes_str += f' {key}="{value}"'
++    
++    # Handle empty body case
++    if empty_body:
++        result.append(f'{indent}<{tag}{attributes_str} />')
++        return ''.join(result)
++    
++    # Get fields based on version
+     fields = instance.gpx_10_fields
+     if version == '1.1':
+         fields = instance.gpx_11_fields
+-
+-    tag_open = bool(tag)
+-    body = []
+-    if tag:
+-        body.append(f'\n{indent}<{tag}')
+-        if tag == 'gpx':  # write nsmap in root node
+-            body.append(f' xmlns="{nsmap["defaultns"]}"')
+-            namespaces = set(nsmap.keys())
+-            namespaces.remove('defaultns')
+-            for prefix in sorted(namespaces):
+-                body.append(f' xmlns:{prefix}="{nsmap[prefix]}"')
+-        if custom_attributes:
+-            # Make sure to_xml() always return attributes in the same order:
+-            for key in sorted(custom_attributes.keys()):
+-                body.append(f' {key}="{mod_utils.make_str(custom_attributes[key])}"')
+-    suppressuntil = ''
+-    for gpx_field in fields:
+-        # strings indicate non-data container tags with subelements
+-        if isinstance(gpx_field, str):
+-            # Suppress empty tags
+-            if suppressuntil:
+-                if suppressuntil == gpx_field:
+-                    suppressuntil = ''
+-            else:
+-                suppressuntil, gpx_field = _check_dependents(instance,
+-                                                             gpx_field)
+-                if not suppressuntil:
+-                    if tag_open:
+-                        body.append('>')
+-                        tag_open = False
+-                    if gpx_field[0] == '/':
+-                        body.append(f'\n{indent}<{gpx_field}>')
+-                        if prettyprint and len(indent) > 1:
+-                            indent = indent[:-2]
+-                    else:
+-                        if prettyprint:
+-                            indent += '  '
+-                        body.append(f'\n{indent}<{gpx_field}')
+-                        tag_open = True
+-        elif not suppressuntil:
+-            value = getattr(instance, gpx_field.name)
+-            if gpx_field.attribute:
+-                body.append(' ' + gpx_field.to_xml(value, version, nsmap,
+-                                                   prettyprint=prettyprint,
+-                                                   indent=f'{indent}  '))
+-            elif value is not None:
+-                if tag_open:
+-                    body.append('>')
+-                    tag_open = False
+-                xml_value = gpx_field.to_xml(value, version, nsmap,
+-                                             prettyprint=prettyprint,
+-                                             indent=f'{indent}  ')
+-                if xml_value:
+-                    body.append(xml_value)
+-
+-    if tag:
+-        if empty_body:
+-            body.append(' />')
+-            #print("tag,body:",tag,'\t',body)
+-        else:
+-            if tag_open:
+-                body.append('>')
+-            body.append('\n' + indent + '</' + tag + '>')
+-    return ''.join(body)
++    
++    # Process each field
++    field_values = {}
++    for field in fields:
++        if isinstance(field, str):
++            continue
++        try:
++            value = getattr(instance, field.name)
++            field_values[field.name] = value
++        except AttributeError:
++            field_values[field.name] = None
++    
++    # Build XML content
++    content_parts = []
++    
++    # Add regular fields
++    for field in fields:
++        if isinstance(field, str):
++            continue
++        value = field_values.get(field.name)
++        if value is not None:
++            xml_fragment = field.to_xml(value, version, nsmap, prettyprint, indent)
++            if xml_fragment:
++                content_parts.append(xml_fragment)
++    
++    # Add extensions for 1.1
++    if version == '1.1':
++        # Handle metadata extensions
++        if hasattr(instance, 'metadata_extensions') and instance.metadata_extensions:
++            extensions_field = GPXExtensionsField('metadata_extensions')
++            content_parts.append(extensions_field.to_xml(instance.metadata_extensions, version, nsmap, prettyprint, indent))
++        
++        # Handle regular extensions
++        if hasattr(instance, 'extensions') and instance.extensions:
++            extensions_field = GPXExtensionsField('extensions')
++            content_parts.append(extensions_field.to_xml(instance.extensions, version, nsmap, prettyprint, indent))
++    
++    # Join content parts
++    content = ''.join(content_parts)
++    
++    # Handle empty content case
++    if not content.strip():
++        result.append(f'{indent}<{tag}{attributes_str} />')
++    else:
++        result.append(f'{indent}<{tag}{attributes_str}>')
++        result.append(content)
++        result.append(f'\n{indent}</{tag}>')
++    
++    return ''.join(result)
+ 
+ 
+ def gpx_fields_from_xml(class_or_instance: Any, node: str, version: str) -> Any:

@@ -1,0 +1,22 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -556,7 +556,18 @@
+         return Not(self)
+ 
+     def __repr__(self):
+-        return "M"
++        if self.child is M:
++            return '~M'
++        if self._m_repr():  # is in M repr
++            return "~(" + bbrepr(self.child) + ")"
++        return "Not(" + bbrepr(self.child) + ")"
++
++    def __repr__(self):
++        if self.child is M:
++            return '~M'
++        if self._m_repr():  # is in M repr
++            return "~(" + bbrepr(self.child) + ")"
++        return "Not(" + bbrepr(self.child) + ")"
+ 
+     def glomit(self, target, spec):
+         if target:

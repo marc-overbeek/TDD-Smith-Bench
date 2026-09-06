@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef parse_options(m: Match[str]) -> List[Tuple[str, str]]:\n    text = m.group('options')\n    if not text or not text.strip():\n        return []\n\n    options = []\n    for line in re.split(r'\\n+', text):\n        line = line.strip()\n        if not line or not line.startswith(':'):\n            continue\n        line = line[1:]\n        if not line:\n            continue\n        i = line.find(':')\n        if i == -1:\n            continue\n        k = line[:i]\n        v = line[i + 1:].strip()\n        options.append((k, v))\n    return options\n```",
+  "rewrite": "def parse_options(m: Match[str]) -> List[Tuple[str, str]]:\n    text = m.group('options')\n    if not text or not text.strip():\n        return []\n\n    options = []\n    for line in re.split(r'\\n+', text):\n        line = line.strip()\n        if not line or not line.startswith(':'):\n            continue\n        line = line[1:]\n        if not line:\n            continue\n        i = line.find(':')\n        if i == -1:\n            continue\n        k = line[:i]\n        v = line[i + 1:].strip()\n        options.append((k, v))\n    return options",
+  "strategy": "lm_regen_from_tests"
+}

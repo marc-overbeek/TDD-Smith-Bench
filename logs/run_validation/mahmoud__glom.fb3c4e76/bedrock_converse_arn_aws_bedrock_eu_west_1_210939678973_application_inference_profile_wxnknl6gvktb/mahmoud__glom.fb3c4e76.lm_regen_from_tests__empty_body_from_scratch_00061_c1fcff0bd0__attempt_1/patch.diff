@@ -1,0 +1,16 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -804,6 +804,13 @@
+     def __init__(self, spec, scope=None):
+         self.spec = spec
+         self.scope = scope or {}
++
++    def glom(self, target, **kw):
++        scope = dict(self.scope)
++        scope.update(kw.get('scope', {}))
++        kw['scope'] = ChainMap(scope)
++        glom_ = scope.get(glom, glom)
++        return glom_(target, self.spec, **kw)
+ 
+     def glom(self, target, **kw):
+         scope = dict(self.scope)

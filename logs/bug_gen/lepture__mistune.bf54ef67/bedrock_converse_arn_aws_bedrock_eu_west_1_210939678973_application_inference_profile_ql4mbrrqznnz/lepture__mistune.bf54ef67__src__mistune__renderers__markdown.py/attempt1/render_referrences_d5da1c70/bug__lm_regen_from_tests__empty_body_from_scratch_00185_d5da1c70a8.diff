@@ -1,0 +1,11 @@
+--- a/src/mistune/renderers/markdown.py
++++ b/src/mistune/renderers/markdown.py
+@@ -20,7 +20,7 @@
+         return strip_end(out)
+ 
+     def render_referrences(self, state: BlockState) -> Iterable[str]:
+-        ref_links = state.env['ref_links']
++        ref_links = state.env.get('ref_links', {})
+         for key in ref_links:
+             attrs = ref_links[key]
+             text = '[' + attrs['label'] + ']: ' + attrs['url']

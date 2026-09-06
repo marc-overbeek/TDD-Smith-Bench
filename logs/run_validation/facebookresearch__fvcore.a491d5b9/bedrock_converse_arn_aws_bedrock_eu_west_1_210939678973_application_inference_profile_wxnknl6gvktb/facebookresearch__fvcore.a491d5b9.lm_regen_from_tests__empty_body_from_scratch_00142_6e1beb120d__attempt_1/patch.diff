@@ -1,0 +1,15 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -317,6 +317,12 @@
+         module_name = self.canonical_module_name(module_name)
+         return self._stats.unsupported_ops[module_name]  # pyre-fixme
+ 
++    uncalled_mods = set(self._aliases.values()) - all_seen
++
++    stats = Statistics(
++        counts=counts, unsupported_ops=unsupported_ops, uncalled_mods=uncalled_mods
++    )
++
+     def uncalled_modules(self) -> Set[str]:
+         """
+         Returns a set of submodules that were never called during the

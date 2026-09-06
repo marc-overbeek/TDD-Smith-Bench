@@ -1,0 +1,103 @@
+--- a/fvcore/nn/squeeze_excitation.py
++++ b/fvcore/nn/squeeze_excitation.py
+@@ -18,24 +18,9 @@
+     block: nn.Module
+     is_3d: bool
+ 
+-    def __init__(
+-        self,
+-        num_channels: int,
+-        num_channels_reduced: Optional[int] = None,
+-        reduction_ratio: float = 2.0,
+-        is_3d: bool = False,
+-        activation: Optional[nn.Module] = None,
+-    ) -> None:
+-        """
+-        Args:
+-            num_channels (int): Number of input channels.
+-            num_channels_reduced (int):
+-                Number of reduced channels. If none, uses reduction_ratio to calculate.
+-            reduction_ratio (float):
+-                How much num_channels should be reduced if num_channels_reduced is not provided.
+-            is_3d (bool): Whether we're operating on 3d data (or 2d), default 2d.
+-            activation (nn.Module): Activation function used, defaults to ReLU.
+-        """
++    def __init__(self, num_channels: int, num_channels_reduced: Optional[int]=
++        None, reduction_ratio: float=2.0, is_3d: bool=False, activation:
++        Optional[nn.Module]=None) ->None:
+         super().__init__()
+ 
+         if num_channels_reduced is None:
+@@ -67,7 +52,7 @@
+             nn.Sigmoid(),
+         )
+ 
+-    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
++    def forward(self, input_tensor: torch.Tensor) ->torch.Tensor:
+         """
+         Args:
+             input_tensor: X, shape = (batch_size, num_channels, H, W).
+@@ -94,16 +79,7 @@
+ 
+     block: nn.Module
+ 
+-    def __init__(
+-        self,
+-        num_channels: int,
+-        is_3d: bool = False,
+-    ) -> None:
+-        """
+-        Args:
+-            num_channels (int): Number of input channels.
+-            is_3d (bool): Whether we're operating on 3d data.
+-        """
++    def __init__(self, num_channels: int, is_3d: bool=False) ->None:
+         super().__init__()
+ 
+         if is_3d:
+@@ -116,7 +92,7 @@
+             nn.Sigmoid(),
+         )
+ 
+-    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
++    def forward(self, input_tensor: torch.Tensor) ->torch.Tensor:
+         """
+         Args:
+             input_tensor: X, shape = (batch_size, num_channels, H, W).
+@@ -135,24 +111,9 @@
+          in Fully Convolutional Networks, arXiv:1803.02579*
+     """
+ 
+-    def __init__(
+-        self,
+-        num_channels: int,
+-        num_channels_reduced: Optional[int] = None,
+-        reduction_ratio: float = 16.0,
+-        is_3d: bool = False,
+-        activation: Optional[nn.Module] = None,
+-    ) -> None:
+-        """
+-        Args:
+-            num_channels (int): Number of input channels.
+-            num_channels_reduced (int):
+-                Number of reduced channels. If none, uses reduction_ratio to calculate.
+-            reduction_ratio (float):
+-                How much num_channels should be reduced if num_channels_reduced is not provided.
+-            is_3d (bool): Whether we're operating on 3d data (or 2d), default 2d.
+-            activation (nn.Module): Activation function used, defaults to ReLU.
+-        """
++    def __init__(self, num_channels: int, num_channels_reduced: Optional[int]=
++        None, reduction_ratio: float=16.0, is_3d: bool=False, activation:
++        Optional[nn.Module]=None) ->None:
+         super().__init__()
+         self.channel = SqueezeExcitation(
+             num_channels=num_channels,
+@@ -163,7 +124,7 @@
+         )
+         self.spatial = SpatialSqueezeExcitation(num_channels=num_channels, is_3d=is_3d)
+ 
+-    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
++    def forward(self, input_tensor: torch.Tensor) ->torch.Tensor:
+         """
+         Args:
+             input_tensor: X, shape = (batch_size, num_channels, H, W)

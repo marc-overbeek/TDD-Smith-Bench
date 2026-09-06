@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```python\ndef short_repr(item, max_length=15):\n    repr_str = repr(item)\n    if len(repr_str) <= max_length:\n        return repr_str\n    else:\n        # For dictionaries, try to show a truncated version\n        if isinstance(item, dict):\n            # Get first few items and show them\n            items = list(item.items())[:3]  # Show first 3 items\n            if len(item) > 3:\n                truncated = '{' + ', '.join(f'{k!r}: {v!r}' for k, v in items) + ', ...}'\n            else:\n                truncated = '{' + ', '.join(f'{k!r}: {v!r}' for k, v in items) + '}'\n            return truncated\n        else:\n            # For other types, truncate at max_length\n            return repr_str[:max_length-3] + '...'\n```",
+  "rewrite": "def short_repr(item, max_length=15):\n    repr_str = repr(item)\n    if len(repr_str) <= max_length:\n        return repr_str\n    else:\n        # For dictionaries, try to show a truncated version\n        if isinstance(item, dict):\n            # Get first few items and show them\n            items = list(item.items())[:3]  # Show first 3 items\n            if len(item) > 3:\n                truncated = '{' + ', '.join(f'{k!r}: {v!r}' for k, v in items) + ', ...}'\n            else:\n                truncated = '{' + ', '.join(f'{k!r}: {v!r}' for k, v in items) + '}'\n            return truncated\n        else:\n            # For other types, truncate at max_length\n            return repr_str[:max_length-3] + '...'",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,24 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -273,18 +273,9 @@
+     print(output, file=file)
+ 
+ 
+-def run_handler(args: argparse.Namespace, stdout: IO[str], stderr: IO[str]) -> None:
+-    # remove initial `monkeytype run`
+-    old_argv = sys.argv.copy()
+-    try:
+-        with trace(args.config):
+-            sys.argv = [args.script_path] + args.script_args
+-            if args.m:
+-                runpy.run_module(args.script_path, run_name="__main__", alter_sys=True)
+-            else:
+-                runpy.run_path(args.script_path, run_name="__main__")
+-    finally:
+-        sys.argv = old_argv
++def run_handler(args: argparse.Namespace, stdout: IO[str], stderr: IO[str]
++    ) ->None:
++    pass
+ 
+ 
+ def update_args_from_config(args: argparse.Namespace) -> None:

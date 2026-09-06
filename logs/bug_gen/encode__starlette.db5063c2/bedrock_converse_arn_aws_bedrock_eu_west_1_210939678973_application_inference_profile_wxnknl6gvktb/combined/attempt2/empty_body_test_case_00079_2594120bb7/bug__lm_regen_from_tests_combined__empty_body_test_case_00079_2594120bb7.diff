@@ -1,0 +1,106 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -31,7 +31,7 @@
+     """
+ 
+     def __init__(self, name: str, path_params: dict[str, typing.Any]) -> None:
+-        params = ", ".join(list(path_params.keys()))
++        params = ", ".join(sorted(path_params.keys()))
+         super().__init__(f'No route exists for name "{name}" and params "{params}".')
+ 
+ 
+@@ -101,18 +101,13 @@
+     return getattr(endpoint, "__name__", endpoint.__class__.__name__)
+ 
+ 
+-def replace_params(
+-    path: str,
+-    param_convertors: dict[str, Convertor[typing.Any]],
+-    path_params: dict[str, str],
+-) -> tuple[str, dict[str, str]]:
+-    for key, value in list(path_params.items()):
+-        if "{" + key + "}" in path:
+-            convertor = param_convertors[key]
+-            value = convertor.to_string(value)
+-            path = path.replace("{" + key + "}", value)
+-            path_params.pop(key)
+-    return path, path_params
++def replace_params(path: str, param_convertors: dict[str, Convertor[typing.
++    Any]], path_params: dict[str, str]) ->tuple[str, dict[str, str]]:
++    for key, value in path_params.items():
++        convertor = param_convertors[key]
++        value = convertor.to_string(value)
++        path = path.replace("{%s}" % key, value)
++    return path, {}
+ 
+ 
+ # Match parameters in URL paths, eg. '{param}', and '{param:int}'
+@@ -266,15 +261,12 @@
+         return Match.NONE, {}
+ 
+     def url_path_for(self, name: str, /, **path_params: typing.Any) -> URLPath:
+-        seen_params = set(path_params.keys())
+-        expected_params = set(self.param_convertors.keys())
+-
+-        if name != self.name or seen_params != expected_params:
+-            raise NoMatchFound(name, path_params)
+-
+-        path, remaining_params = replace_params(self.path_format, self.param_convertors, path_params)
+-        assert not remaining_params
+-        return URLPath(path=path, protocol="http")
++        for route in self.routes:
++            try:
++                return route.url_path_for(name, **path_params)
++            except NoMatchFound:
++                pass
++        raise NoMatchFound(name, path_params)
+ 
+     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+         if self.methods and scope["method"] not in self.methods:
+@@ -320,10 +312,8 @@
+         while isinstance(endpoint_handler, functools.partial):
+             endpoint_handler = endpoint_handler.func
+         if inspect.isfunction(endpoint_handler) or inspect.ismethod(endpoint_handler):
+-            # Endpoint is function or method. Treat it as `func(websocket)`.
+             self.app = websocket_session(endpoint)
+         else:
+-            # Endpoint is a class. Treat it as ASGI.
+             self.app = endpoint
+ 
+         if middleware is not None:
+@@ -430,30 +420,11 @@
+         return Match.NONE, {}
+ 
+     def url_path_for(self, name: str, /, **path_params: typing.Any) -> URLPath:
+-        if self.name is not None and name == self.name and "path" in path_params:
+-            # 'name' matches "<mount_name>".
+-            path_params["path"] = path_params["path"].lstrip("/")
+-            path, remaining_params = replace_params(self.path_format, self.param_convertors, path_params)
+-            if not remaining_params:
+-                return URLPath(path=path)
+-        elif self.name is None or name.startswith(self.name + ":"):
+-            if self.name is None:
+-                # No mount name.
+-                remaining_name = name
+-            else:
+-                # 'name' matches "<mount_name>:<child_name>".
+-                remaining_name = name[len(self.name) + 1 :]
+-            path_kwarg = path_params.get("path")
+-            path_params["path"] = ""
+-            path_prefix, remaining_params = replace_params(self.path_format, self.param_convertors, path_params)
+-            if path_kwarg is not None:
+-                remaining_params["path"] = path_kwarg
+-            for route in self.routes or []:
+-                try:
+-                    url = route.url_path_for(remaining_name, **remaining_params)
+-                    return URLPath(path=path_prefix.rstrip("/") + str(url), protocol=url.protocol)
+-                except NoMatchFound:
+-                    pass
++        for route in self.routes:
++            try:
++                return route.url_path_for(name, **path_params)
++            except NoMatchFound:
++                pass
+         raise NoMatchFound(name, path_params)
+ 
+     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:

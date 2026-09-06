@@ -1,0 +1,36 @@
+--- a/safety/models.py
++++ b/safety/models.py
+@@ -95,29 +95,11 @@
+     def __eq__(self, other: Any) -> bool:
+         return str(self) == str(other)
+ 
++    elif isinstance(value, DictConverter):
++        result.update(value.to_dict())
++
+     def to_dict(self, **kwargs: Any) -> Dict:
+-        """
+-        Convert the requirement to a dictionary.
+-
+-        Args:
+-            **kwargs: Additional keyword arguments.
+-
+-        Returns:
+-            dict: The dictionary representation of the requirement.
+-        """
+-        specifier_obj = self.specifier
+-        if not "specifier_obj" in kwargs:
+-            specifier_obj = str(self.specifier)
+-
+-        return   {
+-                        'raw': self.raw,
+-                        'extras': list(self.extras),
+-                        'marker': str(self.marker) if self.marker else None,
+-                        'name': self.name,
+-                        'specifier': specifier_obj,
+-                        'url': self.url,
+-                        'found': self.found
+-                    }
++        return {}
+ 
+ 
+ def is_pinned_requirement(spec: SpecifierSet) -> bool:

@@ -1,0 +1,187 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -30,14 +30,7 @@
+ 
+ 
+ def target_iter(target, scope):
+-    iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
+-
+-    try:
+-        iterator = iterate(target)
+-    except Exception as e:
+-        raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+-                        % (target.__class__.__name__, Path(*scope[Path]), e))
+-    return iterator
++    return scope[TargetRegistry].iterate(type(target), target)
+ 
+ 
+ class Group:
+@@ -73,86 +66,70 @@
+         self.spec = spec
+ 
+     def glomit(self, target, scope):
+-        scope[MODE] = GROUP
+-        scope[CUR_AGG] = None  # reset aggregation tripwire for sub-specs
+-        scope[ACC_TREE] = {}
+-
+-        # handle the basecase where the spec stops immediately
+-        # TODO: something smarter
+-        if type(self.spec) in (dict, list):
+-            ret = type(self.spec)()
+-        else:
+-            ret = None
+-
+-        for t in target_iter(target, scope):
+-            last, ret = ret, scope[glom](t, self.spec, scope)
+-            if ret is STOP:
+-                return last
++        if scope[MODE] is not GROUP:
++            raise BadSpec("Limit() only valid in Group mode")
++        tree = scope[ACC_TREE]
++        if self not in tree:
++            tree[self] = [0, {}]
++        scope[ACC_TREE] = tree[self][1]
++        tree[self][0] += 1
++        if tree[self][0] > self.n:
++            return STOP
++        return scope[glom](target, self.subspec, scope)
++
++    def __repr__(self):
++        return f'{self.__class__.__name__}({self.n!r}, {self.subspec!r})'
++
++
++def GROUP(target, spec, scope):
++    if type(spec) == dict:
++        result = scope[ACC_TREE]
++        if spec not in result:
++            result[spec] = {}
++        tree = result[spec]
++        ret = {}
++        for k_spec, v_spec in spec.items():
++            k = scope[glom](target, k_spec, scope)
++            if k is SKIP:
++                continue
++            if k is STOP:
++                return STOP
++            if k not in ret:
++                ret[k] = None
++            old_tree = scope[ACC_TREE]
++            if k not in tree:
++                tree[k] = {}
++            scope[ACC_TREE] = tree[k]
++            v = scope[glom](target, v_spec, scope)
++            scope[ACC_TREE] = old_tree
++            if v is STOP:
++                return STOP
++            if v is not SKIP:
++                ret[k] = v
+         return ret
+-
+-    def __repr__(self):
+-        cn = self.__class__.__name__
+-        return f'{cn}({self.spec!r})'
+-
+-
+-def GROUP(target, spec, scope):
+-    """
+-    Group mode dispatcher; also sentinel for current mode = group
+-    """
+-    recurse = lambda spec: scope[glom](target, spec, scope)
+-    tree = scope[ACC_TREE]  # current accumulator support structure
+-    if callable(getattr(spec, "agg", None)):
++    elif type(spec) == list:
++        if len(spec) != 1:
++            raise BadSpec('Group list spec must have exactly one element')
++        v_spec = spec[0]
++        if type(v_spec) == dict:
++            raise BadSpec('Group list spec element cannot be a dict')
++        tree = scope[ACC_TREE]
++        if id(spec) not in tree:
++            tree[id(spec)] = []
++        lst = tree[id(spec)]
++        v = scope[glom](target, v_spec, scope)
++        if v is STOP:
++            return STOP
++        if v is not SKIP:
++            lst.append(v)
++        return lst
++    elif hasattr(spec, 'agg'):
++        tree = scope[ACC_TREE]
+         return spec.agg(target, tree)
+-    elif callable(spec):
+-        return spec(target)
+-    _spec_type = type(spec)
+-    if _spec_type not in (dict, list):
+-        raise BadSpec("Group mode expected dict, list, callable, or"
+-                      " aggregator, not: %r" % (spec,))
+-    _spec_id = id(spec)
+-    try:
+-        acc = tree[_spec_id]  # current accumulator
+-    except KeyError:
+-        acc = tree[_spec_id] = _spec_type()
+-    if _spec_type is dict:
+-        done = True
+-        for keyspec, valspec in spec.items():
+-            if tree.get(keyspec, None) is STOP:
+-                continue
+-            key = recurse(keyspec)
+-            if key is SKIP:
+-                done = False  # SKIP means we still want more vals
+-                continue
+-            if key is STOP:
+-                tree[keyspec] = STOP
+-                continue
+-            if key not in acc:
+-                # TODO: guard against key == id(spec)
+-                tree[key] = {}
+-            scope[ACC_TREE] = tree[key]
+-            result = recurse(valspec)
+-            if result is STOP:
+-                tree[keyspec] = STOP
+-                continue
+-            done = False  # SKIP or returning a value means we still want more vals
+-            if result is not SKIP:
+-                acc[key] = result
+-        if done:
+-            return STOP
+-        return acc
+-    elif _spec_type is list:
+-        for valspec in spec:
+-            if type(valspec) is dict:
+-                # doesn't make sense due to arity mismatch. did you mean [Auto({...})] ?
+-                raise BadSpec('dicts within lists are not'
+-                              ' allowed while in Group mode: %r' % spec)
+-            result = recurse(valspec)
+-            if result is STOP:
+-                return STOP
+-            if result is not SKIP:
+-                acc.append(result)
+-        return acc
+-    raise ValueError(f"{_spec_type} not a valid spec type for Group mode")  # pragma: no cover
++    elif hasattr(spec, 'glomit'):
++        return spec.glomit(target, scope)
++    else:
++        return scope[glom](target, spec, scope)
+ 
+ 
+ class First:
+@@ -255,18 +232,16 @@
+         self.size = size
+ 
+     def agg(self, target, tree):
+-        # simple reservoir sampling scheme
+-        # https://en.wikipedia.org/wiki/Reservoir_sampling#Simple_algorithm
+         if self not in tree:
+             tree[self] = [0, []]
+         num_seen, sample = tree[self]
++        tree[self][0] += 1
+         if len(sample) < self.size:
+             sample.append(target)
+         else:
+             pos = random.randint(0, num_seen)
+             if pos < self.size:
+                 sample[pos] = target
+-        tree[self][0] += 1
+         return sample
+ 
+     def __repr__(self):

@@ -1,0 +1,24 @@
+--- a/src/mistune/plugins/task_lists.py
++++ b/src/mistune/plugins/task_lists.py
+@@ -32,19 +32,9 @@
+     return '<li class="task-list-item">' + text + '</li>\n'
+ 
+ 
+-def task_lists(md: "Markdown") -> None:
+-    """A mistune plugin to support task lists. Spec defined by
+-    GitHub flavored Markdown and commonly used by many parsers:
+-
+-    .. code-block:: text
+-
+-        - [ ] unchecked task
+-        - [x] checked task
+-
+-    :param md: Markdown instance
+-    """
++def task_lists(md: 'Markdown') ->None:
+     md.before_render_hooks.append(task_lists_hook)
+-    if md.renderer and md.renderer.NAME == 'html':
++    if md.renderer:
+         md.renderer.register('task_list_item', render_task_list_item)
+ 
+ 

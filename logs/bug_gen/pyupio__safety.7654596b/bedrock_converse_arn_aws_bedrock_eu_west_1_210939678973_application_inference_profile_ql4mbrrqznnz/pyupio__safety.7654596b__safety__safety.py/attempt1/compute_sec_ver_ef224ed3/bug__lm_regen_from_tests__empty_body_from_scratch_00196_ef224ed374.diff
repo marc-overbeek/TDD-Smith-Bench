@@ -1,0 +1,142 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -795,69 +795,78 @@
+     return sorted(sec_ver_for_user, key=lambda ver: parse_version(ver), reverse=True)
+ 
+ 
+-def compute_sec_ver(
+-    remediations: Dict[str, Dict[str, Any]],
+-    packages: Dict[str, Package],
+-    secure_vulns_by_user: set,
+-    db_full: Dict[str, Any]
+-) -> None:
+-    """
+-    Computes the secure versions and the closest secure version for each remediation.
+-
+-    Uses the affected_versions of each no ignored vulnerability of the same package, there is only a remediation for each package.
+-
+-    Args:
+-        remediations (Dict[str, Dict[str, Any]]): The remediations dictionary.
+-        packages (Dict[str, Package]): The packages dictionary.
+-        secure_vulns_by_user (set): The set of vulnerabilities secured by the user.
+-        db_full (Dict[str, Any]): The full database.
+-    """
+-    for pkg_name in remediations.keys():
+-        pkg: Package = packages.get(pkg_name, None)
+-
+-        secure_versions = []
+-
+-        if pkg:
+-            secure_versions = pkg.secure_versions
+-
+-        analyzed = set(remediations[pkg_name].keys())
+-
+-        if not is_using_api_key():
++def compute_sec_ver(remediations: Dict[str, Dict[str, Any]], packages: Dict
++    [str, Package], secure_vulns_by_user: set, db_full: Dict[str, Any]) ->None:
++    for pkg_name, specs in remediations.items():
++        package = packages.get(pkg_name, None)
++        if not package:
+             continue
+ 
+-        for analyzed_requirement in analyzed:
+-            rem = remediations[pkg_name][analyzed_requirement]
+-            spec = rem.get('requirement').specifier
+-            version = rem['version']
+-
+-            if not secure_vulns_by_user:
+-                secure_v = sorted(secure_versions, key=lambda ver: parse_version(ver), reverse=True)
+-            else:
+-                secure_v = compute_sec_ver_for_user(package=pkg, secure_vulns_by_user=secure_vulns_by_user, db_full=db_full)
+-
+-            rem['closest_secure_version'] = get_closest_ver(secure_v, version, spec)
+-
+-            upgrade = rem['closest_secure_version'].get('upper', None)
+-            downgrade = rem['closest_secure_version'].get('lower', None)
+-            recommended_version = None
+-
+-            if upgrade:
+-                recommended_version = upgrade
+-            elif downgrade:
+-                recommended_version = downgrade
+-
+-            rem['recommended_version'] = recommended_version
+-            rem['other_recommended_versions'] = [other_v for other_v in secure_v if
+-                                                                    other_v != str(recommended_version)]
+-
+-            # Refresh the URL with the recommended version.
+-
+-            spec = str(rem['requirement'].specifier)
+-            if is_using_api_key():
+-                rem['more_info_url'] = \
+-                    build_remediation_info_url(base_url=rem['more_info_url'], version=version,
+-                                           spec=spec,
+-                                           target_version=recommended_version)
++        sec_ver_for_user = compute_sec_ver_for_user(package, secure_vulns_by_user, db_full)
++
++        for spec, remediation in specs.items():
++            version = remediation.get('version', None)
++            
++            # Get closest secure version from all secure versions (package.secure_versions)
++            all_secure = package.secure_versions if package.secure_versions else []
++            closest = get_closest_ver(all_secure, version, SpecifierSet(''))
++            
++            # Get closest secure version for user (considering ignored vulns)
++            closest_for_user = get_closest_ver(sec_ver_for_user, version, SpecifierSet(''))
++            
++            recommended_version = closest['upper'] if closest['upper'] else closest['lower']
++            
++            # Other recommended versions: secure versions for user excluding the recommended
++            other_recommended = []
++            if sec_ver_for_user:
++                for v in sec_ver_for_user:
++                    parsed_v = parse_version(v)
++                    if recommended_version and parsed_v != recommended_version:
++                        # Only include versions that are closest lower for user
++                        if closest_for_user.get('lower') and parsed_v == closest_for_user['lower']:
++                            other_recommended.append(v)
++                        elif not closest_for_user.get('lower') and closest['lower'] and parsed_v == closest['lower']:
++                            other_recommended.append(v)
++            
++            remediation['closest_secure_version'] = closest
++            remediation['recommended_version'] = recommended_version
++            remediation['other_recommended_versions'] = other_recommended
++            
++            # Update more_info_url
++            more_info_url = remediation.get('more_info_url', '')
++            if recommended_version and version:
++                remediation['more_info_url'] = build_remediation_info_url(more_info_url, version, str(recommended_version))
++
++def compute_sec_ver(remediations: Dict[str, Dict[str, Any]], packages: Dict
++    [str, Package], secure_vulns_by_user: set, db_full: Dict[str, Any]) ->None:
++    for pkg_name, specs in remediations.items():
++        package = packages.get(pkg_name, None)
++        if not package:
++            continue
++
++        sec_ver_for_user = compute_sec_ver_for_user(package, secure_vulns_by_user, db_full)
++        all_secure = package.secure_versions if package.secure_versions else []
++
++        for spec, remediation in specs.items():
++            version = remediation.get('version', None)
++
++            closest = get_closest_ver(all_secure, version, SpecifierSet(''))
++            closest_for_user = get_closest_ver(sec_ver_for_user, version, SpecifierSet(''))
++
++            recommended_version = closest['upper'] if closest['upper'] else closest['lower']
++
++            other_recommended = []
++            lower_for_user = closest_for_user.get('lower')
++            if lower_for_user and (not recommended_version or lower_for_user != recommended_version):
++                other_recommended.append(str(lower_for_user))
++
++            remediation['closest_secure_version'] = closest
++            remediation['recommended_version'] = recommended_version
++            remediation['other_recommended_versions'] = other_recommended
++
++            more_info_url = remediation.get('more_info_url', '')
++            if recommended_version and version:
++                remediation['more_info_url'] = build_remediation_info_url(more_info_url, version, str(recommended_version))
+ 
+ 
+ def calculate_remediations(

@@ -1,0 +1,46 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -268,32 +268,17 @@
+         return {}
+ 
+ 
+-def fetch_database_file(path: str, db_name: str, cached: int = 0, ecosystem: Optional[Ecosystem] = None) -> Dict[str, Any]:
+-    """
+-    Fetches the database from a local file.
+-
+-    Args:
+-        path (str): The path to the local file.
+-        db_name (str): The name of the database.
+-        cached (int): The cache validity in seconds.
+-        ecosystem (Optional[Ecosystem]): The ecosystem.
+-
+-    Returns:
+-        Dict[str, Any]: The fetched database.
+-    """
+-    full_path = (Path(path) / (ecosystem.value if ecosystem else '') / db_name).expanduser().resolve()
+-
+-    if not full_path.exists():
+-        raise DatabaseFileNotFoundError(db=path)
+-
+-    with open(full_path) as f:
+-        data = json.loads(f.read())
+-
+-    if cached:
+-        LOG.info('Writing %s to cache because cached value was %s', db_name, cached)
+-        write_to_cache(db_name, data)
+-
+-    return data
++def fetch_database_file(path: str, db_name: str, cached: int=0, ecosystem:
++    Optional[Ecosystem]=None) ->Dict[str, Any]:
++    file_path = os.path.join(path, db_name)
++    try:
++        with open(file_path, 'r') as f:
++            data = json.load(f)
++        return data
++    except FileNotFoundError:
++        raise DatabaseFileNotFoundError(filedir=path, filename=db_name)
++    except json.JSONDecodeError as e:
++        raise MalformedDatabase(reason=e, fetched_from=file_path)
+ 
+ 
+ def is_valid_database(db: Dict[str, Any]) -> bool:

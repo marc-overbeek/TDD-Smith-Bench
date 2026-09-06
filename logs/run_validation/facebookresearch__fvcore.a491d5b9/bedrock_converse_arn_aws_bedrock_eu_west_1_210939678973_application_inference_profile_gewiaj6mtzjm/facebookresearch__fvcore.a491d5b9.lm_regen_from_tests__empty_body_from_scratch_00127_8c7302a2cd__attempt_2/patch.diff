@@ -1,0 +1,57 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -229,25 +229,37 @@
+     return flop
+ 
+ 
+-def norm_flop_counter(affine_arg_index: int) -> Handle:
+-    """
+-    Args:
+-        affine_arg_index: index of the affine argument in inputs
+-    """
+-
+-    def norm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-        """
+-        Count flops for norm layers.
+-        """
+-        # Inputs[0] contains the shape of the input.
++def batchnorm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
++    training = inputs[5].toIValue()
++    assert isinstance(training, bool), "Signature of aten::batch_norm has changed!"
++    if training:
++        return norm_flop_counter(1)(inputs, outputs)  # pyre-ignore
++    has_affine = get_shape(inputs[1]) is not None
++    input_shape = prod(get_shape(inputs[0]))
++    return input_shape * (2 if has_affine else 1)
++
++def norm_flop_counter(affine_arg_index: int) ->Handle:
++    def norm_flop(inputs: List[Any], outputs: List[Any]) -> Number:
++        # Get input shape
+         input_shape = get_shape(inputs[0])
++        if input_shape is None:
++            return 0
++        
++        # Calculate total number of elements
++        total_elements = prod(input_shape)
++        
++        # Check if affine parameters exist (scale and bias)
+         has_affine = get_shape(inputs[affine_arg_index]) is not None
+-        assert 2 <= len(input_shape) <= 5, input_shape
+-        # 5 is just a rough estimate
+-        flop = prod(input_shape) * (5 if has_affine else 4)
+-        return flop
+-
+-    return norm_flop_jit
++        
++        # For batch norm: 4 flops per element when affine, 2 when no affine
++        # This matches the test expectations where:
++        # - With affine: 4 * batch_size * input_dim * spatial_dims
++        # - Without affine: 2 * batch_size * input_dim * spatial_dims
++        flops_per_element = 4 if has_affine else 2
++        
++        return total_elements * flops_per_element
++    
++    return norm_flop
+ 
+ 
+ def batchnorm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:

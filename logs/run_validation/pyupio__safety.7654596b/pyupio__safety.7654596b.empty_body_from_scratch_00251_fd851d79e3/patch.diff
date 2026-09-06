@@ -1,0 +1,60 @@
+--- a/safety/scan/render.py
++++ b/safety/scan/render.py
+@@ -550,54 +550,9 @@
+     return parse_html(kwargs=template_context, template="scan/index.html")
+ 
+ 
+-def generate_spdx_creation_info(spdx_version: str, project_identifier: str) -> Any:
+-    """
+-    Generate SPDX creation information.
+-
+-    Args:
+-        spdx_version (str): The SPDX version.
+-        project_identifier (str): The project identifier.
+-
+-    Returns:
+-        Any: The SPDX creation information.
+-    """
+-    from spdx_tools.spdx.model import (
+-        Actor,
+-        ActorType,
+-        CreationInfo,
+-    )
+-
+-    version = int(time.time())
+-    SPDX_ID_TYPE = "SPDXRef-DOCUMENT"
+-    DOC_NAME = f"{project_identifier}-{version}"
+-
+-    DOC_NAMESPACE = f"https://spdx.org/spdxdocs/{DOC_NAME}"
+-    # DOC_NAMESPACE = f"urn:safety:{project_identifier}:{version}"
+-
+-    DOC_COMMENT = f"This document was created using SPDX {spdx_version}"
+-    CREATOR_COMMENT = "Safety CLI automatically created this SPDX document from a scan report."
+-
+-    from ..util import get_safety_version
+-    TOOL_ID = "safety"
+-    TOOL_VERSION = get_safety_version()
+-
+-    doc_creator = Actor(
+-        actor_type=ActorType.TOOL,
+-        name=f"{TOOL_ID}-{TOOL_VERSION}",
+-        email=None
+-    )
+-
+-    creation_info = CreationInfo(
+-        spdx_version=f"SPDX-{spdx_version}",
+-        spdx_id=SPDX_ID_TYPE,
+-        name=DOC_NAME,
+-        document_namespace=DOC_NAMESPACE,
+-        creators=[doc_creator],
+-        created=datetime.datetime.now(),
+-        document_comment=DOC_COMMENT,
+-        creator_comment=CREATOR_COMMENT
+-    )
+-    return creation_info
++def generate_spdx_creation_info(spdx_version: str, project_identifier: str
++    ) ->Any:
++    pass
+ 
+ 
+ def create_pkg_ext_ref(*, package: PythonDependency, version: Optional[str]) -> Any:

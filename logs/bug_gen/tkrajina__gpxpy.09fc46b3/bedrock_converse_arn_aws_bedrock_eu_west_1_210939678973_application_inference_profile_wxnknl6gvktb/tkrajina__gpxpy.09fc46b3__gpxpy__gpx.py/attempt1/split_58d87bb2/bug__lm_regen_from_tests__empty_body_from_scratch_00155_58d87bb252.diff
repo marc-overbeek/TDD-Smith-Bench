@@ -1,0 +1,35 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1611,18 +1611,20 @@
+         return length
+ 
+     def split(self, track_segment_no: int, track_point_no: int) -> None:
+-        """
+-        Splits one of the segments in the track in two parts. If one of the
+-        split segments is empty it will not be added in the result. The
+-        segments will be split in place.
+-
+-        Parameters
+-        ----------
+-        track_segment_no : integer
+-            The index of the segment to split
+-        track_point_no : integer
+-            The index of the track point in the segment to split
+-        """
++        new_segments = []
++        for i in range(len(self.segments)):
++            segment = self.segments[i]
++            if i == track_segment_no:
++                segment_1, segment_2 = segment.split(track_point_no)
++                if segment_1:
++                    new_segments.append(segment_1)
++                if segment_2:
++                    new_segments.append(segment_2)
++            else:
++                new_segments.append(segment)
++        self.segments = new_segments
++
++    def split(self, track_segment_no: int, track_point_no: int) -> None:
+         new_segments = []
+         for i in range(len(self.segments)):
+             segment = self.segments[i]

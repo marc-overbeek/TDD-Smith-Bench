@@ -1,0 +1,40 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -246,18 +246,32 @@
+                 parts.append(f'{attribute}={value!r}')
+         return f'GPXWaypoint({", ".join(parts)})'
+ 
+-    def adjust_time(self, delta: mod_datetime.timedelta) -> None:
+-        """
+-        Adjusts the time of the point by the specified delta
++    def adjust_time(self, delta: mod_datetime.timedelta, all: bool=False) -> None:
++        """
++        Adjusts the time of all points in all of the segments of all tracks by
++        the specified delta.
++
++        If all=True, waypoints and routes will also be adjusted by the specified delta.
+ 
+         Parameters
+         ----------
+         delta : datetime.timedelta
+-            Positive time delta will adjust time into the future
+-            Negative time delta will adjust time into the past
++            Positive time delta will adjust times into the future
++            Negative time delta will adjust times into the past
++        all : bool
++            When true, also adjusts time for waypoints and routes.
+         """
+         if self.time:
+             self.time += delta
++        for track in self.tracks:
++            track.adjust_time(delta)
++
++        if all:
++            for waypoint in self.waypoints:
++                if waypoint.time:
++                    waypoint.time += delta
++            for route in self.routes:
++                route.adjust_time(delta)
+ 
+     def remove_time(self) -> None:
+         """ Will remove time metadata. """

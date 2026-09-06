@@ -1,0 +1,60 @@
+--- a/safety/formatters/screen.py
++++ b/safety/formatters/screen.py
+@@ -134,54 +134,9 @@
+                 end_content
+             )
+ 
+-    def render_licenses(self, announcements: List[Dict], licenses: List[Dict]) -> str:
+-        """
+-        Render the licenses section of the report.
+-
+-        Args:
+-            announcements (List[Dict]): List of announcement dictionaries.
+-            licenses (List[Dict]): List of license dictionaries.
+-
+-        Returns:
+-            str: Rendered licenses report.
+-        """
+-        unique_license_types = set([lic['license'] for lic in licenses])
+-
+-        report_brief_section = build_report_brief_section(primary_announcement=get_primary_announcement(announcements),
+-                                                          report_type=2, licenses_found=len(unique_license_types))
+-        announcements_section = self.__build_announcements_section(announcements)
+-
+-        if not licenses:
+-            content = format_long_text(click.style("No packages licenses found.", bold=True, fg='red'))
+-            return "\n".join(
+-                [ScreenReport.REPORT_BANNER] + announcements_section + [report_brief_section,
+-                                                                        self.DIVIDER_SECTIONS,
+-                                                                        add_empty_line(),
+-                                                                        content,
+-                                                                        add_empty_line(),
+-                                                                        self.DIVIDER_SECTIONS]
+-            )
+-
+-        table = []
+-        for license in licenses:
+-            table.append(format_license(license))
+-
+-        final_brief = get_final_brief_license(unique_license_types)
+-
+-        return "\n".join(
+-            [ScreenReport.REPORT_BANNER] + announcements_section + [report_brief_section,
+-                                                                    add_empty_line(),
+-                                                                    self.DIVIDER_SECTIONS,
+-                                                                    format_long_text(
+-                                                                        click.style('LICENSES FOUND',
+-                                                                                    bold=True, fg='yellow')),
+-                                                                    self.DIVIDER_SECTIONS,
+-                                                                    add_empty_line(),
+-                                                                    "\n".join(table),
+-                                                                    final_brief,
+-                                                                    add_empty_line(),
+-                                                                    self.DIVIDER_SECTIONS]
+-        )
++    def render_licenses(self, announcements: List[Dict], licenses: List[Dict]
++        ) ->str:
++        pass
+ 
+     def render_announcements(self, announcements: List[Dict]) -> List[str]:
+         """

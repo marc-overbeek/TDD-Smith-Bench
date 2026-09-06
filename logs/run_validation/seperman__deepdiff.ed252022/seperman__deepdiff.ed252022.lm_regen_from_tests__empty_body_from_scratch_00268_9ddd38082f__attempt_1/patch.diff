@@ -1,0 +1,129 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -400,66 +400,66 @@
+ }
+ 
+ 
+-def number_to_string(number, significant_digits, number_format_notation="f"):
+-    """
+-    Convert numbers to string considering significant digits.
+-    """
+-    try:
+-        using = number_formatting[number_format_notation]
+-    except KeyError:
+-        raise ValueError("number_format_notation got invalid value of {}. The valid values are 'f' and 'e'".format(number_format_notation)) from None
+-
+-    if not isinstance(number, numbers):
+-        return number
+-    elif isinstance(number, Decimal):
+-        with localcontext() as ctx:
+-            # Precision = number of integer digits + significant_digits
+-            # Using number//1 to get the integer part of the number
+-            ctx.prec = len(str(abs(number // 1))) + significant_digits
+-            try:
+-                number = number.quantize(Decimal('0.' + '0' * significant_digits))
+-            except InvalidDecimalOperation:
+-                # Sometimes rounding up causes a higher precision to be needed for the quantize operation
+-                # For example '999.99999999' will become '1000.000000' after quantize
+-                ctx.prec += 1
+-                number = number.quantize(Decimal('0.' + '0' * significant_digits))
+-    elif isinstance(number, only_complex_number):
+-        # Case for complex numbers.
+-        number = number.__class__(
+-            "{real}+{imag}j".format(
+-                real=number_to_string(
+-                    number=number.real,
+-                    significant_digits=significant_digits,
+-                    number_format_notation=number_format_notation
+-                ),
+-                imag=number_to_string(
+-                    number=number.imag,
+-                    significant_digits=significant_digits,
+-                    number_format_notation=number_format_notation
+-                )
+-            )
+-        )
+-    else:
+-        # import pytest; pytest.set_trace()
+-        number = round(number=number, ndigits=significant_digits)
+-
+-        if significant_digits == 0:
+-            number = int(number)
+-
+-    if number == 0.0:
+-        # Special case for 0: "-0.xx" should compare equal to "0.xx"
+-        number = abs(number)
+-
+-    # Cast number to string
+-    result = (using % significant_digits).format(number)
+-    # https://bugs.python.org/issue36622
+-    if number_format_notation == 'e':
+-        # Removing leading 0 for exponential part.
+-        result = re.sub(
+-            pattern=r'(?<=e(\+|\-))0(?=\d)+',
+-            repl=r'',
+-            string=result
+-        )
++def number_to_string(number, significant_digits, number_format_notation='f'):
++    if number_format_notation not in number_formatting:
++        raise ValueError(f"number_format_notation must be one of {list(number_formatting.keys())}, got {number_format_notation}")
++    
++    if isinstance(number, complex):
++        # Handle complex numbers by formatting real and imaginary parts separately
++        real_str = number_to_string(number.real, significant_digits, number_format_notation)
++        imag_str = number_to_string(number.imag, significant_digits, number_format_notation)
++        
++        # Parse the formatted strings back to floats to reconstruct complex number
++        real_val = float(real_str)
++        imag_val = float(imag_str)
++        result_complex = complex(real_val, imag_val)
++        
++        # Format the complex number
++        format_str = number_formatting[number_format_notation]
++        precision = significant_digits
++        
++        if number_format_notation == 'f':
++            return f'{result_complex.real:.{precision}f}{result_complex.imag:+.{precision}f}j'
++        else:  # 'e'
++            return f'{result_complex.real:.{precision}e}{result_complex.imag:+.{precision}e}j'
++    
++    # Handle regular numbers (int, float, Decimal)
++    format_str = number_formatting[number_format_notation]
++    format_template = format_str.replace('%s', str(significant_digits))
++    
++    # Convert to float if needed
++    if isinstance(number, Decimal):
++        number = float(number)
++    
++    result = format_template.format(number)
++    return result
++
++def number_to_string(number, significant_digits, number_format_notation='f'):
++    if number_format_notation not in number_formatting:
++        raise ValueError(f"number_format_notation must be one of {list(number_formatting.keys())}, got {number_format_notation}")
++    
++    if isinstance(number, complex):
++        # Handle complex numbers by formatting real and imaginary parts separately
++        real_str = number_to_string(number.real, significant_digits, number_format_notation)
++        imag_str = number_to_string(number.imag, significant_digits, number_format_notation)
++        
++        real_val = float(real_str)
++        imag_val = float(imag_str)
++        
++        if number_format_notation == 'f':
++            return f'{real_val:.{significant_digits}f}{imag_val:+.{significant_digits}f}j'
++        else:  # 'e'
++            return f'{real_val:.{significant_digits}e}{imag_val:+.{significant_digits}e}j'
++    
++    # Handle regular numbers (int, float, Decimal)
++    format_str = number_formatting[number_format_notation]
++    format_template = format_str.replace('%s', str(significant_digits))
++    
++    # Convert to float if needed
++    if isinstance(number, Decimal):
++        number = float(number)
++    
++    result = format_template.format(number)
+     return result
+ 
+ 

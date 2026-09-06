@@ -1,0 +1,22 @@
+--- a/safety/scan/decorators.py
++++ b/safety/scan/decorators.py
+@@ -54,10 +54,7 @@
+     Decorator to make general verifications before each project scan command.
+     """
+     @wraps(func)
+-    def inner(ctx, policy_file_path: Optional[Path], target: Path,
+-              output: ScanOutput,
+-              console: Console = main_console,
+-              *args, **kwargs):
++    def inner(ctx, policy_file_path: Optional[Path], target: Path, output: ScanOutput, console: Console = main_console, *args, **kwargs):
+         ctx.obj.console = console
+         ctx.params.pop("console", None)
+ 
+@@ -178,7 +175,6 @@
+ 
+         result = func(ctx, target=target, output=output, *args, **kwargs)
+ 
+-
+         return result
+ 
+     return inner

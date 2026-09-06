@@ -1,0 +1,71 @@
+--- a/safety/auth/cli_utils.py
++++ b/safety/auth/cli_utils.py
+@@ -21,64 +21,10 @@
+ LOG = logging.getLogger(__name__)
+ 
+ 
+-def build_client_session(api_key: Optional[str] = None, proxies: Optional[Dict[str, str]] = None, headers: Optional[Dict[str, str]] = None) -> Tuple[SafetyAuthSession, Dict[str, Any]]:
+-    """
+-    Builds and configures the client session for authentication.
+-
+-    Args:
+-        api_key (Optional[str]): The API key for authentication.
+-        proxies (Optional[Dict[str, str]]): Proxy configuration.
+-        headers (Optional[Dict[str, str]]): Additional headers.
+-
+-    Returns:
+-        Tuple[SafetyAuthSession, Dict[str, Any]]: The configured client session and OpenID configuration.
+-    """
+-
+-    kwargs = {}
+-    target_proxies = proxies
+-
+-    # Global proxy defined in the config.ini
+-    proxy_config, proxy_timeout, proxy_required = get_proxy_config()
+-
+-    if not proxies:
+-        target_proxies = proxy_config
+-
+-    def update_token(tokens, **kwargs):
+-        save_auth_config(access_token=tokens['access_token'], id_token=tokens['id_token'],
+-                    refresh_token=tokens['refresh_token'])
+-        load_auth_session(click_ctx=click.get_current_context(silent=True))
+-
+-    client_session = SafetyAuthSession(client_id=CLIENT_ID,
+-                                       code_challenge_method='S256',
+-                                       redirect_uri=get_redirect_url(),
+-                                       update_token=update_token,
+-                                       scope='openid email profile offline_access',
+-                                       **kwargs)
+-
+-    client_session.mount("https://pyup.io/static-s3/", S3PresignedAdapter())
+-
+-    client_session.proxy_required = proxy_required
+-    client_session.proxy_timeout = proxy_timeout
+-    client_session.proxies = target_proxies
+-    client_session.headers = {"Accept": "application/json", "Content-Type": "application/json"}
+-
+-    try:
+-        openid_config = client_session.get(url=OPENID_CONFIG_URL, timeout=REQUEST_TIMEOUT).json()
+-    except Exception as e:
+-        LOG.debug('Unable to load the openID config: %s', e)
+-        openid_config = {}
+-
+-    client_session.metadata["token_endpoint"] = openid_config.get("token_endpoint",
+-                                                                  None)
+-
+-    if api_key:
+-        client_session.api_key = api_key
+-        client_session.headers['X-Api-Key'] = api_key
+-
+-    if headers:
+-        client_session.headers.update(headers)
+-
+-    return client_session, openid_config
++def build_client_session(api_key: Optional[str]=None, proxies: Optional[
++    Dict[str, str]]=None, headers: Optional[Dict[str, str]]=None) ->Tuple[
++    SafetyAuthSession, Dict[str, Any]]:
++    pass
+ 
+ 
+ def load_auth_session(click_ctx: click.Context) -> None:

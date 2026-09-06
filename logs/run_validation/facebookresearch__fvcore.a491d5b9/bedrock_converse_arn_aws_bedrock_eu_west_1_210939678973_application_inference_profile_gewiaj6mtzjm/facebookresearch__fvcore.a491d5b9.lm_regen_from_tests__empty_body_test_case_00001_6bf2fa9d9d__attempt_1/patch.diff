@@ -1,0 +1,44 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -135,15 +135,11 @@
+     Corresponds to a linear increasing schedule with values in [0.0001, 0.01)
+     """
+ 
+-    def __init__(
+-        self,
+-        start_value: float,
+-        end_value: float,
+-    ) -> None:
++    def __init__(self, start_value: float, end_value: float) ->None:
+         self._start_value = start_value
+         self._end_value = end_value
+ 
+-    def __call__(self, where: float) -> float:
++    def __call__(self, where: float) ->float:
+         # interpolate between start and end values
+         return self._end_value * where + self._start_value * (1 - where)
+ 
+@@ -381,12 +377,8 @@
+     training.
+     """
+ 
+-    def __init__(
+-        self,
+-        schedulers: Sequence[ParamScheduler],
+-        lengths: List[float],
+-        interval_scaling: Sequence[str],
+-    ) -> None:
++    def __init__(self, schedulers: Sequence[ParamScheduler], lengths: List[
++        float], interval_scaling: Sequence[str]) ->None:
+         if len(schedulers) != len(lengths):
+             raise ValueError("Schedulers and lengths must be same length")
+         if len(schedulers) == 0:
+@@ -405,7 +397,7 @@
+         self._schedulers = schedulers
+         self._interval_scaling = interval_scaling
+ 
+-    def __call__(self, where: float) -> float:
++    def __call__(self, where: float) ->float:
+         # Find scheduler corresponding to where
+         i = 0
+         running_total = self._lengths[i]

@@ -1,0 +1,70 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -326,24 +326,8 @@
+         self.name = name
+         self.tag = tag or 'extensions'
+ 
+-    def from_xml(self, node: Any, version: str) -> Any:
+-        """
+-        Build a list of extension Elements.
+-
+-        Args:
+-            node: Element at the root of the extensions
+-            version: unused, only 1.1 supports extensions
+-
+-        Returns:
+-            a list of Element objects
+-        """
+-        result: Any = []
+-        extensions_node = node.find(self.tag)
+-        if extensions_node is None:
+-            return result
+-        for child in extensions_node:
+-            result.append(mod_copy.deepcopy(child))
+-        return result
++    def from_xml(self, node: Any, version: str) ->Any:
++        pass
+ 
+     def _resolve_prefix(self, qname: str, nsmap: Dict[str, str]) -> str:
+         """
+@@ -556,38 +540,8 @@
+     return ''.join(body)
+ 
+ 
+-def gpx_fields_from_xml(class_or_instance: Any, node: str, version: str) -> Any:
+-    if mod_inspect.isclass(class_or_instance):
+-        result = class_or_instance()
+-    else:
+-        result = class_or_instance
+-
+-    fields = result.gpx_10_fields
+-    if version == '1.1':
+-        fields = result.gpx_11_fields
+-
+-    node_path: List[Union[str, int]] = [node]
+-
+-    for gpx_field in fields:
+-        current_node = node_path[-1]
+-        if isinstance(gpx_field, str):
+-            gpx_field = gpx_field.partition(':')[0]
+-            if gpx_field.startswith('/'):
+-                node_path.pop()
+-            else:
+-                if current_node is None:
+-                    node_path.append(None)
+-                else:
+-                    node_path.append(cast(str, current_node).find(gpx_field))
+-        else:
+-            if current_node is not None:
+-                value = gpx_field.from_xml(current_node, version)
+-                setattr(result, gpx_field.name, value)
+-            elif gpx_field.attribute:
+-                value = gpx_field.from_xml(node, version)
+-                setattr(result, gpx_field.name, value)
+-
+-    return result
++def gpx_fields_from_xml(class_or_instance: Any, node: str, version: str) ->Any:
++    pass
+ 
+ def gpx_check_slots_and_default_values(classs: Callable[[], Any]) -> None:
+     """

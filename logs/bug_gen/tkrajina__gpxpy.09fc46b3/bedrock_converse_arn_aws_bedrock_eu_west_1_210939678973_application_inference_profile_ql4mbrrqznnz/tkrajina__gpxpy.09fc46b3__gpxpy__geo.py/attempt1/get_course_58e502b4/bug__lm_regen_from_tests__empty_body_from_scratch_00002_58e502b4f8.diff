@@ -1,0 +1,74 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -50,46 +50,36 @@
+     return d
+ 
+ 
+-def get_course(latitude_1: float, longitude_1: float, latitude_2: float, longitude_2: float,
+-               loxodromic: bool=True) -> float:
+-    """
+-    The initial course from one point to another,
+-    expressed in decimal degrees clockwise from true North
+-    (not magnetic)
+-    (0.0 <= value < 360.0)
+-
+-    Use the default loxodromic model in most cases
+-    (except when visualizing the long routes of maritime transport and aeroplanes)
+-
+-    Implemented from http://www.movable-type.co.uk/scripts/latlong.html
+-    (sections 'Bearing' and 'Rhumb lines')
+-    """
+-
+-    d_lon = mod_math.radians(longitude_2 - longitude_1)
++def get_course(latitude_1: float, longitude_1: float, latitude_2: float,
++    longitude_2: float, loxodromic: bool=True) ->float:
+     lat1 = mod_math.radians(latitude_1)
+     lat2 = mod_math.radians(latitude_2)
+-
+-    if not loxodromic:
+-        y = mod_math.sin(d_lon) * mod_math.cos(lat2)
+-        x = mod_math.cos(lat1) * mod_math.sin(lat2) - \
+-            mod_math.sin(lat1) * mod_math.cos(lat2) * mod_math.cos(d_lon)
+-    else:
+-        radian_circle = 2*mod_math.pi
+-
++    lon1 = mod_math.radians(longitude_1)
++    lon2 = mod_math.radians(longitude_2)
++    
++    d_lon = lon2 - lon1
++    
++    if loxodromic:
++        # Rhumb line course
++        d_psi = mod_math.log(mod_math.tan(mod_math.pi / 4 + lat2 / 2) /
++                             mod_math.tan(mod_math.pi / 4 + lat1 / 2))
++        
++        # Normalize d_lon to [-pi, pi]
+         if abs(d_lon) > mod_math.pi:
+             if d_lon > 0:
+-                d_lon = - (radian_circle - d_lon)
++                d_lon = -(2 * mod_math.pi - d_lon)
+             else:
+-                d_lon = radian_circle + d_lon
+-
+-        y = d_lon
+-
+-        delta = mod_math.pi/4
+-        x = mod_math.log(mod_math.tan(delta + 0.5*lat2)
+-                         / mod_math.tan(delta + 0.5*lat1))
+-
+-    course = mod_math.degrees(mod_math.atan2(y, x))
+-    return course % 360
++                d_lon = 2 * mod_math.pi + d_lon
++        
++        course = mod_math.atan2(d_lon, d_psi)
++    else:
++        # Great circle (orthodromic) initial bearing
++        x = mod_math.cos(lat1) * mod_math.sin(lat2) - mod_math.sin(lat1) * mod_math.cos(lat2) * mod_math.cos(d_lon)
++        y = mod_math.sin(d_lon) * mod_math.cos(lat2)
++        course = mod_math.atan2(y, x)
++    
++    course_degrees = mod_math.degrees(course)
++    return (course_degrees + 360) % 360
+ 
+ 
+ def length(locations: List["Location"]=[], _3d: bool=False) -> float:

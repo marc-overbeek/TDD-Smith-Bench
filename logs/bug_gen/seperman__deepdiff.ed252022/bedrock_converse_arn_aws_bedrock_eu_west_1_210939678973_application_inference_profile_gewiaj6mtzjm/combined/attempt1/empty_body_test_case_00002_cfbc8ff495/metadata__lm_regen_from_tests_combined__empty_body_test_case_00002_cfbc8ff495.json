@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef __init__(self, items=None):\n    self._set = SetOrdered()\n    self._hashes = dict_()\n    self._hash_to_objects = dict_()\n    if items:\n        for item in items:\n            self.add(item)\n\ndef add(self, item):\n    try:\n        self._set.add(item)\n    except TypeError:\n        hashes_obj = DeepHash(item, hashes=self._hashes)\n        hash_ = hashes_obj[item]\n        if hash_ not in self._hash_to_objects:\n            self._hash_to_objects[hash_] = item\n\ndef __eq__(self, other):\n    set_part, hashes_to_objs_part = other\n    return (self._set == set_part and self._hash_to_objects == hashes_to_objs_part)\n```",
+  "rewrite": "def __init__(self, items=None):\n    self._set = SetOrdered()\n    self._hashes = dict_()\n    self._hash_to_objects = dict_()\n    if items:\n        for item in items:\n            self.add(item)\n\ndef add(self, item):\n    try:\n        self._set.add(item)\n    except TypeError:\n        hashes_obj = DeepHash(item, hashes=self._hashes)\n        hash_ = hashes_obj[item]\n        if hash_ not in self._hash_to_objects:\n            self._hash_to_objects[hash_] = item\n\ndef __eq__(self, other):\n    set_part, hashes_to_objs_part = other\n    return (self._set == set_part and self._hash_to_objects == hashes_to_objs_part)",
+  "strategy": "lm_regen_from_tests_combined"
+}

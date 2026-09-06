@@ -1,0 +1,269 @@
+--- a/fvcore/common/checkpoint.py
++++ b/fvcore/common/checkpoint.py
+@@ -53,38 +53,9 @@
+     objects.
+     """
+ 
+-    def __init__(
+-        self,
+-        model: nn.Module,
+-        save_dir: str = "",
+-        *,
+-        save_to_disk: bool = True,
+-        **checkpointables: Any,
+-    ) -> None:
+-        """
+-        Args:
+-            model (nn.Module): model.
+-            save_dir (str): a directory to save and find checkpoints.
+-            save_to_disk (bool): if True, save checkpoint to disk, otherwise
+-                disable saving for this checkpointer.
+-            checkpointables (object): any checkpointable objects, i.e., objects
+-                that have the ``state_dict()`` and ``load_state_dict()`` method. For
+-                example, it can be used like
+-                `Checkpointer(model, "dir", optimizer=optimizer)`.
+-        """
+-        if isinstance(model, (DistributedDataParallel, DataParallel)):
+-            model = model.module
+-        self.model = model
+-        self.checkpointables: Dict[str, Any] = {}
+-        for k, v in checkpointables.items():
+-            self.add_checkpointable(k, v)
+-        self.logger: logging.Logger = logging.getLogger(__name__)
+-        self.save_dir = save_dir
+-        self.save_to_disk = save_to_disk
+-        # Default PathManager, support HTTP URLs (for backward compatibility in open source).
+-        # A user may want to use a different project-specific PathManager
+-        self.path_manager: PathManager = PathManager()
+-        self.path_manager.register_handler(HTTPURLHandler())
++    def __init__(self, model: nn.Module, save_dir: str='', *, save_to_disk:
++        bool=True, **checkpointables: Any) ->None:
++        pass
+ 
+     def add_checkpointable(self, key: str, checkpointable: Any) -> None:
+         """
+@@ -103,93 +74,18 @@
+             )
+         self.checkpointables[key] = checkpointable
+ 
+-    def save(self, name: str, **kwargs: Any) -> None:
+-        """
+-        Dump model and checkpointables to a file.
+-
+-        Args:
+-            name (str): name of the file.
+-            kwargs (dict): extra arbitrary data to save.
+-        """
+-        if not self.save_dir or not self.save_to_disk:
+-            return
+-
+-        data = {}
+-        data["model"] = self.model.state_dict()
+-        for key, obj in self.checkpointables.items():
+-            data[key] = obj.state_dict()
+-        data.update(kwargs)
+-
+-        basename = "{}.pth".format(name)
+-        save_file = os.path.join(self.save_dir, basename)
+-        assert os.path.basename(save_file) == basename, basename
+-        self.logger.info("Saving checkpoint to {}".format(save_file))
+-        with self.path_manager.open(save_file, "wb") as f:
+-            # pyre-fixme[22]: The cast is redundant.
+-            torch.save(data, cast(IO[bytes], f))
+-        self.tag_last_checkpoint(basename)
+-
+-    def load(
+-        self, path: str, checkpointables: Optional[List[str]] = None
+-    ) -> Dict[str, Any]:
+-        """
+-        Load from the given checkpoint.
+-
+-        Args:
+-            path (str): path or url to the checkpoint. If empty, will not load
+-                anything.
+-            checkpointables (list): List of checkpointable names to load. If not
+-                specified (None), will load all the possible checkpointables.
+-        Returns:
+-            dict:
+-                extra data loaded from the checkpoint that has not been
+-                processed. For example, those saved with
+-                :meth:`.save(**extra_data)`.
+-        """
+-        if not path:
+-            # no checkpoint provided
+-            self.logger.info("No checkpoint found. Initializing model from scratch")
+-            return {}
+-        self.logger.info("[Checkpointer] Loading from {} ...".format(path))
+-        # path may not be a local file, but _load_file is responsible to handle it.
+-        checkpoint = self._load_file(path)
+-        incompatible = self._load_model(checkpoint)
+-        if (
+-            incompatible is not None
+-        ):  # handle some existing subclasses that returns None
+-            self._log_incompatible_keys(incompatible)
+-
+-        for key in self.checkpointables if checkpointables is None else checkpointables:
+-            if key in checkpoint:
+-                self.logger.info("Loading {} from {} ...".format(key, path))
+-                obj = self.checkpointables[key]
+-                obj.load_state_dict(checkpoint.pop(key))
+-
+-        # return any further checkpoint data
+-        return checkpoint
+-
+-    def has_checkpoint(self) -> bool:
+-        """
+-        Returns:
+-            bool: whether a checkpoint exists in the target directory.
+-        """
+-        save_file = os.path.join(self.save_dir, "last_checkpoint")
+-        return self.path_manager.exists(save_file)
+-
+-    def get_checkpoint_file(self) -> str:
+-        """
+-        Returns:
+-            str: The latest checkpoint file in target directory.
+-        """
+-        save_file = os.path.join(self.save_dir, "last_checkpoint")
+-        try:
+-            with self.path_manager.open(save_file, "r") as f:
+-                last_saved = f.read().strip()
+-        except IOError:
+-            # if file doesn't exist, maybe because it has just been
+-            # deleted by a separate process
+-            return ""
+-        return os.path.join(self.save_dir, last_saved)
++    def save(self, name: str, **kwargs: Any) ->None:
++        pass
++
++    def load(self, path: str, checkpointables: Optional[List[str]]=None) ->Dict[
++        str, Any]:
++        pass
++
++    def has_checkpoint(self) ->bool:
++        pass
++
++    def get_checkpoint_file(self) ->str:
++        pass
+ 
+     def get_all_checkpoint_files(self) -> List[str]:
+         """
+@@ -226,110 +122,14 @@
+         else:
+             return self.load(path, checkpointables=[])
+ 
+-    def tag_last_checkpoint(self, last_filename_basename: str) -> None:
+-        """
+-        Tag the last checkpoint.
+-
+-        Args:
+-            last_filename_basename (str): the basename of the last filename.
+-        """
+-        save_file = os.path.join(self.save_dir, "last_checkpoint")
+-        with self.path_manager.open(save_file, "w") as f:
+-            f.write(last_filename_basename)
+-
+-    def _load_file(self, f: str) -> Dict[str, Any]:
+-        """
+-        Load a checkpoint file. Can be overwritten by subclasses to support
+-        different formats.
+-
+-        Args:
+-            f (str): a locally mounted file path.
+-        Returns:
+-            dict: with keys "model" and optionally others that are saved by
+-                the checkpointer dict["model"] must be a dict which maps strings
+-                to torch.Tensor or numpy arrays.
+-        """
+-        with self.path_manager.open(f, "rb") as file:
+-            # pyre-fixme[22]: The cast is redundant.
+-            return torch.load(cast(IO[bytes], file), map_location=torch.device("cpu"))
+-
+-    def _load_model(self, checkpoint: Any) -> _IncompatibleKeys:
+-        """
+-        Load weights from a checkpoint.
+-
+-        Args:
+-            checkpoint (Any): checkpoint contains the weights.
+-
+-        Returns:
+-            ``NamedTuple`` with ``missing_keys``, ``unexpected_keys``,
+-                and ``incorrect_shapes`` fields:
+-                * **missing_keys** is a list of str containing the missing keys
+-                * **unexpected_keys** is a list of str containing the unexpected keys
+-                * **incorrect_shapes** is a list of (key, shape in checkpoint, shape in model)
+-
+-            This is just like the return value of
+-            :func:`torch.nn.Module.load_state_dict`, but with extra support
+-            for ``incorrect_shapes``.
+-        """
+-        checkpoint_state_dict = checkpoint.pop("model")
+-        self._convert_ndarray_to_tensor(checkpoint_state_dict)
+-
+-        # if the state_dict comes from a model that was wrapped in a
+-        # DataParallel or DistributedDataParallel during serialization,
+-        # remove the "module" prefix before performing the matching.
+-        _strip_prefix_if_present(checkpoint_state_dict, "module.")
+-
+-        # workaround https://github.com/pytorch/pytorch/issues/24139
+-        model_state_dict = self.model.state_dict()
+-        incorrect_shapes = []
+-        for k in list(checkpoint_state_dict.keys()):
+-            if k in model_state_dict:
+-                model_param = model_state_dict[k]
+-                # Allow mismatch for uninitialized parameters
+-                if TORCH_VERSION >= (1, 8) and isinstance(
+-                    model_param, nn.parameter.UninitializedParameter
+-                ):
+-                    continue
+-                shape_model = tuple(model_param.shape)
+-                shape_checkpoint = tuple(checkpoint_state_dict[k].shape)
+-                if shape_model != shape_checkpoint:
+-                    has_observer_base_classes = (
+-                        TORCH_VERSION >= (1, 8)
+-                        and hasattr(quantization, "ObserverBase")
+-                        and hasattr(quantization, "FakeQuantizeBase")
+-                    )
+-                    if has_observer_base_classes:
+-                        # Handle the special case of quantization per channel observers,
+-                        # where buffer shape mismatches are expected.
+-                        def _get_module_for_key(
+-                            model: torch.nn.Module, key: str
+-                        ) -> torch.nn.Module:
+-                            # foo.bar.param_or_buffer_name -> [foo, bar]
+-                            key_parts = key.split(".")[:-1]
+-                            cur_module = model
+-                            for key_part in key_parts:
+-                                cur_module = getattr(cur_module, key_part)
+-                            return cur_module
+-
+-                        cls_to_skip = (
+-                            ObserverBase,
+-                            FakeQuantizeBase,
+-                        )
+-                        target_module = _get_module_for_key(self.model, k)
+-                        if isinstance(target_module, cls_to_skip):
+-                            # Do not remove modules with expected shape mismatches
+-                            # them from the state_dict loading. They have special logic
+-                            # in _load_from_state_dict to handle the mismatches.
+-                            continue
+-
+-                    incorrect_shapes.append((k, shape_checkpoint, shape_model))
+-                    checkpoint_state_dict.pop(k)
+-        incompatible = self.model.load_state_dict(checkpoint_state_dict, strict=False)
+-        return _IncompatibleKeys(
+-            missing_keys=incompatible.missing_keys,
+-            unexpected_keys=incompatible.unexpected_keys,
+-            incorrect_shapes=incorrect_shapes,
+-        )
++    def tag_last_checkpoint(self, last_filename_basename: str) ->None:
++        pass
++
++    def _load_file(self, f: str) ->Dict[str, Any]:
++        pass
++
++    def _load_model(self, checkpoint: Any) ->_IncompatibleKeys:
++        pass
+ 
+     def _log_incompatible_keys(self, incompatible: _IncompatibleKeys) -> None:
+         """

@@ -1,0 +1,37 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -106,7 +106,6 @@
+                     result['_iterable_opcodes'] = _iterable_opcodes
+                 return result
+ 
+-
+         self._reversed_diff = None
+ 
+         if verify_symmetry is not None:
+@@ -128,6 +127,10 @@
+                 self.diff = diff
+             elif isinstance(diff, strings):
+                 self.diff = _deserializer(diff, safe_to_import=safe_to_import)
++            elif isinstance(diff, bytes):
++                self.diff = _deserializer(diff, safe_to_import=safe_to_import)
++            else:
++                raise ValueError(DELTA_AT_LEAST_ONE_ARG_NEEDED)
+         elif delta_path:
+             with open(delta_path, 'rb') as the_file:
+                 content = the_file.read()
+@@ -147,6 +150,15 @@
+             self.diff = self._from_flat_rows(copy.deepcopy(flat_rows_list))
+         else:
+             raise ValueError(DELTA_AT_LEAST_ONE_ARG_NEEDED)
++
++        # Check for group_by in diff
++        if isinstance(self.diff, dict) and self.diff.get('_group_by'):
++            raise ValueError('Delta does not support group_by parameter in DeepDiff')
++
++        # Check for ignore_order without report_repetition
++        if isinstance(self.diff, dict):
++            if self.diff.get('_ignore_order') and not self.diff.get('_report_repetition'):
++                raise ValueError('Delta with ignore_order requires report_repetition=True in DeepDiff')
+ 
+         self.mutate = mutate
+         self.raise_errors = raise_errors

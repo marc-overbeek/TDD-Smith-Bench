@@ -1,0 +1,37 @@
+--- a/src/mistune/plugins/math.py
++++ b/src/mistune/plugins/math.py
+@@ -34,27 +34,13 @@
+     return r'<span class="math">\(' + text + r"\)</span>"
+ 
+ 
+-def math(md: "Markdown") -> None:
+-    """A mistune plugin to support math. The syntax is used
+-    by many markdown extensions:
+-
+-    .. code-block:: text
+-
+-        Block math is surrounded by $$:
+-
+-        $$
+-        f(a)=f(b)
+-        $$
+-
+-        Inline math is surrounded by `$`, such as $f(a)=f(b)$
+-
+-    :param md: Markdown instance
+-    """
+-    md.block.register('block_math', BLOCK_MATH_PATTERN, parse_block_math, before='list')
+-    md.inline.register('inline_math', INLINE_MATH_PATTERN, parse_inline_math, before='link')
+-    if md.renderer and md.renderer.NAME == 'html':
+-        md.renderer.register('block_math', render_block_math)
+-        md.renderer.register('inline_math', render_inline_math)
++def math(md: 'Markdown') ->None:
++    md.block_rules.insert(0, 'block_math')
++    md.inline_rules.append('inline_math')
++    md.renderer.register_rule('block_math', render_block_math)
++    md.renderer.register_rule('inline_math', render_inline_math)
++    md.block.register_rule('block_math', parse_block_math)
++    md.inline.register_rule('inline_math', parse_inline_math)
+ 
+ 
+ def math_in_quote(md: "Markdown") -> None:

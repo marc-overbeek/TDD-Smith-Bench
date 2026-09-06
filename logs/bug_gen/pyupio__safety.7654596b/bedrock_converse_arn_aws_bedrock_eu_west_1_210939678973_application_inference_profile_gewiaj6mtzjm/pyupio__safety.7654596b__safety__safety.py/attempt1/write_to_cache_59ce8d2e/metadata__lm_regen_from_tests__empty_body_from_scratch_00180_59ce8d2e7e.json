@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef write_to_cache(db_name: str, data: Dict[str, Any]) ->None:\n    cache_file_lock = f\"{DB_CACHE_FILE}.lock\"\n    os.makedirs(os.path.dirname(cache_file_lock), exist_ok=True)\n    lock = FileLock(cache_file_lock, timeout=10)\n    with lock:\n        if os.path.exists(DB_CACHE_FILE):\n            with open(DB_CACHE_FILE) as f:\n                try:\n                    cache_data = json.loads(f.read())\n                except json.JSONDecodeError:\n                    cache_data = {}\n        else:\n            cache_data = {}\n\n        cache_data[db_name] = {\"db\": data, \"cached_at\": time.time()}\n\n        with open(DB_CACHE_FILE, 'w') as f:\n            f.write(json.dumps(cache_data))\n```",
+  "rewrite": "def write_to_cache(db_name: str, data: Dict[str, Any]) ->None:\n    cache_file_lock = f\"{DB_CACHE_FILE}.lock\"\n    os.makedirs(os.path.dirname(cache_file_lock), exist_ok=True)\n    lock = FileLock(cache_file_lock, timeout=10)\n    with lock:\n        if os.path.exists(DB_CACHE_FILE):\n            with open(DB_CACHE_FILE) as f:\n                try:\n                    cache_data = json.loads(f.read())\n                except json.JSONDecodeError:\n                    cache_data = {}\n        else:\n            cache_data = {}\n\n        cache_data[db_name] = {\"db\": data, \"cached_at\": time.time()}\n\n        with open(DB_CACHE_FILE, 'w') as f:\n            f.write(json.dumps(cache_data))",
+  "strategy": "lm_regen_from_tests"
+}

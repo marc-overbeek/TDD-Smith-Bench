@@ -1,0 +1,28 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1862,6 +1862,25 @@
+             k: scope[glom](target, v, scope) for k, v in self._binding.items()})
+         return target
+ 
++    assert repr(Let(a=T.a.b)) == 'Let(a=T.a.b)'
++
++    class Let:
++        def __init__(self, **kw):
++            if not kw:
++                raise TypeError('expected at least one keyword argument')
++            self._binding = kw
++
++    def __repr__(self):
++        cn = self.__class__.__name__
++        return format_invocation(cn, self.subspecs, self._orig_kwargs, repr=bbrepr)
++
++    def __repr__(self):
++        ret = format_invocation(self.__class__.__name__,
++                                args=(self.base,) if self.base else (),
++                                kwargs=self.defaults,
++                                repr=bbrepr)
++        return ret
++
+     def __repr__(self):
+         cn = self.__class__.__name__
+         return format_invocation(cn, kwargs=self._binding, repr=bbrepr)

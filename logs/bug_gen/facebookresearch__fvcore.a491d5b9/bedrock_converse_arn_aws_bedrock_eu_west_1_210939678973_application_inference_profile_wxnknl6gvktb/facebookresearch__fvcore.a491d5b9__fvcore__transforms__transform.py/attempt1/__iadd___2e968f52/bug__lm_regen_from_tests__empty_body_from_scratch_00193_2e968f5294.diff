@@ -1,0 +1,29 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -307,13 +307,20 @@
+         others = other.transforms if isinstance(other, TransformList) else [other]
+         return TransformList(self.transforms + others)
+ 
++    transforms = T.TransformList([T.ScaleTransform(0, 0, 0, 0, 0), T.
++        CropTransform(0, 0, 0, 0), T.HFlipTransform(3)])
++    self.assertEqual(transforms.apply_int(3), 2)
++    transforms = transforms + transforms
++    transforms += transforms
++    transforms = T.NoOpTransform() + transforms
++    self.assertEqual(len(transforms), 13)
++
+     def __iadd__(self, other: "TransformList") -> "TransformList":
+-        """
+-        Args:
+-            other (TransformList): transformation to add.
+-        Returns:
+-            TransformList: list of transforms.
+-        """
++        others = other.transforms if isinstance(other, TransformList) else [other]
++        self.transforms.extend(others)
++        return self
++
++    def __iadd__(self, other: "TransformList") -> "TransformList":
+         others = other.transforms if isinstance(other, TransformList) else [other]
+         self.transforms.extend(others)
+         return self

@@ -1,0 +1,25 @@
+--- a/demo/inbox.py
++++ b/demo/inbox.py
+@@ -94,10 +94,19 @@
+ class FollowersAggregator(AggregatorInterface[FollowedEvent]):
+     type = EventType.FOLLOWED
+ 
++    box = inbox.Inbox(u, repo)
++
++    def __init__(self, repo: RepoInterface)
++
+     def __init__(self, repo: RepoInterface) -> None:
+-        self.events: List[FollowedEvent] = []
+-        self.user_ids: Set[UserId] = set()
+-        super().__init__(repo)
++        self.repo = repo
++        self.user = self.repo.user
++        self.events = self.repo.get_inbox_events_for_user_id(self.user.id)
++
++    def __init__(self, repo: RepoInterface) -> None:
++        self.repo = repo
++        self.user = self.repo.user
++        self.events = self.repo.get_inbox_events_for_user_id(self.user.id)
+ 
+     def add(self, event):
+         self.events.append(event)

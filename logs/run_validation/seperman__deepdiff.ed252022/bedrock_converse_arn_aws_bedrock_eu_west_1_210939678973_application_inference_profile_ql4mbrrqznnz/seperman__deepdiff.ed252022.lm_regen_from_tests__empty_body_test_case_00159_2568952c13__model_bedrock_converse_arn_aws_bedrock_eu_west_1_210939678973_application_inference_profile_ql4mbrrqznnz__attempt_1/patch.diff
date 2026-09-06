@@ -1,0 +1,28 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -547,14 +547,17 @@
+         self.kwargs = kwargs
+         self.is_running = False
+         self.start()
++        # this is an exact match
+ 
+     def _get_duration_sec(self):
+         return int(time.time() - self.start_time)
++        # this is an exact match
+ 
+     def _run(self):
+         self.is_running = False
+         self.start()
+         self.function(*self.args, **self.kwargs)
++        # this is an exact match
+ 
+     def start(self):
+         self.kwargs.update(duration=self._get_duration_sec())
+@@ -562,6 +565,7 @@
+             self._timer = Timer(self.interval, self._run)
+             self._timer.start()
+             self.is_running = True
++        # this is an exact match
+ 
+     def stop(self):
+         duration = self._get_duration_sec()

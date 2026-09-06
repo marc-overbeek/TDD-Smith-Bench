@@ -1,0 +1,38 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -464,17 +464,7 @@
+     SOUTH = 180
+     WEST = 270
+ 
+-    def __init__(self, distance: Optional[float]=None, angle: Optional[float]=None,
+-                 latitude_diff: Optional[float]=None,longitude_diff: Optional[float]=None) -> None:
+-        """
+-        Version 1:
+-            Distance (in meters).
+-            angle_from_north *clockwise*.
+-            ...must be given
+-        Version 2:
+-            latitude_diff and longitude_diff
+-            ...must be given
+-        """
++    def __init__(self, distance: Optional[float]=None, angle: Optional[float]=None, latitude_diff: Optional[float]=None, longitude_diff: Optional[float]=None) -> None:
+         if (distance is not None) and (angle is not None):
+             if (latitude_diff is not None) or (longitude_diff is not None):
+                 raise Exception('No lat/lon diff if using distance and angle!')
+@@ -484,7 +474,7 @@
+         elif (latitude_diff is not None) and (longitude_diff is not None):
+             if (distance is not None) or (angle is not None):
+                 raise Exception('No distance/angle if using lat/lon diff!')
+-            self.latitude_diff  = latitude_diff
++            self.latitude_diff = latitude_diff
+             self.longitude_diff = longitude_diff
+             self.move_function = self.move_by_lat_lon_diff
+ 
+@@ -522,7 +512,6 @@
+             return False
+         if (hasattr(self, 'distance') and not hasattr(other, 'distance')) \
+                 or (not hasattr(self, "distance") and hasattr(other, "distance")):
+-            # self and other are both a different kind of LocationDelta (angle&distance vs. lat-&longitude_diff)
+             return False
+         if hasattr(self, 'distance'):
+             return self.distance == other.distance and self.angle_from_north == other.angle_from_north

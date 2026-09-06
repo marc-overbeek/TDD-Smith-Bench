@@ -1,0 +1,12 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -1496,6 +1496,9 @@
+         if level.t1 != level.t2:
+             self._report_result('values_changed', level, local_tree=local_tree)
+ 
++    elif isinstance(level.t1, (datetime.date, datetime.timedelta, datetime.time)):
++        self._diff_time(level, local_tree=local_tree)
++
+     def _diff_time(self, level, local_tree=None):
+         """Diff DateTimes"""
+         if self.truncate_datetime:

@@ -1,0 +1,53 @@
+--- a/oauthlib/oauth2/rfc6749/errors.py
++++ b/oauthlib/oauth2/rfc6749/errors.py
+@@ -386,14 +386,40 @@
+ 
+ 
+ def raise_from_error(error, params=None):
+-    import inspect
+-    import sys
+-    kwargs = {
+-        'description': params.get('error_description'),
+-        'uri': params.get('error_uri'),
+-        'state': params.get('state')
++    if params is None:
++        params = {}
++    
++    error_code = error or params.get('error')
++    error_description = params.get('error_description')
++    error_uri = params.get('error_uri')
++    state = params.get('state')
++    
++    # Map error codes to exception classes
++    error_map = {
++        'missing_code': MissingCodeError,
++        'missing_token': MissingTokenError,
++        'missing_token_type': MissingTokenTypeError,
++        'access_denied': AccessDeniedError,
++        'invalid_request': InvalidRequestFatalError,
++        'mismatching_state': MismatchingStateError,
++        'invalid_scope': InvalidScopeError,
++        'server_error': ServerError,
++        'temporarily_unavailable': TemporarilyUnavailableError,
++        'invalid_client': InvalidClientError,
++        'invalid_grant': InvalidGrantError,
++        'unauthorized_client': UnauthorizedClientError,
++        'unsupported_grant_type': UnsupportedGrantTypeError,
++        'unsupported_response_type': UnsupportedResponseTypeError,
++        'unsupported_token_type': UnsupportedTokenTypeError,
++        'invalid_token': InvalidTokenError,
++        'insufficient_scope': InsufficientScopeError,
++        'consent_required': ConsentRequired,
++        'login_required': LoginRequired,
+     }
+-    for _, cls in inspect.getmembers(sys.modules[__name__], inspect.isclass):
+-        if cls.error == error:
+-            raise cls(**kwargs)
+-    raise CustomOAuth2Error(error=error, **kwargs)
++    
++    exception_class = error_map.get(error_code, CustomOAuth2Error)
++    
++    if exception_class == CustomOAuth2Error:
++        raise exception_class(error_code, error_description, error_uri, state=state)
++    else:
++        raise exception_class(error_description, error_uri, state=state)

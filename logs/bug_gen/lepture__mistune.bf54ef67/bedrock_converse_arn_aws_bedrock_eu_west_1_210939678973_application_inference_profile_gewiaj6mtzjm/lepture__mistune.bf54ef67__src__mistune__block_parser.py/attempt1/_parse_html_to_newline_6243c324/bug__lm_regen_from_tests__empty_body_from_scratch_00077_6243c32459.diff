@@ -1,0 +1,42 @@
+--- a/src/mistune/block_parser.py
++++ b/src/mistune/block_parser.py
+@@ -483,14 +483,31 @@
+     return end_pos
+ 
+ 
+-def _parse_html_to_newline(state: BlockState, newline: Pattern[str]) -> int:
+-    m = newline.search(state.src, state.cursor)
+-    if m:
+-        end_pos = m.start()
++def _parse_html_to_newline(state: BlockState, newline: Pattern[str]) ->int:
++    start_pos = state.cursor
++    while state.cursor < state.cursor_max:
++        m = newline.search(state.src, state.cursor)
++        if not m:
++            text = state.src[start_pos:]
++            end_pos = state.cursor_max
++            break
++        
++        end_pos = m.end()
+         text = state.get_text(end_pos)
+-    else:
+-        text = state.src[state.cursor:]
+-        end_pos = state.cursor_max
+-
++        
++        # Check if we have a complete HTML element
++        if text.strip():
++            state.append_token({'type': 'block_html', 'raw': text})
++            return end_pos
++        
++        # If we're at the end of the document
++        if end_pos >= state.cursor_max:
++            text = state.src[start_pos:]
++            end_pos = state.cursor_max
++            break
++            
++        # Move past the newline
++        state.cursor = end_pos
++    
+     state.append_token({'type': 'block_html', 'raw': text})
+     return end_pos

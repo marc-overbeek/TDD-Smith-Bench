@@ -1,0 +1,62 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -45,14 +45,7 @@
+     :meth:`register_type` method.
+     """
+ 
+-    def _set_attributes(self, params: Optional[List[Any]] = None) -> None:
+-        """
+-        Set attributes from the input list of parameters.
+-
+-        Args:
+-            params (list): list of parameters.
+-        """
+-
++    def _set_attributes(self, params: Optional[List[Any]]=None) ->None:
+         if params:
+             for k, v in params.items():
+                 if k != "self" and not k.startswith("_"):
+@@ -641,21 +634,8 @@
+ 
+ 
+ class CropTransform(Transform):
+-    def __init__(
+-        self,
+-        x0: int,
+-        y0: int,
+-        w: int,
+-        h: int,
+-        orig_w: Optional[int] = None,
+-        orig_h: Optional[int] = None,
+-    ):
+-        """
+-        Args:
+-            x0, y0, w, h (int): crop the image(s) by img[y0:y0+h, x0:x0+w].
+-            orig_w, orig_h (int): optional, the original width and height
+-                before cropping. Needed to make this transform invertible.
+-        """
++    def __init__(self, x0: int, y0: int, w: int, h: int, orig_w: Optional[int]=
++        None, orig_h: Optional[int]=None):
+         super().__init__()
+         self._set_attributes(locals())
+ 
+@@ -689,18 +669,7 @@
+         coords[:, 1] -= self.y0
+         return coords
+ 
+-    def apply_polygons(self, polygons: list) -> list:
+-        """
+-        Apply crop transform on a list of polygons, each represented by a Nx2 array.
+-        It will crop the polygon with the box, therefore the number of points in the
+-        polygon might change.
+-
+-        Args:
+-            polygon (list[ndarray]): each is a Nx2 floating point array of
+-                (x, y) format in absolute coordinates.
+-        Returns:
+-            ndarray: cropped polygons.
+-        """
++    def apply_polygons(self, polygons: list) ->list:
+         import shapely.geometry as geometry
+ 
+         # Create a window that will be used to crop

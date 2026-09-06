@@ -1,0 +1,224 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -153,7 +153,8 @@
+         except ImportError:  # pragma: no cover. Json pickle is getting deprecated.
+             logger.error('jsonpickle library needs to be installed in order to run from_json_pickle')  # pragma: no cover. Json pickle is getting deprecated.
+ 
+-    def to_json(self, default_mapping: Optional[dict]=None, force_use_builtin_json=False, **kwargs):
++    def to_json(self, default_mapping: Optional[dict]=None,
++        force_use_builtin_json=False, **kwargs):
+         """
+         Dump json of the text view.
+         **Parameters**
+@@ -311,17 +312,6 @@
+ class _RestrictedUnpickler(pickle.Unpickler):
+ 
+     def __init__(self, *args, **kwargs):
+-        self.safe_to_import = kwargs.pop('safe_to_import', None)
+-        if self.safe_to_import:
+-            if isinstance(self.safe_to_import, strings):
+-                self.safe_to_import = set([self.safe_to_import])
+-            elif isinstance(self.safe_to_import, (set, frozenset)):
+-                pass
+-            else:
+-                self.safe_to_import = set(self.safe_to_import)
+-            self.safe_to_import = self.safe_to_import | SAFE_TO_IMPORT
+-        else:
+-            self.safe_to_import = SAFE_TO_IMPORT
+         super().__init__(*args, **kwargs)
+ 
+     def find_class(self, module, name):
+@@ -349,61 +339,17 @@
+ 
+ 
+ def pickle_dump(obj, file_obj=None, protocol=4):
+-    """
+-    **pickle_dump**
+-    Dumps the obj into pickled content.
+-
+-    **Parameters**
+-
+-    obj : Any python object
+-
+-    file_obj : (Optional) A file object to dump the contents into
+-
+-    **Returns**
+-
+-    If file_obj is passed the return value will be None. It will write the object's pickle contents into the file.
+-    However if no file_obj is passed, then it will return the pickle serialization of the obj in the form of bytes.
+-    """
+-    file_obj_passed = bool(file_obj)
+-    file_obj = file_obj or io.BytesIO()
+-    _RestrictedPickler(file_obj, protocol=protocol, fix_imports=False).dump(obj)
+-    if not file_obj_passed:
++    if file_obj:
++        _RestrictedPickler(file_obj, protocol=protocol).dump(obj)
++        return None
++    else:
++        file_obj = io.BytesIO()
++        _RestrictedPickler(file_obj, protocol=protocol).dump(obj)
+         return file_obj.getvalue()
+ 
+ 
+ def pickle_load(content=None, file_obj=None, safe_to_import=None):
+-    """
+-    **pickle_load**
+-    Load the pickled content. content should be a bytes object.
+-
+-    **Parameters**
+-
+-    content : Bytes of pickled object. 
+-
+-    file_obj : A file object to load the content from
+-
+-    safe_to_import : A set of modules that needs to be explicitly allowed to be loaded.
+-        Example: {'mymodule.MyClass', 'decimal.Decimal'}
+-        Note that this set will be added to the basic set of modules that are already allowed.
+-        The set of what is already allowed can be found in deepdiff.serialization.SAFE_TO_IMPORT
+-
+-    **Returns**
+-
+-        A delta object that can be added to t1 to recreate t2.
+-
+-    **Examples**
+-
+-    Importing
+-        >>> from deepdiff import DeepDiff, Delta
+-        >>> from pprint import pprint
+-
+-
+-    """
+-    if not content and not file_obj:
+-        raise ValueError('Please either pass the content or the file_obj to pickle_load.') 
+-    if isinstance(content, str):
+-        content = content.encode('utf-8')
+-    if content:
++    if content is not None:
+         file_obj = io.BytesIO(content)
+     return _RestrictedUnpickler(file_obj, safe_to_import=safe_to_import).load()
+ 
+@@ -513,63 +459,51 @@
+ 
+ 
+ def save_content_to_path(content, path, file_type=None, keep_backup=True):
+-    """
+-    Saves and serializes the content of the path.
+-    """
+-
+-    backup_path = f"{path}.bak"
+-    os.rename(path, backup_path)
+-
+-    try:
+-        _save_content(
+-            content=content, path=path,
+-            file_type=file_type, keep_backup=keep_backup)
+-    except Exception:
+-        os.rename(backup_path, path)
+-        raise
+-    else:
+-        if not keep_backup:
+-            os.remove(backup_path)
++    if file_type is None:
++        file_type = path.split('.')[-1]
++    _save_content(content, path, file_type, keep_backup)
+ 
+ 
+ def _save_content(content, path, file_type, keep_backup=True):
+     if file_type == 'json':
+         with open(path, 'w') as the_file:
+-            content = json_dumps(content)
+-            the_file.write(content)
++            the_file.write(json_dumps(content))
+     elif file_type in {'yaml', 'yml'}:
+         try:
+             import yaml
+         except ImportError:  # pragma: no cover.
+             raise ImportError('Pyyaml needs to be installed.') from None  # pragma: no cover.
+         with open(path, 'w') as the_file:
+-            content = yaml.safe_dump(content, stream=the_file)
++            yaml.dump(content, the_file)
+     elif file_type == 'toml':
+         try:
+-            import tomli_w
++            if sys.version_info >= (3, 11):
++                import tomliw as tomli
++            else:
++                import tomli
+         except ImportError:  # pragma: no cover.
+-            raise ImportError('Tomli-w needs to be installed.') from None  # pragma: no cover.
++            raise ImportError('On python<=3.10 tomli needs to be installed.') from None  # pragma: no cover.
+         with open(path, 'wb') as the_file:
+-            content = tomli_w.dump(content, the_file)
++            tomli.dump(content, the_file)
+     elif file_type == 'pickle':
+         with open(path, 'wb') as the_file:
+-            content = pickle_dump(content, file_obj=the_file)
++            _RestrictedPickler(the_file, protocol=4).dump(content)
+     elif file_type in {'csv', 'tsv'}:
+         try:
+             import clevercsv
+-            dict_writer = clevercsv.DictWriter
++            clevercsv.write_dicts(content, path)
+         except ImportError:  # pragma: no cover.
+             import csv
+-            dict_writer = csv.DictWriter
+-        with open(path, 'w', newline='') as csvfile:
+-            fieldnames = list(content[0].keys())
+-            writer = dict_writer(csvfile, fieldnames=fieldnames)
+-            writer.writeheader()
+-            writer.writerows(content)
++            with open(path, 'w', newline='') as the_file:
++                if content:
++                    writer = csv.DictWriter(the_file, fieldnames=content[0].keys())
++                    writer.writeheader()
++                    writer.writerows(content)
++                else:
++                    logger.info(f"NOTE: CSV content was empty in {path}")
+     else:
+-        raise UnsupportedFormatErr('Only json, yaml, toml, csv, tsv and pickle are supported.\n'
++        raise UnsupportedFormatErr(f'Only json, yaml, toml, csv, tsv and pickle are supported.\n'
+                                    f' The {file_type} extension is not known.')
+-    return content
+ 
+ 
+ def _serialize_decimal(value):
+@@ -640,35 +574,12 @@
+         return obj
+ 
+ 
+-def json_dumps(item, default_mapping=None, force_use_builtin_json: bool=False, **kwargs):
+-    """
+-    Dump json with extra details that are not normally json serializable
+-
+-    parameters
+-    ----------
+-
+-    force_use_builtin_json: Boolean, default = False
+-        When True, we use Python's builtin Json library for serialization,
+-        even if Orjson is installed.
+-    """
++def json_dumps(item, default_mapping=None, force_use_builtin_json: bool=
++    False, **kwargs):
+     if orjson and not force_use_builtin_json:
+-        indent = kwargs.pop('indent', None)
+-        if indent:
+-            kwargs['option'] = orjson.OPT_INDENT_2
+-        if 'sort_keys' in kwargs:
+-            raise TypeError(
+-                "orjson does not accept the sort_keys parameter. "
+-                "If you need to pass sort_keys, set force_use_builtin_json=True "
+-                "to use Python's built-in json library instead of orjson.")
+-        return orjson.dumps(
+-            item,
+-            default=json_convertor_default(default_mapping=default_mapping),
+-            **kwargs).decode(encoding='utf-8')
++        return orjson.dumps(item, default=json_convertor_default(default_mapping), option=orjson.OPT_INDENT_2)
+     else:
+-        return json.dumps(
+-            item,
+-            default=json_convertor_default(default_mapping=default_mapping),
+-            **kwargs)
++        return json.dumps(item, default=json_convertor_default(default_mapping), **kwargs)
+ 
+ 
+ json_loads = partial(json.loads, cls=JSONDecoder)

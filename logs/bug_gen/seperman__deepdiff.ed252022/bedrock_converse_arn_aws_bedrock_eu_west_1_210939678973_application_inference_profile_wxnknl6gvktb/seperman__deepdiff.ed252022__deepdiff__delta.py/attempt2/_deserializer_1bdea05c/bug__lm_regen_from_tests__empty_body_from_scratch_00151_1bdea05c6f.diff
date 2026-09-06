@@ -1,0 +1,17 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -92,7 +92,13 @@
+             _deserializer = deserializer
+         else:
+             def _deserializer(obj, safe_to_import=None):
+-                result = deserializer(obj)
++                # Check if the deserializer accepts safe_to_import parameter
++                if hasattr(deserializer, '__code__') and 'safe_to_import' in set(deserializer.__code__.co_varnames):
++                    result = deserializer(obj, safe_to_import=safe_to_import)
++                else:
++                    result = deserializer(obj)
++    
++                # Convert _iterable_opcodes from dicts to Opcode objects
+                 if result.get('_iterable_opcodes'):
+                     _iterable_opcodes = {}
+                     for path, op_codes in result['_iterable_opcodes'].items():

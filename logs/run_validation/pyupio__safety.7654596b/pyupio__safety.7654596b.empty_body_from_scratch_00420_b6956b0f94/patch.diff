@@ -1,0 +1,39 @@
+--- a/safety/auth/cli.py
++++ b/safety/auth/cli.py
+@@ -291,33 +291,6 @@
+ 
+ 
+ @auth_app.command(name=CMD_REGISTER_NAME)
+-def register(ctx: typer.Context) -> None:
+-    """
+-    Create a new user account for the safetycli.com service.
+-
+-    Args:
+-        ctx (typer.Context): The Typer context object.
+-    """
+-    LOG.info('register started')
+-
+-    # Check if the user is already authenticated
+-    fail_if_authenticated(ctx, with_msg=MSG_FAIL_REGISTER_AUTHED)
+-
+-    # Get authorization data and generate the registration URL
+-    uri, initial_state = get_authorization_data(client=ctx.obj.auth.client,
+-                                                code_verifier=ctx.obj.auth.code_verifier,
+-                                                sign_up=True)
+-
+-    console.print("Redirecting your browser to register for a free account. Once registered, return here to start using Safety.")
+-    console.print()
+-
+-    # Process the browser callback to complete the registration
+-    info = process_browser_callback(uri,
+-                                    initial_state=initial_state, ctx=ctx)
+-
+-    if info:
+-        console.print(f'[green]Successfully registered {info.get("email")}[/green]')
+-        console.print()
+-    else:
+-        console.print('[red]Unable to register in this time, try again.[/red]')
+-
++def register(ctx: typer.Context) ->None:
++    pass
++

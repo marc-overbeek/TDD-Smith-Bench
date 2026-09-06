@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef dump(self, file):\n    \"\"\"\n    Dump into file object\n    \"\"\"\n    # Small optimization: Our internal pickle serializer can just take a file object\n    # and directly write to it. However if a user defined serializer is passed\n    # we want to make it compatible with the expectation that self.serializer(self.diff)\n    # will give the user the serialization and then it can be written to\n    # a file object when using the dump(file) function.\n    param_names_of_serializer = set(self.serializer.__code__.co_varnames)\n    if 'file_obj' in param_names_of_serializer:\n        self.serializer(self.diff, file_obj=file)\n    else:\n        file.write(self.dumps())\n```",
+  "rewrite": "def dump(self, file):\n    \"\"\"\n    Dump into file object\n    \"\"\"\n    # Small optimization: Our internal pickle serializer can just take a file object\n    # and directly write to it. However if a user defined serializer is passed\n    # we want to make it compatible with the expectation that self.serializer(self.diff)\n    # will give the user the serialization and then it can be written to\n    # a file object when using the dump(file) function.\n    param_names_of_serializer = set(self.serializer.__code__.co_varnames)\n    if 'file_obj' in param_names_of_serializer:\n        self.serializer(self.diff, file_obj=file)\n    else:\n        file.write(self.dumps())\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

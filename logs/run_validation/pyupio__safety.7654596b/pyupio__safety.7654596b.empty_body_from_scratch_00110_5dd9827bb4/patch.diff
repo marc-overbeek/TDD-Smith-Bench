@@ -1,0 +1,38 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -1023,32 +1023,9 @@
+     return brief_data if as_dict else brief_info
+ 
+ 
+-def build_primary_announcement(primary_announcement, columns: Optional[int] = None, only_text: bool = False) -> str:
+-    """
+-    Build the primary announcement section.
+-
+-    Args:
+-        primary_announcement (Dict[str, Any]): Primary announcement details.
+-        columns (Optional[int], optional): Number of columns for formatting. Defaults to None.
+-        only_text (bool, optional): Whether to return only text without styling. Defaults to False.
+-
+-    Returns:
+-        str: Primary announcement section.
+-    """
+-    lines = json.loads(primary_announcement.get('message'))
+-
+-    for line in lines:
+-        if 'words' not in line:
+-            raise ValueError('Missing words keyword')
+-        if len(line['words']) <= 0:
+-            raise ValueError('No words in this line')
+-        for word in line['words']:
+-            if 'value' not in word or not word['value']:
+-                raise ValueError('Empty word or without value')
+-
+-    message = style_lines(lines, columns, start_line='', end_line='')
+-
+-    return click.unstyle(message) if only_text else message
++def build_primary_announcement(primary_announcement, columns: Optional[int]
++    =None, only_text: bool=False) ->str:
++    pass
+ 
+ 
+ def is_using_api_key() -> bool:

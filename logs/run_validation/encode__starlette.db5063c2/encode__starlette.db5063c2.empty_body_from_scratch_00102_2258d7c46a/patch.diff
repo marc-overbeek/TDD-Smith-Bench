@@ -1,0 +1,18 @@
+--- a/starlette/formparsers.py
++++ b/starlette/formparsers.py
+@@ -182,13 +182,8 @@
+     def on_header_value(self, data: bytes, start: int, end: int) -> None:
+         self._current_partial_header_value += data[start:end]
+ 
+-    def on_header_end(self) -> None:
+-        field = self._current_partial_header_name.lower()
+-        if field == b"content-disposition":
+-            self._current_part.content_disposition = self._current_partial_header_value
+-        self._current_part.item_headers.append((field, self._current_partial_header_value))
+-        self._current_partial_header_name = b""
+-        self._current_partial_header_value = b""
++    def on_header_end(self) ->None:
++        pass
+ 
+     def on_headers_finished(self) -> None:
+         disposition, options = parse_options_header(self._current_part.content_disposition)

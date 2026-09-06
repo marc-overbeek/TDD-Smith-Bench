@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, I need to analyze what the `store_imports_in_context` function should do. Based on the test cases and the class structure, this function should store the import items in the context's scratch area so they can be retrieved later by the `transform_module_impl` method.\n\nThe function is currently just a pass statement, but it needs to actually store the import items in the context's scratch dictionary using the class's CONTEXT_KEY.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "Looking at the failing tests, I need to analyze what the `store_imports_in_context` function should do. Based on the test cases and the class structure, this function should store the import items in the context's scratch area so they can be retrieved later by the `transform_module_impl` method.\n\nThe function is currently just a pass statement, but it needs to actually store the import items in the context's scratch dictionary using the class's CONTEXT_KEY.\n\n```\ndef store_imports_in_context(context: CodemodContext,\n    import_items_to_be_moved: List[ImportItem]) ->None:\n    context.scratch[MoveImportsToTypeCheckingBlockVisitor.CONTEXT_KEY] = (\n        import_items_to_be_moved,\n    )\n```",
+  "rewrite": "def store_imports_in_context(context: CodemodContext,\n    import_items_to_be_moved: List[ImportItem]) ->None:\n    context.scratch[MoveImportsToTypeCheckingBlockVisitor.CONTEXT_KEY] = (\n        import_items_to_be_moved,\n    )",
+  "strategy": "lm_regen_from_tests"
+}

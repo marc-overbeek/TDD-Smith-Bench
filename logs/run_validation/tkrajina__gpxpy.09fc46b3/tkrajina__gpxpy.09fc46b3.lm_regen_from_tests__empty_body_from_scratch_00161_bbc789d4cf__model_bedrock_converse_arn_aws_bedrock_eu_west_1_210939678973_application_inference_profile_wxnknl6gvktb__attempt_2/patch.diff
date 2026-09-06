@@ -1,0 +1,87 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1751,27 +1751,72 @@
+         for track_segment in self.segments:
+             track_segment.move(location_delta)
+ 
++    def test_get_duration(self) ->None:
++        gpx = mod_gpx.GPX()
++        gpx.tracks.append(mod_gpx.GPXTrack())
++        gpx.tracks[0].segments.append(mod_gpx.GPXTrackSegment())
++        gpx.tracks[0].segments[0].points.append(mod_gpx.GPXTrackPoint(latitude=
++            12, longitude=13, time=mod_datetime.datetime(2013, 1, 1, 12, 30)))
++        self.assertEqual(gpx.get_duration(), 0)  # Single point, no duration
++        gpx.tracks[0].segments.append(mod_gpx.GPXTrackSegment())
++        gpx.tracks[0].segments[1].points.append(mod_gpx.GPXTrackPoint(latitude=
++            12, longitude=13))  # No time
++        self.assertEqual(gpx.get_duration(), 0)  # Still 0 because segment 1 has no time
++        gpx.tracks[0].segments.append(mod_gpx.GPXTrackSegment())
++        gpx.tracks[0].segments[2].points.append(mod_gpx.GPXTrackPoint(latitude=
++            12, longitude=13, time=mod_datetime.datetime(2013, 1, 1, 12, 30)))
++        gpx.tracks[0].segments[2].points.append(mod_gpx.GPXTrackPoint(latitude=
++            12, longitude=13, time=mod_datetime.datetime(2013, 1, 1, 12, 31)))
++        self.assertEqual(gpx.get_duration(), 60)  # Only segment 2 has valid duration
++
+     def get_duration(self) -> Optional[float]:
+         """
+-        Calculates duration or track
++        Calculates duration of GPX file
+ 
+         Returns
+         -------
+         duration: float
+-            Duration in seconds or None if any time data is missing
+-        """
+-        if not self.segments:
++            Duration in seconds or None if time data is not fully populated.
++        """
++        if not self.tracks:
+             return 0.0
+ 
+-        result = 0.
+-        for track_segment in self.segments:
+-            duration = track_segment.get_duration()
+-            if duration or duration == 0:
++        result: float = 0.0
++        has_valid_duration = False
++    
++        for track in self.tracks:
++            duration = track.get_duration()
++            if duration is not None:
+                 result += duration
+-            elif duration is None:
+-                return None
+-
+-        return result
++                has_valid_duration = True
++            elif duration == 0:
++                result += duration
++                has_valid_duration = True
++
++        return result if has_valid_duration else None
++
++    def get_duration(self) -> Optional[float]:
++        """
++        Calculates duration of GPX file
++
++        Returns
++        -------
++        duration: float
++            Duration in seconds or None if time data is not fully populated.
++        """
++        if not self.tracks:
++            return 0.0
++
++        result: float = 0.0
++        has_any_duration = False
++    
++        for track in self.tracks:
++            duration = track.get_duration()
++            if duration is not None:
++                result += duration
++                has_any_duration = True
++
++        return result if has_any_duration else None
+ 
+     def get_uphill_downhill(self) -> UphillDownhill:
+         """

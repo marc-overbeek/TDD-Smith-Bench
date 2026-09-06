@@ -1,0 +1,32 @@
+--- a/starlette/middleware/errors.py
++++ b/starlette/middleware/errors.py
+@@ -222,27 +222,8 @@
+         }
+         return FRAME_TEMPLATE.format(**values)
+ 
+-    def generate_html(self, exc: Exception, limit: int = 7) -> str:
+-        traceback_obj = traceback.TracebackException.from_exception(exc, capture_locals=True)
+-
+-        exc_html = ""
+-        is_collapsed = False
+-        exc_traceback = exc.__traceback__
+-        if exc_traceback is not None:
+-            frames = inspect.getinnerframes(exc_traceback, limit)
+-            for frame in reversed(frames):
+-                exc_html += self.generate_frame_html(frame, is_collapsed)
+-                is_collapsed = True
+-
+-        if sys.version_info >= (3, 13):  # pragma: no cover
+-            exc_type_str = traceback_obj.exc_type_str
+-        else:  # pragma: no cover
+-            exc_type_str = traceback_obj.exc_type.__name__
+-
+-        # escape error class and text
+-        error = f"{html.escape(exc_type_str)}: {html.escape(str(traceback_obj))}"
+-
+-        return TEMPLATE.format(styles=STYLES, js=JS, error=error, exc_html=exc_html)
++    def generate_html(self, exc: Exception, limit: int=7) ->str:
++        pass
+ 
+     def generate_plain_text(self, exc: Exception) -> str:
+         return "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))

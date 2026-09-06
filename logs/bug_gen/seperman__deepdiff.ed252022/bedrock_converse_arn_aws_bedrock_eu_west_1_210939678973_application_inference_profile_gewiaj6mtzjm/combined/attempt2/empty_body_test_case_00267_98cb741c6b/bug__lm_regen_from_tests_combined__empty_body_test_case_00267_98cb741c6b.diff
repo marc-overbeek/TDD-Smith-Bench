@@ -1,0 +1,71 @@
+--- a/deepdiff/model.py
++++ b/deepdiff/model.py
+@@ -255,13 +255,17 @@
+         self._from_tree_set_item_added_or_removed(tree, key='set_item_removed')
+ 
+     def _from_tree_repetition_change(self, tree):
+-        if 'repetition_change' in tree:
+-            for change in tree['repetition_change']:
+-                path = change.path(force=FORCE_DEFAULT)
+-                self['repetition_change'][path] = RemapDict(
+-                    change.additional['repetition']
+-                )
+-                self['repetition_change'][path]['value'] = change.t1
++            if 'repetition_change' in tree:
++                for change in tree['repetition_change']:
++                    path, _, _ = change.path(get_parent_too=True)
++                    repetition = RemapDict(change.additional['repetition'])
++                    value = change.t1
++                    try:
++                        iterable_items_added_at_indexes = self['iterable_items_added_at_indexes'][path]
++                    except KeyError:
++                        iterable_items_added_at_indexes = self['iterable_items_added_at_indexes'][path] = dict_()
++                    for index in repetition['new_indexes']:
++                        iterable_items_added_at_indexes[index] = value
+ 
+     def _from_tree_deep_distance(self, tree):
+         if 'deep_distance' in tree:
+@@ -339,24 +343,25 @@
+         self._from_tree_set_item_added(tree)
+         self._from_tree_repetition_change(tree)
+ 
+-    def _from_tree_iterable_item_added_or_removed(self, tree, report_type, delta_report_key):
+-        if report_type in tree:
+-            for change in tree[report_type]:  # report each change
+-                # determine change direction (added or removed)
+-                # Report t2 (the new one) whenever possible.
+-                # In cases where t2 doesn't exist (i.e. stuff removed), report t1.
+-                if change.t2 is not notpresent:
+-                    item = change.t2
+-                else:
+-                    item = change.t1
+-
+-                # do the reporting
+-                path, param, _ = change.path(force=FORCE_DEFAULT, get_parent_too=True)
+-                try:
+-                    iterable_items_added_at_indexes = self[delta_report_key][path]
+-                except KeyError:
+-                    iterable_items_added_at_indexes = self[delta_report_key][path] = dict_()
+-                iterable_items_added_at_indexes[param] = item
++    def _from_tree_iterable_item_added_or_removed(self, tree, report_type,
++        delta_report_key):
++            if report_type in tree:
++                for change in tree[report_type]:  # report each change
++                    # determine change direction (added or removed)
++                    # Report t2 (the new one) whenever possible.
++                    # In cases where t2 doesn't exist (i.e. stuff removed), report t1.
++                    if change.t2 is not notpresent:
++                        item = change.t2
++                    else:
++                        item = change.t1
++
++                    # do the reporting
++                    path, param, _ = change.path(force=FORCE_DEFAULT, get_parent_too=True)
++                    try:
++                        iterable_items_added_at_indexes = self[delta_report_key][path]
++                    except KeyError:
++                        iterable_items_added_at_indexes = self[delta_report_key][path] = dict_()
++                    iterable_items_added_at_indexes[param] = item
+ 
+     def _from_tree_type_changes(self, tree):
+         if 'type_changes' in tree:

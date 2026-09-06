@@ -1,0 +1,48 @@
+--- a/monkeytype/tracing.py
++++ b/monkeytype/tracing.py
+@@ -202,19 +202,10 @@
+ 
+     """
+ 
+-    def __init__(
+-        self,
+-        logger: CallTraceLogger,
+-        max_typed_dict_size: int,
+-        code_filter: Optional[CodeFilter] = None,
+-        sample_rate: Optional[int] = None,
+-    ) -> None:
+-        self.logger = logger
+-        self.traces: Dict[FrameType, CallTrace] = {}
+-        self.sample_rate = sample_rate
+-        self.cache: Dict[CodeType, Optional[Callable[..., Any]]] = {}
+-        self.should_trace = code_filter
+-        self.max_typed_dict_size = max_typed_dict_size
++    def __init__(self, logger: CallTraceLogger, max_typed_dict_size: int,
++        code_filter: Optional[CodeFilter]=None, sample_rate: Optional[int]=None
++        ) ->None:
++        pass
+ 
+     def _get_func(self, frame: FrameType) -> Optional[Callable[..., Any]]:
+         code = frame.f_code
+@@ -285,17 +276,7 @@
+ 
+ 
+ @contextmanager
+-def trace_calls(
+-    logger: CallTraceLogger,
+-    max_typed_dict_size: int,
+-    code_filter: Optional[CodeFilter] = None,
+-    sample_rate: Optional[int] = None,
+-) -> Iterator[None]:
+-    """Enable call tracing for a block of code"""
+-    old_trace = sys.getprofile()
+-    sys.setprofile(CallTracer(logger, max_typed_dict_size, code_filter, sample_rate))
+-    try:
+-        yield
+-    finally:
+-        sys.setprofile(old_trace)
+-        logger.flush()
++def trace_calls(logger: CallTraceLogger, max_typed_dict_size: int,
++    code_filter: Optional[CodeFilter]=None, sample_rate: Optional[int]=None
++    ) ->Iterator[None]:
++    pass

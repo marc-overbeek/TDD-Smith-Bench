@@ -1,0 +1,150 @@
+--- a/fvcore/common/checkpoint.py
++++ b/fvcore/common/checkpoint.py
+@@ -53,38 +53,9 @@
+     objects.
+     """
+ 
+-    def __init__(
+-        self,
+-        model: nn.Module,
+-        save_dir: str = "",
+-        *,
+-        save_to_disk: bool = True,
+-        **checkpointables: Any,
+-    ) -> None:
+-        """
+-        Args:
+-            model (nn.Module): model.
+-            save_dir (str): a directory to save and find checkpoints.
+-            save_to_disk (bool): if True, save checkpoint to disk, otherwise
+-                disable saving for this checkpointer.
+-            checkpointables (object): any checkpointable objects, i.e., objects
+-                that have the ``state_dict()`` and ``load_state_dict()`` method. For
+-                example, it can be used like
+-                `Checkpointer(model, "dir", optimizer=optimizer)`.
+-        """
+-        if isinstance(model, (DistributedDataParallel, DataParallel)):
+-            model = model.module
+-        self.model = model
+-        self.checkpointables: Dict[str, Any] = {}
+-        for k, v in checkpointables.items():
+-            self.add_checkpointable(k, v)
+-        self.logger: logging.Logger = logging.getLogger(__name__)
+-        self.save_dir = save_dir
+-        self.save_to_disk = save_to_disk
+-        # Default PathManager, support HTTP URLs (for backward compatibility in open source).
+-        # A user may want to use a different project-specific PathManager
+-        self.path_manager: PathManager = PathManager()
+-        self.path_manager.register_handler(HTTPURLHandler())
++    def __init__(self, model: nn.Module, save_dir: str='', *, save_to_disk:
++        bool=True, **checkpointables: Any) ->None:
++        pass
+ 
+     def add_checkpointable(self, key: str, checkpointable: Any) -> None:
+         """
+@@ -253,83 +224,8 @@
+             # pyre-fixme[22]: The cast is redundant.
+             return torch.load(cast(IO[bytes], file), map_location=torch.device("cpu"))
+ 
+-    def _load_model(self, checkpoint: Any) -> _IncompatibleKeys:
+-        """
+-        Load weights from a checkpoint.
+-
+-        Args:
+-            checkpoint (Any): checkpoint contains the weights.
+-
+-        Returns:
+-            ``NamedTuple`` with ``missing_keys``, ``unexpected_keys``,
+-                and ``incorrect_shapes`` fields:
+-                * **missing_keys** is a list of str containing the missing keys
+-                * **unexpected_keys** is a list of str containing the unexpected keys
+-                * **incorrect_shapes** is a list of (key, shape in checkpoint, shape in model)
+-
+-            This is just like the return value of
+-            :func:`torch.nn.Module.load_state_dict`, but with extra support
+-            for ``incorrect_shapes``.
+-        """
+-        checkpoint_state_dict = checkpoint.pop("model")
+-        self._convert_ndarray_to_tensor(checkpoint_state_dict)
+-
+-        # if the state_dict comes from a model that was wrapped in a
+-        # DataParallel or DistributedDataParallel during serialization,
+-        # remove the "module" prefix before performing the matching.
+-        _strip_prefix_if_present(checkpoint_state_dict, "module.")
+-
+-        # workaround https://github.com/pytorch/pytorch/issues/24139
+-        model_state_dict = self.model.state_dict()
+-        incorrect_shapes = []
+-        for k in list(checkpoint_state_dict.keys()):
+-            if k in model_state_dict:
+-                model_param = model_state_dict[k]
+-                # Allow mismatch for uninitialized parameters
+-                if TORCH_VERSION >= (1, 8) and isinstance(
+-                    model_param, nn.parameter.UninitializedParameter
+-                ):
+-                    continue
+-                shape_model = tuple(model_param.shape)
+-                shape_checkpoint = tuple(checkpoint_state_dict[k].shape)
+-                if shape_model != shape_checkpoint:
+-                    has_observer_base_classes = (
+-                        TORCH_VERSION >= (1, 8)
+-                        and hasattr(quantization, "ObserverBase")
+-                        and hasattr(quantization, "FakeQuantizeBase")
+-                    )
+-                    if has_observer_base_classes:
+-                        # Handle the special case of quantization per channel observers,
+-                        # where buffer shape mismatches are expected.
+-                        def _get_module_for_key(
+-                            model: torch.nn.Module, key: str
+-                        ) -> torch.nn.Module:
+-                            # foo.bar.param_or_buffer_name -> [foo, bar]
+-                            key_parts = key.split(".")[:-1]
+-                            cur_module = model
+-                            for key_part in key_parts:
+-                                cur_module = getattr(cur_module, key_part)
+-                            return cur_module
+-
+-                        cls_to_skip = (
+-                            ObserverBase,
+-                            FakeQuantizeBase,
+-                        )
+-                        target_module = _get_module_for_key(self.model, k)
+-                        if isinstance(target_module, cls_to_skip):
+-                            # Do not remove modules with expected shape mismatches
+-                            # them from the state_dict loading. They have special logic
+-                            # in _load_from_state_dict to handle the mismatches.
+-                            continue
+-
+-                    incorrect_shapes.append((k, shape_checkpoint, shape_model))
+-                    checkpoint_state_dict.pop(k)
+-        incompatible = self.model.load_state_dict(checkpoint_state_dict, strict=False)
+-        return _IncompatibleKeys(
+-            missing_keys=incompatible.missing_keys,
+-            unexpected_keys=incompatible.unexpected_keys,
+-            incorrect_shapes=incorrect_shapes,
+-        )
++    def _load_model(self, checkpoint: Any) ->_IncompatibleKeys:
++        pass
+ 
+     def _log_incompatible_keys(self, incompatible: _IncompatibleKeys) -> None:
+         """
+@@ -580,16 +476,6 @@
+     return ".{" + ", ".join(sorted(group)) + "}"
+ 
+ 
+-def _named_modules_with_dup(
+-    model: nn.Module, prefix: str = ""
+-) -> Iterable[Tuple[str, nn.Module]]:
+-    """
+-    The same as `model.named_modules()`, except that it includes
+-    duplicated modules that have more than one name.
+-    """
+-    yield prefix, model
+-    for name, module in model._modules.items():
+-        if module is None:
+-            continue
+-        submodule_prefix = prefix + ("." if prefix else "") + name
+-        yield from _named_modules_with_dup(module, submodule_prefix)
++def _named_modules_with_dup(model: nn.Module, prefix: str='') ->Iterable[Tuple
++    [str, nn.Module]]:
++    pass

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef find_token_type(self, request):\n    \"\"\"Token type identification.\n\n    RFC 6749 does not provide a method for easily differentiating between\n    different token types during protected resource access. We estimate\n    the most likely token type (if any) by asking each known token type\n    to give an estimation based on the request.\n    \"\"\"\n    estimates = sorted(((t.estimate_type(request), n)\n                        for n, t in self.tokens.items()), reverse=True)\n    if estimates:\n        return estimates[0][1]\n    return self.default_token\n```",
+  "rewrite": "def find_token_type(self, request):\n    \"\"\"Token type identification.\n\n    RFC 6749 does not provide a method for easily differentiating between\n    different token types during protected resource access. We estimate\n    the most likely token type (if any) by asking each known token type\n    to give an estimation based on the request.\n    \"\"\"\n    estimates = sorted(((t.estimate_type(request), n)\n                        for n, t in self.tokens.items()), reverse=True)\n    if estimates:\n        return estimates[0][1]\n    return self.default_token",
+  "strategy": "lm_regen_from_tests"
+}

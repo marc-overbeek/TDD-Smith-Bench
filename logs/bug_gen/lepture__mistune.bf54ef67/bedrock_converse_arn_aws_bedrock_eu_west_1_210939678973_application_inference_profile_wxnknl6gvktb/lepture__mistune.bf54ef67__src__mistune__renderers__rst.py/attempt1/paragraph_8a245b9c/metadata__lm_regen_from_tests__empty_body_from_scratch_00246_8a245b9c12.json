@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef paragraph(self, token: Dict[str, Any], state: BlockState) -> str:\n    children = token['children']\n    if len(children) == 1 and children[0]['type'] == 'image':\n        image = children[0]\n        attrs = image[\"attrs\"]\n        title = cast(str, attrs.get(\"title\"))\n        alt = self.render_children(image, state)\n        text = \".. figure:: \" + cast(str, attrs[\"url\"])\n        if title:\n            text += '\\n   :alt: ' + title\n        text += '\\n\\n' + indent(alt, '   ')\n    else:\n        text = self.render_tokens(children, state)\n        lines = text.split('<linebreak>')\n        if len(lines) > 1:\n            text = '\\n'.join('| ' + line for line in lines)\n    return text + '\\n\\n'\n```",
+  "rewrite": "def paragraph(self, token: Dict[str, Any], state: BlockState) -> str:\n    children = token['children']\n    if len(children) == 1 and children[0]['type'] == 'image':\n        image = children[0]\n        attrs = image[\"attrs\"]\n        title = cast(str, attrs.get(\"title\"))\n        alt = self.render_children(image, state)\n        text = \".. figure:: \" + cast(str, attrs[\"url\"])\n        if title:\n            text += '\\n   :alt: ' + title\n        text += '\\n\\n' + indent(alt, '   ')\n    else:\n        text = self.render_tokens(children, state)\n        lines = text.split('<linebreak>')\n        if len(lines) > 1:\n            text = '\\n'.join('| ' + line for line in lines)\n    return text + '\\n\\n'\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

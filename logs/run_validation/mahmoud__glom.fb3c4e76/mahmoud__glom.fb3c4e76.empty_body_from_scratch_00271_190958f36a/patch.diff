@@ -1,0 +1,30 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -116,26 +116,7 @@
+         return type(self)(subspec=self.subspec, _iter_stack=[(opname, args, callback)] + self._iter_stack)
+ 
+     def map(self, subspec):
+-        """Return a new :class:`Iter()` spec which will apply the provided
+-        *subspec* to each element of the iterable.
+-
+-        >>> glom(range(5), Iter().map(lambda x: x * 2).all())
+-        [0, 2, 4, 6, 8]
+-
+-        Because a spec can be a callable, :meth:`Iter.map()` does
+-        everything the built-in :func:`map` does, but with the full
+-        power of glom specs.
+-
+-        >>> glom(['a', 'B', 'C'], Iter().map(T.islower()).all())
+-        [True, False, False]
+-        """
+-        # whatever validation you want goes here
+-        # TODO: DRY the self._add_op with a decorator?
+-        return self._add_op(
+-            'map',
+-            (subspec,),
+-            lambda iterable, scope: imap(
+-                lambda t: scope[glom](t, subspec, scope), iterable))
++        pass
+ 
+     def filter(self, key=T):
+         """Return a new :class:`Iter()` spec which will include only elements matching the

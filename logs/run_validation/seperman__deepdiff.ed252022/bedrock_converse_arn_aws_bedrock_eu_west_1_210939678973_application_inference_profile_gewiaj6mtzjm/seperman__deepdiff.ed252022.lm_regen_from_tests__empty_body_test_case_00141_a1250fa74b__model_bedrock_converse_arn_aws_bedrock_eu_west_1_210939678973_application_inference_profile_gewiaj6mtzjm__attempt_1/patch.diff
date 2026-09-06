@@ -1,0 +1,68 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -67,26 +67,16 @@
+ 
+     __doc__ = doc
+ 
+-    def __init__(
+-        self,
+-        diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
+-        delta_path: Optional[str]=None,
+-        delta_file: Optional[IO]=None,
+-        delta_diff: Optional[dict]=None,
+-        flat_dict_list: Optional[List[Dict]]=None,
+-        flat_rows_list: Optional[List[FlatDeltaRow]]=None,
+-        deserializer: Callable=pickle_load,
+-        log_errors: bool=True,
+-        mutate: bool=False,
+-        raise_errors: bool=False,
+-        safe_to_import: Optional[Set[str]]=None,
+-        serializer: Callable=pickle_dump,
+-        verify_symmetry: Optional[bool]=None,
+-        bidirectional: bool=False,
+-        always_include_values: bool=False,
+-        iterable_compare_func_was_used: Optional[bool]=None,
+-        force: bool=False,
+-    ):
++    def __init__(self, diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
++        delta_path: Optional[str]=None, delta_file: Optional[IO]=None,
++        delta_diff: Optional[dict]=None, flat_dict_list: Optional[List[Dict]]=
++        None, flat_rows_list: Optional[List[FlatDeltaRow]]=None, deserializer:
++        Callable=pickle_load, log_errors: bool=True, mutate: bool=False,
++        raise_errors: bool=False, safe_to_import: Optional[Set[str]]=None,
++        serializer: Callable=pickle_dump, verify_symmetry: Optional[bool]=None,
++        bidirectional: bool=False, always_include_values: bool=False,
++        iterable_compare_func_was_used: Optional[bool]=None, force: bool=False):
++    
+         # for pickle deserializer:
+         if hasattr(deserializer, '__code__') and 'safe_to_import' in set(deserializer.__code__.co_varnames):
+             _deserializer = deserializer
+@@ -105,7 +95,6 @@
+                             )
+                     result['_iterable_opcodes'] = _iterable_opcodes
+                 return result
+-
+ 
+         self._reversed_diff = None
+ 
+@@ -225,16 +214,10 @@
+             self._raise_or_log(VERIFICATION_MSG.format(
+                 path_str, expected_old_value, current_old_value, VERIFY_BIDIRECTIONAL_MSG))
+ 
+-    def _get_elem_and_compare_to_old_value(
+-        self,
+-        obj,
+-        path_for_err_reporting,
+-        expected_old_value,
+-        elem=None,
+-        action=None,
+-        forced_old_value=None,
+-        next_element=None,
+-    ):
++    def _get_elem_and_compare_to_old_value(self, obj, path_for_err_reporting,
++        expected_old_value, elem=None, action=None, forced_old_value=None,
++        next_element=None):
++    
+         # if forced_old_value is not None:
+         try:
+             if action == GET:

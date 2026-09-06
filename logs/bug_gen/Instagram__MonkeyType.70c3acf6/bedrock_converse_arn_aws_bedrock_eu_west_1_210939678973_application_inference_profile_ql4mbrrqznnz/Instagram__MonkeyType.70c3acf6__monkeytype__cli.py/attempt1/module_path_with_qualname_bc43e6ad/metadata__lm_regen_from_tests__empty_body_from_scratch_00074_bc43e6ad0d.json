@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef module_path_with_qualname(path: str) ->Tuple[str, str]:\n    \"\"\"Parse <module>:<qualname> into its constituent parts, requiring both.\"\"\"\n    parts = path.split(\":\", 1)\n    if len(parts) != 2:\n        raise argparse.ArgumentTypeError(\n            f\"{path} must be in the form <module>:<qualname>\"\n        )\n    module, qualname = parts\n    if os.sep in module:  # Smells like a path\n        raise argparse.ArgumentTypeError(\n            f\"{module} does not look like a valid Python import path\"\n        )\n    return module, qualname\n```",
+  "rewrite": "def module_path_with_qualname(path: str) ->Tuple[str, str]:\n    \"\"\"Parse <module>:<qualname> into its constituent parts, requiring both.\"\"\"\n    parts = path.split(\":\", 1)\n    if len(parts) != 2:\n        raise argparse.ArgumentTypeError(\n            f\"{path} must be in the form <module>:<qualname>\"\n        )\n    module, qualname = parts\n    if os.sep in module:  # Smells like a path\n        raise argparse.ArgumentTypeError(\n            f\"{module} does not look like a valid Python import path\"\n        )\n    return module, qualname",
+  "strategy": "lm_regen_from_tests"
+}

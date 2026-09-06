@@ -1,0 +1,15 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1812,7 +1812,11 @@
+         return iter(self.__dict__.items())
+ 
+     def __repr__(self):
+-        return f"{self.__class__.__name__}({bbrepr(self.__dict__)})"
++        ret = format_invocation(self.__class__.__name__,
++                                args=(self.base,) if self.base else (),
++                                kwargs=self.defaults,
++                                repr=bbrepr)
++        return ret
+ 
+ 
+ class Vars:

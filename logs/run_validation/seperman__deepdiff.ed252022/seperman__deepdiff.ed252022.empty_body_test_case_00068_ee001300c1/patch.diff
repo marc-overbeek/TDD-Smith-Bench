@@ -1,0 +1,443 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -67,102 +67,16 @@
+ 
+     __doc__ = doc
+ 
+-    def __init__(
+-        self,
+-        diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
+-        delta_path: Optional[str]=None,
+-        delta_file: Optional[IO]=None,
+-        delta_diff: Optional[dict]=None,
+-        flat_dict_list: Optional[List[Dict]]=None,
+-        flat_rows_list: Optional[List[FlatDeltaRow]]=None,
+-        deserializer: Callable=pickle_load,
+-        log_errors: bool=True,
+-        mutate: bool=False,
+-        raise_errors: bool=False,
+-        safe_to_import: Optional[Set[str]]=None,
+-        serializer: Callable=pickle_dump,
+-        verify_symmetry: Optional[bool]=None,
+-        bidirectional: bool=False,
+-        always_include_values: bool=False,
+-        iterable_compare_func_was_used: Optional[bool]=None,
+-        force: bool=False,
+-    ):
+-        # for pickle deserializer:
+-        if hasattr(deserializer, '__code__') and 'safe_to_import' in set(deserializer.__code__.co_varnames):
+-            _deserializer = deserializer
+-        else:
+-            def _deserializer(obj, safe_to_import=None):
+-                result = deserializer(obj)
+-                if result.get('_iterable_opcodes'):
+-                    _iterable_opcodes = {}
+-                    for path, op_codes in result['_iterable_opcodes'].items():
+-                        _iterable_opcodes[path] = []
+-                        for op_code in op_codes:
+-                            _iterable_opcodes[path].append(
+-                                Opcode(
+-                                    **op_code
+-                                )
+-                            )
+-                    result['_iterable_opcodes'] = _iterable_opcodes
+-                return result
+-
+-
+-        self._reversed_diff = None
+-
+-        if verify_symmetry is not None:
+-            logger.warning(
+-                "DeepDiff Deprecation: use bidirectional instead of verify_symmetry parameter."
+-            )
+-            bidirectional = verify_symmetry
+-
+-        self.bidirectional = bidirectional
+-        if bidirectional:
+-            self.always_include_values = True  # We need to include the values in bidirectional deltas
+-        else:
+-            self.always_include_values = always_include_values
+-
+-        if diff is not None:
+-            if isinstance(diff, DeepDiff):
+-                self.diff = diff._to_delta_dict(directed=not bidirectional, always_include_values=self.always_include_values)
+-            elif isinstance(diff, Mapping):
+-                self.diff = diff
+-            elif isinstance(diff, strings):
+-                self.diff = _deserializer(diff, safe_to_import=safe_to_import)
+-        elif delta_path:
+-            with open(delta_path, 'rb') as the_file:
+-                content = the_file.read()
+-            self.diff = _deserializer(content, safe_to_import=safe_to_import)
+-        elif delta_diff:
+-            self.diff = delta_diff
+-        elif delta_file:
+-            try:
+-                content = delta_file.read()
+-            except UnicodeDecodeError as e:
+-                raise ValueError(BINIARY_MODE_NEEDED_MSG.format(e)) from None
+-            self.diff = _deserializer(content, safe_to_import=safe_to_import)
+-        elif flat_dict_list:
+-            # Use copy to preserve original value of flat_dict_list in calling module
+-            self.diff = self._from_flat_dicts(copy.deepcopy(flat_dict_list))
+-        elif flat_rows_list:
+-            self.diff = self._from_flat_rows(copy.deepcopy(flat_rows_list))
+-        else:
+-            raise ValueError(DELTA_AT_LEAST_ONE_ARG_NEEDED)
+-
+-        self.mutate = mutate
+-        self.raise_errors = raise_errors
+-        self.log_errors = log_errors
+-        self._numpy_paths = self.diff.get('_numpy_paths', False)
+-        # When we create the delta from a list of flat dictionaries, details such as iterable_compare_func_was_used get lost.
+-        # That's why we allow iterable_compare_func_was_used to be explicitly set.
+-        self._iterable_compare_func_was_used = self.diff.get('_iterable_compare_func_was_used', iterable_compare_func_was_used)
+-        self.serializer = serializer
+-        self.deserializer = deserializer
+-        self.force = force
+-        if force:
+-            self.get_nested_obj = _get_nested_obj_and_force
+-        else:
+-            self.get_nested_obj = _get_nested_obj
+-        self.reset()
++    def __init__(self, diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
++        delta_path: Optional[str]=None, delta_file: Optional[IO]=None,
++        delta_diff: Optional[dict]=None, flat_dict_list: Optional[List[Dict]]=
++        None, flat_rows_list: Optional[List[FlatDeltaRow]]=None, deserializer:
++        Callable=pickle_load, log_errors: bool=True, mutate: bool=False,
++        raise_errors: bool=False, safe_to_import: Optional[Set[str]]=None,
++        serializer: Callable=pickle_dump, verify_symmetry: Optional[bool]=None,
++        bidirectional: bool=False, always_include_values: bool=False,
++        iterable_compare_func_was_used: Optional[bool]=None, force: bool=False):
++        pass
+ 
+     def __repr__(self):
+         return "<Delta: {}>".format(short_repr(self.diff, max_length=100))
+@@ -225,55 +139,10 @@
+             self._raise_or_log(VERIFICATION_MSG.format(
+                 path_str, expected_old_value, current_old_value, VERIFY_BIDIRECTIONAL_MSG))
+ 
+-    def _get_elem_and_compare_to_old_value(
+-        self,
+-        obj,
+-        path_for_err_reporting,
+-        expected_old_value,
+-        elem=None,
+-        action=None,
+-        forced_old_value=None,
+-        next_element=None,
+-    ):
+-        # if forced_old_value is not None:
+-        try:
+-            if action == GET:
+-                current_old_value = obj[elem]
+-            elif action == GETATTR:
+-                current_old_value = getattr(obj, elem)
+-            else:
+-                raise DeltaError(INVALID_ACTION_WHEN_CALLING_GET_ELEM.format(action))
+-        except (KeyError, IndexError, AttributeError, TypeError) as e:
+-            if self.force:
+-                if forced_old_value is None:
+-                    if next_element is None or isinstance(next_element, str):
+-                        _forced_old_value = {}
+-                    else:
+-                        _forced_old_value = []    
+-                else:
+-                    _forced_old_value = forced_old_value
+-                if action == GET:
+-                    if isinstance(obj, list):
+-                        if isinstance(elem, int) and elem < len(obj):
+-                            obj[elem] = _forced_old_value
+-                        else:
+-                            obj.append(_forced_old_value)
+-                    else:
+-                        obj[elem] = _forced_old_value
+-                elif action == GETATTR:
+-                    setattr(obj, elem, _forced_old_value)
+-                return _forced_old_value
+-            current_old_value = not_found
+-            if isinstance(path_for_err_reporting, (list, tuple)):
+-                path_for_err_reporting = '.'.join([i[0] for i in path_for_err_reporting])
+-            if self.bidirectional:
+-                self._raise_or_log(VERIFICATION_MSG.format(
+-                    path_for_err_reporting,
+-                    expected_old_value, current_old_value, e))
+-            else:
+-                self._raise_or_log(UNABLE_TO_GET_PATH_MSG.format(
+-                    path_for_err_reporting))
+-        return current_old_value
++    def _get_elem_and_compare_to_old_value(self, obj, path_for_err_reporting,
++        expected_old_value, elem=None, action=None, forced_old_value=None,
++        next_element=None):
++        pass
+ 
+     def _simple_set_elem_value(self, obj, path_for_err_reporting, elem=None, value=None, action=None):
+         """
+@@ -334,55 +203,16 @@
+         self._simple_set_elem_value(obj=obj, path_for_err_reporting=path, elem=elem,
+                                     value=new_value, action=action)
+ 
+-    def _simple_delete_elem(self, obj, path_for_err_reporting, elem=None, action=None):
+-        """
+-        Delete the element directly on an object
+-        """
+-        try:
+-            if action == GET:
+-                del obj[elem]
+-            elif action == GETATTR:
+-                del obj.__dict__[elem]
+-            else:
+-                raise DeltaError(INVALID_ACTION_WHEN_CALLING_SIMPLE_DELETE_ELEM.format(action))
+-        except (KeyError, IndexError, AttributeError) as e:
+-            self._raise_or_log('Failed to set {} due to {}'.format(path_for_err_reporting, e))
+-
+-    def _del_elem(self, parent, parent_to_obj_elem, parent_to_obj_action,
+-                  obj, elements, path, elem, action):
+-        """
+-        Delete the element value on an object and if necessary convert the object to the proper mutable type
+-        """
+-        obj_is_new = False
+-        if isinstance(obj, tuple):
+-            # convert this object back to a tuple later
+-            self.post_process_paths_to_convert[elements[:-1]] = {'old_type': list, 'new_type': tuple}
+-            obj = list(obj)
+-            obj_is_new = True
+-        self._simple_delete_elem(obj=obj, path_for_err_reporting=path, elem=elem, action=action)
+-        if obj_is_new and parent:
+-            # Making sure that the object is re-instated inside the parent especially if it was immutable
+-            # and we had to turn it into a mutable one. In such cases the object has a new id.
+-            self._simple_set_elem_value(obj=parent, path_for_err_reporting=path, elem=parent_to_obj_elem,
+-                                        value=obj, action=parent_to_obj_action)
++    def _simple_delete_elem(self, obj, path_for_err_reporting, elem=None,
++        action=None):
++        pass
++
++    def _del_elem(self, parent, parent_to_obj_elem, parent_to_obj_action, obj,
++        elements, path, elem, action):
++        pass
+ 
+     def _do_iterable_item_added(self):
+-        iterable_item_added = self.diff.get('iterable_item_added', {})
+-        iterable_item_moved = self.diff.get('iterable_item_moved')
+-
+-        # First we need to create a placeholder for moved items.
+-        # This will then get replaced below after we go through added items.
+-        # Without this items can get double added because moved store the new_value and does not need item_added replayed
+-        if iterable_item_moved:
+-            added_dict = {v["new_path"]: None for k, v in iterable_item_moved.items()}
+-            iterable_item_added.update(added_dict)
+-
+-        if iterable_item_added:
+-            self._do_item_added(iterable_item_added, insert=True)
+-
+-        if iterable_item_moved:
+-            added_dict = {v["new_path"]: v["value"] for k, v in iterable_item_moved.items()}
+-            self._do_item_added(added_dict, insert=False)
++        pass
+ 
+     def _do_dictionary_item_added(self):
+         dictionary_item_added = self.diff.get('dictionary_item_added')
+@@ -438,30 +268,7 @@
+ 
+ 
+     def _do_item_added(self, items, sort=True, insert=False):
+-        if sort:
+-            # sorting items by their path so that the items with smaller index
+-            # are applied first (unless `sort` is `False` so that order of
+-            # added items is retained, e.g. for dicts).
+-            try:
+-                items = sorted(items.items(), key=self._sort_key_for_item_added)
+-            except TypeError:
+-                items = sorted(items.items(), key=cmp_to_key(self._sort_comparison))
+-        else:
+-            items = items.items()
+-
+-        for path, new_value in items:
+-            elem_and_details = self._get_elements_and_details(path)
+-            if elem_and_details:
+-                elements, parent, parent_to_obj_elem, parent_to_obj_action, obj, elem, action = elem_and_details
+-            else:
+-                continue  # pragma: no cover. Due to cPython peephole optimizer, this line doesn't get covered. https://github.com/nedbat/coveragepy/issues/198
+-
+-            # Insert is only true for iterables, make sure it is a valid index.
+-            if(insert and elem < len(obj)):
+-                obj.insert(elem, None)
+-
+-            self._set_new_value(parent, parent_to_obj_elem, parent_to_obj_action,
+-                                obj, elements, path, elem, action, new_value)
++        pass
+ 
+     def _do_values_changed(self):
+         values_changed = self.diff.get('values_changed')
+@@ -494,36 +301,7 @@
+                 self._do_values_or_type_changed(preprocess_paths, is_type_change=True)
+ 
+     def _get_elements_and_details(self, path):
+-        try:
+-            elements = _path_to_elements(path)
+-            if len(elements) > 1:
+-                elements_subset = elements[:-2]
+-                if len(elements_subset) != len(elements):
+-                    next_element = elements[-2][0]
+-                    next2_element = elements[-1][0]
+-                else:
+-                    next_element = None
+-                parent = self.get_nested_obj(obj=self, elements=elements_subset, next_element=next_element)
+-                parent_to_obj_elem, parent_to_obj_action = elements[-2]
+-                obj = self._get_elem_and_compare_to_old_value(
+-                    obj=parent, path_for_err_reporting=path, expected_old_value=None,
+-                    elem=parent_to_obj_elem, action=parent_to_obj_action, next_element=next2_element)
+-            else:
+-                # parent = self
+-                # obj = self.root
+-                # parent_to_obj_elem = 'root'
+-                # parent_to_obj_action = GETATTR
+-                parent = parent_to_obj_elem = parent_to_obj_action = None
+-                obj = self
+-                # obj = self.get_nested_obj(obj=self, elements=elements[:-1])
+-            elem, action = elements[-1]
+-        except Exception as e:
+-            self._raise_or_log(UNABLE_TO_GET_ITEM_MSG.format(path, e))
+-            return None
+-        else:
+-            if obj is not_found:
+-                return None
+-            return elements, parent, parent_to_obj_elem, parent_to_obj_action, obj, elem, action
++        pass
+ 
+     def _do_values_or_type_changed(self, changes, is_type_change=False, verify_changes=True):
+         for path, value in changes.items():
+@@ -562,44 +340,7 @@
+                 self._do_verify_changes(path, expected_old_value, current_old_value)
+ 
+     def _do_item_removed(self, items):
+-        """
+-        Handle removing items.
+-        """
+-        # Sorting the iterable_item_removed in reverse order based on the paths.
+-        # So that we delete a bigger index before a smaller index
+-        try:
+-            sorted_item = sorted(items.items(), key=self._sort_key_for_item_added, reverse=True)
+-        except TypeError:
+-            sorted_item = sorted(items.items(), key=cmp_to_key(self._sort_comparison), reverse=True)
+-        for path, expected_old_value in sorted_item:
+-            elem_and_details = self._get_elements_and_details(path)
+-            if elem_and_details:
+-                elements, parent, parent_to_obj_elem, parent_to_obj_action, obj, elem, action = elem_and_details
+-            else:
+-                continue  # pragma: no cover. Due to cPython peephole optimizer, this line doesn't get covered. https://github.com/nedbat/coveragepy/issues/198
+-
+-            look_for_expected_old_value = False
+-            current_old_value = not_found
+-            try:
+-                if action == GET:
+-                    current_old_value = obj[elem]
+-                elif action == GETATTR:
+-                    current_old_value = getattr(obj, elem)
+-                look_for_expected_old_value = current_old_value != expected_old_value
+-            except (KeyError, IndexError, AttributeError, TypeError):
+-                look_for_expected_old_value = True
+-
+-            if look_for_expected_old_value and isinstance(obj, list) and not self._iterable_compare_func_was_used:
+-                # It may return None if it doesn't find it
+-                elem = self._find_closest_iterable_element_for_index(obj, elem, expected_old_value)
+-                if elem is not None:
+-                    current_old_value = expected_old_value
+-            if current_old_value is not_found or elem is None:
+-                continue
+-
+-            self._del_elem(parent, parent_to_obj_elem, parent_to_obj_action,
+-                           obj, elements, path, elem, action)
+-            self._do_verify_changes(path, expected_old_value, current_old_value)
++        pass
+ 
+     def _find_closest_iterable_element_for_index(self, obj, elem, expected_old_value):
+         closest_elem = None
+@@ -661,16 +402,7 @@
+ 
+ 
+     def _do_iterable_item_removed(self):
+-        iterable_item_removed = self.diff.get('iterable_item_removed', {})
+-
+-        iterable_item_moved = self.diff.get('iterable_item_moved')
+-        if iterable_item_moved:
+-            # These will get added back during items_added
+-            removed_dict = {k: v["value"] for k, v in iterable_item_moved.items()}
+-            iterable_item_removed.update(removed_dict)
+-
+-        if iterable_item_removed:
+-            self._do_item_removed(iterable_item_removed)
++        pass
+ 
+     def _do_dictionary_item_removed(self):
+         dictionary_item_removed = self.diff.get('dictionary_item_removed')
+@@ -792,68 +524,7 @@
+                                         value=new_obj, action=parent_to_obj_action)
+ 
+     def _get_reverse_diff(self):
+-        if not self.bidirectional:
+-            raise ValueError('Please recreate the delta with bidirectional=True')
+-
+-        SIMPLE_ACTION_TO_REVERSE = {
+-            'iterable_item_added': 'iterable_item_removed',
+-            'iterable_items_added_at_indexes': 'iterable_items_removed_at_indexes',
+-            'attribute_added': 'attribute_removed',
+-            'set_item_added': 'set_item_removed',
+-            'dictionary_item_added': 'dictionary_item_removed',
+-        }
+-        # Adding the reverse of the dictionary
+-        for key in list(SIMPLE_ACTION_TO_REVERSE.keys()):
+-            SIMPLE_ACTION_TO_REVERSE[SIMPLE_ACTION_TO_REVERSE[key]] = key
+-
+-        r_diff = {}
+-        for action, info in self.diff.items():
+-            reverse_action = SIMPLE_ACTION_TO_REVERSE.get(action)
+-            if reverse_action:
+-                r_diff[reverse_action] = info
+-            elif action == 'values_changed':
+-                r_diff[action] = {}
+-                for path, path_info in info.items():
+-                    reverse_path = path_info['new_path'] if path_info.get('new_path') else path
+-                    r_diff[action][reverse_path] = {
+-                        'new_value': path_info['old_value'], 'old_value': path_info['new_value']
+-                    } 
+-            elif action == 'type_changes':
+-                r_diff[action] = {}
+-                for path, path_info in info.items():
+-                    reverse_path = path_info['new_path'] if path_info.get('new_path') else path
+-                    r_diff[action][reverse_path] = {
+-                        'old_type': path_info['new_type'], 'new_type': path_info['old_type'],
+-                    }
+-                    if 'new_value' in path_info:
+-                        r_diff[action][reverse_path]['old_value'] = path_info['new_value']
+-                    if 'old_value' in path_info:
+-                        r_diff[action][reverse_path]['new_value'] = path_info['old_value']
+-            elif action == 'iterable_item_moved':
+-                r_diff[action] = {}
+-                for path, path_info in info.items():
+-                    old_path = path_info['new_path']
+-                    r_diff[action][old_path] = {
+-                        'new_path': path, 'value': path_info['value'],
+-                    }
+-            elif action == '_iterable_opcodes':
+-                r_diff[action] = {}
+-                for path, op_codes in info.items():
+-                    r_diff[action][path] = []
+-                    for op_code in op_codes:
+-                        tag = op_code.tag
+-                        tag = {'delete': 'insert', 'insert': 'delete'}.get(tag, tag)
+-                        new_op_code = Opcode(
+-                            tag=tag,
+-                            t1_from_index=op_code.t2_from_index,
+-                            t1_to_index=op_code.t2_to_index,
+-                            t2_from_index=op_code.t1_from_index,
+-                            t2_to_index=op_code.t1_to_index,
+-                            new_values=op_code.old_values,
+-                            old_values=op_code.new_values,
+-                        )
+-                        r_diff[action][path].append(new_op_code)
+-        return r_diff
++        pass
+ 
+     def dump(self, file):
+         """

@@ -1,0 +1,15 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -556,7 +556,11 @@
+             return False
+         return sorted(self._list) == sorted(other._list)
+ 
+-    def __repr__(self) -> str:
++    assert repr(h) == "Headers(raw=[(b'a', b'123'), (b'a', b'456'), (b'b', b'789')])"
++    # and
++    assert repr(h) == "Headers({'a': '123', 'b': '789'})"
++
++    def __repr__(self) ->str:
+         class_name = self.__class__.__name__
+         as_dict = dict(self.items())
+         if len(as_dict) == len(self):

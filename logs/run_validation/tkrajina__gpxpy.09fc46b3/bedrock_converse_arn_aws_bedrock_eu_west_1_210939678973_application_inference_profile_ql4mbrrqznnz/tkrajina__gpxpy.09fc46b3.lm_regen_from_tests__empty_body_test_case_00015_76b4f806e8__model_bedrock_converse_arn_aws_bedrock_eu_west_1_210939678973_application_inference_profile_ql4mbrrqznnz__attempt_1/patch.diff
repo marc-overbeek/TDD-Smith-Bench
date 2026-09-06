@@ -1,0 +1,127 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -169,16 +169,20 @@
+         return (self.min_latitude, self.max_latitude, self.min_longitude, self.max_longitude,).__iter__()
+ 
+     def _min(self, a: Optional[float], b: Optional[float]) -> Optional[float]:
+-        if a is not None and b is not None:
+-            return min(a, b)
+-        return None
++        if a is None:
++            return b
++        if b is None:
++            return a
++        return min(a, b)
+ 
+     def _max(self, a: Optional[float], b: Optional[float]) -> Optional[float]:
+-        if a is not None and b is not None:
+-            return max(a, b)
+-        return None
+-
+-    def max_bounds(self, bounds: "GPXBounds") -> "GPXBounds":
++        if a is None:
++            return b
++        if b is None:
++            return a
++        return max(a, b)
++
++    def max_bounds(self, bounds: 'GPXBounds') -> 'GPXBounds':
+         return GPXBounds(self._min(self.min_latitude, bounds.min_latitude),
+             self._max(self.max_latitude, bounds.max_latitude),
+             self._min(self.min_longitude, bounds.min_longitude),
+@@ -955,21 +959,6 @@
+         return TimeBounds(start_time, end_time)
+ 
+     def get_bounds(self) -> Optional[GPXBounds]:
+-        """
+-        Gets the latitude and longitude bounds of the segment.
+-
+-        Returns
+-        ----------
+-        bounds : Bounds named tuple
+-            min_latitude : float
+-                Minimum latitude of segment in decimal degrees [-90, 90]
+-            max_latitude : float
+-                Maximum latitude of segment in decimal degrees [-90, 90]
+-            min_longitude : float
+-                Minimum longitude of segment in decimal degrees [-180, 180]
+-            max_longitude : float
+-                Maximum longitude of segment in decimal degrees [-180, 180]
+-        """
+         min_lat = None
+         max_lat = None
+         min_lon = None
+@@ -985,7 +974,7 @@
+             if max_lon is None or point.longitude > max_lon:
+                 max_lon = point.longitude
+ 
+-        if min_lat and max_lat and min_lon and max_lon:
++        if min_lat is not None and max_lat is not None and min_lon is not None and max_lon is not None:
+             return GPXBounds(min_lat, max_lat, min_lon, max_lon)
+         return None
+ 
+@@ -1526,21 +1515,6 @@
+         return TimeBounds(start_time, end_time)
+ 
+     def get_bounds(self) -> Optional[GPXBounds]:
+-        """
+-        Gets the latitude and longitude bounds of the track.
+-
+-        Returns
+-        ----------
+-        bounds : Bounds named tuple
+-            min_latitude : float
+-                Minimum latitude of track in decimal degrees [-90, 90]
+-            max_latitude : float
+-                Maximum latitude of track in decimal degrees [-90, 90]
+-            min_longitude : float
+-                Minimum longitude of track in decimal degrees [-180, 180]
+-            max_longitude : float
+-                Maximum longitude of track in decimal degrees [-180, 180]
+-        """
+         bounds: Optional[GPXBounds] = None
+         for track_segment in self.segments:
+             segment_bounds = track_segment.get_bounds()
+@@ -2140,28 +2114,13 @@
+         return TimeBounds(start_time, end_time)
+ 
+     def get_bounds(self) -> Optional[GPXBounds]:
+-        """
+-        Gets the latitude and longitude bounds of the GPX file.
+-
+-        Returns
+-        ----------
+-        bounds : Bounds named tuple
+-            min_latitude : float
+-                Minimum latitude of track in decimal degrees [-90, 90]
+-            max_latitude : float
+-                Maximum latitude of track in decimal degrees [-90, 90]
+-            min_longitude : float
+-                Minimum longitude of track in decimal degrees [-180, 180]
+-            max_longitude : float
+-                Maximum longitude of track in decimal degrees [-180, 180]
+-        """
+-        result: Optional[GPXBounds] = None 
++        result: Optional[GPXBounds] = None
+         for track in self.tracks:
+             track_bounds = track.get_bounds()
+-            if not result:
++            if result is None:
+                 result = track_bounds
+             elif track_bounds:
+-                result = track_bounds.max_bounds(result)
++                result = result.max_bounds(track_bounds)
+         return result
+ 
+     def get_points_no(self) -> int:
+@@ -2179,10 +2138,6 @@
+         return result
+ 
+     def refresh_bounds(self) -> None:
+-        """
+-        Compute bounds and reload min_latitude, max_latitude, min_longitude
+-        and max_longitude properties of this object
+-        """
+         self.bounds = self.get_bounds()
+ 
+     def smooth(self, vertical: bool=True, horizontal: bool=False, remove_extremes: bool=False) -> None:

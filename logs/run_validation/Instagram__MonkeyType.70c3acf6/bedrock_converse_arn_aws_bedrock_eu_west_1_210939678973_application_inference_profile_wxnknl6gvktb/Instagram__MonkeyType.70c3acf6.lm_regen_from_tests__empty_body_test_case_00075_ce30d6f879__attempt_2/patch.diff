@@ -1,0 +1,80 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -839,40 +839,45 @@
+ 
+ 
+ def build_module_stubs(entries: Iterable[FunctionDefinition]) -> Dict[str, ModuleStub]:
+-    """Given an iterable of function definitions, build the corresponding stubs"""
+-    mod_stubs: Dict[str, ModuleStub] = {}
++    module_stubs: Dict[str, ModuleStub] = {}
++    
+     for entry in entries:
+-        path = entry.qualname.split(".")
+-        name = path.pop()
+-        class_path = path
+-        # TODO: Handle nested classes
+-        klass = None
+-        if len(class_path) > 0:
+-            klass = ".".join(class_path)
+-        if entry.module not in mod_stubs:
+-            mod_stubs[entry.module] = ModuleStub()
+-        mod_stub = mod_stubs[entry.module]
++        module_name = entry.module
++        
++        if module_name not in module_stubs:
++            module_stubs[module_name] = ModuleStub()
++        
++        module_stub = module_stubs[module_name]
++        
++        func_name = entry.qualname.split('.')[-1]
++        func_stub = FunctionStub(
++            func_name,
++            entry.signature,
++            entry.kind,
++            is_async=entry.is_async
++        )
++        
++        if '.' in entry.qualname:
++            class_name = entry.qualname.split('.')[0]
++            if class_name not in module_stub.class_stubs:
++                module_stub.class_stubs[class_name] = ClassStub(class_name)
++            module_stub.class_stubs[class_name].function_stubs[func_stub.name] = func_stub
++        else:
++            module_stub.function_stubs[func_stub.name] = func_stub
++        
++        if entry.typed_dict_class_stubs:
++            module_stub.typed_dict_class_stubs.extend(entry.typed_dict_class_stubs)
++        
+         imports = get_imports_for_signature(entry.signature)
+-        # Import TypedDict, if needed.
+-        if entry.typed_dict_class_stubs:
+-            imports["mypy_extensions"].add("TypedDict")
+-        func_stub = FunctionStub(
+-            name, entry.signature, entry.kind, list(imports.keys()), entry.is_async
+-        )
+-        # Don't need to import anything from the same module
+-        imports.pop(entry.module, None)
+-        mod_stub.imports_stub.imports.merge(imports)
+-        if klass is not None:
+-            if klass not in mod_stub.class_stubs:
+-                mod_stub.class_stubs[klass] = ClassStub(klass)
+-            class_stub = mod_stub.class_stubs[klass]
+-            class_stub.function_stubs[func_stub.name] = func_stub
+-        else:
+-            mod_stub.function_stubs[func_stub.name] = func_stub
+-
+-        mod_stub.typed_dict_class_stubs.extend(entry.typed_dict_class_stubs)
+-
+-    return mod_stubs
++        module_stub.imports_stub.imports.merge(imports)
++    
++    for module_stub in module_stubs.values():
++        for typed_dict_stub in module_stub.typed_dict_class_stubs:
++            for attr_stub in typed_dict_stub.attribute_stubs:
++                imports = get_imports_for_annotation(attr_stub.typ)
++                module_stub.imports_stub.imports.merge(imports)
++    
++    return module_stubs
+ 
+ 
+ def build_module_stubs_from_traces(

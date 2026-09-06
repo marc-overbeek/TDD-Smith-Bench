@@ -1,0 +1,11 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -432,6 +432,8 @@
+         for t in union.__args__:
+             if not is_generic_of(t, Tuple):
+                 return None
++            if not hasattr(t, '__args__') or not t.__args__:
++                return None
+             value_type = value_type or t.__args__[0]
+             if not all(vt is value_type for vt in t.__args__):
+                 return None

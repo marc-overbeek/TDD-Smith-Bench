@@ -1,0 +1,130 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -168,77 +168,60 @@
+     plus one.
+     """
+ 
+-    def __init__(
+-        self,
+-        values: List[float],
+-        num_updates: Optional[int] = None,
+-        milestones: Optional[List[int]] = None,
+-    ) -> None:
+-        """
+-        Args:
+-            values: param value in each range
+-            num_updates: the end of the last range. If None, will use ``milestones[-1]``
+-            milestones: the boundary of each range. If None, will evenly split ``num_updates``
+-
+-        For example, all the following combinations define the same scheduler:
+-
+-        * num_updates=90, milestones=[30, 60], values=[1, 0.1, 0.01]
+-        * num_updates=90, values=[1, 0.1, 0.01]
+-        * milestones=[30, 60, 90], values=[1, 0.1, 0.01]
+-        * milestones=[3, 6, 9], values=[1, 0.1, 0.01]  (ParamScheduler is scale-invariant)
+-        """
+-        if num_updates is None and milestones is None:
+-            raise ValueError("num_updates and milestones cannot both be None")
+-        if milestones is None:
+-            # Default equispaced drop_epochs behavior
+-            milestones = []
+-            step_width = math.ceil(num_updates / float(len(values)))
+-            for idx in range(len(values) - 1):
+-                milestones.append(step_width * (idx + 1))
+-        else:
+-            if not (
+-                isinstance(milestones, Sequence)
+-                and len(milestones) == len(values) - int(num_updates is not None)
+-            ):
++    def __init__(self, values: List[float], num_updates: Optional[int]=None,
++        milestones: Optional[List[int]]=None) ->None:
++            if num_updates is None and milestones is None:
++                raise ValueError("num_updates and milestones cannot both be None")
++            if milestones is None:
++                # Default equispaced drop_epochs behavior
++                milestones = []
++                step_width = math.ceil(num_updates / float(len(values)))
++                for idx in range(len(values) - 1):
++                    milestones.append(step_width * (idx + 1))
++            else:
++                if not (
++                    isinstance(milestones, Sequence)
++                    and len(milestones) == len(values) - int(num_updates is not None)
++                ):
++                    raise ValueError(
++                        "MultiStep scheduler requires a list of %d miletones"
++                        % (len(values) - int(num_updates is not None))
++                    )
++
++            if num_updates is None:
++                num_updates, milestones = milestones[-1], milestones[:-1]
++            if num_updates < len(values):
+                 raise ValueError(
+-                    "MultiStep scheduler requires a list of %d miletones"
+-                    % (len(values) - int(num_updates is not None))
++                    "Total num_updates must be greater than length of param schedule"
+                 )
+ 
+-        if num_updates is None:
+-            num_updates, milestones = milestones[-1], milestones[:-1]
+-        if num_updates < len(values):
+-            raise ValueError(
+-                "Total num_updates must be greater than length of param schedule"
+-            )
+-
+-        self._param_schedule = values
+-        self._num_updates = num_updates
+-        self._milestones: List[int] = milestones
+-
+-        start_epoch = 0
+-        for milestone in self._milestones:
+-            # Do not exceed the total number of epochs
+-            if milestone >= self._num_updates:
+-                raise ValueError(
+-                    "Milestone must be smaller than total number of updates: "
+-                    "num_updates=%d, milestone=%d" % (self._num_updates, milestone)
++            self._param_schedule = values
++            self._num_updates = num_updates
++            self._milestones: List[int] = milestones
++
++            start_epoch = 0
++            for milestone in self._milestones:
++                # Do not exceed the total number of epochs
++                if milestone >= self._num_updates:
++                    raise ValueError(
++                        "Milestone must be smaller than total number of updates: "
++                        "num_updates=%d, milestone=%d" % (self._num_updates, milestone)
++                    )
++                # Must be in ascending order
++                if start_epoch >= milestone:
++                    raise ValueError(
++                        "Milestone must be smaller than start epoch: start_epoch=%d, milestone=%d"
++                        % (start_epoch, milestone)
++                    )
++                start_epoch = milestone
++
++    def __call__(self, where: float) ->float:
++            if where > 1.0:
++                raise RuntimeError(
++                    f"where in ParamScheduler must be in [0, 1]: got {where}"
+                 )
+-            # Must be in ascending order
+-            if start_epoch >= milestone:
+-                raise ValueError(
+-                    "Milestone must be smaller than start epoch: start_epoch=%d, milestone=%d"
+-                    % (start_epoch, milestone)
+-                )
+-            start_epoch = milestone
+-
+-    def __call__(self, where: float) -> float:
+-        if where > 1.0:
+-            raise RuntimeError(
+-                f"where in ParamScheduler must be in [0, 1]: got {where}"
+-            )
+-        epoch_num = int((where + self.WHERE_EPSILON) * self._num_updates)
+-        return self._param_schedule[bisect.bisect_right(self._milestones, epoch_num)]
++            epoch_num = int((where + self.WHERE_EPSILON) * self._num_updates)
++            return self._param_schedule[bisect.bisect_right(self._milestones, epoch_num)]
+ 
+ 
+ class PolynomialDecayParamScheduler(ParamScheduler):

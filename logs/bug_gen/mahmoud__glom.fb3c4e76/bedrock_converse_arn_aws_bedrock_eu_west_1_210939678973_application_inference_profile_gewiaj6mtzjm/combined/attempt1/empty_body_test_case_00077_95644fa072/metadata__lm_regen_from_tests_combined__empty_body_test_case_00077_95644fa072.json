@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```python\n<full rewritten function code including the unchanged signature>\ndef glom(target, spec, **kwargs):\n    scope = kwargs.pop('scope', _DEFAULT_SCOPE)\n    if kwargs:\n        raise TypeError('glom() got unexpected keyword argument(s): %r' % sorted(kwargs.keys()))\n    return scope[glom](target, spec, scope)\n\ndef chain_child(scope):\n    return scope.new_child({})\n\ndef __init__(self, name, subspec=_MISSING):\n    self.name, self.subspec = name, subspec\n\ndef glomit(self, target, scope):\n    subspec = self.subspec\n    scope_key = (Ref, self.name)\n    if subspec is _MISSING:\n        subspec = scope[scope_key]\n    else:\n        scope[scope_key] = subspec\n    return scope[glom](target, subspec, scope)\n```",
+  "rewrite": "<full rewritten function code including the unchanged signature>\ndef glom(target, spec, **kwargs):\n    scope = kwargs.pop('scope', _DEFAULT_SCOPE)\n    if kwargs:\n        raise TypeError('glom() got unexpected keyword argument(s): %r' % sorted(kwargs.keys()))\n    return scope[glom](target, spec, scope)\n\ndef chain_child(scope):\n    return scope.new_child({})\n\ndef __init__(self, name, subspec=_MISSING):\n    self.name, self.subspec = name, subspec\n\ndef glomit(self, target, scope):\n    subspec = self.subspec\n    scope_key = (Ref, self.name)\n    if subspec is _MISSING:\n        subspec = scope[scope_key]\n    else:\n        scope[scope_key] = subspec\n    return scope[glom](target, subspec, scope)",
+  "strategy": "lm_regen_from_tests_combined"
+}

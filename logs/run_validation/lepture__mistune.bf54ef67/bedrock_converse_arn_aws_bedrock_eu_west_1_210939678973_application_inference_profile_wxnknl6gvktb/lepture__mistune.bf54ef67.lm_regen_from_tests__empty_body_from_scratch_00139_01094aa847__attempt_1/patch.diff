@@ -1,0 +1,74 @@
+--- a/src/mistune/plugins/abbr.py
++++ b/src/mistune/plugins/abbr.py
+@@ -33,45 +33,37 @@
+     return m.end() + 1
+ 
+ 
+-def process_text(inline: "InlineParser", text: str, state: "InlineState") -> None:
+-    ref = state.env.get("ref_abbrs")
+-    if not ref:
+-        return state.append_token({'type': 'text', 'raw': text})
+-
+-    if state.tokens:
+-        last = state.tokens[-1]
+-        if last['type'] == 'text':
+-            state.tokens.pop()
+-            text = last['raw'] + text
+-
+-    abbrs_re = state.env.get('abbrs_re')
+-    if not abbrs_re:
+-        abbrs_re = re.compile(r'|'.join(re.escape(k) for k in ref.keys()))
+-        state.env['abbrs_re'] = abbrs_re
+-
++def process_text(inline: 'InlineParser', text: str, state: 'InlineState'
++    ) ->None:
++    ref_abbrs = state.env.get('ref_abbrs', {})
++    if not ref_abbrs:
++        # No abbreviations defined, just append the text as-is
++        state.append_token({'type': 'text', 'raw': text})
++        return
++    
++    # Sort by length (longest first) to match longer abbreviations first
++    sorted_abbrs = sorted(ref_abbrs.keys(), key=len, reverse=True)
++    
++    # Create a pattern that matches any of the abbreviations as whole words
++    pattern = r'\b(' + '|'.join(re.escape(abbr) for abbr in sorted_abbrs) + r')\b'
++    
+     pos = 0
+-    while pos < len(text):
+-        m = abbrs_re.search(text, pos)
+-        if not m:
+-            break
+-
+-        end_pos = m.start()
+-        if end_pos > pos:
+-            hole = text[pos:end_pos]
+-            state.append_token({'type': 'text', 'raw': hole})
+-
+-        label = m.group(0)
++    for m in re.finditer(pattern, text):
++        # Add text before the match
++        if m.start() > pos:
++            state.append_token({'type': 'text', 'raw': text[pos:m.start()]})
++        
++        # Add the abbreviation token
++        abbr_text = m.group(1)
+         state.append_token({
+             'type': 'abbr',
+-            'children': [{'type': 'text', 'raw': label}],
+-            'attrs': {'title': ref[label]}
++            'raw': abbr_text,
++            'attrs': {'title': ref_abbrs[abbr_text]}
+         })
+         pos = m.end()
+-
+-    if pos == 0:
+-        # special case, just pure text
+-        state.append_token({'type': 'text', 'raw': text})
+-    elif pos < len(text):
++    
++    # Add remaining text
++    if pos < len(text):
+         state.append_token({'type': 'text', 'raw': text[pos:]})
+ 
+ 

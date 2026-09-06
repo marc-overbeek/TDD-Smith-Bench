@@ -1,0 +1,34 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -608,30 +608,7 @@
+     function gets a string spec.
+     """
+     def __init__(self, *path_parts):
+-        if not path_parts:
+-            self.path_t = T
+-            return
+-        if isinstance(path_parts[0], TType):
+-            path_t = path_parts[0]
+-            offset = 1
+-        else:
+-            path_t = T
+-            offset = 0
+-        for part in path_parts[offset:]:
+-            if isinstance(part, Path):
+-                part = part.path_t
+-            if isinstance(part, TType):
+-                sub_parts = part.__ops__
+-                if sub_parts[0] is not T:
+-                    raise ValueError('path segment must be path from T, not %r'
+-                                     % sub_parts[0])
+-                i = 1
+-                while i < len(sub_parts):
+-                    path_t = _t_child(path_t, sub_parts[i], sub_parts[i + 1])
+-                    i += 2
+-            else:
+-                path_t = _t_child(path_t, 'P', part)
+-        self.path_t = path_t
++        pass
+ 
+     _CACHE = {True: {}, False: {}}
+     _MAX_CACHE = 10000

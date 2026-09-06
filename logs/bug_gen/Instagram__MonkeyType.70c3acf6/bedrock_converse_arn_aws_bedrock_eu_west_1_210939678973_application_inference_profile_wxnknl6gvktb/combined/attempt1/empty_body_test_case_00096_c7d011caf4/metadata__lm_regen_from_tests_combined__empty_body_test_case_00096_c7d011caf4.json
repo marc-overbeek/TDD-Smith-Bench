@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef _compute_bases(self, klass):\n    bases = []\n    curr_klass = klass\n    while curr_klass is not object:\n        bases.append(curr_klass)\n        curr_bases = curr_klass.__bases__\n        if len(curr_bases) != 1:\n            break\n        curr_klass = curr_bases[0]\n    return bases[::-1]\n\ndef rewrite_Union(self, union):\n    klasses = union.__args__\n    all_bases = []\n    for klass in klasses:\n        klass_bases = self._compute_bases(klass)\n        all_bases.append(klass_bases)\n    common_bases = functools.reduce(self._merge_common_bases, all_bases)\n    if common_bases:\n        return common_bases[-1]\n    return union\n```",
+  "rewrite": "def _compute_bases(self, klass):\n    bases = []\n    curr_klass = klass\n    while curr_klass is not object:\n        bases.append(curr_klass)\n        curr_bases = curr_klass.__bases__\n        if len(curr_bases) != 1:\n            break\n        curr_klass = curr_bases[0]\n    return bases[::-1]\n\ndef rewrite_Union(self, union):\n    klasses = union.__args__\n    all_bases = []\n    for klass in klasses:\n        klass_bases = self._compute_bases(klass)\n        all_bases.append(klass_bases)\n    common_bases = functools.reduce(self._merge_common_bases, all_bases)\n    if common_bases:\n        return common_bases[-1]\n    return union",
+  "strategy": "lm_regen_from_tests_combined"
+}

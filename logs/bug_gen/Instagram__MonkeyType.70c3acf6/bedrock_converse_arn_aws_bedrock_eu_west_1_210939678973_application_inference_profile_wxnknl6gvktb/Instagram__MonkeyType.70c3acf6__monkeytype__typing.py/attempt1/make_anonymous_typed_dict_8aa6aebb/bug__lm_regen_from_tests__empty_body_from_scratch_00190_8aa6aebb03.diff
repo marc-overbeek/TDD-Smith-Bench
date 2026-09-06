@@ -1,0 +1,17 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -358,6 +358,14 @@
+             required_fields=required_fields, optional_fields=optional_fields
+         )
+ 
++    @abstractmethod
++    def make_anonymous_typed_dict(self, required_fields, optional_fields): ...
++
++    def make_anonymous_typed_dict(self, required_fields, optional_fields):
++        return make_typed_dict(
++            required_fields=required_fields, optional_fields=optional_fields
++        )
++
+     def make_builtin_typed_dict(self, name, annotations, total):
+         return TypedDict(name, annotations, total=total)
+ 

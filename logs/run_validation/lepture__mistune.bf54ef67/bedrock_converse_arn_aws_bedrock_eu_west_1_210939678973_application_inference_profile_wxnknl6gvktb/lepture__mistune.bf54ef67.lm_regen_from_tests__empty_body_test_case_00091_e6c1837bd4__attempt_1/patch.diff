@@ -1,0 +1,42 @@
+--- a/src/mistune/renderers/rst.py
++++ b/src/mistune/renderers/rst.py
+@@ -21,12 +21,10 @@
+     }
+     INLINE_IMAGE_PREFIX = 'img-'
+ 
+-    def iter_tokens(
+-        self, tokens: Iterable[Dict[str, Any]], state: BlockState
+-    ) -> Iterable[str]:
++    def iter_tokens(self, tokens: Iterable[Dict[str, Any]], state: BlockState
++        ) ->Iterable[str]:
+         prev = None
+         for tok in tokens:
+-            # ignore blank line
+             if tok['type'] == 'blank_line':
+                 continue
+             tok['prev'] = prev
+@@ -40,7 +38,7 @@
+         out += '\n\n'.join(self.render_referrences(state)) + '\n'
+         return strip_end(out)
+ 
+-    def render_referrences(self, state: BlockState) -> Iterable[str]:
++    def render_referrences(self, state: BlockState) ->Iterable[str]:
+         images = state.env['inline_images']
+         for index, token in enumerate(images):
+             attrs = token['attrs']
+@@ -86,7 +84,7 @@
+         # rst does not support inline html
+         return ''
+ 
+-    def paragraph(self, token: Dict[str, Any], state: BlockState) -> str:
++    def paragraph(self, token: Dict[str, Any], state: BlockState) ->str:
+         children = token['children']
+         if len(children) == 1 and children[0]['type'] == 'image':
+             image = children[0]
+@@ -146,5 +144,5 @@
+     def block_error(self, token: Dict[str, Any], state: BlockState) -> str:
+         return ''
+ 
+-    def list(self, token: Dict[str, Any], state: BlockState) -> str:
++    def list(self, token: Dict[str, Any], state: BlockState) ->str:
+         return render_list(self, token, state)

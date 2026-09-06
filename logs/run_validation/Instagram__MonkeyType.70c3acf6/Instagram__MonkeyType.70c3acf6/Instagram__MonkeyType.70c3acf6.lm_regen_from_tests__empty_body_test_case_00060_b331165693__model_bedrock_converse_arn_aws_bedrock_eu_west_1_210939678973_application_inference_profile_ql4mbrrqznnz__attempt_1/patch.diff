@@ -1,0 +1,225 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -156,35 +156,38 @@
+     return imports
+ 
+ 
+-def update_signature_args(
+-    sig: inspect.Signature,
+-    arg_types: Dict[str, type],
+-    has_self: bool,
+-    existing_annotation_strategy: ExistingAnnotationStrategy = ExistingAnnotationStrategy.REPLICATE,
+-) -> inspect.Signature:
+-    """Update argument annotations with the supplied types"""
++def update_signature_args(sig: inspect.Signature, arg_types: Dict[str, type
++    ], has_self: bool, existing_annotation_strategy:
++    ExistingAnnotationStrategy=ExistingAnnotationStrategy.REPLICATE
++    ) ->inspect.Signature:
+     params = []
+-    for arg_idx, name in enumerate(sig.parameters):
+-        param = sig.parameters[name]
+-        typ = arg_types.get(name)
+-        typ = inspect.Parameter.empty if typ is None else typ
+-        is_self = has_self and arg_idx == 0
+-        annotated = param.annotation is not inspect.Parameter.empty
+-        if (
+-            annotated
+-            and existing_annotation_strategy == ExistingAnnotationStrategy.OMIT
+-        ):
+-            # generate no annotation for already-annotated args when generating
+-            # a stub to apply, avoiding the possibility of "incompatible
+-            # annotation" errors
+-            param = param.replace(annotation=inspect.Parameter.empty)
+-        # Don't touch existing annotations unless asked to ignore them
+-        if not is_self and (
+-            (existing_annotation_strategy == ExistingAnnotationStrategy.IGNORE)
+-            or not annotated
+-        ):
+-            param = param.replace(annotation=typ)
+-        params.append(param)
++    for i, (name, param) in enumerate(sig.parameters.items()):
++        if has_self and i == 0:
++            params.append(param.replace(annotation=inspect.Parameter.empty))
++            continue
++        if name not in arg_types:
++            params.append(param)
++            continue
++        typ = arg_types[name]
++        if existing_annotation_strategy == ExistingAnnotationStrategy.REPLICATE:
++            if param.annotation is not inspect.Parameter.empty:
++                params.append(param)
++            elif typ is None:
++                params.append(param)
++            else:
++                params.append(param.replace(annotation=typ))
++        elif existing_annotation_strategy == ExistingAnnotationStrategy.IGNORE:
++            if typ is None:
++                params.append(param.replace(annotation=inspect.Parameter.empty))
++            else:
++                params.append(param.replace(annotation=typ))
++        elif existing_annotation_strategy == ExistingAnnotationStrategy.OMIT:
++            if param.annotation is not inspect.Parameter.empty:
++                params.append(param.replace(annotation=inspect.Parameter.empty))
++            elif typ is None:
++                params.append(param)
++            else:
++                params.append(param.replace(annotation=typ))
+     return sig.replace(parameters=params)
+ 
+ 
+@@ -320,7 +323,7 @@
+             f" but was called with name={name}, annotations={annotations}, total={total}."
+         )
+ 
+-    def generic_rewrite(self, typ: Any) -> str:
++    def generic_rewrite(self, typ: Any) ->str:
+         if hasattr(typ, "__supertype__"):
+             rendered = str(typ.__name__)
+         elif is_forward_ref(typ):
+@@ -382,101 +385,39 @@
+     return RenderAnnotation().rewrite(anno)
+ 
+ 
+-def render_parameter(param: inspect.Parameter) -> str:
+-    """Convert a parameter into its stub representation.
+-
+-    NB: This is copied almost entirely from https://github.com/python/cpython/blob/3.6/Lib/inspect.py
+-    with the modification that it calls our own rendering functions for annotations.
+-
+-    TODO: push a patch upstream so we don't have to do this on Python 3.x.
+-    """
+-    kind = param.kind
+-    formatted = param.name
+-
+-    # Add annotation and default value
++def render_parameter(param: inspect.Parameter) ->str:
++    result = param.name
+     if param.annotation is not inspect.Parameter.empty:
+         anno = param.annotation
+-        if not _is_optional(anno) and param.default is None:
+-            anno = Optional[anno]
+-        rendered = render_annotation(anno)
+-        formatted = "{}: {}".format(formatted, rendered)
+-
++        if _is_optional(anno):
++            rendered_anno = render_annotation(anno)
++        elif param.default is None and not _is_optional(anno):
++            rendered_anno = "Optional[" + render_annotation(anno) + "]"
++        else:
++            rendered_anno = render_annotation(anno)
++        result += ": " + rendered_anno
+     if param.default is not inspect.Parameter.empty:
+-        formatted = "{} = ...".format(formatted)
+-
+-    if kind == inspect.Parameter.VAR_POSITIONAL:
+-        formatted = "*" + formatted
+-    elif kind == inspect.Parameter.VAR_KEYWORD:
+-        formatted = "**" + formatted
+-
+-    return formatted
+-
+-
+-def render_signature(
+-    sig: inspect.Signature, max_line_len: Optional[int] = None, prefix: str = ""
+-) -> str:
+-    """Convert a signature into its stub representation.
+-
+-    NB: This is copied almost entirely from https://github.com/python/cpython/blob/3.6/Lib/inspect.py
+-    with the modification that it calls our own rendering functions for annotations.
+-
+-    TODO: push a patch upstream so we don't have to do this on Python 3.x.
+-    """
+-    formatted_params = []
+-    render_pos_only_separator = False
+-    render_kw_only_separator = True
+-    for param in sig.parameters.values():
+-        formatted = render_parameter(param)
+-        kind = param.kind
+-
+-        if kind == inspect.Parameter.POSITIONAL_ONLY:
+-            render_pos_only_separator = True
+-        elif render_pos_only_separator:
+-            # It's not a positional-only parameter, and the flag
+-            # is set to 'True' (there were pos-only params before.)
+-            formatted_params.append("/")
+-            render_pos_only_separator = False
+-
+-        if kind == inspect.Parameter.VAR_POSITIONAL:
+-            # OK, we have an '*args'-like parameter, so we won't need
+-            # a '*' to separate keyword-only arguments
+-            render_kw_only_separator = False
+-        elif kind == inspect.Parameter.KEYWORD_ONLY and render_kw_only_separator:
+-            # We have a keyword-only parameter to render and we haven't
+-            # rendered an '*args'-like parameter before, so add a '*'
+-            # separator to the parameters list ("foo(arg1, *, arg2)" case)
+-            formatted_params.append("*")
+-            # This condition should be only triggered once, so
+-            # reset the flag
+-            render_kw_only_separator = False
+-
+-        formatted_params.append(formatted)
+-
+-    if render_pos_only_separator:
+-        # There were only positional-only parameters, hence the
+-        # flag was not reset to 'False'
+-        formatted_params.append("/")
+-
+-    rendered_return = ""
++        result += " = ..."
++    return result
++
++
++def render_signature(sig: inspect.Signature, max_line_len: Optional[int]=
++    None, prefix: str='') ->str:
++    params = [render_parameter(p) for p in sig.parameters.values()]
+     if sig.return_annotation is not inspect.Signature.empty:
+-        anno = render_annotation(sig.return_annotation)
+-        rendered_return = " -> {}".format(anno)
+-
+-    # first try render it into one single line, if it doesn't exceed
+-    # the limit then just use it
+-    rendered_single_line = "({})".format(", ".join(formatted_params)) + rendered_return
+-    if max_line_len is None or len(rendered_single_line) <= max_line_len:
+-        return rendered_single_line
+-
+-    # add prefix to all lines except the first one
+-    rendered_multi_lines = ["("]
+-    for i, f_param in enumerate(formatted_params):
+-        line = "    " + f_param
+-        if i != len(formatted_params) - 1:
+-            line += ","
+-        rendered_multi_lines.append(prefix + line)
+-    rendered_multi_lines.append(prefix + ")" + rendered_return)
+-    return "\n".join(rendered_multi_lines)
++        return_anno = " -> " + render_annotation(sig.return_annotation)
++    else:
++        return_anno = ""
++    single_line = "(" + ", ".join(params) + ")" + return_anno
++    if max_line_len is None or len(single_line) <= max_line_len:
++        return single_line
++    inner_prefix = prefix + "    "
++    lines = ["("]
++    for i, param in enumerate(params):
++        comma = "," if i < len(params) - 1 else ""
++        lines.append(inner_prefix + param + comma)
++    lines.append(prefix + ")" + return_anno)
++    return "\n".join(lines)
+ 
+ 
+ class AttributeStub(Stub):
+@@ -510,14 +451,12 @@
+         self.strip_modules = strip_modules or []
+         self.is_async = is_async
+ 
+-    def render(self, prefix: str = "") -> str:
++    def render(self, prefix: str='') ->str:
+         s = prefix
+         if self.is_async:
+             s += "async "
+         s += "def " + self.name
+         s += render_signature(self.signature, 120 - len(s), prefix) + ": ..."
+-        # Yes, this is a horrible hack, but inspect.py gives us no way to
+-        # specify the function that should be used to format annotations.
+         for module in self.strip_modules:
+             s = s.replace(module + ".", "")
+         if self.kind == FunctionKind.CLASS:

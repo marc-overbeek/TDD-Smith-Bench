@@ -1,0 +1,23 @@
+--- a/demo/inbox.py
++++ b/demo/inbox.py
+@@ -61,19 +61,7 @@
+         self.user_ids.add(event.liker_id)
+ 
+     def aggregate(self):
+-        feedentries_by_id = self.repo.get_feed_entries_by_ids(
+-            self.events_by_feedentry_id.keys()
+-        )
+-        users_by_id = self.repo.get_users_by_ids(self.user_ids)
+-
+-        return [
+-            AggregatedItem(
+-                type=self.type,
+-                text=self._describe(events, feedentries_by_id[fid], users_by_id),
+-                published=max(e.published for e in events),
+-            )
+-            for fid, events in self.events_by_feedentry_id.items()
+-        ]
++        pass
+ 
+     def _describe(self, events, feedentry, users_by_id: Dict[UserId, User]):
+         users = [users_by_id[e.liker_id].name for e in events]

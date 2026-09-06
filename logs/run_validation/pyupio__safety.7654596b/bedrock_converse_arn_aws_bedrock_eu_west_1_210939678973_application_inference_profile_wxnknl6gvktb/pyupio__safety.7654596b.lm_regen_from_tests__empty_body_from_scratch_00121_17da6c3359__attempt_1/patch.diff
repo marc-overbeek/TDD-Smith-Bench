@@ -1,0 +1,76 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -1248,45 +1248,33 @@
+     return template.render(**kwargs)
+ 
+ 
+-def format_unpinned_vulnerabilities(unpinned_packages: Dict[str, List[Any]], columns: Optional[int] = None) -> List[str]:
+-    """
+-    Format unpinned vulnerabilities.
+-
+-    Args:
+-        unpinned_packages (Dict[str, List[Any]]): Unpinned packages and their vulnerabilities.
+-        columns (Optional[int], optional): Number of columns for formatting. Defaults to None.
+-
+-    Returns:
+-        List[str]: Formatted unpinned vulnerabilities.
+-    """
+-    lines = []
+-
++def format_unpinned_vulnerabilities(unpinned_packages: Dict[str, List[Any]],
++    columns: Optional[int]=None) ->List[str]:
++    if not columns:
++        columns = get_terminal_size().columns
++    
+     if not unpinned_packages:
+-        return lines
+-
++        return []
++    
++    result = []
++    
++    # Get list of package names
++    package_names = list(unpinned_packages.keys())
++    
++    # Build the first warning line about unpinned packages
++    if len(package_names) == 1:
++        packages_str = package_names[0]
++    else:
++        packages_str = ' and '.join([', '.join(package_names[:-1]), package_names[-1]] if len(package_names) > 1 else package_names)
++    
++    first_warning = f"Warning: {packages_str} {'is' if len(package_names) == 1 else 'are'} unpinned. Safety by default does not report vulnerabilities for unpinned packages."
++    result.append(format_long_text(first_warning, columns=columns, start_line_decorator='', end_line_decorator=''))
++    
++    # Build warnings for each package with vulnerability counts
+     for pkg_name, vulns in unpinned_packages.items():
+-        total = {vuln.vulnerability_id for vuln in vulns}
+-        pkg = vulns[0].pkg
+-        doc_msg: str = get_specifier_range_info(style=False, pin_hint=True)
+-
+-        match_text = 'vulnerabilities match' if len(total) > 1 else 'vulnerability matches'
+-        reqs = ', '.join([str(r) for r in pkg.get_unpinned_req()])
+-
+-        msg = f"-> Warning: {len(total)} known {match_text} the {pkg.name} versions that could be " \
+-              f"installed from your specifier{'s' if len(pkg.requirements) > 1 else ''}: {reqs} (unpinned). These vulnerabilities are not " \
+-              f"reported by default. To report these vulnerabilities set 'ignore-unpinned-requirements' to False " \
+-              f"under 'security' in your policy file. " \
+-              f"See https://docs.pyup.io/docs/safety-20-policy-file for more information."
+-
+-        kwargs = {'color': 'yellow', 'indent': '', 'sub_indent': ' ' * 3, 'start_line_decorator': '',
+-                  'end_line_decorator': ' '}
+-
+-        if columns:
+-            kwargs.update({'columns': columns})
+-
+-        msg = format_long_text(text=msg, **kwargs)
+-        doc_msg = format_long_text(text=doc_msg, **{**kwargs, **{'indent': ' ' * 3}})
+-
+-        lines.append(f'{msg}\n{doc_msg}')
+-
+-    return lines
++        vuln_count = len(vulns)
++        vuln_word = 'vulnerability' if vuln_count == 1 else 'vulnerabilities'
++        warning = f"Warning: {vuln_count} known {vuln_word} match the {pkg_name} versions that could be installed given your current install specifier."
++        result.append(format_long_text(warning, columns=columns, start_line_decorator='', end_line_decorator=''))
++    
++    return result

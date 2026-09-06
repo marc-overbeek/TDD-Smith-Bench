@@ -1,0 +1,27 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/metadata.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/metadata.py
+@@ -38,15 +38,15 @@
+    """
+ 
+     def __init__(self, endpoints, claims={}, raise_errors=True):
+-        assert isinstance(claims, dict)  # noqa: S101
+-        for endpoint in endpoints:
+-            assert isinstance(endpoint, BaseEndpoint)  # noqa: S101
+-
+-        BaseEndpoint.__init__(self)
+-        self.raise_errors = raise_errors
+-        self.endpoints = endpoints
+-        self.initial_claims = claims
+-        self.claims = self.validate_metadata_server()
++            assert isinstance(claims, dict)  # noqa: S101
++            for endpoint in endpoints:
++                assert isinstance(endpoint, BaseEndpoint)  # noqa: S101
++
++            BaseEndpoint.__init__(self)
++            self.raise_errors = raise_errors
++            self.endpoints = endpoints
++            self.initial_claims = claims
++            self.claims = self.validate_metadata_server()
+ 
+     @catch_errors_and_unavailability
+     def create_metadata_response(self, uri, http_method='GET', body=None,

@@ -1,0 +1,18 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -474,12 +474,9 @@
+     An immutable multidict, containing both file uploads and text input.
+     """
+ 
+-    def __init__(
+-        self,
+-        *args: FormData | typing.Mapping[str, str | UploadFile] | list[tuple[str, str | UploadFile]],
+-        **kwargs: str | UploadFile,
+-    ) -> None:
+-        super().__init__(*args, **kwargs)
++    def __init__(self, *args: (FormData | typing.Mapping[str, str | UploadFile] |
++        list[tuple[str, str | UploadFile]]), **kwargs: (str | UploadFile)) ->None:
++        pass
+ 
+     async def close(self) -> None:
+         for key, value in self.multi_items():

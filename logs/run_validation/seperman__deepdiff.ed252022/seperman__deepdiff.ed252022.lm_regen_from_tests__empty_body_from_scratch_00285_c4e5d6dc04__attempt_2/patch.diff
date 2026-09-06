@@ -1,0 +1,20 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -29,7 +29,16 @@
+ 
+ class SetOrdered(SetOrderedBase):
+     def __repr__(self):
+-        return str(list(self))
++        return repr(dict(self))
++
++    def __repr__(self):
++        try:
++            return str(dict(self))
++        except Exception:
++            return object.__repr__(self)
++
++    def __repr__(self):
++        return str(dict(self))
+ 
+ 
+ try:

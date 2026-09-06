@@ -1,0 +1,39 @@
+--- a/deepdiff/commands.py
++++ b/deepdiff/commands.py
+@@ -213,23 +213,24 @@
+     """
+     Deep Extract Commandline
+ 
+-    Extract an item from a file based on the path that is passed.
++    Extract an item from a file based on the path inside the data structure.
+     It can read csv, tsv, json, yaml, and toml files.
+ 
+     """
+     try:
+         content = load_path_content(path)
+-    except Exception as e:  # pragma: no cover.
+-        if debug:  # pragma: no cover.
+-            raise  # pragma: no cover.
+-        else:  # pragma: no cover.
+-            sys.exit(str(f"Error when loading {path}: {e}"))  # pragma: no cover.
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when loading {path}: {e}"))
+ 
+     try:
+         result = deep_extract(content, path_inside)
+-    except Exception as e:  # pragma: no cover.
+-        if debug:  # pragma: no cover.
+-            raise  # pragma: no cover.
+-        else:  # pragma: no cover.
+-            sys.exit(str(f"Error when running deep search on {path}: {e}"))  # pragma: no cover.
+-    pprint(result, indent=2)
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when extracting {path_inside} from {path}: {e}"))
++
++    print(result)

@@ -1,0 +1,76 @@
+--- a/oauthlib/oauth1/rfc5849/signature.py
++++ b/oauthlib/oauth1/rfc5849/signature.py
+@@ -52,24 +52,19 @@
+ 
+ # ==== Common functions ==========================================
+ 
+-def signature_base_string(
+-        http_method: str,
+-        base_str_uri: str,
+-        normalized_encoded_request_parameters: str) -> str:
+-    """
+-    Construct the signature base string.
+-
+-    The *signature base string* is the value that is calculated and signed by
+-    the client. It is also independently calculated by the server to verify
+-    the signature, and therefore must produce the exact same value at both
+-    ends or the signature won't verify.
+-
+-    The rules for calculating the *signature base string* are defined in
+-    section 3.4.1.1`_ of RFC 5849.
++def signature_base_string(http_method: str, base_str_uri: str,
++    normalized_encoded_request_parameters: str) ->str:
++    """
++    Calculates the _signature base string_.
++
++    The *signature base string* is the value that is signed by the client
++    using its credentials.
++
++    The rules for constructing the signature base string are defined in
++    `section 3.4.1.1`_ of RFC 5849.
+ 
+     .. _`section 3.4.1.1`: https://tools.ietf.org/html/rfc5849#section-3.4.1.1
+     """
+-
+     # The signature base string is constructed by concatenating together,
+     # in order, the following HTTP request elements:
+ 
+@@ -78,29 +73,27 @@
+     #     MUST be encoded (`Section 3.6`_).
+     #
+     # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    base_string = utils.escape(http_method.upper())
++    method = http_method.upper()
+ 
+     # 2.  An "&" character (ASCII code 38).
+-    base_string += '&'
+-
+     # 3.  The base string URI from `Section 3.4.1.2`_, after being encoded
+     #     (`Section 3.6`_).
+     #
+     # .. _`Section 3.4.1.2`: https://tools.ietf.org/html/rfc5849#section-3.4.1.2
+     # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    base_string += utils.escape(base_str_uri)
+ 
+     # 4.  An "&" character (ASCII code 38).
+-    base_string += '&'
+-
+-    # 5.  The request parameters as normalized in `Section 3.4.1.3.2`_, after
+-    #     being encoded (`Section 3.6`).
++    # 5.  The normalized request parameters string from `Section 3.4.1.3.2`_,
++    #     after being encoded (`Section 3.6`_).
+     #
+     # .. _`Sec 3.4.1.3.2`: https://tools.ietf.org/html/rfc5849#section-3.4.1.3.2
+     # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    base_string += utils.escape(normalized_encoded_request_parameters)
+-
+-    return base_string
++
++    return '&'.join([
++        utils.escape(method),
++        utils.escape(base_str_uri),
++        utils.escape(normalized_encoded_request_parameters)
++    ])
+ 
+ 
+ def base_string_uri(uri: str, host: str = None) -> str:

@@ -1,0 +1,105 @@
+--- a/fvcore/nn/giou_loss.py
++++ b/fvcore/nn/giou_loss.py
+@@ -5,61 +5,69 @@
+ import torch
+ 
+ 
+-def giou_loss(
+-    boxes1: torch.Tensor,
+-    boxes2: torch.Tensor,
+-    reduction: str = "none",
+-    eps: float = 1e-7,
+-) -> torch.Tensor:
++def giou_loss(boxes1: torch.Tensor, boxes2: torch.Tensor, reduction: str=
++    'none', eps: float=1e-07) ->torch.Tensor:
+     """
+     Generalized Intersection over Union Loss (Hamid Rezatofighi et. al)
+     https://arxiv.org/abs/1902.09630
+ 
+     Gradient-friendly IoU loss with an additional penalty that is non-zero when the
+-    boxes do not overlap and scales with the size of their smallest enclosing box.
+-    This loss is symmetric, so the boxes1 and boxes2 arguments are interchangeable.
++    boxes do not overlap and scales with the size of their gap. This loss is
++    symmetric, so the boxes1 and boxes2 arguments are interchangeable.
+ 
+     Args:
+         boxes1, boxes2 (Tensor): box locations in XYXY format, shape (N, 4) or (4,).
+         reduction: 'none' | 'mean' | 'sum'
+-                 'none': No reduction will be applied to the output.
+-                 'mean': The output will be averaged.
+-                 'sum': The output will be summed.
++                   'none': No reduction will be applied to the output.
++                   'mean': The output will be averaged.
++                   'sum': The output will be summed.
+         eps (float): small number to prevent division by zero
++
++    Returns:
++        Loss tensor with the reduction option applied.
+     """
+-
+     x1, y1, x2, y2 = boxes1.unbind(dim=-1)
+     x1g, y1g, x2g, y2g = boxes2.unbind(dim=-1)
+ 
+-    assert (x2 >= x1).all(), "bad box: x1 larger than x2"
+-    assert (y2 >= y1).all(), "bad box: y1 larger than y2"
++    # Intersection coordinates
++    xi1 = torch.max(x1, x1g)
++    yi1 = torch.max(y1, y1g)
++    xi2 = torch.min(x2, x2g)
++    yi2 = torch.min(y2, y2g)
+ 
+-    # Intersection keypoints
+-    xkis1 = torch.max(x1, x1g)
+-    ykis1 = torch.max(y1, y1g)
+-    xkis2 = torch.min(x2, x2g)
+-    ykis2 = torch.min(y2, y2g)
++    # Intersection area
++    inter_width = (xi2 - xi1).clamp(min=0)
++    inter_height = (yi2 - yi1).clamp(min=0)
++    inter_area = inter_width * inter_height
+ 
+-    intsctk = torch.zeros_like(x1)
+-    mask = (ykis2 > ykis1) & (xkis2 > xkis1)
+-    intsctk[mask] = (xkis2[mask] - xkis1[mask]) * (ykis2[mask] - ykis1[mask])
+-    unionk = (x2 - x1) * (y2 - y1) + (x2g - x1g) * (y2g - y1g) - intsctk
+-    iouk = intsctk / (unionk + eps)
++    # Union area
++    area1 = (x2 - x1) * (y2 - y1)
++    area2 = (x2g - x1g) * (y2g - y1g)
++    union_area = area1 + area2 - inter_area
+ 
+-    # smallest enclosing box
++    # IoU
++    iou = inter_area / (union_area + eps)
++
++    # Enclosing box coordinates
+     xc1 = torch.min(x1, x1g)
+     yc1 = torch.min(y1, y1g)
+     xc2 = torch.max(x2, x2g)
+     yc2 = torch.max(y2, y2g)
+ 
+-    area_c = (xc2 - xc1) * (yc2 - yc1)
+-    miouk = iouk - ((area_c - unionk) / (area_c + eps))
++    # Enclosing box area
++    enclosing_area = (xc2 - xc1) * (yc2 - yc1)
+ 
+-    loss = 1 - miouk
++    # GIoU
++    giou = iou - (enclosing_area - union_area) / (enclosing_area + eps)
+ 
+-    if reduction == "mean":
+-        loss = loss.mean() if loss.numel() > 0 else 0.0 * loss.sum()
+-    elif reduction == "sum":
+-        loss = loss.sum()
++    # GIoU loss
++    loss = 1 - giou
+ 
+-    return loss
++    if reduction == 'mean':
++        if loss.numel() == 0:
++            return loss.sum()
++        return loss.mean()
++    elif reduction == 'sum':
++        return loss.sum()
++    else:  # 'none'
++        return loss

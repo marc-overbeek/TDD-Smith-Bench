@@ -1,0 +1,267 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1442,7 +1442,6 @@
+                 raise TypeError(f'S() takes no positional arguments, got: {args!r}')
+             if not kwargs:
+                 raise TypeError('S() expected at least one kwarg, got none')
+-            # TODO: typecheck kwarg vals?
+         return _t_child(self, '(', (args, kwargs))
+ 
+     def __star__(self):
+@@ -1537,122 +1536,84 @@
+ 
+ def _t_eval(target, _t, scope):
+     t_path = _t.__ops__
++    cur = t_path[0]
++    if cur is T:
++        cur = target
++    elif cur is S:
++        cur = scope
++    elif cur is A:
++        cur = scope
+     i = 1
+-    fetch_till = len(t_path)
+-    root = t_path[0]
+-    if root is T:
+-        cur = target
+-    elif root is S or root is A:
+-        # A is basically the same as S, but last step is assign
+-        if root is A:
+-            fetch_till -= 2
+-            if fetch_till < 1:
+-                raise BadSpec('cannot assign without destination')
+-        cur = scope
+-        if fetch_till > 1 and t_path[1] in ('.', 'P'):
+-            cur = _s_first_magic(cur, t_path[2], _t)
+-            i += 2
+-        elif root is S and fetch_till > 1 and t_path[1] == '(':
+-            # S(var='spec') style assignment
+-            _, kwargs = t_path[2]
+-            scope.update({
+-                k: arg_val(target, v, scope) for k, v in kwargs.items()})
+-            return target
+-
+-    else:
+-        raise ValueError('TType instance with invalid root')  # pragma: no cover
+-    pae = None
+-    while i < fetch_till:
+-        op, arg = t_path[i], t_path[i + 1]
+-        arg = arg_val(target, arg, scope)
++    while i < len(t_path):
++        op = t_path[i]
++        arg = t_path[i + 1]
++        i += 2
+         if op == '.':
++            if cur is scope and isinstance(arg, str):
++                cur = _s_first_magic(scope, arg, _t)
++            else:
++                _get = scope[TargetRegistry].get_handler('get', cur, path=scope[Path])
++                try:
++                    cur = _get(cur, arg)
++                except Exception as e:
++                    raise PathAccessError(e, _t, (i - 2) // 2)
++        elif op == '[':
++            _get = scope[TargetRegistry].get_handler('get', cur, path=scope[Path])
+             try:
+-                cur = getattr(cur, arg)
+-            except AttributeError as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        elif op == '[':
++                cur = _get(cur, arg)
++            except Exception as e:
++                raise PathAccessError(e, _t, (i - 2) // 2)
++        elif op == 'P':
++            _get = scope[TargetRegistry].get_handler('get', cur, path=scope[Path])
+             try:
+-                cur = cur[arg]
+-            except (KeyError, IndexError, TypeError) as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        elif op == 'P':
+-            # Path type stuff (fuzzy match)
+-            get = scope[TargetRegistry].get_handler('get', cur, path=t_path[2:i+2:2])
+-            try:
+-                cur = get(cur, arg)
++                cur = _get(cur, arg)
+             except Exception as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        elif op in 'xX':
+-            nxt = []
+-            get_handler = scope[TargetRegistry].get_handler
+-            if op == 'x':  # increases arity of cur each time through
+-                # TODO: so many try/except -- could scope[TargetRegistry] stuff be cached on type?
+-                _extend_children(nxt, cur, get_handler)
+-            elif op == 'X':
+-                sofar = set()
+-                _extend_children(nxt, cur, get_handler)
+-                for item in nxt:
+-                    if id(item) not in sofar:
+-                        sofar.add(id(item))
+-                        _extend_children(nxt, item, get_handler)
+-                nxt.insert(0, cur)
+-            # handle the rest of the t_path in recursive calls
+-            cur = []
+-            todo = TType()
+-            todo.__ops__ = (root,) + t_path[i+2:]
+-            for child in nxt:
+-                try:
+-                    cur.append(_t_eval(child, todo, scope))
+-                except PathAccessError:
+-                    pass
+-            break  # we handled the rest in recursive call, break loop
++                raise PathAccessError(e, Path(_t), (i - 2) // 2)
+         elif op == '(':
+             args, kwargs = arg
+-            scope[Path] += t_path[2:i+2:2]
+-            cur = scope[glom](
+-                target, Call(cur, args, kwargs), scope)
+-            # call with target rather than cur,
+-            # because it is probably more intuitive
+-            # if args to the call "reset" their path
+-            # e.g. "T.a" should mean the same thing
+-            # in both of these specs: T.a and T.b(T.a)
+-        else:  # arithmetic operators
++            r = lambda spec: arg_val(cur, spec, scope)
+             try:
+-                if op == '+':
+-                    cur = cur + arg
+-                elif op == '-':
+-                    cur = cur - arg
+-                elif op == '*':
+-                    cur = cur * arg
+-                #elif op == '#':
+-                #    cur = cur // arg  # TODO: python 2 friendly approach?
+-                elif op == '/':
+-                    cur = cur / arg
+-                elif op == '%':
+-                    cur = cur % arg
+-                elif op == ':':
+-                    cur = cur ** arg
+-                elif op == '&':
+-                    cur = cur & arg
+-                elif op == '|':
+-                    cur = cur | arg
+-                elif op == '^':
+-                    cur = cur ^ arg
+-                elif op == '~':
+-                    cur = ~cur
+-                elif op == '_':
+-                    cur = -cur
+-            except (TypeError, ZeroDivisionError) as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        if pae:
+-            raise pae
+-        i += 2
+-    if root is A:
+-        op, arg = t_path[-2:]
+-        if cur is scope:
+-            op = '['  # all assignment on scope is setitem
+-        _assign_op(dest=cur, op=op, arg=arg, val=target, path=_t, scope=scope)
+-        return target  # A should not change the target
++                cur = cur(*[r(a) for a in args], **{k: r(v) for k, v in kwargs.items()})
++            except GlomError:
++                raise
++            except Exception as e:
++                raise PathAccessError(e, _t, (i - 2) // 2)
++        elif op == 'x':
++            get_handler = scope[TargetRegistry].get_handler
++            children = []
++            _extend_children(children, cur, get_handler)
++            cur = children
++        elif op == 'X':
++            get_handler = scope[TargetRegistry].get_handler
++            result = [cur]
++            queue = [cur]
++            while queue:
++                item = queue.pop(0)
++                children = []
++                _extend_children(children, item, get_handler)
++                result.extend(children)
++                queue.extend(children)
++            cur = result
++        elif op in ('+', '-', '*', '#', '/', '%', ':', '&', '|', '^'):
++            r = lambda spec: arg_val(target, spec, scope)
++            rarg = r(arg)
++            try:
++                op_map = {'+': operator.add, '-': operator.sub, '*': operator.mul,
++                          '#': operator.floordiv, '/': operator.truediv, '%': operator.mod,
++                          ':': operator.pow, '&': operator.and_, '|': operator.or_, '^': operator.xor}
++                cur = op_map[op](cur, rarg)
++            except Exception as e:
++                raise PathAccessError(e, _t, (i - 2) // 2)
++        elif op == '~':
++            try:
++                cur = ~cur
++            except Exception as e:
++                raise PathAccessError(e, _t, (i - 2) // 2)
++        elif op == '_':
++            try:
++                cur = -cur
++            except Exception as e:
++                raise PathAccessError(e, _t, (i - 2) // 2)
+     return cur
+ 
+ 
+@@ -2060,15 +2021,6 @@
+         self.register(_ObjStyleKeys, keys=_ObjStyleKeys.get_keys)
+ 
+     def _register_fuzzy_type(self, op, new_type, _type_tree=None):
+-        """Build a "type tree", an OrderedDict mapping registered types to
+-        their subtypes
+-
+-        The type tree's invariant is that a key in the mapping is a
+-        valid parent type of all its children.
+-
+-        Order is preserved such that non-overlapping parts of the
+-        subtree take precedence by which was most recently added.
+-        """
+         if _type_tree is None:
+             try:
+                 _type_tree = self._op_type_tree[op]
+@@ -2078,7 +2030,7 @@
+         registered = False
+         for cur_type, sub_tree in list(_type_tree.items()):
+             if issubclass(cur_type, new_type):
+-                sub_tree = _type_tree.pop(cur_type)  # mutation for recursion brevity
++                sub_tree = _type_tree.pop(cur_type)
+                 try:
+                     _type_tree[new_type][cur_type] = sub_tree
+                 except KeyError:
+@@ -2297,26 +2249,18 @@
+ 
+ 
+ def chain_child(scope):
+-    """
+-    used for specs like Auto(tuple), Switch(), etc
+-    that want to chain their child scopes together
+-
+-    returns a new scope that can be passed to
+-    the next recursive glom call, e.g.
+-
+-    scope[glom](target, spec, chain_child(scope))
+-    """
+-    if LAST_CHILD_SCOPE not in scope.maps[0]:
+-        return scope  # no children yet, nothing to do
+-    # NOTE: an option here is to drill down on LAST_CHILD_SCOPE;
+-    # this would have some interesting consequences for scoping
+-    # of tuples
+-    nxt_in_chain = scope[LAST_CHILD_SCOPE]
+-    nxt_in_chain.maps[0][NO_PYFRAME] = True
+-    # previous failed branches are forgiven as the
+-    # scope is re-wired into a new stack
+-    del nxt_in_chain.maps[0][CHILD_ERRORS][:]
+-    return nxt_in_chain
++    pmap = scope.maps[0]
++    child = scope.new_child({
++        T: pmap[T],
++        Spec: pmap[Spec],
++        UP: scope,
++        CHILD_ERRORS: [],
++        MODE: pmap[MODE],
++        MIN_MODE: pmap[MIN_MODE],
++        NO_PYFRAME: True,
++    })
++    pmap[LAST_CHILD_SCOPE] = child
++    return child
+ 
+ 
+ unbound_methods = {type(str.__len__)} #, type(Ref.glomit)])

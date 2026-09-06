@@ -1,0 +1,32 @@
+--- a/safety/scan/command.py
++++ b/safety/scan/command.py
+@@ -799,27 +799,5 @@
+ 
+     process_report(ctx.obj, console, report, **{**ctx.params})
+ 
+-def get_vulnerability_summary(report: Dict[str, Any]) -> Tuple[int, int]:
+-    """
+-    Summarize vulnerabilities from the given report.
+-
+-    Args:
+-        report (ReportModel): The report containing vulnerability data.
+-
+-    Returns:
+-        Tuple[int, int]: A tuple containing:
+-            - Total number of issues (including duplicates)
+-            - Total number of ignored issues
+-    """
+-    total_issues = 0
+-    ignored_issues = 0
+-
+-    for project in report.scan_results.projects:
+-        for file in project.files:
+-            for dependency in file.results.dependencies:
+-                for specification in dependency.specifications:
+-                    known_vulnerabilities = specification.vulnerabilities.known_vulnerabilities
+-                    total_issues += len(known_vulnerabilities)
+-                    ignored_issues += sum(1 for v in known_vulnerabilities if v.ignored)
+-
+-    return total_issues, ignored_issues
++def get_vulnerability_summary(report: Dict[str, Any]) ->Tuple[int, int]:
++    pass

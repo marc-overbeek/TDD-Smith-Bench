@@ -1,0 +1,37 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -31,23 +31,20 @@
+ ONE_DEGREE = (2*mod_math.pi*EARTH_RADIUS) / 360  # ==> 111.319 km
+ 
+ 
+-def haversine_distance(latitude_1: float, longitude_1: float, latitude_2: float, longitude_2: float) -> float:
+-    """
+-    Haversine distance between two points, expressed in meters.
+-
+-    Implemented from http://www.movable-type.co.uk/scripts/latlong.html
+-    """
+-    d_lon = mod_math.radians(longitude_1 - longitude_2)
++def haversine_distance(latitude_1: float, longitude_1: float, latitude_2:
++    float, longitude_2: float) ->float:
++    """
++    Haversine distance between two points.
++    """
++    d_lat = mod_math.radians(latitude_2 - latitude_1)
++    d_lon = mod_math.radians(longitude_2 - longitude_1)
+     lat1 = mod_math.radians(latitude_1)
+     lat2 = mod_math.radians(latitude_2)
+-    d_lat = lat1 - lat2
+-
+-    a = mod_math.pow(mod_math.sin(d_lat/2),2) + \
+-        mod_math.pow(mod_math.sin(d_lon/2),2) * mod_math.cos(lat1) * mod_math.cos(lat2)
++
++    a = mod_math.sin(d_lat / 2) ** 2 + mod_math.cos(lat1) * mod_math.cos(lat2) * mod_math.sin(d_lon / 2) ** 2
+     c = 2 * mod_math.asin(mod_math.sqrt(a))
+-    d = EARTH_RADIUS * c
+-
+-    return d
++
++    return EARTH_RADIUS * c
+ 
+ 
+ def get_course(latitude_1: float, longitude_1: float, latitude_2: float, longitude_2: float,

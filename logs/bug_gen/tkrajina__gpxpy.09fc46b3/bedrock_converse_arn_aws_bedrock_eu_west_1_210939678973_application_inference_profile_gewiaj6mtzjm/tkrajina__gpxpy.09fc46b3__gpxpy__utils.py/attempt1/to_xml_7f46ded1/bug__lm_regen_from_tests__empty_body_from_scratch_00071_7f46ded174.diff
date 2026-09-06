@@ -1,0 +1,71 @@
+--- a/gpxpy/utils.py
++++ b/gpxpy/utils.py
+@@ -19,28 +19,48 @@
+ 
+ from typing import Any, AnyStr, List, Optional, cast
+ 
+-def to_xml(tag: str, attributes: Any=None, content: Any=None, default: Any=None, escape: bool=False, prettyprint: bool=True, indent: str='') -> str:
++def to_xml(tag: str, attributes: Any=None, content: Any=None, default: Any=
++    None, escape: bool=False, prettyprint: bool=True, indent: str='') ->str:
++    if attributes is None:
++        attributes = {}
++    
++    # Handle default value
++    if content is None and default is not None:
++        content = default
++    
++    # Build attributes string
++    attr_string = ''
++    if attributes:
++        attr_parts = []
++        for key, value in attributes.items():
++            if value is not None:
++                if escape:
++                    value = mod_saxutils.escape(str(value))
++                attr_parts.append(f'{key}="{value}"')
++        if attr_parts:
++            attr_string = ' ' + ' '.join(attr_parts)
++    
++    # Handle content
++    if content is None:
++        content = ''
++    elif escape:
++        content = mod_saxutils.escape(str(content))
++    else:
++        content = str(content)
++    
++    # Handle empty elements
++    if not content and not attributes:
++        return f'{indent}<{tag}{attr_string} />'
++    
++    # Handle elements with content
+     if not prettyprint:
+-        indent = ''
+-    attributes = attributes or {}
+-    result: List[str] = [f'\n{indent}<{tag}']
+-
+-    if content is None and default:
+-        content = default
+-
+-    if attributes:
+-        for attribute in attributes.keys():
+-            result.append(make_str(f' {attribute}="{attributes[attribute]}"'))
+-
+-    if content is None:
+-        result.append('/>')
++        return f'<{tag}{attr_string}>{content}</{tag}>'
++    
++    # Pretty print with newlines
++    if content.strip() == '':
++        return f'{indent}<{tag}{attr_string} />\n'
+     else:
+-        if escape:
+-            result.append(make_str(f'>{mod_saxutils.escape(content)}</{tag}>'))
+-        else:
+-            result.append(make_str(f'>{content}</{tag}>'))
+-
+-    return make_str(''.join(result))
++        return f'{indent}<{tag}{attr_string}>{content}</{tag}>\n'
+ 
+ 
+ def is_numeric(object: Any) -> bool:

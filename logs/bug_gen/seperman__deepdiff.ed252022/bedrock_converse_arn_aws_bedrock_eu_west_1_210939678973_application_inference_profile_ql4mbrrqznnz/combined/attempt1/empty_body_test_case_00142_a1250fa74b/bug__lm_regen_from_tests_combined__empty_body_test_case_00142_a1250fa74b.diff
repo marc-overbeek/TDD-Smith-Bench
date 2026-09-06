@@ -1,0 +1,461 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -118,61 +118,37 @@
+ 
+     CACHE_AUTO_ADJUST_THRESHOLD = 0.25
+ 
+-    def __init__(self,
+-                 t1: Any,
+-                 t2: Any,
+-                 _original_type=None,
+-                 cache_purge_level: int=1,
+-                 cache_size: int=0,
+-                 cache_tuning_sample_size: int=0,
+-                 custom_operators: Optional[List[Any]] =None,
+-                 cutoff_distance_for_pairs: float=CUTOFF_DISTANCE_FOR_PAIRS_DEFAULT,
+-                 cutoff_intersection_for_pairs: float=CUTOFF_INTERSECTION_FOR_PAIRS_DEFAULT,
+-                 encodings: Optional[List[str]]=None,
+-                 exclude_obj_callback: Optional[Callable]=None,
+-                 exclude_obj_callback_strict: Optional[Callable]=None,
+-                 exclude_paths: Union[str, List[str]]=None,
+-                 exclude_regex_paths: Union[str, List[str], Pattern[str], List[Pattern[str]], None]=None,
+-                 exclude_types: Optional[List[Any]]=None,
+-                 get_deep_distance: bool=False,
+-                 group_by: Union[str, Tuple[str, str], None]=None,
+-                 group_by_sort_key: Union[str, Callable, None]=None,
+-                 hasher: Optional[Callable]=None,
+-                 hashes: Optional[Dict]=None,
+-                 ignore_encoding_errors: bool=False,
+-                 ignore_nan_inequality: bool=False,
+-                 ignore_numeric_type_changes: bool=False,
+-                 ignore_order: bool=False,
+-                 ignore_order_func: Optional[Callable]=None,
+-                 ignore_private_variables: bool=True,
+-                 ignore_string_case: bool=False,
+-                 ignore_string_type_changes: bool=False,
+-                 ignore_type_in_groups: Optional[List[Tuple]]=None,
+-                 ignore_type_subclasses: bool=False,
+-                 include_obj_callback: Optional[Callable]=None,
+-                 include_obj_callback_strict: Optional[Callable]=None,
+-                 include_paths: Union[str, List[str]]=None,
+-                 iterable_compare_func: Optional[Callable]=None,
+-                 log_frequency_in_sec: int=0,
+-                 math_epsilon: Optional[float]=None,
+-                 max_diffs: Optional[int]=None,
+-                 max_passes: int=10000000,
+-                 number_format_notation: str="f",
+-                 number_to_string_func: Optional[Callable]=None,
+-                 progress_logger: Callable=logger.info,
+-                 report_repetition: bool=False,
+-                 significant_digits: Optional[int]=None,
+-                 use_log_scale: bool=False,
+-                 log_scale_similarity_threshold: float=0.1,
+-                 threshold_to_diff_deeper: float = 0.33,
+-                 truncate_datetime: Optional[str]=None,
+-                 use_enum_value: bool=False,
+-                 verbose_level: int=1,
+-                 view: str=TEXT_VIEW,
+-                 zip_ordered_iterables: bool=False,
+-                 _parameters=None,
+-                 _shared_parameters=None,
+-                 **kwargs):
++    def __init__(self, t1: Any, t2: Any, _original_type=None, cache_purge_level:
++        int=1, cache_size: int=0, cache_tuning_sample_size: int=0,
++        custom_operators: Optional[List[Any]]=None, cutoff_distance_for_pairs:
++        float=CUTOFF_DISTANCE_FOR_PAIRS_DEFAULT, cutoff_intersection_for_pairs:
++        float=CUTOFF_INTERSECTION_FOR_PAIRS_DEFAULT, encodings: Optional[List[
++        str]]=None, exclude_obj_callback: Optional[Callable]=None,
++        exclude_obj_callback_strict: Optional[Callable]=None, exclude_paths:
++        Union[str, List[str]]=None, exclude_regex_paths: Union[str, List[str],
++        Pattern[str], List[Pattern[str]], None]=None, exclude_types: Optional[
++        List[Any]]=None, get_deep_distance: bool=False, group_by: Union[str,
++        Tuple[str, str], None]=None, group_by_sort_key: Union[str, Callable,
++        None]=None, hasher: Optional[Callable]=None, hashes: Optional[Dict]=
++        None, ignore_encoding_errors: bool=False, ignore_nan_inequality: bool=
++        False, ignore_numeric_type_changes: bool=False, ignore_order: bool=
++        False, ignore_order_func: Optional[Callable]=None,
++        ignore_private_variables: bool=True, ignore_string_case: bool=False,
++        ignore_string_type_changes: bool=False, ignore_type_in_groups: Optional
++        [List[Tuple]]=None, ignore_type_subclasses: bool=False,
++        include_obj_callback: Optional[Callable]=None,
++        include_obj_callback_strict: Optional[Callable]=None, include_paths:
++        Union[str, List[str]]=None, iterable_compare_func: Optional[Callable]=
++        None, log_frequency_in_sec: int=0, math_epsilon: Optional[float]=None,
++        max_diffs: Optional[int]=None, max_passes: int=10000000,
++        number_format_notation: str='f', number_to_string_func: Optional[
++        Callable]=None, progress_logger: Callable=logger.info,
++        report_repetition: bool=False, significant_digits: Optional[int]=None,
++        use_log_scale: bool=False, log_scale_similarity_threshold: float=0.1,
++        threshold_to_diff_deeper: float=0.33, truncate_datetime: Optional[str]=
++        None, use_enum_value: bool=False, verbose_level: int=1, view: str=
++        TEXT_VIEW, zip_ordered_iterables: bool=False, _parameters=None,
++        _shared_parameters=None, **kwargs):
+         super().__init__()
+         if kwargs:
+             raise ValueError((
+@@ -217,7 +193,7 @@
+             self.include_paths = add_root_to_paths(convert_item_or_items_into_set_else_none(include_paths))
+             self.exclude_regex_paths = convert_item_or_items_into_compiled_regexes_else_none(exclude_regex_paths)
+             self.exclude_types = set(exclude_types) if exclude_types else None
+-            self.exclude_types_tuple = tuple(exclude_types) if exclude_types else None  # we need tuple for checking isinstance
++            self.exclude_types_tuple = tuple(exclude_types) if exclude_types else None
+             self.ignore_type_subclasses = ignore_type_subclasses
+             self.type_check_func = type_in_type_group if ignore_type_subclasses else type_is_subclass_of_type_group
+             self.ignore_string_case = ignore_string_case
+@@ -257,33 +233,24 @@
+             if cache_purge_level not in {0, 1, 2}:
+                 raise ValueError(PURGE_LEVEL_RANGE_MSG)
+             self.view = view
+-            # Setting up the cache for dynamic programming. One dictionary per instance of root of DeepDiff running.
+             self.max_passes = max_passes
+             self.max_diffs = max_diffs
+             self.cutoff_distance_for_pairs = float(cutoff_distance_for_pairs)
+             self.cutoff_intersection_for_pairs = float(cutoff_intersection_for_pairs)
+             if self.cutoff_distance_for_pairs < 0 or self.cutoff_distance_for_pairs > 1:
+                 raise ValueError(CUTOFF_RANGE_ERROR_MSG)
+-            # _Parameters are the clean _parameters to initialize DeepDiff with so we avoid all the above
+-            # cleaning functionalities when running DeepDiff recursively.
+-            # However DeepHash has its own set of _parameters that are slightly different than DeepDIff.
+-            # DeepDiff _parameters are transformed to DeepHash _parameters via _get_deephash_params method.
+             self.progress_logger = progress_logger
+             self.cache_size = cache_size
+             _parameters = self.__dict__.copy()
+-            _parameters['group_by'] = None  # overwriting since these parameters will be passed on to other passes.
+-
+-        # Non-Root
++            _parameters['group_by'] = None
++
+         if _shared_parameters:
+             self.is_root = False
+             self._shared_parameters = _shared_parameters
+             self.__dict__.update(_shared_parameters)
+-            # We are in some pass other than root
+             progress_timer = None
+-        # Root
+         else:
+             self.is_root = True
+-            # Caching the DeepDiff results for dynamic programming
+             self._distance_cache = LFUCache(cache_size) if cache_size else DummyLFU()
+             self._stats = {
+                 PASSES_COUNT: 0,
+@@ -296,7 +263,7 @@
+                 DISTANCE_CACHE_ENABLED: bool(cache_size),
+             }
+             self.hashes = dict_() if hashes is None else hashes
+-            self._numpy_paths = dict_()  # if _numpy_paths is None else _numpy_paths
++            self._numpy_paths = dict_()
+             self._shared_parameters = {
+                 'hashes': self.hashes,
+                 '_stats': self._stats,
+@@ -305,7 +272,6 @@
+                 _ENABLE_CACHE_EVERY_X_DIFF: self.cache_tuning_sample_size * 10,
+             }
+             if log_frequency_in_sec:
+-                # Creating a progress log reporter that runs in a separate thread every log_frequency_in_sec seconds.
+                 progress_timer = RepeatedTimer(log_frequency_in_sec, _report_progress, self._stats, progress_logger)
+             else:
+                 progress_timer = None
+@@ -331,9 +297,6 @@
+ 
+         try:
+             root = DiffLevel(t1, t2, verbose_level=self.verbose_level)
+-            # _original_type is only used to pass the original type of the data. Currently only used for numpy arrays.
+-            # The reason is that we convert the numpy array to python list and then later for distance calculations
+-            # we convert only the the last dimension of it into numpy arrays.
+             self._diff(root, parents_ids=frozenset({id(t1)}), _original_type=_original_type)
+ 
+             if get_deep_distance and view in {TEXT_VIEW, TREE_VIEW}:
+@@ -1079,11 +1042,6 @@
+         for (i, item) in enumerate(obj):
+             try:
+                 parent = "{}[{}]".format(level.path(), i)
+-                # Note: in the DeepDiff we only calculate the hash of items when we have to.
+-                # So self.hashes does not include hashes of all objects in t1 and t2.
+-                # It only includes the ones needed when comparing iterables.
+-                # The self.hashes dictionary gets shared between different runs of DeepHash
+-                # So that any object that is already calculated to have a hash is not re-calculated.
+                 deep_hash = DeepHash(item,
+                                      hashes=self.hashes,
+                                      parent=parent,
+@@ -1110,7 +1068,6 @@
+                     else:
+                         self._add_hash(hashes=local_hashes, item_hash=item_hash, item=item, i=i)
+ 
+-        # Also we hash the iterables themselves too so that we can later create cache keys from those hashes.
+         try:
+             DeepHash(
+                 obj,
+@@ -1138,9 +1095,8 @@
+             key2 = key2.encode('utf-8')
+         return key1 + b'--' + key2 + b'dc'
+ 
+-    def _get_rough_distance_of_hashed_objs(
+-            self, added_hash, removed_hash, added_hash_obj, removed_hash_obj, _original_type=None):
+-        # We need the rough distance between the 2 objects to see if they qualify to be pairs or not
++    def _get_rough_distance_of_hashed_objs(self, added_hash, removed_hash,
++        added_hash_obj, removed_hash_obj, _original_type=None):
+         _distance = cache_key = None
+         if self._stats[DISTANCE_CACHE_ENABLED]:
+             cache_key = self._get_distance_cache_key(added_hash, removed_hash)
+@@ -1148,9 +1104,6 @@
+                 self._stats[DISTANCE_CACHE_HIT_COUNT] += 1
+                 _distance = self._distance_cache.get(cache_key)
+         if _distance is None:
+-            # We can only cache the rough distance and not the actual diff result for reuse.
+-            # The reason is that we have modified the parameters explicitly so they are different and can't
+-            # be used for diff reporting
+             diff = DeepDiff(
+                 removed_hash_obj.item, added_hash_obj.item,
+                 _parameters=self._parameters,
+@@ -1164,38 +1117,14 @@
+                 self._distance_cache.set(cache_key, value=_distance)
+         return _distance
+ 
+-    def _get_most_in_common_pairs_in_iterables(
+-            self, hashes_added, hashes_removed, t1_hashtable, t2_hashtable, parents_ids, _original_type):
+-        """
+-        Get the closest pairs between items that are removed and items that are added.
+-
+-        returns a dictionary of hashes that are closest to each other.
+-        The dictionary is going to be symmetrical so any key will be a value too and otherwise.
+-
+-        Note that due to the current reporting structure in DeepDiff, we don't compare an item that
+-        was added to an item that is in both t1 and t2.
+-
+-        For example
+-
+-        [{1, 2}, {4, 5, 6}]
+-        [{1, 2}, {1, 2, 3}]
+-
+-        is only compared between {4, 5, 6} and {1, 2, 3} even though technically {1, 2, 3} is
+-        just one item different than {1, 2}
+-
+-        Perhaps in future we can have a report key that is item duplicated and modified instead of just added.
+-        """
++    def _get_most_in_common_pairs_in_iterables(self, hashes_added,
++        hashes_removed, t1_hashtable, t2_hashtable, parents_ids, _original_type):
+         cache_key = None
+         if self._stats[DISTANCE_CACHE_ENABLED]:
+             cache_key = combine_hashes_lists(items=[hashes_added, hashes_removed], prefix='pairs_cache')
+             if cache_key in self._distance_cache:
+                 return self._distance_cache.get(cache_key).copy()
+ 
+-        # A dictionary of hashes to distances and each distance to an ordered set of hashes.
+-        # It tells us about the distance of each object from other objects.
+-        # And the objects with the same distances are grouped together in an ordered set.
+-        # It also includes a "max" key that is just the value of the biggest current distance in the
+-        # most_in_common_pairs dictionary.
+         def defaultdict_orderedset():
+             return defaultdict(SetOrdered)
+         most_in_common_pairs = defaultdict(defaultdict_orderedset)
+@@ -1203,9 +1132,6 @@
+ 
+         pre_calced_distances = None
+         if hashes_added and hashes_removed and np and len(hashes_added) > 1 and len(hashes_removed) > 1:
+-            # pre-calculates distances ONLY for 1D arrays whether an _original_type
+-            # was explicitly passed or a homogeneous array is detected.
+-            # Numpy is needed for this optimization.
+             pre_calced_distances = self._precalculate_numpy_arrays_distance(
+                 hashes_added, hashes_removed, t1_hashtable, t2_hashtable, _original_type)
+ 
+@@ -1220,7 +1146,6 @@
+                 added_hash_obj = t2_hashtable[added_hash]
+                 removed_hash_obj = t1_hashtable[removed_hash]
+ 
+-                # Loop is detected
+                 if id(removed_hash_obj.item) in parents_ids:
+                     continue
+ 
+@@ -1230,9 +1155,6 @@
+                 if _distance is None:
+                     _distance = self._get_rough_distance_of_hashed_objs(
+                         added_hash, removed_hash, added_hash_obj, removed_hash_obj, _original_type)
+-                # Left for future debugging
+-                # print(f'{Fore.RED}distance of {added_hash_obj.item} and {removed_hash_obj.item}: {_distance}{Style.RESET_ALL}')
+-                # Discard potential pairs that are too far.
+                 if _distance >= self.cutoff_distance_for_pairs:
+                     continue
+                 pairs_of_item = most_in_common_pairs[added_hash]
+@@ -1241,7 +1163,6 @@
+ 
+         distances_to_from_hashes = defaultdict(SetOrdered)
+         for from_hash, distances_to_to_hashes in most_in_common_pairs.items():
+-            # del distances_to_to_hashes['max']
+             for dist in distances_to_to_hashes:
+                 distances_to_from_hashes[dist].add(from_hash)
+ 
+@@ -1256,8 +1177,6 @@
+                         if to_hash not in used_to_hashes:
+                             used_to_hashes.add(from_hash)
+                             used_to_hashes.add(to_hash)
+-                            # Left for future debugging:
+-                            # print(f'{bcolors.FAIL}Adding {t2_hashtable[from_hash].item} as a pairs of {t1_hashtable[to_hash].item} with distance of {dist}{bcolors.ENDC}')
+                             pairs[from_hash] = to_hash
+ 
+         inverse_pairs = {v: k for k, v in pairs.items()}
+@@ -1266,7 +1185,8 @@
+             self._distance_cache.set(cache_key, value=pairs)
+         return pairs.copy()
+ 
+-    def _diff_iterable_with_deephash(self, level, parents_ids, _original_type=None, local_tree=None):
++    def _diff_iterable_with_deephash(self, level, parents_ids, _original_type=
++        None, local_tree=None):
+         """Diff of hashable or unhashable iterables. Only used when ignoring the order."""
+ 
+         full_t1_hashtable = self._create_hashtable(level, 't1')
+@@ -1276,13 +1196,11 @@
+         hashes_added = t2_hashes - t1_hashes
+         hashes_removed = t1_hashes - t2_hashes
+ 
+-        # Deciding whether to calculate pairs or not.
+         if (len(hashes_added) + len(hashes_removed)) / (len(full_t1_hashtable) + len(full_t2_hashtable) + 1) > self.cutoff_intersection_for_pairs:
+             get_pairs = False
+         else:
+             get_pairs = True
+ 
+-        # reduce the size of hashtables
+         if self.report_repetition:
+             t1_hashtable = full_t1_hashtable
+             t2_hashtable = full_t2_hashtable
+@@ -1302,10 +1220,6 @@
+             pairs = dict_()
+ 
+         def get_other_pair(hash_value, in_t1=True):
+-            """
+-            Gets the other paired indexed hash item to the hash_value in the pairs dictionary
+-            in_t1: are we looking for the other pair in t1 or t2?
+-            """
+             if in_t1:
+                 hashtable = t1_hashtable
+                 the_other_hashes = hashes_removed
+@@ -1316,9 +1230,6 @@
+             if other is notpresent:
+                 other = notpresent_indexed
+             else:
+-                # The pairs are symmetrical.
+-                # removing the other direction of pair
+-                # so it does not get used.
+                 del pairs[other]
+                 the_other_hashes.remove(other)
+                 other = hashtable[other]
+@@ -1327,13 +1238,10 @@
+         if self.report_repetition:
+             for hash_value in hashes_added:
+                 if self._count_diff() is StopIteration:
+-                    return  # pragma: no cover. This is already covered for addition (when report_repetition=False).
++                    return
+                 other = get_other_pair(hash_value)
+                 item_id = id(other.item)
+                 indexes = t2_hashtable[hash_value].indexes if other.item is notpresent else other.indexes
+-                # When we report repetitions, we want the child_relationship_param2 only if there is no repetition.
+-                # Because when there is a repetition, we report it in a different way (iterable_items_added_at_indexes for example).
+-                # When there is no repetition, we want child_relationship_param2 so that we report the "new_path" correctly.
+                 if len(t2_hashtable[hash_value].indexes) == 1:
+                     index2 = t2_hashtable[hash_value].indexes[0]
+                 else:
+@@ -1353,12 +1261,9 @@
+                         self._diff(change_level, parents_ids_added, local_tree=local_tree)
+             for hash_value in hashes_removed:
+                 if self._count_diff() is StopIteration:
+-                    return  # pragma: no cover. This is already covered for addition.
++                    return
+                 other = get_other_pair(hash_value, in_t1=False)
+                 item_id = id(other.item)
+-                # When we report repetitions, we want the child_relationship_param2 only if there is no repetition.
+-                # Because when there is a repetition, we report it in a different way (iterable_items_added_at_indexes for example).
+-                # When there is no repetition, we want child_relationship_param2 so that we report the "new_path" correctly.
+                 if other.item is notpresent or len(other.indexes > 1):
+                     index2 = None
+                 else:
+@@ -1374,9 +1279,6 @@
+                     if other.item is notpresent:
+                         self._report_result('iterable_item_removed', change_level, local_tree=local_tree)
+                     else:
+-                        # I was not able to make a test case for the following 2 lines since the cases end up
+-                        # getting resolved above in the hashes_added calcs. However I am leaving these 2 lines
+-                        # in case things change in future.
+                         parents_ids_added = add_to_frozen_set(parents_ids, item_id)  # pragma: no cover.
+                         self._diff(change_level, parents_ids_added, local_tree=local_tree)  # pragma: no cover.
+ 
+@@ -1387,11 +1289,10 @@
+                 t2_indexes = t2_hashtable[hash_value].indexes
+                 t1_indexes_len = len(t1_indexes)
+                 t2_indexes_len = len(t2_indexes)
+-                if t1_indexes_len != t2_indexes_len:  # this is a repetition change!
+-                    # create "change" entry, keep current level untouched to handle further changes
++                if t1_indexes_len != t2_indexes_len:
+                     repetition_change_level = level.branch_deeper(
+                         t1_hashtable[hash_value].item,
+-                        t2_hashtable[hash_value].item,  # nb: those are equal!
++                        t2_hashtable[hash_value].item,
+                         child_relationship_class=SubscriptableIterableRelationship,
+                         child_relationship_param=t1_hashtable[hash_value]
+                         .indexes[0])
+@@ -1426,7 +1327,7 @@
+ 
+             for hash_value in hashes_removed:
+                 if self._count_diff() is StopIteration:
+-                    return  # pragma: no cover. This is already covered for addition.
++                    return
+                 other = get_other_pair(hash_value, in_t1=False)
+                 item_id = id(other.item)
+                 index = t1_hashtable[hash_value].indexes[0]
+@@ -1441,10 +1342,8 @@
+                 if other.item is notpresent:
+                     self._report_result('iterable_item_removed', change_level, local_tree=local_tree)
+                 else:
+-                    # Just like the case when report_repetition = True, these lines never run currently.
+-                    # However they will stay here in case things change in future.
+                     parents_ids_added = add_to_frozen_set(parents_ids, item_id)  # pragma: no cover.
+-                    self._diff(change_level, parents_ids_added, local_tree=local_tree)  # pragma: no cover.
++                    self._diff(change_level, parents_ids_added, local_tree=local_tree)
+ 
+     def _diff_booleans(self, level, local_tree=None):
+         if level.t1 != level.t2:
+@@ -1515,42 +1414,33 @@
+         if level.path() not in self._numpy_paths:
+             self._numpy_paths[level.path()] = get_type(level.t2).__name__
+         if np is None:
+-            # This line should never be run. If it is ever called means the type check detected a numpy array
+-            # which means numpy module needs to be available. So np can't be None.
+             raise ImportError(CANT_FIND_NUMPY_MSG)  # pragma: no cover
+ 
+         if (self.ignore_order_func and not self.ignore_order_func(level)) or not self.ignore_order:
+-            # fast checks
+             if self.significant_digits is None:
+                 if np.array_equal(level.t1, level.t2, equal_nan=self.ignore_nan_inequality):
+-                    return  # all good
++                    return
+             else:
+                 try:
+                     np.testing.assert_almost_equal(level.t1, level.t2, decimal=self.significant_digits)
+                 except TypeError:
+                     np.array_equal(level.t1, level.t2, equal_nan=self.ignore_nan_inequality)
+                 except AssertionError:
+-                    pass    # do detailed checking below
++                    pass
+                 else:
+-                    return  # all good
+-
+-        # compare array meta-data
++                    return
++
+         _original_type = level.t1.dtype
+         if level.t1.shape != level.t2.shape:
+-            # arrays are converted to python lists so that certain features of DeepDiff can apply on them easier.
+-            # They will be converted back to Numpy at their final dimension.
+             level.t1 = level.t1.tolist()
+             level.t2 = level.t2.tolist()
+             self._diff_iterable(level, parents_ids, _original_type=_original_type, local_tree=local_tree)
+         else:
+-            # metadata same -- the difference is in the content
+             shape = level.t1.shape
+             dimensions = len(shape)
+             if dimensions == 1:
+                 self._diff_iterable(level, parents_ids, _original_type=_original_type, local_tree=local_tree)
+             elif (self.ignore_order_func and self.ignore_order_func(level)) or self.ignore_order:
+-                # arrays are converted to python lists so that certain features of DeepDiff can apply on them easier.
+-                # They will be converted back to Numpy at their final dimension.
+                 level.t1 = level.t1.tolist()
+                 level.t2 = level.t2.tolist()
+                 self._diff_iterable_with_deephash(level, parents_ids, _original_type=_original_type, local_tree=local_tree)

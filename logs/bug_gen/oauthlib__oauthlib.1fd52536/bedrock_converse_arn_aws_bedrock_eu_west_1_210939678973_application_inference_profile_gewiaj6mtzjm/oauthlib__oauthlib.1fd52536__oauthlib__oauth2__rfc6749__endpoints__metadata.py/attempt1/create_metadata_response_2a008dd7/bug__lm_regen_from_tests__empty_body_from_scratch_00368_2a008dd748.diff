@@ -1,0 +1,28 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/metadata.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/metadata.py
+@@ -49,15 +49,16 @@
+         self.claims = self.validate_metadata_server()
+ 
+     @catch_errors_and_unavailability
+-    def create_metadata_response(self, uri, http_method='GET', body=None,
+-                                 headers=None):
+-        """Create metadata response
+-        """
+-        headers = {
+-            'Content-Type': 'application/json',
+-            'Access-Control-Allow-Origin': '*',
+-        }
+-        return headers, json.dumps(self.claims), 200
++    @catch_errors_and_unavailability
++        def create_metadata_response(self, uri, http_method='GET', body=None,
++                                     headers=None):
++            """Create metadata response
++            """
++            headers = {
++                'Content-Type': 'application/json',
++                'Access-Control-Allow-Origin': '*',
++            }
++            return headers, json.dumps(self.claims), 200
+ 
+     def validate_metadata(self, array, key, is_required=False, is_list=False, is_url=False, is_issuer=False):
+         if not self.raise_errors:

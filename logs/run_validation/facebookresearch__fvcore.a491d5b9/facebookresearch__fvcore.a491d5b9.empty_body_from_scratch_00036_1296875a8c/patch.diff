@@ -1,0 +1,20 @@
+--- a/fvcore/common/checkpoint.py
++++ b/fvcore/common/checkpoint.py
+@@ -301,15 +301,8 @@
+                     if has_observer_base_classes:
+                         # Handle the special case of quantization per channel observers,
+                         # where buffer shape mismatches are expected.
+-                        def _get_module_for_key(
+-                            model: torch.nn.Module, key: str
+-                        ) -> torch.nn.Module:
+-                            # foo.bar.param_or_buffer_name -> [foo, bar]
+-                            key_parts = key.split(".")[:-1]
+-                            cur_module = model
+-                            for key_part in key_parts:
+-                                cur_module = getattr(cur_module, key_part)
+-                            return cur_module
++                        def _get_module_for_key(model: torch.nn.Module, key: str) ->torch.nn.Module:
++                            pass
+ 
+                         cls_to_skip = (
+                             ObserverBase,

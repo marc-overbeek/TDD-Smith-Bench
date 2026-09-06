@@ -1,0 +1,35 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -529,6 +529,32 @@
+             curr_klass = curr_bases[0]
+         return bases[::-1]
+ 
++    def _compute_bases(self, klass):
++        """
++        Return list of bases of a given class,
++        going from general (i.e., closer to object)
++        to specific (i.e., closer to class).
++        The list ends with the class itself, its
++        first element is the most general base of
++        the class up to (but excluding) any
++        base class having multiple inheritance
++        or the object class itself.
++        """
++        bases = []
++
++        curr_klass = klass
++
++        while curr_klass is not object:
++            bases.append(curr_klass)
++
++            curr_bases = curr_klass.__bases__
++
++            if len(curr_bases) != 1:
++                break
++
++            curr_klass = curr_bases[0]
++        return bases[::-1]
++
+     def _merge_common_bases(self, first_bases, second_bases):
+         """
+         Return list of bases common to both* classes,

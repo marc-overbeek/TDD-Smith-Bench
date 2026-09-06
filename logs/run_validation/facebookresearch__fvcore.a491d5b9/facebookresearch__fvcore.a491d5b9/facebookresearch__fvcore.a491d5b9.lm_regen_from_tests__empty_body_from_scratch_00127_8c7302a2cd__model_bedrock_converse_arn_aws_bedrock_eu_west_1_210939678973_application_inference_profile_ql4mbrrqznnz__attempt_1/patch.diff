@@ -1,0 +1,37 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -231,21 +231,22 @@
+ 
+ def norm_flop_counter(affine_arg_index: int) -> Handle:
+     """
+-    Args:
+-        affine_arg_index: index of the affine argument in inputs
+-    """
+-
++    Return a flop counter handle for normalization operations.
++    
++    Args:
++        affine_arg_index: index of the affine weight argument in inputs
++    
++    Returns:
++        Handle: a function that counts flops for normalization
++    """
+     def norm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-        """
+-        Count flops for norm layers.
+-        """
+-        # Inputs[0] contains the shape of the input.
++        # Count flops for normalization operations
++        # Base: 4 flops per element (compute mean, variance, normalize)
++        # If affine: +1 flop per element (scale and shift)
+         input_shape = get_shape(inputs[0])
+         has_affine = get_shape(inputs[affine_arg_index]) is not None
+-        assert 2 <= len(input_shape) <= 5, input_shape
+-        # 5 is just a rough estimate
+-        flop = prod(input_shape) * (5 if has_affine else 4)
+-        return flop
++        flop_count = prod(input_shape) * (4 + (1 if has_affine else 0))
++        return flop_count
+ 
+     return norm_flop_jit
+ 

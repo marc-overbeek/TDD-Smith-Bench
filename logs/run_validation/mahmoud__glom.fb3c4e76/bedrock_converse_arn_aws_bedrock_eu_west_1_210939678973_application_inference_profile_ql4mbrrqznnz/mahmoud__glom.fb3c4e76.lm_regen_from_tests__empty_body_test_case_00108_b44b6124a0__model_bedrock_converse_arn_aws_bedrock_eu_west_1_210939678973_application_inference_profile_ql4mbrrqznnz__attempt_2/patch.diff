@@ -1,0 +1,49 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -48,12 +48,10 @@
+ 
+ 
+ def _apply_for_each(func, path, val):
+-    layers = path.path_t.__stars__()
+-    if layers:
+-        for i in range(layers - 1):
+-            val = sum(val, [])  # flatten out the extra layers
+-        for inner in val:
+-            func(inner)
++    items = path.items()
++    if any(op == 'P' and arg == '*' for op, arg in items):
++        for item in val:
++            _apply_for_each(func, Path(), item)
+     else:
+         func(val)
+ 
+@@ -122,9 +120,6 @@
+ 
+     """
+     def __init__(self, path, val, missing=None):
+-        # TODO: an option like require_preexisting or something to
+-        # ensure that a value is mutated, not just added. Current
+-        # workaround is to do a Check().
+         if isinstance(path, basestring):
+             path = Path.from_text(path)
+         elif type(path) is TType:
+@@ -140,7 +135,6 @@
+         self.path = path[:-1]
+ 
+         if self.op not in '[.P':
+-            # maybe if we add null-coalescing this should do something?
+             raise ValueError('last part of path must be setattr or setitem')
+         self.val = val
+ 
+@@ -172,10 +166,9 @@
+             path = self._orig_path[:pae.part_idx]
+             dest = scope[glom](dest_target, path, scope)
+ 
+-        # TODO: forward-detect immutable dest?
+         _apply = lambda dest: _assign_op(
+             dest=dest, op=op, arg=arg, val=val, path=path, scope=scope)
+-        _apply_for_each(_apply, path, dest)
++        _apply_for_each(_apply, dest_path, dest)
+ 
+         return target
+ 

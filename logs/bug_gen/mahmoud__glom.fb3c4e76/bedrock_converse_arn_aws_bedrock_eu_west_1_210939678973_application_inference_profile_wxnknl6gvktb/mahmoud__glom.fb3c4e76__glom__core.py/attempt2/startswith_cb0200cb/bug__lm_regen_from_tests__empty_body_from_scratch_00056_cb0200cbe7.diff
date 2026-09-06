@@ -1,0 +1,34 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -706,9 +706,30 @@
+         cur_t_path = self.path_t.__ops__
+         return tuple(zip(cur_t_path[1::2], cur_t_path[2::2]))
+ 
++    def test_startswith():
++        ref = T.a.b[1]
++        assert Path(ref).startswith(T)
++        assert Path(ref).startswith(T.a.b)
++        assert Path(ref).startswith(ref)
++        assert Path(ref).startswith(ref.c) is False
++        assert Path('a.b.c').startswith(Path())
++        assert Path('a.b.c').startswith('a.b.c')
++        with raises(TypeError):
++            assert Path('a.b.c').startswith(None)
++
+     def startswith(self, other):
+         if isinstance(other, basestring):
+-            other = Path(other)
++            other = Path.from_text(other)
++        if isinstance(other, Path):
++            other = other.path_t
++        if not isinstance(other, TType):
++            raise TypeError('can only check if Path starts with string, Path or T')
++        o_path = other.__ops__
++        return self.path_t.__ops__[:len(o_path)] == o_path
++
++    def startswith(self, other):
++        if isinstance(other, basestring):
++            other = Path.from_text(other)
+         if isinstance(other, Path):
+             other = other.path_t
+         if not isinstance(other, TType):

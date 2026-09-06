@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef extract(path_inside, path, debug):\n    \"\"\"\n    Deep Extract Commandline\n\n    Extract an item from a file based on the path inside the data structure.\n    It can read csv, tsv, json, yaml, and toml files.\n\n    \"\"\"\n    try:\n        content = load_path_content(path)\n    except Exception as e:\n        if debug:\n            raise\n        else:\n            sys.exit(str(f\"Error when loading {path}: {e}\"))\n\n    try:\n        result = deep_extract(content, path_inside)\n    except Exception as e:\n        if debug:\n            raise\n        else:\n            sys.exit(str(f\"Error when extracting {path_inside} from {path}: {e}\"))\n\n    print(result)\n```",
+  "rewrite": "def extract(path_inside, path, debug):\n    \"\"\"\n    Deep Extract Commandline\n\n    Extract an item from a file based on the path inside the data structure.\n    It can read csv, tsv, json, yaml, and toml files.\n\n    \"\"\"\n    try:\n        content = load_path_content(path)\n    except Exception as e:\n        if debug:\n            raise\n        else:\n            sys.exit(str(f\"Error when loading {path}: {e}\"))\n\n    try:\n        result = deep_extract(content, path_inside)\n    except Exception as e:\n        if debug:\n            raise\n        else:\n            sys.exit(str(f\"Error when extracting {path_inside} from {path}: {e}\"))\n\n    print(result)",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef __init__(self, store: CallTraceStore) -> None:\n    self.store = store\n    self.traces: List[CallTrace] = []\n\ndef log(self, trace: CallTrace) -> None:\n    if not trace.func.__module__ == \"__main__\":\n        self.traces.append(trace)\n\ndef flush(self) -> None:\n    self.store.add(self.traces)\n    self.traces = []\n```",
+  "rewrite": "def __init__(self, store: CallTraceStore) -> None:\n    self.store = store\n    self.traces: List[CallTrace] = []\n\ndef log(self, trace: CallTrace) -> None:\n    if not trace.func.__module__ == \"__main__\":\n        self.traces.append(trace)\n\ndef flush(self) -> None:\n    self.store.add(self.traces)\n    self.traces = []",
+  "strategy": "lm_regen_from_tests_combined"
+}

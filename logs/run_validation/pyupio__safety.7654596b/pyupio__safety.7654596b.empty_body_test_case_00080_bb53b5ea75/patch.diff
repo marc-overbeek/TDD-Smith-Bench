@@ -1,0 +1,126 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -138,73 +138,10 @@
+             LOG.debug('Safety updated the cache file for %s database.', db_name)
+ 
+ 
+-def fetch_database_url(
+-    session: requests.Session,
+-    mirror: str,
+-    db_name: str,
+-    cached: int,
+-    telemetry: bool = True,
+-    ecosystem: Ecosystem = Ecosystem.PYTHON,
+-    from_cache: bool = True
+-) -> Dict[str, Any]:
+-    """
+-    Fetches the database from a URL.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        mirror (str): The URL of the mirror.
+-        db_name (str): The name of the database.
+-        cached (int): The cache validity in seconds.
+-        telemetry (bool): Whether to include telemetry data.
+-        ecosystem (Ecosystem): The ecosystem.
+-        from_cache (bool): Whether to fetch from cache.
+-
+-    Returns:
+-        Dict[str, Any]: The fetched database.
+-    """
+-    headers = {'schema-version': JSON_SCHEMA_VERSION, 'ecosystem': ecosystem.value}
+-
+-    if cached and from_cache:
+-        cached_data = get_from_cache(db_name=db_name, cache_valid_seconds=cached)
+-        if cached_data:
+-            LOG.info('Database %s returned from cache.', db_name)
+-            return cached_data
+-    url = mirror + db_name
+-
+-
+-    telemetry_data = {
+-        'telemetry': json.dumps(build_telemetry_data(telemetry=telemetry),
+-                                default=pydantic_encoder)}
+-
+-    try:
+-        r = session.get(url=url, timeout=REQUEST_TIMEOUT,
+-                        headers=headers, params=telemetry_data)
+-    except requests.exceptions.ConnectionError:
+-        raise NetworkConnectionError()
+-    except requests.exceptions.Timeout:
+-        raise RequestTimeoutError()
+-    except requests.exceptions.RequestException:
+-        raise DatabaseFetchError()
+-
+-    if r.status_code == 403:
+-        raise InvalidCredentialError(credential=session.get_credential(), reason=r.text)
+-
+-    if r.status_code == 429:
+-        raise TooManyRequestsError(reason=r.text)
+-
+-    if r.status_code != 200:
+-        raise ServerError(reason=r.reason)
+-
+-    try:
+-        data = r.json()
+-    except json.JSONDecodeError as e:
+-        raise MalformedDatabase(reason=e)
+-
+-    if cached:
+-        LOG.info('Writing %s to cache because cached value was %s', db_name, cached)
+-        write_to_cache(db_name, data)
+-
+-    return data
++def fetch_database_url(session: requests.Session, mirror: str, db_name: str,
++    cached: int, telemetry: bool=True, ecosystem: Ecosystem=Ecosystem.
++    PYTHON, from_cache: bool=True) ->Dict[str, Any]:
++    pass
+ 
+ 
+ def fetch_policy(session: requests.Session) -> Dict[str, Any]:
+@@ -1416,42 +1353,9 @@
+ 
+ 
+ @sync_safety_context
+-def get_licenses(
+-    *,
+-    session: requests.Session,
+-    db_mirror: Union[Optional[str], bool] = False,
+-    cached: int = 0,
+-    telemetry: bool = True
+-) -> Dict[str, Any]:
+-    """
+-    Retrieves the licenses from the database.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        db_mirror (Union[Optional[str], bool]): The database mirror.
+-        cached (int): The cache validity in seconds.
+-        telemetry (bool): Whether to include telemetry data.
+-
+-    Returns:
+-        Dict[str, Any]: The licenses dictionary.
+-    """
+-    if db_mirror:
+-        mirrors = [db_mirror]
+-    else:
+-        mirrors = API_MIRRORS
+-
+-    db_name = "licenses.json"
+-
+-    for mirror in mirrors:
+-        # mirror can either be a local path or a URL
+-        if is_a_remote_mirror(mirror):
+-            licenses = fetch_database_url(session, mirror, db_name=db_name, cached=cached,
+-                                          telemetry=telemetry)
+-        else:
+-            licenses = fetch_database_file(mirror, db_name=db_name, ecosystem=None)
+-        if licenses:
+-            return licenses
+-    raise DatabaseFetchError()
++def get_licenses(*, session: requests.Session, db_mirror: Union[Optional[
++    str], bool]=False, cached: int=0, telemetry: bool=True) ->Dict[str, Any]:
++    pass
+ 
+ 
+ def add_local_notifications(

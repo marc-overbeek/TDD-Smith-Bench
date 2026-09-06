@@ -1,0 +1,23 @@
+--- a/starlette/templating.py
++++ b/starlette/templating.py
+@@ -114,18 +114,8 @@
+ 
+         return jinja2.Environment(**env_options)
+ 
+-    def _setup_env_defaults(self, env: jinja2.Environment) -> None:
+-        @pass_context
+-        def url_for(
+-            context: dict[str, typing.Any],
+-            name: str,
+-            /,
+-            **path_params: typing.Any,
+-        ) -> URL:
+-            request: Request = context["request"]
+-            return request.url_for(name, **path_params)
+-
+-        env.globals.setdefault("url_for", url_for)
++    def _setup_env_defaults(self, env: jinja2.Environment) ->None:
++        pass
+ 
+     def get_template(self, name: str) -> jinja2.Template:
+         return self.env.get_template(name)

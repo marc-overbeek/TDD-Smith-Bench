@@ -1,0 +1,45 @@
+--- a/monkeytype/tracing.py
++++ b/monkeytype/tracing.py
+@@ -24,22 +24,8 @@
+ class CallTrace:
+     """CallTrace contains the types observed during a single invocation of a function"""
+ 
+-    def __init__(
+-        self,
+-        func: Callable[..., Any],
+-        arg_types: Dict[str, type],
+-        return_type: Optional[type] = None,
+-        yield_type: Optional[type] = None,
+-    ) -> None:
+-        """
+-        Args:
+-            func: The function where the trace occurred
+-            arg_types: The collected argument types
+-            return_type: The collected return type. This will be None if the called function returns
+-                due to an unhandled exception. It will be NoneType if the function returns the value None.
+-            yield_type: The collected yield type. This will be None if the called function never
+-                yields. It will be NoneType if the function yields the value None.
+-        """
++    def __init__(self, func: Callable[..., Any], arg_types: Dict[str, type],
++        return_type: Optional[type]=None, yield_type: Optional[type]=None) ->None:
+         self.func = func
+         self.arg_types = arg_types
+         self.return_type = return_type
+@@ -58,7 +44,7 @@
+             self.yield_type,
+         )
+ 
+-    def __hash__(self) -> int:
++    def __hash__(self) ->int:
+         return hash(
+             (
+                 self.func,
+@@ -75,7 +61,7 @@
+             self.yield_type = cast(type, Union[self.yield_type, typ])
+ 
+     @property
+-    def funcname(self) -> str:
++    def funcname(self) ->str:
+         return get_func_fqname(self.func)
+ 
+ 

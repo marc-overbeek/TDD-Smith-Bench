@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef gpx_fields_from_xml(class_or_instance: Any, node: str, version: str) ->Any:\n    if isinstance(class_or_instance, type):\n        instance = class_or_instance()\n    else:\n        instance = class_or_instance\n    \n    fields = instance.gpx_10_fields\n    if version == '1.1':\n        fields = instance.gpx_11_fields\n    \n    for gpx_field in fields:\n        if isinstance(gpx_field, str):\n            continue\n        \n        value = gpx_field.from_xml(node, version)\n        setattr(instance, gpx_field.name, value)\n    \n    return instance\n```\n\n```python\ndef from_xml(self, node: Any, version: str) ->Any:\n    return gpx_fields_from_xml(self, node, version)\n```",
+  "rewrite": "def gpx_fields_from_xml(class_or_instance: Any, node: str, version: str) ->Any:\n    if isinstance(class_or_instance, type):\n        instance = class_or_instance()\n    else:\n        instance = class_or_instance\n    \n    fields = instance.gpx_10_fields\n    if version == '1.1':\n        fields = instance.gpx_11_fields\n    \n    for gpx_field in fields:\n        if isinstance(gpx_field, str):\n            continue\n        \n        value = gpx_field.from_xml(node, version)\n        setattr(instance, gpx_field.name, value)\n    \n    return instance\n\ndef from_xml(self, node: Any, version: str) ->Any:\n    return gpx_fields_from_xml(self, node, version)",
+  "strategy": "lm_regen_from_tests_combined"
+}

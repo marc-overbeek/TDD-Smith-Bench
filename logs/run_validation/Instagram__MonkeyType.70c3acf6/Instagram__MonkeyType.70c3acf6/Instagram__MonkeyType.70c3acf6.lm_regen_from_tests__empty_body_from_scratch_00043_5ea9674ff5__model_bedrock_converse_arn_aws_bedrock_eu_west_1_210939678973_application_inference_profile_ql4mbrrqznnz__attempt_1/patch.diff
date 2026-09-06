@@ -1,0 +1,23 @@
+--- a/monkeytype/encoding.py
++++ b/monkeytype/encoding.py
+@@ -93,9 +93,17 @@
+ 
+ 
+ def typed_dict_from_dict(d: TypeDict) -> type:
+-    return TypedDict(
+-        d["qualname"], {k: type_from_dict(v) for k, v in d["elem_types"].items()}
+-    )
++    module = d["module"]
++    qualname = d["qualname"]
++    elem_types = d.get("elem_types", {})
++    annotations = {k: type_from_dict(v) for k, v in elem_types.items()}
++    # Get the class name (last part of qualname)
++    name = qualname.split(".")[-1]
++    # Create a new TypedDict type dynamically
++    typed_dict_class = TypedDict(name, annotations)  # type: ignore[misc]
++    typed_dict_class.__module__ = module
++    typed_dict_class.__qualname__ = qualname
++    return typed_dict_class
+ 
+ 
+ def type_from_dict(d: TypeDict) -> type:

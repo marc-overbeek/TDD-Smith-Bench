@@ -1,0 +1,29 @@
+--- a/safety/scan/decorators.py
++++ b/safety/scan/decorators.py
+@@ -29,24 +29,8 @@
+ LOG = logging.getLogger(__name__)
+ 
+ 
+-def initialize_scan(ctx: Any, console: Console) -> None:
+-    """
+-    Initializes the scan by setting platform_enabled based on the response from the server.
+-    """
+-    data = None
+-
+-    try:
+-        data = ctx.obj.auth.client.initialize_scan()
+-    except SafetyException as e:
+-        LOG.error("Unable to initialize scan", exc_info=True)
+-    except SafetyError as e:
+-        if e.error_code:
+-            raise e
+-    except Exception as e:
+-        LOG.exception("Exception trying to initialize scan", exc_info=True)
+-
+-    if data:
+-        ctx.obj.platform_enabled = data.get("platform-enabled", False)
++def initialize_scan(ctx: Any, console: Console) ->None:
++    pass
+ 
+ 
+ def scan_project_command_init(func):

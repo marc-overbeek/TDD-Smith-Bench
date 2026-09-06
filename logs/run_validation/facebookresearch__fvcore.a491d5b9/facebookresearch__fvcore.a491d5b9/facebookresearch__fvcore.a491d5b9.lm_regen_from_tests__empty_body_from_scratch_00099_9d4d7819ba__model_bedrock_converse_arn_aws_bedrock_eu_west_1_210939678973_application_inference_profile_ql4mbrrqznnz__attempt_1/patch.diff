@@ -1,0 +1,49 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -452,22 +452,31 @@
+     return child
+ 
+ 
+-def _try_combine(
+-    stats1: Dict[str, str], stats2: Dict[str, str]
+-) -> Optional[Dict[str, str]]:
+-    """
+-    Try combine two statistics dict to display in one row. If they conflict,
+-    returns None.
+-    """
+-    ret = {}
+-    if set(stats1.keys()) != set(stats2.keys()):
+-        return None
+-    for k, v1 in stats1.items():
+-        v2 = stats2[k]
+-        if v1 != v2 and len(v1) and len(v2):
++def _try_combine(stats1: Dict[str, str], stats2: Dict[str, str]) ->Optional[
++    Dict[str, str]]:
++    """
++    Try to combine two statistics dictionaries into one. If the two
++    dictionaries have conflicting values for any key (both non-empty and
++    different), return None. Otherwise, return the merged dictionary,
++    preferring non-empty values.
++
++    Args:
++        stats1 (dict(str, str)): first statistics dictionary
++        stats2 (dict(str, str)): second statistics dictionary
++
++    Returns:
++        dict(str, str) or None: the combined statistics, or None if they
++            cannot be combined.
++    """
++    combined = {}
++    all_keys = set(stats1.keys()) | set(stats2.keys())
++    for key in all_keys:
++        val1 = stats1.get(key, "")
++        val2 = stats2.get(key, "")
++        if val1 and val2 and val1 != val2:
+             return None
+-        ret[k] = v1 if len(v1) else v2
+-    return ret
++        combined[key] = val1 if val1 else val2
++    return combined
+ 
+ 
+ def _fastforward(

@@ -1,0 +1,36 @@
+--- a/demo/inbox.py
++++ b/demo/inbox.py
+@@ -104,16 +104,24 @@
+         self.user_ids.add(event.follower_id)
+ 
+     def aggregate(self):
+-        users_by_id = self.repo.get_users_by_ids(self.user_ids)
++        aggregators: List[AggregatorInterface] = [
++            CommentsAggregator(self.repo),
++            LikesAggregator(self.repo),
++            FollowersAggregator(self.repo),
++        ]
++        aggregators_by_type: Dict[EventType, List[AggregatorInterface]] = {}
++        for agg in aggregators:
++            aggregators_by_type.setdefault(agg.type, []).append(agg)
+ 
+-        return [
+-            AggregatedItem(
+-                type=self.type,
+-                text=f"{users_by_id[e.follower_id].name} started following you.",
+-                published=e.published,
+-            )
+-            for e in self.events
+-        ]
++        for event in self.events:
++            for aggregator in aggregators_by_type.get(event.type, []):
++                aggregator.add(event)
++
++        items = []
++        for agg in aggregators:
++            items.extend(agg.aggregate())
++
++        return sorted(items, key=attrgetter("published"), reverse=True)
+ 
+ 
+ class Inbox:

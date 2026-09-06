@@ -1,0 +1,80 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -45,18 +45,8 @@
+     :meth:`register_type` method.
+     """
+ 
+-    def _set_attributes(self, params: Optional[List[Any]] = None) -> None:
+-        """
+-        Set attributes from the input list of parameters.
+-
+-        Args:
+-            params (list): list of parameters.
+-        """
+-
+-        if params:
+-            for k, v in params.items():
+-                if k != "self" and not k.startswith("_"):
+-                    setattr(self, k, v)
++    def _set_attributes(self, params: Optional[List[Any]]=None) ->None:
++        pass
+ 
+     @abstractmethod
+     def apply_image(self, img: np.ndarray):
+@@ -493,18 +483,8 @@
+     Resize the image to a target size.
+     """
+ 
+-    def __init__(self, h: int, w: int, new_h: int, new_w: int, interp: str = None):
+-        """
+-        Args:
+-            h, w (int): original image size.
+-            new_h, new_w (int): new image size.
+-            interp (str): interpolation methods. Options includes `nearest`, `linear`
+-                (3D-only), `bilinear`, `bicubic` (4D-only), and `area`.
+-                Details can be found in:
+-                https://pytorch.org/docs/stable/nn.functional.html
+-        """
+-        super().__init__()
+-        self._set_attributes(locals())
++    def __init__(self, h: int, w: int, new_h: int, new_w: int, interp: str=None):
++        pass
+ 
+     def apply_image(self, img: np.ndarray, interp: str = None) -> np.ndarray:
+         """
+@@ -549,19 +529,8 @@
+         )
+         return to_numpy(float_tensor, img.shape, img.dtype)
+ 
+-    def apply_coords(self, coords: np.ndarray) -> np.ndarray:
+-        """
+-        Compute the coordinates after resize.
+-
+-        Args:
+-            coords (ndarray): floating point array of shape Nx2. Each row is
+-                (x, y).
+-        Returns:
+-            ndarray: resized coordinates.
+-        """
+-        coords[:, 0] = coords[:, 0] * (self.new_w * 1.0 / self.w)
+-        coords[:, 1] = coords[:, 1] * (self.new_h * 1.0 / self.h)
+-        return coords
++    def apply_coords(self, coords: np.ndarray) ->np.ndarray:
++        pass
+ 
+     def apply_segmentation(self, segmentation: np.ndarray) -> np.ndarray:
+         """
+@@ -576,11 +545,8 @@
+         segmentation = self.apply_image(segmentation, interp="nearest")
+         return segmentation
+ 
+-    def inverse(self) -> Transform:
+-        """
+-        The inverse is to resize it back.
+-        """
+-        return ScaleTransform(self.new_h, self.new_w, self.h, self.w, self.interp)
++    def inverse(self) ->Transform:
++        pass
+ 
+ 
+ class GridSampleTransform(Transform):

@@ -1,0 +1,65 @@
+--- a/safety/models.py
++++ b/safety/models.py
+@@ -52,17 +52,8 @@
+     """
+     A subclass of Requirement that includes additional attributes and methods for safety requirements.
+     """
+-    def __init__(self, requirement: Union[str, Dependency], found: Optional[str] = None) -> None:
+-        """
+-        Initialize a SafetyRequirement.
+-
+-        Args:
+-            requirement (Union[str, Dependency]): The requirement as a string or Dependency object.
+-            found (Optional[str], optional): Where the requirement was found. Defaults to None.
+-
+-        Raises:
+-            InvalidRequirementError: If the requirement cannot be parsed.
+-        """
++    def __init__(self, requirement: Union[str, Dependency], found: Optional[str
++        ]=None) ->None:
+         dep = requirement
+ 
+         if isinstance(requirement, str):
+@@ -74,7 +65,6 @@
+ 
+         raw_line = dep.line
+         to_parse = dep.line
+-        # Hash and comments are only a pip feature, so removing them.
+         if '#' in to_parse:
+             to_parse = dep.line.split('#')[0]
+ 
+@@ -84,7 +74,6 @@
+         to_parse = to_parse.replace('\\', '').rstrip()
+ 
+         try:
+-            # Try to build a PEP Requirement from the cleaned line
+             super(SafetyRequirement, self).__init__(to_parse)
+         except Exception:
+             raise InvalidRequirementError(line=requirement.line if isinstance(requirement, Dependency) else requirement)
+@@ -120,22 +109,11 @@
+                     }
+ 
+ 
+-def is_pinned_requirement(spec: SpecifierSet) -> bool:
+-    """
+-    Check if a requirement is pinned.
+-
+-    Args:
+-        spec (SpecifierSet): The specifier set of the requirement.
+-
+-    Returns:
+-        bool: True if the requirement is pinned, False otherwise.
+-    """
+-    if not spec or len(spec) != 1:
++def is_pinned_requirement(spec: SpecifierSet) ->bool:
++    if not spec:
+         return False
+-
+-    specifier = next(iter(spec))
+-
+-    return (specifier.operator == '==' and '*' != specifier.version[-1]) or specifier.operator == '==='
++    operators = [s.operator for s in spec]
++    return len(operators) == 1 and operators[0] == '=='
+ 
+ 
+ @dataclass

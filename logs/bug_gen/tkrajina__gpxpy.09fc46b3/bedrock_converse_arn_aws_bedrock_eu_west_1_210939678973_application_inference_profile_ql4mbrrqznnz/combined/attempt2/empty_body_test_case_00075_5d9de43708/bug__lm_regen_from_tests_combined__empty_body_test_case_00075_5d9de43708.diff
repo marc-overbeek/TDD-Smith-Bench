@@ -1,0 +1,76 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -743,9 +743,8 @@
+             track_point.adjust_time(delta)
+ 
+     def remove_time(self) -> None:
+-        """ Removes time data for all points in the segment. """
+-        for track_point in self.points:
+-            track_point.remove_time()
++        """ Will remove time metadata. """
++        self.time = None
+ 
+     def remove_elevation(self) -> None:
+         """ Removes elevation data for all points in the segment. """
+@@ -1464,9 +1463,9 @@
+             segment.adjust_time(delta)
+ 
+     def remove_time(self) -> None:
+-        """ Removes time data for all points in all segments of track. """
+-        for segment in self.segments:
+-            segment.remove_time()
++        """ Removes time data for all points in the segment. """
++        for track_point in (self.points if self.points else []):
++            track_point.remove_time()
+ 
+     def remove_elevation(self) -> None:
+         """ Removes elevation data for all points in all segments of track. """
+@@ -2084,17 +2083,7 @@
+                 route.adjust_time(delta)
+ 
+     def remove_time(self, all: bool=False) -> None:
+-        """
+-        Removes time data of all points in all of the segments of all tracks.
+-
+-        If all=True, time date will also be removed from waypoints and routes.
+-
+-        Parameters
+-        ----------
+-        all : bool
+-            When true, also removes time data for waypoints and routes.
+-        """
+-        for track in self.tracks:
++        for track in (self.tracks if self.tracks else []):
+             track.remove_time()
+ 
+         if all:
+@@ -2299,28 +2288,7 @@
+         return result
+ 
+     def walk(self, only_points: bool=False) -> Iterator[Any]:
+-        """
+-        Generator used to iterates through points in GPX file
+-
+-        Parameters
+-        ----------
+-        only_point s: boolean
+-            Only yield points while walking
+-
+-        Yields
+-        ----------
+-        point : GPXTrackPoint
+-            Point in the track
+-        track_no : integer
+-            Index of track containing point. This is suppressed if only_points
+-            is True.
+-        segment_no : integer
+-            Index of segment containing point. This is suppressed if only_points
+-            is True.
+-        point_no : integer
+-            Index of point. This is suppressed if only_points is True.
+-        """
+-        for track_no, track in enumerate(self.tracks if self.tracks else [] ):
++        for track_no, track in enumerate(self.tracks if self.tracks else []):
+             for segment_no, segment in enumerate(track.segments if track.segments else []):
+                 for point_no, point in enumerate(segment.points if segment.points else []):
+                     if only_points:

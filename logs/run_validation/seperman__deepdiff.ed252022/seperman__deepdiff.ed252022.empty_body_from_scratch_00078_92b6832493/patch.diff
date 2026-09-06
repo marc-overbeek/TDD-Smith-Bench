@@ -1,0 +1,76 @@
+--- a/deepdiff/model.py
++++ b/deepdiff/model.py
+@@ -513,70 +513,9 @@
+ 
+     """
+ 
+-    def __init__(self,
+-                 t1,
+-                 t2,
+-                 down=None,
+-                 up=None,
+-                 report_type=None,
+-                 child_rel1=None,
+-                 child_rel2=None,
+-                 additional=None,
+-                 verbose_level=1):
+-        """
+-        :param child_rel1: Either:
+-                            - An existing ChildRelationship object describing the "down" relationship for t1; or
+-                            - A ChildRelationship subclass. In this case, we will create the ChildRelationship objects
+-                              for both t1 and t2.
+-                            Alternatives for child_rel1 and child_rel2 must be used consistently.
+-        :param child_rel2: Either:
+-                            - An existing ChildRelationship object describing the "down" relationship for t2; or
+-                            - The param argument for a ChildRelationship class we shall create.
+-                           Alternatives for child_rel1 and child_rel2 must be used consistently.
+-        """
+-
+-        # The current-level object in the left hand tree
+-        self.t1 = t1
+-
+-        # The current-level object in the right hand tree
+-        self.t2 = t2
+-
+-        # Another DiffLevel object describing this change one level deeper down the object tree
+-        self.down = down
+-
+-        # Another DiffLevel object describing this change one level further up the object tree
+-        self.up = up
+-
+-        self.report_type = report_type
+-
+-        # If this object is this change's deepest level, this contains a string describing the type of change.
+-        # Examples: "set_item_added", "values_changed"
+-
+-        # Note: don't use {} as additional's default value - this would turn out to be always the same dict object
+-        self.additional = dict_() if additional is None else additional
+-
+-        # For some types of changes we store some additional information.
+-        # This is a dict containing this information.
+-        # Currently, this is used for:
+-        # - values_changed: In case the changes data is a multi-line string,
+-        #                   we include a textual diff as additional['diff'].
+-        # - repetition_change: additional['repetition']:
+-        #                      e.g. {'old_repeat': 2, 'new_repeat': 1, 'old_indexes': [0, 2], 'new_indexes': [2]}
+-        # the user supplied ChildRelationship objects for t1 and t2
+-
+-        # A ChildRelationship object describing the relationship between t1 and it's child object,
+-        # where t1's child object equals down.t1.
+-        # If this relationship is representable as a string, str(self.t1_child_rel) returns a formatted param parsable python string,
+-        # e.g. "[2]", ".my_attribute"
+-        self.t1_child_rel = child_rel1
+-
+-        # Another ChildRelationship object describing the relationship between t2 and it's child object.
+-        self.t2_child_rel = child_rel2
+-
+-        # Will cache result of .path() per 'force' as key for performance
+-        self._path = dict_()
+-
+-        self.verbose_level = verbose_level
++    def __init__(self, t1, t2, down=None, up=None, report_type=None, child_rel1
++        =None, child_rel2=None, additional=None, verbose_level=1):
++        pass
+ 
+     def __repr__(self):
+         if self.verbose_level:

@@ -1,0 +1,24 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -163,6 +163,21 @@
+         else:
+             self.get_nested_obj = _get_nested_obj
+         self.reset()
++
++    def test_delta_repr(self):
++        t1 = [1, 2]
++        t2 = [1, 2, 3, 5]
++        diff = DeepDiff(t1, t2)
++        delta = Delta(diff)
++        options = {"<Delta: {'iterable_item_added': {'root[2]': 3, 'root[3]': 5}}>"
++            , "<Delta: {'iterable_item_added': {'root[3]': 5, 'root[2]': 3}}>"}
++        assert repr(delta) in options
++
++    def __repr__(self):
++        pass
++
++    def __repr__(self):
++        return "<Delta: {}>".format(short_repr(self.diff, max_length=100))
+ 
+     def __repr__(self):
+         return "<Delta: {}>".format(short_repr(self.diff, max_length=100))

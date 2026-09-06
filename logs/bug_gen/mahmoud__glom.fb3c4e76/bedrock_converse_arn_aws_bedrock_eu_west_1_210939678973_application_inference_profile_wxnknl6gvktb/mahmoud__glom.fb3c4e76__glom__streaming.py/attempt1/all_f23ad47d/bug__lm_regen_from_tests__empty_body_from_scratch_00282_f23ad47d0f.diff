@@ -1,0 +1,23 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -322,6 +322,20 @@
+ 
+     # Terminal methods follow
+ 
++    def test_all():
++        int_iter = iter(range(10))
++        out = glom(int_iter, Iter().all())
++        assert out == list(range(10))
++        assert next(int_iter, None) is None
++        assert repr(Iter().all()) == 'Pipe(Iter(), list)'
++
++    def all(self):
++        """A convenience method which returns a new spec which turns an
++        iterable into a list.
++        ...
++        """
++        return Pipe(self, list)
++
+     def all(self):
+         """A convenience method which returns a new spec which turns an
+         iterable into a list.

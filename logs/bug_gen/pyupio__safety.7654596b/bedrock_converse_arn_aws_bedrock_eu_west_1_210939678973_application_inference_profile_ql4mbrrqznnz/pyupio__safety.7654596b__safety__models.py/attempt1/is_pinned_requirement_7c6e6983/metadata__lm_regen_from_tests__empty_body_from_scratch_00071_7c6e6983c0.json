@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef is_pinned_requirement(spec: SpecifierSet) ->bool:\n    if not spec:\n        return False\n    \n    operators = [s.operator for s in spec]\n    versions = [s.version for s in spec]\n    \n    if len(operators) == 1 and operators[0] == '==':\n        version = versions[0]\n        if not version.endswith('.*'):\n            return True\n    \n    return False\n```",
+  "rewrite": "def is_pinned_requirement(spec: SpecifierSet) ->bool:\n    if not spec:\n        return False\n    \n    operators = [s.operator for s in spec]\n    versions = [s.version for s in spec]\n    \n    if len(operators) == 1 and operators[0] == '==':\n        version = versions[0]\n        if not version.endswith('.*'):\n            return True\n    \n    return False",
+  "strategy": "lm_regen_from_tests"
+}

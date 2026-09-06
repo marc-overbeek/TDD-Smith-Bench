@@ -1,0 +1,69 @@
+--- a/oauthlib/oauth1/rfc5849/signature.py
++++ b/oauthlib/oauth1/rfc5849/signature.py
+@@ -321,44 +321,28 @@
+     return unescaped_params
+ 
+ 
+-def normalize_parameters(params) -> str:
+-    """
+-    Calculate the normalized request parameters.
+-
+-    The *normalized request parameters* is one of the components that make up
+-    the *signature base string*.
+-
+-    The rules for parameter normalization are defined in `section 3.4.1.3.2`_ of
+-    RFC 5849.
+-
+-    .. _`Sec 3.4.1.3.2`: https://tools.ietf.org/html/rfc5849#section-3.4.1.3.2
+-    """
+-
+-    # The parameters collected in `Section 3.4.1.3`_ are normalized into a
+-    # single string as follows:
+-    #
+-    # .. _`Section 3.4.1.3`: https://tools.ietf.org/html/rfc5849#section-3.4.1.3
+-
+-    # 1.  First, the name and value of each parameter are encoded
+-    #     (`Section 3.6`_).
+-    #
+-    # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    key_values = [(utils.escape(k), utils.escape(v)) for k, v in params]
+-
+-    # 2.  The parameters are sorted by name, using ascending byte value
+-    #     ordering.  If two or more parameters share the same name, they
+-    #     are sorted by their value.
+-    key_values.sort()
+-
+-    # 3.  The name of each parameter is concatenated to its corresponding
+-    #     value using an "=" character (ASCII code 61) as a separator, even
+-    #     if the value is empty.
+-    parameter_parts = ['{}={}'.format(k, v) for k, v in key_values]
+-
+-    # 4.  The sorted name/value pairs are concatenated together into a
+-    #     single string by using an "&" character (ASCII code 38) as
+-    #     separator.
+-    return '&'.join(parameter_parts)
++def normalize_parameters(params) ->str:
++    """
++    Normalize request parameters for signature base string.
++    
++    The parameters are collected, sorted, and concatenated according to
++    section 3.4.1.3.2 of RFC 5849.
++    
++    :param params: List of (key, value) tuples
++    :return: Normalized parameter string
++    """
++    # Encode each parameter name and value
++    encoded_params = []
++    for key, value in params:
++        encoded_key = utils.escape(str(key))
++        encoded_value = utils.escape(str(value))
++        encoded_params.append((encoded_key, encoded_value))
++    
++    # Sort by name, then by value
++    encoded_params.sort()
++    
++    # Concatenate with &
++    return '&'.join(['%s=%s' % (k, v) for k, v in encoded_params])
+ 
+ 
+ # ==== Common functions for HMAC-based signature methods =========

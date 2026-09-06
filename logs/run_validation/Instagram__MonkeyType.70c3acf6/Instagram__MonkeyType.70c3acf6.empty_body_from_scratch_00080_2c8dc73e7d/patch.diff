@@ -1,0 +1,51 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -162,45 +162,10 @@
+     return list(set(stub_imports).difference(set(source_imports)))
+ 
+ 
+-def apply_stub_using_libcst(
+-    stub: str,
+-    source: str,
++def apply_stub_using_libcst(stub: str, source: str,
+     overwrite_existing_annotations: bool,
+-    confine_new_imports_in_type_checking_block: bool = False,
+-) -> str:
+-    try:
+-        stub_module = parse_module(stub)
+-        source_module = parse_module(source)
+-        context = CodemodContext()
+-        ApplyTypeAnnotationsVisitor.store_stub_in_context(
+-            context,
+-            stub_module,
+-            overwrite_existing_annotations,
+-            use_future_annotations=confine_new_imports_in_type_checking_block,
+-        )
+-        transformer = ApplyTypeAnnotationsVisitor(context)
+-        transformed_source_module = transformer.transform_module(source_module)
+-
+-        if confine_new_imports_in_type_checking_block:
+-            newly_imported_items = get_newly_imported_items(stub_module, source_module)
+-
+-            context = CodemodContext()
+-            MoveImportsToTypeCheckingBlockVisitor.store_imports_in_context(
+-                context,
+-                newly_imported_items,
+-            )
+-            type_checking_block_transformer = MoveImportsToTypeCheckingBlockVisitor(
+-                context
+-            )
+-            transformed_source_module = (
+-                type_checking_block_transformer.transform_module(
+-                    transformed_source_module
+-                )
+-            )
+-
+-    except Exception as exception:
+-        raise HandlerError(f"Failed applying stub with libcst:\n{exception}")
+-    return transformed_source_module.code
++    confine_new_imports_in_type_checking_block: bool=False) ->str:
++    pass
+ 
+ 
+ def apply_stub_handler(

@@ -1,0 +1,341 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1336,83 +1336,264 @@
+ 
+ 
+ @sync_safety_context
+-def review(
+-    *,
+-    report: Optional[Dict[str, Any]] = None,
+-    params: Optional[Dict[str, Any]] = None
+-) -> tuple:
+-    """
+-    Reviews the report and returns the vulnerabilities and remediations.
+-
+-    Args:
+-        report (Optional[Dict[str, Any]]): The report.
+-        params (Optional[Dict[str, Any]]): Additional parameters.
+-
+-    Returns:
+-        tuple: A tuple containing the list of vulnerabilities, the remediations, and the found packages.
+-    """
++@sync_safety_context
++def review(*, report: Optional[Dict[str, Any]]=None, params: Optional[Dict[
++    str, Any]]=None) ->tuple:
+     SafetyContext().command = 'review'
+-    vulnerable = []
+-    vulnerabilities = report.get('vulnerabilities', []) + report.get('ignored_vulnerabilities', [])
++    
++    if not report:
++        return [], {}, []
++    
++    vulns = []
+     remediations = defaultdict(dict)
+-
+-    for key, pkg_rem in report.get('remediations', {}).items():
+-        analyzed = set(pkg_rem['requirements'].keys())
+-
+-        for req in analyzed:
+-            req_rem = pkg_rem['requirements'][req]
+-            recommended = req_rem.get('recommended_version', None)
+-            secure_v = req_rem.get('other_recommended_versions', [])
+-
+-            remediations[key][req] = {'vulnerabilities_found': req_rem.get('vulnerabilities_found', 0),
+-                                      'version': req_rem.get('version'),
+-                                      'requirement': SafetyRequirement(req_rem['requirement']['raw']),
+-                                      'other_recommended_versions': secure_v,
+-                                      'recommended_version': parse_version(recommended) if recommended else None,
+-                                      # minor isn't supported in review
+-                                      'more_info_url': req_rem.get('more_info_url')}
+-
+-    packages = report.get('scanned_packages', [])
+-    pkgs = {}
+-
+-    for name, values in packages.items():
+-        requirements = [SafetyRequirement(r['raw']) for r in values.get('requirements', [])]
+-        values.update({'requirements': requirements})
+-        pkgs[name] = Package(**values)
+-
+-    ctx = SafetyContext()
+-    found_packages = list(pkgs.values())
+-    ctx.packages = found_packages
+-    ctx.review = report.get('report_meta', [])
+-    ctx.key = ctx.review.get('api_key', False)
+-    cvssv2 = None
+-    cvssv3 = None
+-
+-    for vuln in vulnerabilities:
+-        vuln['pkg'] = pkgs.get(vuln.get('package_name', None))
+-        XVE_ID = vuln.get('CVE', None)  # Trying to get first the CVE ID
+-
+-        severity = vuln.get('severity', None)
+-        if severity and severity.get('source', False):
+-            cvssv2 = severity.get('cvssv2', None)
+-            cvssv3 = severity.get('cvssv3', None)
+-            # Trying to get the PVE ID if it exists, otherwise it will be the same CVE ID of above
+-            XVE_ID = severity.get('source', False)
+-            vuln['severity'] = Severity(source=XVE_ID, cvssv2=cvssv2, cvssv3=cvssv3)
++    packages = {}
++    
++    # Extract vulnerabilities from the report
++    report_vulns = report.get('vulnerabilities', [])
++    report_packages = report.get('scanned_packages', {})
++    
++    # Rebuild packages
++    for pkg_name, pkg_data in report_packages.items():
++        pkg = Package(
++            name=pkg_data.get('name', pkg_name),
++            version=pkg_data.get('version', None),
++            requirements=[SafetyRequirement(f"{pkg_data.get('name', pkg_name)}=={pkg_data.get('version')}") if pkg_data.get('version') else SafetyRequirement(pkg_data.get('name', pkg_name))],
++            found=pkg_data.get('found', None),
++            insecure_versions=[],
++            secure_versions=[],
++            latest_version=None,
++            latest_version_without_known_vulnerabilities=None,
++            more_info_url=None
++        )
++        packages[canonicalize_name(pkg_name)] = pkg
++    
++    # Rebuild vulnerabilities
++    for vuln_data in report_vulns:
++        pkg_name = canonicalize_name(vuln_data.get('package_name', ''))
++        pkg = packages.get(pkg_name, None)
++        
++        analyzed_req_str = vuln_data.get('analyzed_requirement', {})
++        if isinstance(analyzed_req_str, dict):
++            req_str = analyzed_req_str.get('requirement', vuln_data.get('requirement', ''))
+         else:
+-            vuln['severity'] = None
+-
+-        ignored_expires = vuln.get('ignored_expires', None)
+-
+-        if ignored_expires:
+-            vuln['ignored_expires'] = validate_expiration_date(ignored_expires)
+-
+-        vuln['CVE'] = CVE(name=XVE_ID, cvssv2=cvssv2, cvssv3=cvssv3) if XVE_ID else None
+-        vuln['analyzed_requirement'] = SafetyRequirement(vuln['analyzed_requirement']['raw'])
+-
+-        vulnerable.append(Vulnerability(**vuln))
+-
+-    return vulnerable, remediations, found_packages
++            req_str = str(analyzed_req_str)
++        
++        try:
++            analyzed_requirement = SafetyRequirement(req_str)
++        except Exception:
++            analyzed_requirement = SafetyRequirement(f"{vuln_data.get('package_name', '')}=={vuln_data.get('analyzed_version', '')}")
++        
++        cve_data = vuln_data.get('CVE', None)
++        cve = None
++        if cve_data and isinstance(cve_data, dict):
++            cve = CVE(name=cve_data.get('name', ''), cvssv2=cve_data.get('cvssv2'), cvssv3=cve_data.get('cvssv3'))
++        
++        severity = None
++        severity_data = vuln_data.get('severity', None)
++        if severity_data and isinstance(severity_data, dict):
++            severity = Severity(source=severity_data.get('source', ''), cvssv2=severity_data.get('cvssv2'), cvssv3=severity_data.get('cvssv3'))
++        
++        vuln = Vulnerability(
++            vulnerability_id=vuln_data.get('vulnerability_id', ''),
++            package_name=vuln_data.get('package_name', ''),
++            pkg=pkg,
++            ignored=vuln_data.get('ignored', False),
++            ignored_reason=vuln_data.get('ignored_reason', None),
++            ignored_expires=vuln_data.get('ignored_expires', None),
++            vulnerable_spec=set(vuln_data.get('vulnerable_spec', [])),
++            all_vulnerable_specs=vuln_data.get('all_vulnerable_specs', []),
++            analyzed_version=vuln_data.get('analyzed_version', None),
++            analyzed_requirement=analyzed_requirement,
++            advisory=vuln_data.get('advisory', None),
++            is_transitive=vuln_data.get('is_transitive', False),
++            published_date=vuln_data.get('published_date', None),
++            fixed_versions=vuln_data.get('fixed_versions', []),
++            closest_versions_without_known_vulnerabilities=vuln_data.get('closest_versions_without_known_vulnerabilities', []),
++            resources=vuln_data.get('resources', []),
++            CVE=cve,
++            severity=severity,
++            affected_versions=vuln_data.get('affected_versions', []),
++            more_info_url=vuln_data.get('more_info_url', '')
++        )
++        vulns.append(vuln)
++        
++        # Build remediations
++        spec_str = str(analyzed_requirement.specifier)
++        pkg_name_orig = vuln_data.get('package_name', '')
++        
++        if pkg_name_orig not in remediations or spec_str not in remediations[pkg_name_orig]:
++            remediations[pkg_name_orig][spec_str] = {
++                'vulnerabilities_found': 1,
++                'version': vuln_data.get('analyzed_version', None),
++                'requirement': analyzed_requirement,
++                'more_info_url': vuln_data.get('more_info_url', '')
++            }
++        else:
++            remediations[pkg_name_orig][spec_str]['vulnerabilities_found'] += 1
++    
++    # Process remediation data from report if available
++    report_remediations = report.get('remediations', {})
++    for pkg_name, pkg_rems in report_remediations.items():
++        for spec, rem_data in pkg_rems.items():
++            if pkg_name not in remediations:
++                remediations[pkg_name] = {}
++            
++            if spec not in remediations[pkg_name]:
++                try:
++                    req = SafetyRequirement(f"{pkg_name}{spec}")
++                except Exception:
++                    req = None
++                remediations[pkg_name][spec] = {
++                    'vulnerabilities_found': rem_data.get('vulnerabilities_found', 0),
++                    'version': rem_data.get('version', None),
++                    'requirement': req,
++                    'more_info_url': rem_data.get('more_info_url', '')
++                }
++            
++            recommended_version_str = rem_data.get('recommended_version', None)
++            if recommended_version_str:
++                remediations[pkg_name][spec]['recommended_version'] = parse_version(recommended_version_str)
++            
++            other_recommended = rem_data.get('other_recommended_versions', [])
++            if other_recommended:
++                remediations[pkg_name][spec]['other_recommended_versions'] = other_recommended
++            
++            more_info_url = rem_data.get('more_info_url', '')
++            if more_info_url:
++                remediations[pkg_name][spec]['more_info_url'] = more_info_url
++    
++    return vulns, dict(remediations), list(packages.values())
++
++@sync_safety_context
++def review(*, report: Optional[Dict[str, Any]]=None, params: Optional[Dict[
++    str, Any]]=None) ->tuple:
++    SafetyContext().command = 'review'
++    
++    if not report:
++        return [], {}, []
++    
++    vulns = []
++    remediations = defaultdict(dict)
++    packages = {}
++    
++    report_packages = report.get('scanned_packages', {})
++    
++    for pkg_name, pkg_data in report_packages.items():
++        name = pkg_data.get('name', pkg_name)
++        version = pkg_data.get('version', None)
++        req_str = f"{name}=={version}" if version else name
++        try:
++            req = SafetyRequirement(req_str)
++        except Exception:
++            req = SafetyRequirement(name)
++        
++        pkg = Package(
++            name=name,
++            version=version,
++            requirements=[req],
++            found=pkg_data.get('found', None),
++            insecure_versions=[],
++            secure_versions=[],
++            latest_version=None,
++            latest_version_without_known_vulnerabilities=None,
++            more_info_url=None
++        )
++        packages[canonicalize_name(pkg_name)] = pkg
++    
++    report_vulns = report.get('vulnerabilities', [])
++    
++    for vuln_data in report_vulns:
++        pkg_name = vuln_data.get('package_name', '')
++        pkg = packages.get(canonicalize_name(pkg_name), None)
++        
++        analyzed_version = vuln_data.get('analyzed_version', None)
++        req_str = f"{pkg_name}=={analyzed_version}" if analyzed_version else pkg_name
++        
++        try:
++            analyzed_requirement = SafetyRequirement(req_str)
++        except Exception:
++            analyzed_requirement = SafetyRequirement(pkg_name)
++        
++        cve_data = vuln_data.get('CVE', None)
++        cve = None
++        if cve_data and isinstance(cve_data, dict) and cve_data.get('name'):
++            cve = CVE(name=cve_data.get('name', ''), cvssv2=cve_data.get('cvssv2'), cvssv3=cve_data.get('cvssv3'))
++        
++        severity = None
++        severity_data = vuln_data.get('severity', None)
++        if severity_data and isinstance(severity_data, dict):
++            severity = Severity(source=severity_data.get('source', ''), cvssv2=severity_data.get('cvssv2'), cvssv3=severity_data.get('cvssv3'))
++        
++        vuln = Vulnerability(
++            vulnerability_id=vuln_data.get('vulnerability_id', ''),
++            package_name=pkg_name,
++            pkg=pkg,
++            ignored=vuln_data.get('ignored', False),
++            ignored_reason=vuln_data.get('ignored_reason', None),
++            ignored_expires=vuln_data.get('ignored_expires', None),
++            vulnerable_spec=set(vuln_data.get('vulnerable_spec', [])),
++            all_vulnerable_specs=vuln_data.get('all_vulnerable_specs', []),
++            analyzed_version=analyzed_version,
++            analyzed_requirement=analyzed_requirement,
++            advisory=vuln_data.get('advisory', None),
++            is_transitive=vuln_data.get('is_transitive', False),
++            published_date=vuln_data.get('published_date', None),
++            fixed_versions=vuln_data.get('fixed_versions', []),
++            closest_versions_without_known_vulnerabilities=vuln_data.get('closest_versions_without_known_vulnerabilities', []),
++            resources=vuln_data.get('resources', []),
++            CVE=cve,
++            severity=severity,
++            affected_versions=vuln_data.get('affected_versions', []),
++            more_info_url=vuln_data.get('more_info_url', '')
++        )
++        vulns.append(vuln)
++        
++        spec_str = str(analyzed_requirement.specifier)
++        
++        if pkg_name not in remediations or spec_str not in remediations[pkg_name]:
++            remediations[pkg_name][spec_str] = {
++                'vulnerabilities_found': 1,
++                'version': analyzed_version,
++                'requirement': analyzed_requirement,
++                'more_info_url': vuln_data.get('more_info_url', '')
++            }
++        else:
++            remediations[pkg_name][spec_str]['vulnerabilities_found'] += 1
++    
++    # Overlay remediation data from report
++    report_remediations = report.get('remediations', {})
++    for pkg_name, pkg_rems in report_remediations.items():
++        for spec, rem_data in pkg_rems.items():
++            if pkg_name not in remediations:
++                remediations[pkg_name] = {}
++            if spec not in remediations[pkg_name]:
++                try:
++                    req = SafetyRequirement(f"{pkg_name}{spec}")
++                except Exception:
++                    req = SafetyRequirement(pkg_name)
++                remediations[pkg_name][spec] = {
++                    'vulnerabilities_found': rem_data.get('vulnerabilities_found', 0),
++                    'version': rem_data.get('version', None),
++                    'requirement': req,
++                    'more_info_url': rem_data.get('more_info_url', '')
++                }
++            
++            recommended_version_str = rem_data.get('recommended_version', None)
++            if recommended_version_str:
++                remediations[pkg_name][spec]['recommended_version'] = parse_version(recommended_version_str)
++            
++            other_recommended = rem_data.get('other_recommended_versions', [])
++            remediations[pkg_name][spec]['other_recommended_versions'] = other_recommended
++            
++            more_info_url = rem_data.get('more_info_url', '')
++            if more_info_url:
++                remediations[pkg_name][spec]['more_info_url'] = more_info_url
++            
++            vuln_found = rem_data.get('vulnerabilities_found', None)
++            if vuln_found is not None:
++                remediations[pkg_name][spec]['vulnerabilities_found'] = vuln_found
++    
++    return vulns, dict(remediations), list(packages.values())
+ 
+ 
+ @sync_safety_context

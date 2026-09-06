@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef flop_count(model: nn.Module, inputs: Tuple[Any, ...], supported_ops:\n    Optional[Dict[str, Handle]]=None) ->Tuple[DefaultDict[str, float],\n    Counter[str]]:\n    flop_counter = FlopCountAnalysis(model, inputs)\n    if supported_ops is not None:\n        flop_counter.set_op_handle(**supported_ops)\n    flop_counter.unsupported_ops_warnings(False)\n    flop_counter.uncalled_modules_warnings(False)\n    by_operator = flop_counter.by_operator()\n    flop_dict: DefaultDict[str, float] = defaultdict(float)\n    for op, count in by_operator.items():\n        flop_dict[op] = count / 1e9\n    skipped_ops = flop_counter.unsupported_ops()\n    return flop_dict, skipped_ops\n```",
+  "rewrite": "def flop_count(model: nn.Module, inputs: Tuple[Any, ...], supported_ops:\n    Optional[Dict[str, Handle]]=None) ->Tuple[DefaultDict[str, float],\n    Counter[str]]:\n    flop_counter = FlopCountAnalysis(model, inputs)\n    if supported_ops is not None:\n        flop_counter.set_op_handle(**supported_ops)\n    flop_counter.unsupported_ops_warnings(False)\n    flop_counter.uncalled_modules_warnings(False)\n    by_operator = flop_counter.by_operator()\n    flop_dict: DefaultDict[str, float] = defaultdict(float)\n    for op, count in by_operator.items():\n        flop_dict[op] = count / 1e9\n    skipped_ops = flop_counter.unsupported_ops()\n    return flop_dict, skipped_ops",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,17 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -169,9 +169,11 @@
+         return (self.min_latitude, self.max_latitude, self.min_longitude, self.max_longitude,).__iter__()
+ 
+     def _min(self, a: Optional[float], b: Optional[float]) -> Optional[float]:
+-        if a is not None and b is not None:
+-            return min(a, b)
+-        return None
++        if a is None:
++            return b
++        if b is None:
++            return a
++        return min(a, b)
+ 
+     def _max(self, a: Optional[float], b: Optional[float]) -> Optional[float]:
+         if a is not None and b is not None:

@@ -1,0 +1,89 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -208,38 +208,56 @@
+ 
+ 
+ def get_type(obj, max_typed_dict_size):
+-    """Return the static type that would be used in a type hint"""
++    if obj is None:
++        return NoneType
++    if obj is NotImplemented:
++        return NotImplementedType
++    
++    # Handle built-in types
++    if isinstance(obj, (int, str, float, bool, complex)):
++        return type(obj)
++    
++    # Handle collections
++    if isinstance(obj, dict):
++        return get_dict_type(obj, max_typed_dict_size)
++    
++    if isinstance(obj, (list, tuple, set, frozenset)):
++        if len(obj) == 0:
++            return type(obj)[Any]
++        element_types = [get_type(item, max_typed_dict_size) for item in obj]
++        if isinstance(obj, tuple) and len(obj) == 0:
++            return Tuple[()]
++        elif isinstance(obj, tuple) and len(obj) == 1:
++            return Tuple[element_types[0]]
++        elif isinstance(obj, tuple):
++            return Tuple[tuple(element_types)]
++        else:
++            element_type = shrink_types(element_types, max_typed_dict_size)
++            if isinstance(obj, list):
++                return List[element_type]
++            elif isinstance(obj, set):
++                return Set[element_type]
++            elif isinstance(obj, frozenset):
++                return FrozenSet[element_type]
++    
++    # Handle generators
++    if hasattr(obj, '__code__') and obj.__code__.co_flags & 0x20:  # CO_GENERATOR flag
++        return make_generator(Any, Any, Any)
++    
++    # Handle functions and methods
++    if isinstance(obj, _BUILTIN_CALLABLE_TYPES):
++        return Callable
++    
++    # Handle classes
+     if isinstance(obj, type):
+         return Type[obj]
+-    elif isinstance(obj, _BUILTIN_CALLABLE_TYPES):
+-        return Callable
+-    elif isinstance(obj, types.GeneratorType):
+-        return Iterator[Any]
+-    typ = type(obj)
+-    if typ is list:
+-        elem_type = shrink_types(
+-            (get_type(e, max_typed_dict_size) for e in obj), max_typed_dict_size
+-        )
+-        return List[elem_type]
+-    elif typ is set:
+-        elem_type = shrink_types(
+-            (get_type(e, max_typed_dict_size) for e in obj), max_typed_dict_size
+-        )
+-        return Set[elem_type]
+-    elif typ is dict:
+-        return get_dict_type(obj, max_typed_dict_size)
+-    elif typ is defaultdict:
+-        key_type = shrink_types(
+-            (get_type(k, max_typed_dict_size) for k in obj.keys()), max_typed_dict_size
+-        )
+-        val_type = shrink_types(
+-            (get_type(v, max_typed_dict_size) for v in obj.values()),
+-            max_typed_dict_size,
+-        )
+-        return DefaultDict[key_type, val_type]
+-    elif typ is tuple:
+-        return Tuple[tuple(get_type(e, max_typed_dict_size) for e in obj)]
+-    return typ
++    
++    # Handle instances
++    if hasattr(obj, '__class__'):
++        return obj.__class__
++    
++    # Fallback to the actual type
++    return type(obj)
+ 
+ 
+ NoneType = type(None)

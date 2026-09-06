@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests and the function signature, I need to implement the `parse_url_link` function that handles URL link parsing in an inline parser.\n\nBased on the pattern and typical markdown inline parsing behavior, this function should:\n1. Extract the URL from the match object\n2. Create a link token\n3. Return the end position of the matched text",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "Looking at the failing tests and the function signature, I need to implement the `parse_url_link` function that handles URL link parsing in an inline parser.\n\nBased on the pattern and typical markdown inline parsing behavior, this function should:\n1. Extract the URL from the match object\n2. Create a link token\n3. Return the end position of the matched text\n\n```\ndef parse_url_link(inline: 'InlineParser', m: Match[str], state: 'InlineState'\n    ) ->int:\n    url = m.group(0)\n    text = escape_url(url)\n    state.append_token({\n        'type': 'link',\n        'children': [{'type': 'text', 'content': text}],\n        'attrs': {'href': url}\n    })\n    return len(url)\n```",
+  "rewrite": "def parse_url_link(inline: 'InlineParser', m: Match[str], state: 'InlineState'\n    ) ->int:\n    url = m.group(0)\n    text = escape_url(url)\n    state.append_token({\n        'type': 'link',\n        'children': [{'type': 'text', 'content': text}],\n        'attrs': {'href': url}\n    })\n    return len(url)",
+  "strategy": "lm_regen_from_tests"
+}

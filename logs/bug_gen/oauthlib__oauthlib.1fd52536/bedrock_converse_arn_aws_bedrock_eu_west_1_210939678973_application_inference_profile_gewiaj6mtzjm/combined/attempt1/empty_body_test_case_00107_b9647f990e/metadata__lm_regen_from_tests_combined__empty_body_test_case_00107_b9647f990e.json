@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef get_token_from_header(request):\n    auth = request.headers.get('Authorization', '')\n    if auth[:7].lower() == 'bearer ':\n        return auth[7:].strip()\n    return None\n\n\ndef validate_request(self, request):\n        \"\"\"\n        :param request: OAuthlib request.\n        :type request: oauthlib.common.Request\n        \"\"\"\n        token = get_token_from_header(request)\n        return self.request_validator.validate_bearer_token(\n            token, request.scopes, request)\n```",
+  "rewrite": "def get_token_from_header(request):\n    auth = request.headers.get('Authorization', '')\n    if auth[:7].lower() == 'bearer ':\n        return auth[7:].strip()\n    return None\n\n\ndef validate_request(self, request):\n        \"\"\"\n        :param request: OAuthlib request.\n        :type request: oauthlib.common.Request\n        \"\"\"\n        token = get_token_from_header(request)\n        return self.request_validator.validate_bearer_token(\n            token, request.scopes, request)",
+  "strategy": "lm_regen_from_tests_combined"
+}

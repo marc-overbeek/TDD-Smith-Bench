@@ -1,0 +1,18 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -790,6 +790,15 @@
+             # and we had to turn it into a mutable one. In such cases the object has a new id.
+             self._simple_set_elem_value(obj=parent, path_for_err_reporting=path, elem=parent_to_obj_elem,
+                                         value=new_obj, action=parent_to_obj_action)
++
++    delta_diff = {'iterable_items_removed_at_indexes': {"root['field_name1']": {(0, 'GET'): 'xxx'}}}
++    expected_reverse_diff = {'iterable_items_added_at_indexes': {"root['field_name1']": {(0, 'GET'): 'xxx'}}}
++
++    def _get_reverse_diff(self):
++        if not self.bidirectional:
++            raise ValueError('Please recreate the delta with bidirectional=True')
++    
++        # ... rest of implementation
+ 
+     def _get_reverse_diff(self):
+         if not self.bidirectional:

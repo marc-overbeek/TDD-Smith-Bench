@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef activation_count(model: nn.Module, inputs: Tuple[Any, ...],\n    supported_ops: Optional[Dict[str, Handle]]=None) ->Tuple[DefaultDict[\n    str, float], Counter[str]]:\n    analysis = ActivationCountAnalysis(model, inputs)\n    if supported_ops is not None:\n        analysis.set_op_handle(**supported_ops)\n    return analysis.total(), analysis.by_module()\n\n\ndef __init__(self, model: nn.Module, inputs: Union[Tensor, Tuple[Tensor, ...]]\n    ) ->None:\n    super().__init__(model=model, inputs=inputs)\n    self.set_op_handle(**_DEFAULT_SUPPORTED_OPS)\n```",
+  "rewrite": "def activation_count(model: nn.Module, inputs: Tuple[Any, ...],\n    supported_ops: Optional[Dict[str, Handle]]=None) ->Tuple[DefaultDict[\n    str, float], Counter[str]]:\n    analysis = ActivationCountAnalysis(model, inputs)\n    if supported_ops is not None:\n        analysis.set_op_handle(**supported_ops)\n    return analysis.total(), analysis.by_module()\n\n\ndef __init__(self, model: nn.Module, inputs: Union[Tensor, Tuple[Tensor, ...]]\n    ) ->None:\n    super().__init__(model=model, inputs=inputs)\n    self.set_op_handle(**_DEFAULT_SUPPORTED_OPS)",
+  "strategy": "lm_regen_from_tests_combined"
+}

@@ -1,0 +1,39 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -231,14 +231,28 @@
+ 
+ 
+ def get_safety_version() -> str:
+-    """
+-    Get the version of Safety.
+-
+-    Returns:
+-        str: The Safety version.
+-    """
+-    from safety import VERSION
+-    return VERSION
++    try:
++        from importlib.metadata import version
++        return version('safety')
++    except Exception:
++        try:
++            import safety
++            return safety.__version__
++        except Exception:
++            return 'unknown'
++
++def get_safety_version() -> str:
++    try:
++        from importlib.metadata import version
++        return version('safety')
++    except Exception:
++        try:
++            import safety
++            if hasattr(safety, '__version__'):
++                return safety.__version__
++        except Exception:
++            pass
++    return 'unknown'
+ 
+ 
+ def get_primary_announcement(announcements: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:

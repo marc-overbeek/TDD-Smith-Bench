@@ -1,0 +1,12 @@
+--- a/oauthlib/openid/connect/core/grant_types/refresh_token.py
++++ b/oauthlib/openid/connect/core/grant_types/refresh_token.py
+@@ -28,6 +28,9 @@
+         The authorization_code version of this method is used to
+         retrieve the nonce accordingly to the code storage.
+         """
++        if 'openid' not in token.get('scope', '').split():
++            return token
++
+         if not self.request_validator.refresh_id_token(request):
+             return token
+ 

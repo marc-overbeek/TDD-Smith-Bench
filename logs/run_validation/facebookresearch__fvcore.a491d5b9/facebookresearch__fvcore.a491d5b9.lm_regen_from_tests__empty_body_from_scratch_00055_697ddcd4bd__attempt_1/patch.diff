@@ -1,0 +1,17 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -240,6 +240,14 @@
+         epoch_num = int((where + self.WHERE_EPSILON) * self._num_updates)
+         return self._param_schedule[bisect.bisect_right(self._milestones, epoch_num)]
+ 
++    def __call__(self, where: float) -> float:
++        if where > 1.0:
++            raise RuntimeError(
++                f"where in ParamScheduler must be in [0, 1]: got {where}"
++            )
++        epoch_num = int((where + self.WHERE_EPSILON) * self._num_updates)
++        return self._param_schedule[bisect.bisect_right(self._milestones, epoch_num)]
++
+ 
+ class PolynomialDecayParamScheduler(ParamScheduler):
+     """

@@ -1,0 +1,18 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1450,6 +1450,15 @@
+ 
+     def __starstar__(self):
+         return _t_child(self, 'X', None)
++
++    def test_star_broadcast():
++        val = {'a': [{'b': [{'c': 1}, {'c': 2}, {'c': 3}]}]}
++        assert glom(val, (Assign('a.*.b.*.d', 'a'), 'a.*.b.*.d')) == [['a', 'a', 'a']]
++
++    def __stars__(self):
++        """how many times the result will be wrapped in extra lists"""
++        t_ops = self.__ops__[1::2]
++        return t_ops.count('x') + t_ops.count('X')
+ 
+     def __stars__(self):
+         """how many times the result will be wrapped in extra lists"""

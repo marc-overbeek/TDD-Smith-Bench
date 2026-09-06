@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the code, I need to implement `parse_ref_abbr` which should parse abbreviation reference definitions and store them in the block state.\n\nThe function should:\n1. Extract the abbreviation key and text from the match\n2. Store them in the state's environment under `ref_abbrs`\n3. Return the length of the matched text (to advance the parser position)",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the code, I need to implement `parse_ref_abbr` which should parse abbreviation reference definitions and store them in the block state.\n\nThe function should:\n1. Extract the abbreviation key and text from the match\n2. Store them in the state's environment under `ref_abbrs`\n3. Return the length of the matched text (to advance the parser position)\n\n```\ndef parse_ref_abbr(block: 'BlockParser', m: Match[str], state: 'BlockState'\n    ) ->int:\n    key = m.group('abbr_key')\n    text = m.group('abbr_text').strip()\n    \n    if 'ref_abbrs' not in state.env:\n        state.env['ref_abbrs'] = {}\n    \n    state.env['ref_abbrs'][key] = text\n    return m.end()\n```",
+  "rewrite": "def parse_ref_abbr(block: 'BlockParser', m: Match[str], state: 'BlockState'\n    ) ->int:\n    key = m.group('abbr_key')\n    text = m.group('abbr_text').strip()\n    \n    if 'ref_abbrs' not in state.env:\n        state.env['ref_abbrs'] = {}\n    \n    state.env['ref_abbrs'][key] = text\n    return m.end()",
+  "strategy": "lm_regen_from_tests"
+}

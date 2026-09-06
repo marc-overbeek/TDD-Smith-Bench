@@ -1,0 +1,56 @@
+--- a/src/mistune/plugins/footnotes.py
++++ b/src/mistune/plugins/footnotes.py
+@@ -130,46 +130,11 @@
+     return '<li id="fn-' + i + '">' + text + '</li>\n'
+ 
+ 
+-def footnotes(md: "Markdown") -> None:
+-    """A mistune plugin to support footnotes, spec defined at
+-    https://michelf.ca/projects/php-markdown/extra/#footnotes
+-
+-    Here is an example:
+-
+-    .. code-block:: text
+-
+-        That's some text with a footnote.[^1]
+-
+-        [^1]: And that's the footnote.
+-
+-    It will be converted into HTML:
+-
+-    .. code-block:: html
+-
+-        <p>That's some text with a footnote.<sup class="footnote-ref" id="fnref-1"><a href="#fn-1">1</a></sup></p>
+-        <section class="footnotes">
+-        <ol>
+-        <li id="fn-1"><p>And that's the footnote.<a href="#fnref-1" class="footnote">&#8617;</a></p></li>
+-        </ol>
+-        </section>
+-
+-    :param md: Markdown instance
+-    """
+-    md.inline.register(
+-        'footnote',
+-        INLINE_FOOTNOTE,
+-        parse_inline_footnote,
+-        before='link',
+-    )
+-    md.block.register(
+-        'ref_footnote',
+-        REF_FOOTNOTE,
+-        parse_ref_footnote,
+-        before='ref_link',
+-    )
++def footnotes(md: 'Markdown') ->None:
++    md.block.register('ref_footnote', REF_FOOTNOTE, parse_ref_footnote, before='paragraph')
++    md.inline.register('footnote', INLINE_FOOTNOTE, parse_inline_footnote, before='link')
++    if md.renderer:
++        md.renderer.register('footnote_ref', render_footnote_ref)
++        md.renderer.register('footnotes', render_footnotes)
++        md.renderer.register('footnote_item', render_footnote_item)
+     md.after_render_hooks.append(md_footnotes_hook)
+-
+-    if md.renderer and md.renderer.NAME == 'html':
+-        md.renderer.register('footnote_ref', render_footnote_ref)
+-        md.renderer.register('footnote_item', render_footnote_item)
+-        md.renderer.register('footnotes', render_footnotes)

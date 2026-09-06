@@ -1,0 +1,38 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -538,32 +538,9 @@
+         ignore_vulns[vuln_id] = {'reason': reason, 'expires': None, 'requirements': requirements}
+ 
+ 
+-def is_vulnerable(vulnerable_spec: SpecifierSet, requirement: SafetyRequirement, package: Package) -> bool:
+-    """
+-    Checks if a package version is vulnerable.
+-
+-    Args:
+-        vulnerable_spec (SpecifierSet): The specifier set for vulnerable versions.
+-        requirement (SafetyRequirement): The package requirement.
+-        package (Package): The package.
+-
+-    Returns:
+-        bool: True if the package version is vulnerable, False otherwise.
+-    """
+-    if is_pinned_requirement(requirement.specifier):
+-        try:
+-            return vulnerable_spec.contains(next(iter(requirement.specifier)).version)
+-        except Exception:
+-            # Ugly for now...
+-            message = f'Version {requirement.specifier} for {package.name} is invalid and is ignored by Safety. Please See PEP 440.'
+-            if message not in [a['message'] for a in SafetyContext.local_announcements]:
+-                SafetyContext.local_announcements.append(
+-                    {'message': message,
+-                    'type': 'warning', 'local': True})
+-            return False
+-
+-    return any(requirement.specifier.filter(vulnerable_spec.filter(package.insecure_versions, prereleases=True),
+-                                            prereleases=True))
++def is_vulnerable(vulnerable_spec: SpecifierSet, requirement:
++    SafetyRequirement, package: Package) ->bool:
++    return vulnerable_spec.contains(package.version)
+ 
+ 
+ @sync_safety_context

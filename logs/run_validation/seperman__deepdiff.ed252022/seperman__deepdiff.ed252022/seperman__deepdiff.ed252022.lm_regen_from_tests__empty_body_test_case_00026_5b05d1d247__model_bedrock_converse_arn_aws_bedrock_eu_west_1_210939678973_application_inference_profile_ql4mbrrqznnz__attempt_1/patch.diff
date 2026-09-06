@@ -1,0 +1,186 @@
+--- a/deepdiff/commands.py
++++ b/deepdiff/commands.py
+@@ -55,69 +55,46 @@
+ @click.option('--truncate-datetime', required=False, type=click.Choice(['second', 'minute', 'hour', 'day'], case_sensitive=True), show_default=True, default=None)
+ @click.option('--verbose-level', required=False, default=1, type=click.IntRange(0, 2), show_default=True)
+ @click.option('--debug', is_flag=True, show_default=False)
+-def diff(
+-    *args, **kwargs
+-):
+-    """
+-    Deep Diff Commandline
+-
+-    Deep Difference of content in files.
+-    It can read csv, tsv, json, yaml, and toml files.
+-
+-    T1 and T2 are the path to the files to be compared with each other.
+-    """
++def diff(*args, **kwargs):
+     debug = kwargs.pop('debug')
+-    kwargs['ignore_private_variables'] = not kwargs.pop('include_private_variables')
+-    kwargs['progress_logger'] = logger.info if kwargs['progress_logger'] == 'info' else logger.error
++    t1_path = kwargs.pop('t1')
++    t2_path = kwargs.pop('t2')
+     create_patch = kwargs.pop('create_patch')
+-    t1_path = kwargs.pop("t1")
+-    t2_path = kwargs.pop("t2")
+-    t1_extension = t1_path.split('.')[-1]
+-    t2_extension = t2_path.split('.')[-1]
+-
+-    for name, t_path, t_extension in [('t1', t1_path, t1_extension), ('t2', t2_path, t2_extension)]:
+-        try:
+-            kwargs[name] = load_path_content(t_path, file_type=t_extension)
+-        except Exception as e:  # pragma: no cover.
+-            if debug:  # pragma: no cover.
+-                raise  # pragma: no cover.
+-            else:  # pragma: no cover.
+-                sys.exit(str(f"Error when loading {name}: {e}"))  # pragma: no cover.
+-
+-    # if (t1_extension != t2_extension):
+-    if t1_extension in {'csv', 'tsv'}:
+-        kwargs['t1'] = [dict(i) for i in kwargs['t1']]
+-    if t2_extension in {'csv', 'tsv'}:
+-        kwargs['t2'] = [dict(i) for i in kwargs['t2']]
++
++    try:
++        t1 = load_path_content(t1_path)
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when loading {t1_path}: {e}"))
++
++    try:
++        t2 = load_path_content(t2_path)
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when loading {t2_path}: {e}"))
++
++    if kwargs.get('progress_logger') == 'info':
++        kwargs['progress_logger'] = logger.info
++    else:
++        kwargs['progress_logger'] = logger.error
++
++    try:
++        result = DeepDiff(t1, t2, **kwargs)
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when running deepdiff: {e}"))
+ 
+     if create_patch:
+-        # Disabling logging progress since it will leak into stdout
+-        kwargs['log_frequency_in_sec'] = 0
+-
+-    try:
+-        diff = DeepDiff(**kwargs)
+-    except Exception as e:  # pragma: no cover.  No need to test this.
+-        sys.exit(str(e))  # pragma: no cover.  No need to test this.
+-
+-    if create_patch:
+-        try:
+-            delta = Delta(diff)
+-        except Exception as e:  # pragma: no cover.
+-            if debug:  # pragma: no cover.
+-                raise  # pragma: no cover.
+-            else:  # pragma: no cover.
+-                sys.exit(f"Error when loading the patch (aka delta): {e}")  # pragma: no cover.
+-
+-        # printing into stdout
+-        sys.stdout.buffer.write(delta.dumps())
++        delta = Delta(result)
++        click.echo(delta.dumps())
+     else:
+-        try:
+-            if orjson:
+-                print(diff.to_json(option=orjson.OPT_INDENT_2))
+-            else:
+-                print(diff.to_json(indent=2))
+-        except Exception:
+-            pprint(diff, indent=2)
++        click.echo(result.to_json(indent=2))
+ 
+ 
+ @cli.command()
+@@ -126,45 +103,39 @@
+ @click.option('--backup', '-b', is_flag=True, show_default=True)
+ @click.option('--raise-errors', is_flag=True, show_default=True)
+ @click.option('--debug', is_flag=True, show_default=False)
+-def patch(
+-    path, delta_path, backup, raise_errors, debug
+-):
+-    """
+-    Deep Patch Commandline
+-
+-    Patches a file based on the information in a delta file.
+-    The delta file can be created by the deep diff command and
+-    passing the --create-patch argument.
+-
+-    Deep Patch is similar to Linux's patch command.
+-    The difference is that it is made for patching data.
+-    It can read csv, tsv, json, yaml, and toml files.
+-
+-    """
+-    try:
+-        delta = Delta(delta_path=delta_path, raise_errors=raise_errors)
+-    except Exception as e:  # pragma: no cover.
+-        if debug:  # pragma: no cover.
+-            raise  # pragma: no cover.
+-        else:  # pragma: no cover.
+-            sys.exit(str(f"Error when loading the patch (aka delta) {delta_path}: {e}"))  # pragma: no cover.
+-
+-    extension = path.split('.')[-1]
+-
+-    try:
+-        content = load_path_content(path, file_type=extension)
+-    except Exception as e:  # pragma: no cover.
+-        sys.exit(str(f"Error when loading {path}: {e}"))  # pragma: no cover.
+-
+-    result = delta + content
+-
+-    try:
+-        save_content_to_path(result, path, file_type=extension, keep_backup=backup)
+-    except Exception as e:  # pragma: no cover.
+-        if debug:  # pragma: no cover.
+-            raise  # pragma: no cover.
+-        else:  # pragma: no cover.
+-            sys.exit(str(f"Error when saving {path}: {e}"))  # pragma: no cover.
++def patch(path, delta_path, backup, raise_errors, debug):
++    try:
++        content = load_path_content(path)
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when loading {path}: {e}"))
++
++    try:
++        with open(delta_path, 'rb') as f:
++            delta = Delta(f.read(), raise_errors=raise_errors)
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when loading delta from {delta_path}: {e}"))
++
++    try:
++        result = content + delta
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when applying delta to {path}: {e}"))
++
++    try:
++        save_content_to_path(result, path, backup=backup)
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when saving to {path}: {e}"))
+ 
+ 
+ @cli.command()

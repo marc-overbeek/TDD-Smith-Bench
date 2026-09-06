@@ -1,0 +1,77 @@
+--- a/src/mistune/plugins/def_list.py
++++ b/src/mistune/plugins/def_list.py
+@@ -82,16 +82,65 @@
+     }
+ 
+ 
+-def _process_text(block: "BlockParser", text: str, loose: bool) -> List[Any]:
+-    text = TRIM_RE.sub("", text)
++def _process_text(block: 'BlockParser', text: str, loose: bool) ->List[Any]:
++    text = TRIM_RE.sub('', text)
++    text = strip_end(text)
++    if loose:
++        children, state = block.parse(text, {})
++        return children
++    else:
++        # tight: wrap in paragraph-like inline content
++        lines = text.splitlines()
++        # strip the leading colon replacement (already done by caller)
++        children = []
++        for line in lines:
++            line = line.strip()
++            if line:
++                children.append({'type': 'inline', 'raw': line})
++        # Actually parse as block but treat paragraphs as inline
++        state = block.state_cls()
++        state.src = text
++        block.parse(text, state)
++        tokens = state.tokens if hasattr(state, 'tokens') else []
++        return tokens
++
++def _process_text(block: 'BlockParser', text: str, loose: bool) ->List[Any]:
++    text = TRIM_RE.sub('', text)
++    text = strip_end(text)
++    if loose:
++        state = block.state_cls()
++        state.src = text
++        block.parse(text, state)
++        return state.tokens
++    else:
++        state = block.state_cls()
++        state.src = text
++        block.parse(text, state)
++        tokens = state.tokens
++        # For tight lists, unwrap paragraph tokens to inline
++        children = []
++        for tok in tokens:
++            if tok.get('type') == 'paragraph':
++                children.append({'type': 'inline', 'raw': tok.get('raw', tok.get('text', ''))})
++            else:
++                children.append(tok)
++        return children
++
++def _process_text(block: 'BlockParser', text: str, loose: bool) ->List[Any]:
++    text = TRIM_RE.sub('', text)
++    text = strip_end(text)
+     state = block.state_cls()
+-    state.process(strip_end(text))
+-    # use default list rules
+-    block.parse(state, block.list_rules)
+-    tokens = state.tokens
+-    if not loose and len(tokens) == 1 and tokens[0]['type'] == 'paragraph':
+-        tokens[0]['type'] = 'block_text'
+-    return tokens
++    state.src = text
++    block.parse(text, state)
++    if loose:
++        return state.tokens
++    children = []
++    for tok in state.tokens:
++        if tok.get('type') == 'paragraph':
++            children.append({'type': 'inline', 'raw': tok.get('raw', tok.get('text', ''))})
++        else:
++            children.append(tok)
++    return children
+ 
+ 
+ def render_def_list(renderer: "BaseRenderer", text: str) -> str:

@@ -1,0 +1,41 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2604,7 +2604,10 @@
+         self.add_missing_data(get_data_function=lambda point: point.speed,
+                               add_missing_function=_add)
+ 
+-    def fill_time_data_with_regular_intervals(self, start_time: Optional[mod_datetime.datetime]=None, time_delta: Optional[mod_datetime.timedelta]=None, end_time: Optional[mod_datetime.datetime]=None, force: bool=True) -> None:
++    def fill_time_data_with_regular_intervals(self, start_time: Optional[
++        mod_datetime.datetime]=None, time_delta: Optional[mod_datetime.
++        timedelta]=None, end_time: Optional[mod_datetime.datetime]=None, force:
++        bool=True) ->None:
+         """
+         Fills the time data for all points in the GPX file. At least two of the parameters start_time, time_delta, and
+         end_time have to be provided. If the three are provided, time_delta will be ignored and will be recalculated
+@@ -2638,11 +2641,21 @@
+         if start_time and end_time:
+             if start_time > end_time:
+                 raise GPXException('Invalid parameters: end_time must occur after start_time')
+-            time_delta = (end_time - start_time) / (point_no - 1)
+-        elif end_time and not start_time and time_delta:
+-            start_time = end_time - (point_no - 1) * time_delta
+-
+-        if start_time:
++            if point_no > 1:
++                time_delta = (end_time - start_time) / (point_no - 1)
++            else:
++                time_delta = mod_datetime.timedelta(0)
++        elif start_time and time_delta:
++            # Already have start_time and time_delta, no need to recalculate
++            pass
++        elif end_time and time_delta:
++            # Calculate start_time from end_time and time_delta
++            if point_no > 1:
++                start_time = end_time - (point_no - 1) * time_delta
++            else:
++                start_time = end_time
++
++        if start_time is not None:
+             self.time = start_time
+ 
+         i = 0

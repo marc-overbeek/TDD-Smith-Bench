@@ -1,0 +1,92 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -280,31 +280,67 @@
+ 
+ 
+ # TODO: not used (yet)
++def test_line_trace():
++    stacklifier = [{'data': S}],
++    scope = glom([1], stacklifier)[0]['data'][ROOT][LAST_CHILD_SCOPE]
++    fmtd_stack = format_oneline_trace(scope)
++    assert fmtd_stack == '/tuple!list/list<0>/dict!int/S'
++
+ def format_oneline_trace(scope):
+-    """
+-    unpack a scope into a single line summary
+-    (shortest summary possible)
+-    """
+-    # the goal here is to do a kind of delta-compression --
+-    # if the target is the same, don't repeat it
+     segments = []
+-    prev_target = _MISSING
+-    for scope, spec, target, error, branches in _unpack_stack(scope, only_errors=False):
+-        segments.append('/')
+-        if type(spec) in (TType, Path):
+-            segments.append(bbrepr(spec))
++    scope = scope.maps[0]
++    while LAST_CHILD_SCOPE in scope:
++        child = scope[LAST_CHILD_SCOPE]
++        # Get the spec type name
++        spec_type = scope[Spec].__class__.__name__
++        
++        # Handle special cases for path information
++        path_info = ""
++        if hasattr(scope[Spec], '__ops__'):
++            ops = scope[Spec].__ops__
++            if len(ops) > 1:
++                # Look for path components in ops
++                path_parts = []
++                i = 1
++                while i < len(ops):
++                    op, arg = ops[i], ops[i + 1]
++                    if op == '.':
++                        path_parts.append(str(arg))
++                    elif op == '[':
++                        if isinstance(arg, int):
++                            path_parts.append(f"<{arg}>")
++                        else:
++                            path_parts.append(f"[{arg}]")
++                    elif op == 'P':
++                        path_parts.append(str(arg))
++                    elif op == '(':
++                        path_parts.append(f"({arg})")
++                    i += 2
++                if path_parts:
++                    path_info = ''.join(path_parts)
++        
++        # Combine type and path info
++        if path_info:
++            segments.append(f"{spec_type}{path_info}")
+         else:
+-            segments.append(type(spec).__name__)
+-        if target != prev_target:
+-            segments.append('!')
+-            segments.append(type(target).__name__)
+-        if Path in scope:
+-            segments.append('<')
+-            segments.append('->'.join([str(p) for p in scope[Path]]))
+-            segments.append('>')
+-        prev_target = target
+-
+-    return "".join(segments)
++            segments.append(spec_type)
++        
++        # Move to parent scope
++        scope = child.maps[0]
++    else:
++        # Add final scope
++        spec_type = scope[Spec].__class__.__name__
++        segments.append(spec_type)
++    
++    # Build the path representation with leading slash
++    result_parts = []
++    for i, segment in enumerate(segments):
++        if i == 0:
++            result_parts.append(segment)
++        else:
++            result_parts.append(f"/{segment}")
++    
++    return ''.join(result_parts)
+ 
+ 
+ class PathAccessError(GlomError, AttributeError, KeyError, IndexError):

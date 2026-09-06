@@ -1,0 +1,95 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -138,70 +138,43 @@
+             LOG.debug('Safety updated the cache file for %s database.', db_name)
+ 
+ 
+-def fetch_database_url(
+-    session: requests.Session,
+-    mirror: str,
+-    db_name: str,
+-    cached: int,
+-    telemetry: bool = True,
+-    ecosystem: Ecosystem = Ecosystem.PYTHON,
+-    from_cache: bool = True
+-) -> Dict[str, Any]:
+-    """
+-    Fetches the database from a URL.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        mirror (str): The URL of the mirror.
+-        db_name (str): The name of the database.
+-        cached (int): The cache validity in seconds.
+-        telemetry (bool): Whether to include telemetry data.
+-        ecosystem (Ecosystem): The ecosystem.
+-        from_cache (bool): Whether to fetch from cache.
+-
+-    Returns:
+-        Dict[str, Any]: The fetched database.
+-    """
+-    headers = {'schema-version': JSON_SCHEMA_VERSION, 'ecosystem': ecosystem.value}
+-
++def fetch_database_url(session: requests.Session, mirror: str, db_name: str,
++    cached: int, telemetry: bool=True, ecosystem: Ecosystem=Ecosystem.
++    PYTHON, from_cache: bool=True) ->Dict[str, Any]:
+     if cached and from_cache:
+-        cached_data = get_from_cache(db_name=db_name, cache_valid_seconds=cached)
++        cached_data = get_from_cache(db_name, cache_valid_seconds=cached)
+         if cached_data:
+-            LOG.info('Database %s returned from cache.', db_name)
++            LOG.debug('Using cached database for %s', db_name)
+             return cached_data
+-    url = mirror + db_name
+-
+-
+-    telemetry_data = {
+-        'telemetry': json.dumps(build_telemetry_data(telemetry=telemetry),
+-                                default=pydantic_encoder)}
++
++    telemetry_data = build_telemetry_data(telemetry=telemetry)
++    params = asdict(telemetry_data)
++
++    ecosystem_path = ecosystem.value if ecosystem else ''
++    url = f"{mirror}{ecosystem_path}/{db_name}" if ecosystem_path else f"{mirror}{db_name}"
+ 
+     try:
+-        r = session.get(url=url, timeout=REQUEST_TIMEOUT,
+-                        headers=headers, params=telemetry_data)
++        r = session.get(url=url, params=params, timeout=REQUEST_TIMEOUT)
+     except requests.exceptions.ConnectionError:
+         raise NetworkConnectionError()
+     except requests.exceptions.Timeout:
+         raise RequestTimeoutError()
+-    except requests.exceptions.RequestException:
++
++    if r.status_code == 403:
++        raise InvalidCredentialError()
++    elif r.status_code == 429:
++        raise TooManyRequestsError()
++    elif r.status_code >= 500:
++        raise ServerError()
++    elif r.status_code != 200:
+         raise DatabaseFetchError()
+-
+-    if r.status_code == 403:
+-        raise InvalidCredentialError(credential=session.get_credential(), reason=r.text)
+-
+-    if r.status_code == 429:
+-        raise TooManyRequestsError(reason=r.text)
+-
+-    if r.status_code != 200:
+-        raise ServerError(reason=r.reason)
+ 
+     try:
+         data = r.json()
+-    except json.JSONDecodeError as e:
+-        raise MalformedDatabase(reason=e)
++    except Exception:
++        raise MalformedDatabase(fetched_from=mirror)
+ 
+     if cached:
+-        LOG.info('Writing %s to cache because cached value was %s', db_name, cached)
+         write_to_cache(db_name, data)
+ 
+     return data

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, I need to implement `__copy__` for `MatchError`. The `TypeMatchError` already has a `__copy__` method, but `MatchError` doesn't.\n\nLooking at `test_all_public_errors`, it calls `copy.copy(exc)` and expects it to work (return a new object that `is not exc`).\n\nThe `MatchError.__init__` takes `(fmt, *args)`, and `self.args` stores `(fmt, *args)` via the `super().__init__` call.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing tests, I need to implement `__copy__` for `MatchError`. The `TypeMatchError` already has a `__copy__` method, but `MatchError` doesn't.\n\nLooking at `test_all_public_errors`, it calls `copy.copy(exc)` and expects it to work (return a new object that `is not exc`).\n\nThe `MatchError.__init__` takes `(fmt, *args)`, and `self.args` stores `(fmt, *args)` via the `super().__init__` call.\n\n```python\ndef __copy__(self):\n    return MatchError(*self.args)\n```",
+  "rewrite": "def __copy__(self):\n    return MatchError(*self.args)",
+  "strategy": "lm_regen_from_tests"
+}

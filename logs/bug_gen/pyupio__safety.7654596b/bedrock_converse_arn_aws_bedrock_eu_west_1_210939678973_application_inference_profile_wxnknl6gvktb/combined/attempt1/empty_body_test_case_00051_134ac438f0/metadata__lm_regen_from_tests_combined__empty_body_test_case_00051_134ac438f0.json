@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef describe(self) -> Optional[str]:\n    return self.__run__(self.DESCRIBE_CMD, env_var=\"SAFETY_GIT_DESCRIBE\")\n```\n\n```python\ndef dirty(self, raw_describe: str) -> bool:\n    if os.environ.get(\"SAFETY_GIT_DIRTY\") in [\"0\", \"1\"]:\n        return bool(int(os.environ.get(\"SAFETY_GIT_DIRTY\")))\n    \n    return raw_describe.endswith('-dirty')\n```",
+  "rewrite": "def describe(self) -> Optional[str]:\n    return self.__run__(self.DESCRIBE_CMD, env_var=\"SAFETY_GIT_DESCRIBE\")\n\ndef dirty(self, raw_describe: str) -> bool:\n    if os.environ.get(\"SAFETY_GIT_DIRTY\") in [\"0\", \"1\"]:\n        return bool(int(os.environ.get(\"SAFETY_GIT_DIRTY\")))\n    \n    return raw_describe.endswith('-dirty')",
+  "strategy": "lm_regen_from_tests_combined"
+}

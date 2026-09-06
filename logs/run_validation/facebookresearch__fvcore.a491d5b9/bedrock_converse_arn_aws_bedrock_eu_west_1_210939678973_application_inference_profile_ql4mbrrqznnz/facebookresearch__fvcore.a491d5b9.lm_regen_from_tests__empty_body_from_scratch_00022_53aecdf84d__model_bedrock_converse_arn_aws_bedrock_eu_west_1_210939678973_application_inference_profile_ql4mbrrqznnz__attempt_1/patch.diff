@@ -1,0 +1,15 @@
+--- a/fvcore/common/checkpoint.py
++++ b/fvcore/common/checkpoint.py
+@@ -102,6 +102,12 @@
+                 "add_checkpointable needs an object with 'state_dict()' method."
+             )
+         self.checkpointables[key] = checkpointable
++
++    checkpointer = Checkpointer(trained_model, save_dir=f, save_to_disk=True, checkpointables=checkpointables)
++    ...
++    checkpoint = fresh_checkpointer.load(...)
++    for key, _ in state_dict.items():
++        self.assertTrue(checkpoint['checkpointables'].get(key) is not None)
+ 
+     def save(self, name: str, **kwargs: Any) -> None:
+         """

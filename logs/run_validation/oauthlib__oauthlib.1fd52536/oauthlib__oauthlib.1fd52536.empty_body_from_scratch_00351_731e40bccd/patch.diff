@@ -1,0 +1,43 @@
+--- a/oauthlib/oauth2/rfc6749/grant_types/authorization_code.py
++++ b/oauthlib/oauth2/rfc6749/grant_types/authorization_code.py
+@@ -281,39 +281,7 @@
+             request, grant, {}, None, 302)
+ 
+     def create_token_response(self, request, token_handler):
+-        """Validate the authorization code.
+-
+-        The client MUST NOT use the authorization code more than once. If an
+-        authorization code is used more than once, the authorization server
+-        MUST deny the request and SHOULD revoke (when possible) all tokens
+-        previously issued based on that authorization code. The authorization
+-        code is bound to the client identifier and redirection URI.
+-
+-        :param request: OAuthlib request.
+-        :type request: oauthlib.common.Request
+-        :param token_handler: A token handler instance, for example of type
+-                              oauthlib.oauth2.BearerToken.
+-
+-        """
+-        headers = self._get_default_headers()
+-        try:
+-            self.validate_token_request(request)
+-            log.debug('Token request validation ok for %r.', request)
+-        except errors.OAuth2Error as e:
+-            log.debug('Client error during validation of %r. %r.', request, e)
+-            headers.update(e.headers)
+-            return headers, e.json, e.status_code
+-
+-        token = token_handler.create_token(request, refresh_token=self.refresh_token)
+-
+-        for modifier in self._token_modifiers:
+-            token = modifier(token, token_handler, request)
+-
+-        self.request_validator.save_token(token, request)
+-        self.request_validator.invalidate_authorization_code(
+-            request.client_id, request.code, request)
+-        headers.update(self._create_cors_headers(request))
+-        return headers, json.dumps(token), 200
++        pass
+ 
+     def validate_authorization_request(self, request):
+         """Check the authorization request for normal and fatal errors.

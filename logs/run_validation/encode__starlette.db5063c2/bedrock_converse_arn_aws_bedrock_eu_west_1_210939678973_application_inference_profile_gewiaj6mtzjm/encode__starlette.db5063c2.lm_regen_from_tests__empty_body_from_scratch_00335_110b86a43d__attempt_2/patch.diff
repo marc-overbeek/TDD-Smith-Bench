@@ -1,0 +1,23 @@
+--- a/starlette/middleware/gzip.py
++++ b/starlette/middleware/gzip.py
+@@ -23,15 +23,12 @@
+ 
+ 
+ class GZipResponder:
++    self.gzip_file = gzip.GzipFile(mode="wb", fileobj=self.gzip_buffer, compresslevel=compresslevel)
++
+     def __init__(self, app: ASGIApp, minimum_size: int, compresslevel: int = 9) -> None:
+-        self.app = app
+-        self.minimum_size = minimum_size
+-        self.send: Send = unattached_send
+-        self.initial_message: Message = {}
+-        self.started = False
+-        self.content_encoding_set = False
+-        self.gzip_buffer = io.BytesIO()
+-        self.gzip_file = gzip.GzipFile(mode="wb", fileobj=self.gzip_buffer, compresslevel=compresslevel)
++            self.app = app
++            self.minimum_size = minimum_size
++            self.compresslevel = compresslevel
+ 
+     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+         self.send = send

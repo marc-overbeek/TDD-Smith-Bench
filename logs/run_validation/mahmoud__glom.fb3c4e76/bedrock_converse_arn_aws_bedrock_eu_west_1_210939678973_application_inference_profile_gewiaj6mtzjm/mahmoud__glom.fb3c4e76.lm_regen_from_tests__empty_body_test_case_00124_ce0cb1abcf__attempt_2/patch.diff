@@ -1,0 +1,19 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -283,7 +283,7 @@
+         if op == '[':
+             try:
+                 del dest[arg]
+-            except IndexError as e:
++            except (IndexError, KeyError) as e:
+                 if not self.ignore_missing:
+                     raise PathDeleteError(e, self.path, arg)
+         elif op == '.':
+@@ -313,6 +313,7 @@
+         except PathAccessError as pae:
+             if not self.ignore_missing:
+                 raise
++            return target
+         else:
+             _apply_for_each(lambda dest: self._del_one(dest, op, arg, scope), path, dest)
+ 

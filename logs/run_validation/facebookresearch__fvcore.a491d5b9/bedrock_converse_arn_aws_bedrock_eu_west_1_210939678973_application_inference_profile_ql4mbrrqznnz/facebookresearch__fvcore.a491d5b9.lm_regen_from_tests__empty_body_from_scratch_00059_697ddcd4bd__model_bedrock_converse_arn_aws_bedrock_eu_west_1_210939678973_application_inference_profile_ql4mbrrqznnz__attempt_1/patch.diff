@@ -1,0 +1,13 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -303,6 +303,10 @@
+         ind = int((where + self.WHERE_EPSILON) * len(self._param_schedule))
+         return self._param_schedule[ind]
+ 
++    def __call__(self, where: float) -> float:
++        ind = int((where + self.WHERE_EPSILON) * len(self._param_schedule))
++        return self._param_schedule[min(ind, len(self._param_schedule) - 1)]
++
+ 
+ class StepWithFixedGammaParamScheduler(ParamScheduler):
+     """

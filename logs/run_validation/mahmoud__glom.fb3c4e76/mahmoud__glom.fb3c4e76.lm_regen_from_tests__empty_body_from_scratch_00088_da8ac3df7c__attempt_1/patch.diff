@@ -1,0 +1,31 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1447,6 +1447,28 @@
+ 
+     def __star__(self):
+         return _t_child(self, 'x', None)
++
++    def __star__(self):
++        return _t_child(self, 'x', None)
++
++    elif op in 'xX':
++        nxt = []
++        get_handler = scope[TargetRegistry].get_handler
++        if op == 'x':  # increases arity of cur each time through
++            _extend_children(nxt, cur, get_handler)
++        elif op == 'X':
++            sofar = set()
++            _extend_children(nxt, cur, get_handler)
++            for item in nxt:
++                if id(item) not in sofar:
++                    sofar.add(id(item))
++                    _extend_children(nxt, item, get_handler)
++            nxt.insert(0, cur)
++
++    elif op == 'x':
++        prepr.append(".__star__()")
++    elif op == 'X':
++        prepr.append(".__starstar__()")
+ 
+     def __starstar__(self):
+         return _t_child(self, 'X', None)

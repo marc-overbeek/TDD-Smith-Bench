@@ -1,0 +1,28 @@
+--- a/safety/scan/finder/file_finder.py
++++ b/safety/scan/finder/file_finder.py
+@@ -153,11 +153,17 @@
+ 
+         return dir_path, files
+ 
+-    def search(self) -> Tuple[str, Dict[str, Set[Path]]]:
+-        """
+-        Initiates the search for files within the target directory.
+-
+-        Returns:
+-            Tuple[str, Dict[str, Set[Path]]]: The target directory and a dictionary of file types and their corresponding paths.
+-        """
+-        return self.process_directory(self.target, self.max_level)
++    def search(self) ->Tuple[str, Dict[str, Set[Path]]]:
++        if self.include_files:
++            files: Dict[str, Set[Path]] = {}
++            for file_type, file_paths in self.include_files.items():
++                if file_type.value not in files:
++                    files[file_type.value] = set()
++                for file_path in file_paths:
++                    if file_path.is_absolute():
++                        files[file_type.value].add(file_path)
++                    else:
++                        files[file_type.value].add(self.target / file_path)
++            return str(self.target), files
++        else:
++            return self.process_directory(self.target, self.max_level)

@@ -1,0 +1,31 @@
+--- a/safety/cli_util.py
++++ b/safety/cli_util.py
+@@ -697,15 +697,26 @@
+         }
+         key = None
+ 
+-        for i, arg in enumerate(args):
++        i = 0
++        while i < len(args):
++            arg = args[i]
+             if arg in ['--proxy-protocol', '-pr'] and i + 1 < len(args):
+                 options['proxy_protocol'] = args[i + 1]
++                i += 2
+             elif arg in ['--proxy-port', '-pp'] and i + 1 < len(args):
+-                options['proxy_port'] = int(args[i + 1])
++                try:
++                    options['proxy_port'] = int(args[i + 1])
++                except (ValueError, IndexError):
++                    pass
++                i += 2
+             elif arg in ['--proxy-host', '-ph'] and i + 1 < len(args):
+                 options['proxy_host'] = args[i + 1]
++                i += 2
+             elif arg in ['--key'] and i + 1 < len(args):
+                 key = args[i + 1]
++                i += 2
++            else:
++                i += 1
+ 
+         proxy = options if options['proxy_host'] else None
+         return proxy, key

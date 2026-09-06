@@ -1,0 +1,150 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -48,14 +48,7 @@
+ 
+ 
+ def _apply_for_each(func, path, val):
+-    layers = path.path_t.__stars__()
+-    if layers:
+-        for i in range(layers - 1):
+-            val = sum(val, [])  # flatten out the extra layers
+-        for inner in val:
+-            func(inner)
+-    else:
+-        func(val)
++    pass
+ 
+ 
+ class Assign:
+@@ -122,62 +115,10 @@
+ 
+     """
+     def __init__(self, path, val, missing=None):
+-        # TODO: an option like require_preexisting or something to
+-        # ensure that a value is mutated, not just added. Current
+-        # workaround is to do a Check().
+-        if isinstance(path, basestring):
+-            path = Path.from_text(path)
+-        elif type(path) is TType:
+-            path = Path(path)
+-        elif not isinstance(path, Path):
+-            raise TypeError('path argument must be a .-delimited string, Path, T, or S')
+-
+-        try:
+-            self.op, self.arg = path.items()[-1]
+-        except IndexError:
+-            raise ValueError('path must have at least one element')
+-        self._orig_path = path
+-        self.path = path[:-1]
+-
+-        if self.op not in '[.P':
+-            # maybe if we add null-coalescing this should do something?
+-            raise ValueError('last part of path must be setattr or setitem')
+-        self.val = val
+-
+-        if missing is not None:
+-            if not callable(missing):
+-                raise TypeError(f'expected missing to be callable, not {missing!r}')
+-        self.missing = missing
++        pass
+ 
+     def glomit(self, target, scope):
+-        val = arg_val(target, self.val, scope)
+-
+-        op, arg, path = self.op, self.arg, self.path
+-        if self.path.startswith(S):
+-            dest_target = scope[UP]
+-            dest_path = self.path.from_t()
+-        else:
+-            dest_target = target
+-            dest_path = self.path
+-        try:
+-            dest = scope[glom](dest_target, dest_path, scope)
+-        except PathAccessError as pae:
+-            if not self.missing:
+-                raise
+-
+-            remaining_path = self._orig_path[pae.part_idx + 1:]
+-            val = scope[glom](self.missing(), Assign(remaining_path, val, missing=self.missing), scope)
+-
+-            op, arg = self._orig_path.items()[pae.part_idx]
+-            path = self._orig_path[:pae.part_idx]
+-            dest = scope[glom](dest_target, path, scope)
+-
+-        # TODO: forward-detect immutable dest?
+-        _apply = lambda dest: _assign_op(
+-            dest=dest, op=op, arg=arg, val=val, path=path, scope=scope)
+-        _apply_for_each(_apply, path, dest)
+-
+-        return target
++        pass
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__
+@@ -260,63 +201,13 @@
+     .. versionadded:: 20.5.0
+     """
+     def __init__(self, path, ignore_missing=False):
+-        if isinstance(path, basestring):
+-            path = Path.from_text(path)
+-        elif type(path) is TType:
+-            path = Path(path)
+-        elif not isinstance(path, Path):
+-            raise TypeError('path argument must be a .-delimited string, Path, T, or S')
+-
+-        try:
+-            self.op, self.arg = path.items()[-1]
+-        except IndexError:
+-            raise ValueError('path must have at least one element')
+-        self._orig_path = path
+-        self.path = path[:-1]
+-
+-        if self.op not in '[.P':
+-            raise ValueError('last part of path must be an attribute or index')
+-
+-        self.ignore_missing = ignore_missing
++        pass
+ 
+     def _del_one(self, dest, op, arg, scope):
+-        if op == '[':
+-            try:
+-                del dest[arg]
+-            except IndexError as e:
+-                if not self.ignore_missing:
+-                    raise PathDeleteError(e, self.path, arg)
+-        elif op == '.':
+-            try:
+-                delattr(dest, arg)
+-            except AttributeError as e:
+-                if not self.ignore_missing:
+-                    raise PathDeleteError(e, self.path, arg)
+-        elif op == 'P':
+-            _delete = scope[TargetRegistry].get_handler('delete', dest)
+-            try:
+-                _delete(dest, arg)
+-            except Exception as e:
+-                if not self.ignore_missing:
+-                    raise PathDeleteError(e, self.path, arg)
++        pass
+ 
+     def glomit(self, target, scope):
+-        op, arg, path = self.op, self.arg, self.path
+-        if self.path.startswith(S):
+-            dest_target = scope[UP]
+-            dest_path = self.path.from_t()
+-        else:
+-            dest_target = target
+-            dest_path = self.path
+-        try:
+-            dest = scope[glom](dest_target, dest_path, scope)
+-        except PathAccessError as pae:
+-            if not self.ignore_missing:
+-                raise
+-        else:
+-            _apply_for_each(lambda dest: self._del_one(dest, op, arg, scope), path, dest)
+-
+-        return target
++        pass
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

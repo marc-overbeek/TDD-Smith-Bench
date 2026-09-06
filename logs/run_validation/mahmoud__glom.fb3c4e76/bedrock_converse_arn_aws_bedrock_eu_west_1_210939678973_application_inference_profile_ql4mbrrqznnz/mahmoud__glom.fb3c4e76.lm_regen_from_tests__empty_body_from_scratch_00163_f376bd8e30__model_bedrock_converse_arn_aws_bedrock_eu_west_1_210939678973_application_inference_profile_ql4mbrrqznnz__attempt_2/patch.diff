@@ -1,0 +1,23 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -312,11 +312,15 @@
+ 
+     def _agg(self, target, tree):
+         if self not in tree:
+-            acc = tree[self] = self.init()
+-        else:
+-            acc = tree[self]
+-        self.op(acc, target)
+-        return acc
++            tree[self] = self.init()
++        tree[self] = self.op(tree[self], target)
++        return tree[self]
++
++    def _agg(self, target, tree):
++        if self not in tree:
++            tree[self] = self.init()
++        tree[self] = self.op(tree[self], target)
++        return tree[self]
+ 
+ 
+ def merge(target, **kwargs):

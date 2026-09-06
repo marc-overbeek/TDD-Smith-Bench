@@ -1,0 +1,24 @@
+--- a/oauthlib/oauth1/rfc5849/parameters.py
++++ b/oauthlib/oauth1/rfc5849/parameters.py
+@@ -126,8 +126,17 @@
+     .. _`section 3.5.3`: https://tools.ietf.org/html/rfc5849#section-3.5.3
+ 
+     """
+-    # append OAuth params to the existing set of query components
++    # parse the URI
+     sch, net, path, par, query, fra = urlparse(uri)
+-    query = urlencode(
+-        _append_params(oauth_params, extract_params(query) or []))
+-    return urlunparse((sch, net, path, par, query, fra))
++    
++    # extract existing query parameters
++    existing_params = extract_params(query) or []
++    
++    # append OAuth params to existing params
++    merged = _append_params(oauth_params, existing_params)
++    
++    # encode the merged params back into a query string
++    new_query = urlencode(merged)
++    
++    # reconstruct the URI with the new query string
++    return urlunparse((sch, net, path, par, new_query, fra))

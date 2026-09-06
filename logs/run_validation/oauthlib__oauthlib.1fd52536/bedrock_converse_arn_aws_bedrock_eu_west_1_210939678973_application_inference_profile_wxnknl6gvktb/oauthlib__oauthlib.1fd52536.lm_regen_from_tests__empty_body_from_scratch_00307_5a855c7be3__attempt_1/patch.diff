@@ -1,0 +1,14 @@
+--- a/oauthlib/oauth2/rfc6749/clients/base.py
++++ b/oauthlib/oauth2/rfc6749/clients/base.py
+@@ -448,8 +448,9 @@
+         return prepare_token_request(self.refresh_token_key, body=body, scope=scope,
+                                      refresh_token=refresh_token, **kwargs)
+ 
+-    def _add_bearer_token(self, uri, http_method='GET', body=None,
+-                          headers=None, token_placement=None):
++    def _add_bearer_token(self, uri, http_method, body, headers, token_placement)
++
++    def _add_bearer_token(self, uri, http_method, body, headers, token_placement):
+         """Add a bearer token to the request uri, body or authorization header."""
+         if token_placement == AUTH_HEADER:
+             headers = tokens.prepare_bearer_headers(self.access_token, headers)

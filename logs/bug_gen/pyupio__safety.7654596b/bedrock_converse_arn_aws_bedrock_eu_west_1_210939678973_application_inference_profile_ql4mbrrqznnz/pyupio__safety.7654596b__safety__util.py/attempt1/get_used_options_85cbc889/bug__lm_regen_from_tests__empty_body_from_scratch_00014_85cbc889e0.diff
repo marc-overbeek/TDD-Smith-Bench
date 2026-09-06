@@ -1,0 +1,46 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -207,26 +207,24 @@
+     return flags
+ 
+ 
+-def get_used_options() -> Dict[str, Dict[str, int]]:
+-    """
+-    Get the used options from the command-line arguments.
+-
+-    Returns:
+-        Dict[str, Dict[str, int]]: A dictionary of used options and their counts.
+-    """
++def get_used_options() ->Dict[str, Dict[str, int]]:
+     flags = get_flags_from_context()
+-    used_options = {}
+-
+-    for arg in sys.argv:
+-        cleaned_arg = arg if '=' not in arg else arg.split('=')[0]
+-        if cleaned_arg in flags:
+-            option_used = flags.get(cleaned_arg)
+-
+-            if option_used in used_options:
+-                used_options[option_used][cleaned_arg] = used_options[option_used].get(cleaned_arg, 0) + 1
+-            else:
+-                used_options[option_used] = {cleaned_arg: 1}
+-
++    used_options: Dict[str, Dict[str, int]] = {}
++    
++    argv = sys.argv[1:]  # Skip the script name
++    
++    for arg in argv:
++        # Handle --flag=value format
++        flag = arg.split('=')[0] if '=' in arg else arg
++        
++        if flag in flags:
++            option_name = flags[flag]
++            if option_name not in used_options:
++                used_options[option_name] = {}
++            if flag not in used_options[option_name]:
++                used_options[option_name][flag] = 0
++            used_options[option_name][flag] += 1
++    
+     return used_options
+ 
+ 

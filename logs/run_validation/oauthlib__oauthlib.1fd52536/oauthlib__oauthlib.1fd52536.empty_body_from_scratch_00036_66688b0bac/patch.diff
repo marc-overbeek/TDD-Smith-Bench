@@ -1,0 +1,32 @@
+--- a/oauthlib/common.py
++++ b/oauthlib/common.py
+@@ -268,28 +268,7 @@
+ 
+ 
+ def to_unicode(data, encoding='UTF-8'):
+-    """Convert a number of different types of objects to unicode."""
+-    if isinstance(data, str):
+-        return data
+-
+-    if isinstance(data, bytes):
+-        return str(data, encoding=encoding)
+-
+-    if hasattr(data, '__iter__'):
+-        try:
+-            dict(data)
+-        except TypeError:
+-            pass
+-        except ValueError:
+-            # Assume it's a one dimensional data structure
+-            return (to_unicode(i, encoding) for i in data)
+-        else:
+-            # We support 2.6 which lacks dict comprehensions
+-            if hasattr(data, 'items'):
+-                data = data.items()
+-            return {to_unicode(k, encoding): to_unicode(v, encoding) for k, v in data}
+-
+-    return data
++    pass
+ 
+ 
+ class CaseInsensitiveDict(dict):

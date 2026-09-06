@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the tests, I need to understand what `generate_branch_name` should return:\n\n1. For pinned remediation (`==2.21.0`): `'requests/==2.21.0/2.22.0'`\n2. For unpinned remediation (`>=2.21.0,<2.22.0`): `'requests/>=2.21.0,<2.22.0/2.22.0'`\n\nThe pattern is: `{pkg}/{specifier}/{recommended_version}`",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the tests, I need to understand what `generate_branch_name` should return:\n\n1. For pinned remediation (`==2.21.0`): `'requests/==2.21.0/2.22.0'`\n2. For unpinned remediation (`>=2.21.0,<2.22.0`): `'requests/>=2.21.0,<2.22.0/2.22.0'`\n\nThe pattern is: `{pkg}/{specifier}/{recommended_version}`\n\n```python\ndef generate_branch_name(pkg: str, remediation: Dict[str, Any]) ->str:\n    specifier = remediation['requirement']['specifier']\n    recommended_version = remediation['recommended_version']\n    return f\"{pkg}/{specifier}/{recommended_version}\"\n```",
+  "rewrite": "def generate_branch_name(pkg: str, remediation: Dict[str, Any]) ->str:\n    specifier = remediation['requirement']['specifier']\n    recommended_version = remediation['recommended_version']\n    return f\"{pkg}/{specifier}/{recommended_version}\"",
+  "strategy": "lm_regen_from_tests"
+}

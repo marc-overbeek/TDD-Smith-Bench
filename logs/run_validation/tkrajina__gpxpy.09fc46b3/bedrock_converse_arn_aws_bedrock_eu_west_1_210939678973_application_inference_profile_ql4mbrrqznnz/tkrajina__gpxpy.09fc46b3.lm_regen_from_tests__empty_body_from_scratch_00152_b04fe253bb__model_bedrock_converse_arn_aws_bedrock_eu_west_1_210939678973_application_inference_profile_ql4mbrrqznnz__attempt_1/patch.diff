@@ -1,0 +1,29 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1551,25 +1551,7 @@
+ 
+         return bounds
+ 
+-    def walk(self, only_points: bool=False) -> Iterator[Any]: #Union[GPXTrackPoint, Tuple[GPXTrackPoint, int, int]]]:
+-        """
+-        Generator used to iterates through track
+-
+-        Parameters
+-        ----------
+-        only_point s: boolean
+-            Only yield points while walking
+-
+-        Yields
+-        ----------
+-        point : GPXTrackPoint
+-            Point in the track
+-        segment_no : integer
+-            Index of segment containing point. This is suppressed if only_points
+-            is True.
+-        point_no : integer
+-            Index of point. This is suppressed if only_points is True.
+-        """
++    def walk(self, only_points: bool=False) -> Iterator[Any]:
+         for segment_no, segment in enumerate(self.segments if self.segments else []):
+             for point_no, point in enumerate(segment.points if segment.points else []):
+                 if only_points:

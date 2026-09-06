@@ -1,0 +1,113 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -559,65 +559,65 @@
+ @click.argument('name')
+ @click.argument('version', required=False)
+ @click.pass_context
++@cli.command(cls=SafetyCLILegacyCommand, utility_command=True)
++@click.option("--path", default=".safety-policy.yml", help="Path where the generated file will be saved. Default: current directory")
++@click.argument('name')
++@click.argument('version', required=False)
++@click.pass_context
+ def validate(ctx, name, version, path):
+-    """Verify that a local policy file is valid. NAME is the name of the file type to validate. Valid values are: policy_file
++    """Validate a Safety CLI policy file
++
++    NAME is the name of the file type to validate. Valid values are: policy_file
+     """
+     if name != 'policy_file':
+-        click.secho(f'This Safety version only supports "policy_file" validation. "{name}" is not supported.', fg='red',
+-                    file=sys.stderr)
++        click.secho(
++            f'This Safety version only supports "policy_file" validation. "{name}" is not supported.',
++            fg='red', file=sys.stderr
++        )
+         sys.exit(EXIT_CODE_FAILURE)
+ 
+-    LOG.info('Running validate %s', name)
+-
+-    if not os.path.exists(path):
++    p = Path(path)
++    if not p.exists():
+         click.secho(f'The path "{path}" does not exist.', fg='red', file=sys.stderr)
+         sys.exit(EXIT_CODE_FAILURE)
+ 
+-    if version not in ["3.0", "2.0", None]:
+-        click.secho(f'Version "{version}" is not a valid value, allowed values are 3.0 and 2.0. Use --path to specify the target file.', fg='red', file=sys.stderr)
+-        sys.exit(EXIT_CODE_FAILURE)
+-
+-    def fail_validation(e):
+-        click.secho(str(e).lstrip(), fg='red', file=sys.stderr)
+-        sys.exit(EXIT_CODE_FAILURE)
+-
+-    if not version:
+-        version = "3.0"
+-
+-    result = ""
+-
+-    if version == "3.0":
+-        policy = None
+-
++    LOG.info('Running validate %s', name)
++
++    # Determine version - default to '2.0' if not specified
++    policy_version = version if version else '2.0'
++
++    if policy_version == '3.0':
++        # Handle v3.0 policy file validation
+         try:
+-            from .scan.main import load_policy_file
+-            policy = load_policy_file(Path(path))
++            config = ConfigModel.parse_policy_file(p)
++            msg = "The Safety policy (3.0) file (Used for scan and system-scan commands) was successfully parsed with the following values:\n"
++            click.secho(msg, nl=False)
++            click.secho(json.dumps(json.loads(config.json()), indent=2))
+         except Exception as e:
+-            fail_validation(e)
+-
+-        click.secho(f"The Safety policy ({version}) file " \
+-                    "(Used for scan and system-scan commands) " \
+-                    "was successfully parsed " \
+-                    "with the following values:", fg="green")
+-        if policy and policy.config:
+-            result = policy.config.as_v30().json()
++            click.secho(
++                f'Unable to load the Safety Policy file ("{path}"), this command only supports version 3.0, details: {e}',
++                fg='red', file=sys.stderr
++            )
++            sys.exit(EXIT_CODE_FAILURE)
+     else:
++        # Handle v2.0 policy file validation
+         try:
+-            values = SafetyPolicyFile().convert(path, None, None)
++            policy_file = SafetyPolicyFile().convert(path, None, None)
++            msg = "The Safety policy file (Valid only for the check command) was successfully parsed with the following values:\n"
++            click.secho(msg, nl=False)
++            click.secho(json.dumps(policy_file, indent=2))
++        except click.exceptions.BadParameter as e:
++            click.secho(
++                f'Unable to load the Safety Policy file "{path}".\n{e.format_message()}',
++                fg='red', file=sys.stderr
++            )
++            sys.exit(EXIT_CODE_FAILURE)
+         except Exception as e:
+-            click.secho(str(e).lstrip(), fg='red', file=sys.stderr)
++            click.secho(
++                f'Unable to load the Safety Policy file "{path}".\n{str(e)}',
++                fg='red', file=sys.stderr
++            )
+             sys.exit(EXIT_CODE_FAILURE)
+-
+-        del values['raw']
+-
+-        result = json.dumps(values, indent=4, default=str)
+-
+-        click.secho("The Safety policy file " \
+-                    "(Valid only for the check command) " \
+-                    "was successfully parsed with the " \
+-                    "following values:", fg="green")
+-
+-    console.print_json(result)
+ 
+ 
+ @cli.command(cls=SafetyCLILegacyCommand,

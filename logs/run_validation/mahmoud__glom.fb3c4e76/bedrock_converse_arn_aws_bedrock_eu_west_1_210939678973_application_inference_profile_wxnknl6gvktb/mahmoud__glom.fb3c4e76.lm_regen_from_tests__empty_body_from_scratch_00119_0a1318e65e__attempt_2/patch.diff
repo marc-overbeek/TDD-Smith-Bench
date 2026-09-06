@@ -1,0 +1,27 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1879,8 +1879,23 @@
+         self.spec = spec
+ 
+     def glomit(self, target, scope):
+-        scope[MODE] = AUTO
++        scope.update(self.scope)
+         return scope[glom](target, self.spec, scope)
++
++    def glom(self, target, **kw):
++        scope = dict(self.scope)
++        scope.update(kw.get('scope', {}))
++        kw['scope'] = ChainMap(scope)
++        glom_ = scope.get(glom, glom)
++        return glom_(target, self.spec, **kw)
++
++    def glomit(self, target, scope):
++        child_scope = scope.new_child(self.scope)
++        return child_scope[glom](target, self.spec, child_scope)
++
++    def glomit(self, target, scope):
++        child_scope = scope.new_child(self.scope)
++        return child_scope[glom](target, self.spec, child_scope)
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

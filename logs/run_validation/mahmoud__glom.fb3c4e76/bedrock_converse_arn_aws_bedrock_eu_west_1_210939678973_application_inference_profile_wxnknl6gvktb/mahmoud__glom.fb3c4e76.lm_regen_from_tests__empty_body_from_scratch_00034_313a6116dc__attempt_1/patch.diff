@@ -1,0 +1,30 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -343,6 +343,27 @@
+         self.exc = exc
+         self.path = path
+         self.part_idx = part_idx
++
++    with raises(GlomError) as exc_info:
++        glom({}, 'a.b')
++    assert "PathAccessError: could not access 'a', part 0 of Path('a', 'b'), got error: KeyError" in exc_info.exconly()
++
++    def get_message(self):
++        path_part = Path(self.path).values()[self.part_idx]
++        return ('could not access %r, part %r of %r, got error: %r'
++                % (path_part, self.part_idx, self.path, self.exc))
++
++    def __str__(self):
++        if getattr(self, '_finalized_str', None):
++            return self._finalized_str
++        elif getattr(self, '_scope', None) is not None:
++            # ... finalized case
++        else:
++            try:
++                exc_get_message = self.get_message
++            except AttributeError:
++                exc_get_message = super().__str__
++            return exc_get_message()
+ 
+     def get_message(self):
+         path_part = Path(self.path).values()[self.part_idx]

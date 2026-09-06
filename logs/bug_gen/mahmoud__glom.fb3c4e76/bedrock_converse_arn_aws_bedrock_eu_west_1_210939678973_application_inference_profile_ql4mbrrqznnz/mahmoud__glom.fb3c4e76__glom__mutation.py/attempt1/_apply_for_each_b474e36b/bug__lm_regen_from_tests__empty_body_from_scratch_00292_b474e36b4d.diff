@@ -1,0 +1,43 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -48,14 +48,32 @@
+ 
+ 
+ def _apply_for_each(func, path, val):
+-    layers = path.path_t.__stars__()
+-    if layers:
+-        for i in range(layers - 1):
+-            val = sum(val, [])  # flatten out the extra layers
+-        for inner in val:
+-            func(inner)
+-    else:
+-        func(val)
++    """Apply func to val, or if val is a list (from wildcard expansion), apply recursively to each element."""
++    # Count wildcards in path to determine nesting level
++    path_items = path.items() if hasattr(path, 'items') else []
++    wildcard_count = sum(1 for op, arg in path_items if op == 'P' and arg == '*') if path_items else 0
++    
++    def _apply_recursive(val, depth):
++        if depth > 0 and isinstance(val, list):
++            for item in val:
++                _apply_recursive(item, depth - 1)
++        else:
++            func(val)
++    
++    _apply_recursive(val, wildcard_count)
++
++def _apply_for_each(func, path, val):
++    path_items = path.items() if hasattr(path, 'items') else []
++    wildcard_count = sum(1 for op, arg in path_items if op == 'P' and arg == '*')
++    
++    def _apply_recursive(val, depth):
++        if depth > 0 and isinstance(val, list):
++            for item in val:
++                _apply_recursive(item, depth - 1)
++        else:
++            func(val)
++    
++    _apply_recursive(val, wildcard_count)
+ 
+ 
+ class Assign:

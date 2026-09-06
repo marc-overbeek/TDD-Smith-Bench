@@ -1,0 +1,32 @@
+--- a/src/mistune/directives/_fenced.py
++++ b/src/mistune/directives/_fenced.py
+@@ -102,14 +102,12 @@
+             r'\{[a-zA-Z0-9_-]+\}'
+         )
+ 
+-    def _process_directive(
+-        self, block: "BlockParser", marker: str, start: int, state: "BlockState"
+-    ) -> Optional[int]:
++    def _process_directive(self, block: 'BlockParser', marker: str, start: int, state: 'BlockState') -> Optional[int]:
+         mlen = len(marker)
+         cursor_start = start + len(marker)
+ 
+         _end_pattern = (
+-            r'^ {0,3}' + marker[0] + '{' + str(mlen) + r',}'
++            r'^ {0,3}' + re.escape(marker[0]) + '{' + str(mlen) + r',}'
+             r'[ \t]*(?:\n|$)'
+         )
+         _end_re = re.compile(_end_pattern, re.M)
+@@ -129,10 +127,8 @@
+         self.parse_method(block, m, state)
+         return end_pos
+ 
+-    def parse_directive(
+-        self, block: "BlockParser", m: Match[str], state: "BlockState"
+-    ) -> Optional[int]:
+-        marker = m.group("fenced_directive_mark")
++    def parse_directive(self, block: 'BlockParser', m: Match[str], state: 'BlockState') -> Optional[int]:
++        marker = m.group('fenced_directive_mark')
+         return self._process_directive(block, marker, m.start(), state)
+ 
+     def parse_fenced_code(

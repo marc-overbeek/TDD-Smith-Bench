@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef __call__(self, where: float) -> float:\n    # Find scheduler corresponding to where\n    i = 0\n    running_total = self._lengths[i]\n    while (where + self.WHERE_EPSILON) > running_total and i < len(\n        self._schedulers\n    ) - 1:\n        i += 1\n        running_total += self._lengths[i]\n    scheduler = self._schedulers[i]\n    scheduler_where = where\n    interval_scale = self._interval_scaling[i]\n    if interval_scale == \"rescaled\":\n        # Calculate corresponding where % for scheduler\n        scheduler_start = running_total - self._lengths[i]\n        scheduler_where = (where - scheduler_start) / self._lengths[i]\n    return scheduler(scheduler_where)\n```",
+  "rewrite": "def __call__(self, where: float) -> float:\n    # Find scheduler corresponding to where\n    i = 0\n    running_total = self._lengths[i]\n    while (where + self.WHERE_EPSILON) > running_total and i < len(\n        self._schedulers\n    ) - 1:\n        i += 1\n        running_total += self._lengths[i]\n    scheduler = self._schedulers[i]\n    scheduler_where = where\n    interval_scale = self._interval_scaling[i]\n    if interval_scale == \"rescaled\":\n        # Calculate corresponding where % for scheduler\n        scheduler_start = running_total - self._lengths[i]\n        scheduler_where = (where - scheduler_start) / self._lengths[i]\n    return scheduler(scheduler_where)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

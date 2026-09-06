@@ -1,0 +1,79 @@
+--- a/monkeytype/encoding.py
++++ b/monkeytype/encoding.py
+@@ -98,32 +98,52 @@
+     )
+ 
+ 
+-def type_from_dict(d: TypeDict) -> type:
+-    """Given a dictionary produced by type_to_dict, return the equivalent type.
+-
+-    Raises:
+-        NameLookupError if we can't reify the specified type
+-        InvalidTypeError if the named type isn't actually a type
+-    """
+-    module, qualname = d["module"], d["qualname"]
+-    if d.get("is_typed_dict", False):
++def type_from_dict(d: TypeDict) ->type:
++    if d.get("is_typed_dict"):
+         return typed_dict_from_dict(d)
+-    if module == "builtins" and qualname in _HIDDEN_BUILTIN_TYPES:
+-        typ = _HIDDEN_BUILTIN_TYPES[qualname]
+-    else:
++    
++    module = d["module"]
++    qualname = d["qualname"]
++    
++    # Handle hidden builtin types
++    if module == "__builtin__" or module == "builtins":
++        if qualname in _HIDDEN_BUILTIN_TYPES:
++            return _HIDDEN_BUILTIN_TYPES[qualname]
++    
++    # Handle regular types
++    try:
+         typ = get_name_in_module(module, qualname)
+-    if not (isinstance(typ, type) or is_any(typ) or is_generic(typ)):
+-        raise InvalidTypeError(
+-            f"Attribute specified by '{qualname}' in module '{module}' "
+-            f"is of type {type(typ)}, not type."
+-        )
+-    elem_type_dicts = d.get("elem_types")
+-    if elem_type_dicts is not None and is_generic(typ):
+-        elem_types = tuple(type_from_dict(e) for e in elem_type_dicts)
+-        # mypy complains that a value of type `type` isn't indexable. That's
+-        # true, but we know typ is a subtype that is indexable. Even checking
+-        # with hasattr(typ, '__getitem__') doesn't help
+-        typ = typ[elem_types]  # type: ignore[index]
++    except AttributeError:
++        raise InvalidTypeError(f"Could not find type {qualname} in module {module}")
++    
++    # Handle generic types with element types
++    elem_types = d.get("elem_types")
++    if elem_types is not None:
++        try:
++            # Reconstruct the generic type with its arguments
++            reconstructed_args = tuple(type_from_dict(elem) for elem in elem_types)
++            
++            # Handle special cases for typing module types
++            if module == "typing" or module == "collections.abc":
++                # For typing module types, use __getitem__ if available
++                if hasattr(typ, '__getitem__'):
++                    return typ[reconstructed_args]
++                # For some special cases, try to construct directly
++                elif hasattr(typ, '__class__') and hasattr(typ.__class__, '__call__'):
++                    return typ.__class__(reconstructed_args)
++            else:
++                # For other generic types, try __getitem__ first
++                if hasattr(typ, '__getitem__'):
++                    return typ[reconstructed_args]
++                # Fallback: try to construct with args
++                elif hasattr(typ, '__class__') and hasattr(typ.__class__, '__call__'):
++                    return typ.__class__(reconstructed_args)
++                    
++            # If we get here, fall back to the original approach
++            return typ[reconstructed_args]
++        except Exception:
++            raise InvalidTypeError(f"Could not reconstruct generic type {typ} with args {elem_types}")
++    
+     return typ
+ 
+ 

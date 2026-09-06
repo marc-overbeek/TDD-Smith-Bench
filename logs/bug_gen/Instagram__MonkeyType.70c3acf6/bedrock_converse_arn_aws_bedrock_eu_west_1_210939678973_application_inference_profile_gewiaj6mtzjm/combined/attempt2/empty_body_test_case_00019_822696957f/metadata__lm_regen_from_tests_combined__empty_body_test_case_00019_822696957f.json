@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef type_to_dict(typ: type) ->TypeDict:\n    if is_typed_dict(typ):\n        return typed_dict_to_dict(typ)\n    return {\n        \"module\": typ.__module__,\n        \"qualname\": typ.__qualname__,\n    }\n\n\ndef arg_types_to_json(arg_types: Dict[str, type]) ->str:\n    return json.dumps({k: type_to_json(v) for k, v in arg_types.items()})\n\n\ndef arg_types_from_json(arg_types_json: str) ->Dict[str, type]:\n    return {k: type_from_json(v) for k, v in json.loads(arg_types_json).items()}\n\n\ndef serialize_traces(traces: Iterable[CallTrace]) ->Iterable[CallTraceRow]:\n    for trace in traces:\n        try:\n            yield CallTraceRow.from_trace(trace)\n        except Exception:\n            logger.warning(\"Failed to serialize trace\", exc_info=True)\n```",
+  "rewrite": "def type_to_dict(typ: type) ->TypeDict:\n    if is_typed_dict(typ):\n        return typed_dict_to_dict(typ)\n    return {\n        \"module\": typ.__module__,\n        \"qualname\": typ.__qualname__,\n    }\n\n\ndef arg_types_to_json(arg_types: Dict[str, type]) ->str:\n    return json.dumps({k: type_to_json(v) for k, v in arg_types.items()})\n\n\ndef arg_types_from_json(arg_types_json: str) ->Dict[str, type]:\n    return {k: type_from_json(v) for k, v in json.loads(arg_types_json).items()}\n\n\ndef serialize_traces(traces: Iterable[CallTrace]) ->Iterable[CallTraceRow]:\n    for trace in traces:\n        try:\n            yield CallTraceRow.from_trace(trace)\n        except Exception:\n            logger.warning(\"Failed to serialize trace\", exc_info=True)",
+  "strategy": "lm_regen_from_tests_combined"
+}

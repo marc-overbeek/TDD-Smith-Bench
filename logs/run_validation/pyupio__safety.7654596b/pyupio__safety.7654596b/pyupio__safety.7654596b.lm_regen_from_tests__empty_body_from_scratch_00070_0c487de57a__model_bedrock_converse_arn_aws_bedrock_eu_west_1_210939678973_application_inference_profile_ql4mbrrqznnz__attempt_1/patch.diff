@@ -1,0 +1,12 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -577,6 +577,9 @@
+         click.secho(f'Version "{version}" is not a valid value, allowed values are 3.0 and 2.0. Use --path to specify the target file.', fg='red', file=sys.stderr)
+         sys.exit(EXIT_CODE_FAILURE)
+ 
++    except Exception as e:
++        fail_validation(e)
++
+     def fail_validation(e):
+         click.secho(str(e).lstrip(), fg='red', file=sys.stderr)
+         sys.exit(EXIT_CODE_FAILURE)

@@ -1,0 +1,50 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -433,23 +433,35 @@
+ ### Table Printing ###
+ 
+ 
+-def _get_single_child(
++def _fastforward(
+     name: str, statistics: Dict[str, Dict[str, str]]
+-) -> Optional[str]:
+-    """
+-    If the given module has only a single child in statistics, return it.
+-    Otherwise, return None.
+-    """
++) -> Tuple[str, Dict[str, str]]:
++    single_child = _get_single_child(name, statistics)
++    if single_child is None:
++        return name, statistics[name]
++    combined = _try_combine(statistics[name], statistics[single_child])
++    if combined is None:
++        return name, statistics[name]
++    statistics[single_child] = combined
++    return _fastforward(single_child, statistics)
++
++prefix = name + ("." if name else "")
++for mod in statistics:
++    # 'if mod' excludes root = '', which is never a child
++    if mod and mod.count(".") == prefix.count(".") and mod.startswith(prefix):
++
++def _get_single_child(name: str, statistics: Dict[str, Dict[str, str]]
++    ) ->Optional[str]:
+     prefix = name + ("." if name else "")
+-    child = None
++    children = []
+     for mod in statistics:
+         # 'if mod' excludes root = '', which is never a child
+         if mod and mod.count(".") == prefix.count(".") and mod.startswith(prefix):
+-            if child is None:
+-                child = mod
+-            else:
+-                return None  # We found a second child, so return None
+-    return child
++            children.append(mod)
++    
++    if len(children) == 1:
++        return children[0]
++    return None
+ 
+ 
+ def _try_combine(

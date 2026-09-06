@@ -1,0 +1,38 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1807,13 +1807,28 @@
+         be a mod_geo.Location instance with approximated latitude, longitude
+         and elevation!
+         """
+-        result = []
+-        for track_segment in self.segments:
+-            location = track_segment.get_location_at(time)
+-            if location:
+-                result.append(location)
+-
+-        return result
++        if not self.points:
++            return []
++
++        if not time:
++            return []
++
++        first_time = self.points[0].time
++        last_time = self.points[-1].time
++
++        if not first_time or not last_time:
++            log.debug('No times for track segment')
++            return []
++
++        if not (first_time <= time <= last_time):
++            log.debug(f'Not in track (search for:{time}, start:{first_time}, end:{last_time})')
++            return []
++
++        for point in self.points:
++            if point.time and time <= point.time:
++                return [point]
++    
++        return []
+ 
+     def get_elevation_extremes(self) -> MinimumMaximum:
+         """

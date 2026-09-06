@@ -1,0 +1,31 @@
+--- a/starlette/applications.py
++++ b/starlette/applications.py
+@@ -163,17 +163,17 @@
+         self.router.add_websocket_route(path, route, name=name)
+ 
+     def exception_handler(self, exc_class_or_status_code: int | type[Exception]) -> typing.Callable:  # type: ignore[type-arg]
+-        warnings.warn(
+-            "The `exception_handler` decorator is deprecated, and will be removed in version 1.0.0. "
+-            "Refer to https://www.starlette.io/exceptions/ for the recommended approach.",
+-            DeprecationWarning,
+-        )
+-
+-        def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
+-            self.add_exception_handler(exc_class_or_status_code, func)
+-            return func
+-
+-        return decorator
++            warnings.warn(
++                "The `exception_handler` decorator is deprecated, and will be removed in version 1.0.0. "
++                "Refer to https://www.starlette.io/exceptions/ for the recommended approach.",
++                DeprecationWarning,
++            )
++
++            def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
++                self.add_exception_handler(exc_class_or_status_code, func)
++                return func
++
++            return decorator
+ 
+     def route(
+         self,

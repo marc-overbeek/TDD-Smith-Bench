@@ -1,0 +1,73 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/pre_configured.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/pre_configured.py
+@@ -75,38 +75,38 @@
+ 
+     """An all-in-one endpoint featuring Authorization code grant and Bearer tokens."""
+ 
+-    def __init__(self, request_validator, token_generator=None,
+-                 token_expires_in=None, refresh_token_generator=None, **kwargs):
+-        """Construct a new web application server.
+-
+-        :param request_validator: An implementation of
+-                                  oauthlib.oauth2.RequestValidator.
+-        :param token_expires_in: An int or a function to generate a token
+-                                 expiration offset (in seconds) given a
+-                                 oauthlib.common.Request object.
+-        :param token_generator: A function to generate a token from a request.
+-        :param refresh_token_generator: A function to generate a token from a
+-                                        request for the refresh token.
+-        :param kwargs: Extra parameters to pass to authorization-,
+-                       token-, resource-, and revocation-endpoint constructors.
+-        """
+-        self.auth_grant = AuthorizationCodeGrant(request_validator)
+-        self.refresh_grant = RefreshTokenGrant(request_validator)
+-        self.bearer = BearerToken(request_validator, token_generator,
+-                             token_expires_in, refresh_token_generator)
+-        AuthorizationEndpoint.__init__(self, default_response_type='code',
+-                                       response_types={'code': self.auth_grant},
+-                                       default_token_type=self.bearer)
+-        TokenEndpoint.__init__(self, default_grant_type='authorization_code',
+-                               grant_types={
+-                                   'authorization_code': self.auth_grant,
+-                                   'refresh_token': self.refresh_grant,
+-                               },
+-                               default_token_type=self.bearer)
+-        ResourceEndpoint.__init__(self, default_token='Bearer',
+-                                  token_types={'Bearer': self.bearer})
+-        RevocationEndpoint.__init__(self, request_validator)
+-        IntrospectEndpoint.__init__(self, request_validator)
++    def __init__(self, request_validator, token_generator, token_expires_in, refresh_token_generator)
++
++    def __init__(self, request_validator, token_generator=None,
++                 token_expires_in=None, refresh_token_generator=None, **kwargs):
++
++    def __init__(self, request_validator, token_generator, token_expires_in, refresh_token_generator):
++        """Construct a client credentials grant server.
++
++        :param request_validator: An implementation of
++                                  oauthlib.oauth2.RequestValidator.
++        :param token_expires_in: An int or a function to generate a token
++                                 expiration offset (in seconds) given a
++                                 oauthlib.common.Request object.
++        :param token_generator: A function to generate a token from a request.
++        :param refresh_token_generator: A function to generate a token from a
++                                        request for the refresh token.
++        :param kwargs: Extra parameters to pass to authorization-,
++                       token-, resource-, and revocation-endpoint constructors.
++        """
++        self.credentials_grant = ClientCredentialsGrant(request_validator)
++        self.bearer = BearerToken(request_validator, token_generator,
++                             token_expires_in, refresh_token_generator)
++        TokenEndpoint.__init__(self, default_grant_type='client_credentials',
++                               grant_types={
++                                   'client_credentials': self.credentials_grant},
++                               default_token_type=self.bearer)
++        ResourceEndpoint.__init__(self, default_token='Bearer',
++                                  token_types={'Bearer': self.bearer})
++        RevocationEndpoint.__init__(self, request_validator,
++                                    supported_token_types=['access_token'])
++        IntrospectEndpoint.__init__(self, request_validator,
++                                    supported_token_types=['access_token'])
+ 
+ 
+ class MobileApplicationServer(AuthorizationEndpoint, IntrospectEndpoint,

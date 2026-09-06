@@ -1,0 +1,35 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -100,15 +100,23 @@
+ 
+ def linear_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+     """
+-    Count flops for the aten::linear operator.
+-    """
+-    # Inputs is a list of length 3; unlike aten::addmm, it is the first
+-    # two elements that are relevant.
+-    input_shapes = [get_shape(v) for v in inputs[0:2]]
+-    # input_shapes[0]: [dim0, dim1, ..., input_feature_dim]
+-    # input_shapes[1]: [output_feature_dim, input_feature_dim]
+-    assert input_shapes[0][-1] == input_shapes[1][-1]
+-    flops = prod(input_shapes[0]) * input_shapes[1][0]
++    Count flops for the linear operation.
++    """
++    # inputs[0]: input tensor
++    # inputs[1]: weight tensor [out_features, in_features]
++    # inputs[2]: bias (optional)
++    input_shape = get_shape(inputs[0])
++    weight_shape = get_shape(inputs[1])
++    
++    # weight_shape is [out_features, in_features]
++    assert len(weight_shape) == 2, weight_shape
++    out_features, in_features = weight_shape
++    
++    # input_shape is [..., in_features]
++    # batch_size is the product of all dimensions except the last
++    batch_size = prod(input_shape[:-1])
++    
++    flops = batch_size * in_features * out_features
+     return flops
+ 
+ 

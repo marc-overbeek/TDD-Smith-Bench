@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, I need to implement the `__sub__` method for the `TType` class to handle subtraction operations on `T` objects.\n\nThe tests show:\n1. `glom(2, T - 1)` should return `1` (arithmetic subtraction)\n2. `repr(T + T / 2 * (T - 5) % 4)` should show proper formatting with `T - 5`\n\nLooking at the existing code, I can see:\n1. Other arithmetic operators like `__add__`, `__mul__`, etc. are implemented using `_t_child(self, op, arg)`\n2. The `__sub__` method should follow the same pattern as `__add__`\n3. In `_t_eval`, the subtraction operation is handled with `elif op == '-': cur = cur - arg`\n\nThe implementation should be consistent with `__add__`:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "Looking at the failing tests, I need to implement the `__sub__` method for the `TType` class to handle subtraction operations on `T` objects.\n\nThe tests show:\n1. `glom(2, T - 1)` should return `1` (arithmetic subtraction)\n2. `repr(T + T / 2 * (T - 5) % 4)` should show proper formatting with `T - 5`\n\nLooking at the existing code, I can see:\n1. Other arithmetic operators like `__add__`, `__mul__`, etc. are implemented using `_t_child(self, op, arg)`\n2. The `__sub__` method should follow the same pattern as `__add__`\n3. In `_t_eval`, the subtraction operation is handled with `elif op == '-': cur = cur - arg`\n\nThe implementation should be consistent with `__add__`:\n\n```python\ndef __sub__(self, arg):\n    return _t_child(self, '-', arg)\n```",
+  "rewrite": "def __sub__(self, arg):\n    return _t_child(self, '-', arg)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

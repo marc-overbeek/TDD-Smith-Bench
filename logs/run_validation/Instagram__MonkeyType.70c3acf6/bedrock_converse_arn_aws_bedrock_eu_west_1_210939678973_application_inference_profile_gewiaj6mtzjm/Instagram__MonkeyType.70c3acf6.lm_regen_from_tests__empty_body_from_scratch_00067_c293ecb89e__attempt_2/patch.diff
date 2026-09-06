@@ -1,0 +1,16 @@
+--- a/monkeytype/type_checking_imports_transformer.py
++++ b/monkeytype/type_checking_imports_transformer.py
+@@ -168,11 +168,8 @@
+         super().__init__()
+         self.import_items_to_be_removed = import_items_to_be_removed
+ 
+-    def leave_Import(
+-        self, original_node: Import, updated_node: Import
+-    ) -> Union[
+-        BaseSmallStatement, FlattenSentinel[BaseSmallStatement], RemovalSentinel
+-    ]:
++    def leave_Import(self, original_node: Import, updated_node: Import) ->Union[
++        BaseSmallStatement, FlattenSentinel[BaseSmallStatement], RemovalSentinel]:
+         names_to_keep = []
+         for name in updated_node.names:
+             module_name = name.evaluated_name

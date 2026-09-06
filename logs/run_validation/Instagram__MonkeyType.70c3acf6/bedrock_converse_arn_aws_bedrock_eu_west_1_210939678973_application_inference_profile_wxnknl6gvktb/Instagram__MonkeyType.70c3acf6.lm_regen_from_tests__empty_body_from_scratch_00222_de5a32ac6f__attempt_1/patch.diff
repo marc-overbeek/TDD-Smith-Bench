@@ -1,0 +1,15 @@
+--- a/monkeytype/tracing.py
++++ b/monkeytype/tracing.py
+@@ -67,6 +67,12 @@
+                 self.yield_type,
+             )
+         )
++
++    def test_generator_trace(self, collector):
++        with trace_calls(collector, max_typed_dict_size=0):
++            for _ in squares(3):
++                pass
++        assert collector.traces == [CallTrace(squares, {'n': int}, NoneType, int)]
+ 
+     def add_yield_type(self, typ: type) -> None:
+         if self.yield_type is None:

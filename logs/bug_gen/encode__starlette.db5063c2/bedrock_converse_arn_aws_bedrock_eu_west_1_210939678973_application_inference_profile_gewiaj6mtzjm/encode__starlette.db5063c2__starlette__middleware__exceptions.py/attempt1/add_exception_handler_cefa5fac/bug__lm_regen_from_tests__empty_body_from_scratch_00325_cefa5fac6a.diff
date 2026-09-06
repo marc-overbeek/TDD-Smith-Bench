@@ -1,0 +1,27 @@
+--- a/starlette/middleware/exceptions.py
++++ b/starlette/middleware/exceptions.py
+@@ -32,16 +32,14 @@
+             for key, value in handlers.items():
+                 self.add_exception_handler(key, value)
+ 
+-    def add_exception_handler(
+-        self,
+-        exc_class_or_status_code: int | type[Exception],
+-        handler: typing.Callable[[Request, Exception], Response],
+-    ) -> None:
+-        if isinstance(exc_class_or_status_code, int):
+-            self._status_handlers[exc_class_or_status_code] = handler
+-        else:
+-            assert issubclass(exc_class_or_status_code, Exception)
+-            self._exception_handlers[exc_class_or_status_code] = handler
++    def add_exception_handler(self, exc_class_or_status_code: (int | type[
++        Exception]), handler: typing.Callable[[Request, Exception], Response]
++        ) ->None:
++            if isinstance(exc_class_or_status_code, int):
++                self._status_handlers[exc_class_or_status_code] = handler
++            else:
++                assert issubclass(exc_class_or_status_code, Exception)
++                self._exception_handlers[exc_class_or_status_code] = handler
+ 
+     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+         if scope["type"] not in ("http", "websocket"):

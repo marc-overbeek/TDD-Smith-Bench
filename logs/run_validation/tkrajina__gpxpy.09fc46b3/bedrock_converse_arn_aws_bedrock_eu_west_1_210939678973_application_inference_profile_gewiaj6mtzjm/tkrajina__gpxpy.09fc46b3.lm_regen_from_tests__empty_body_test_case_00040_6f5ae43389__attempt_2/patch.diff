@@ -1,0 +1,43 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -851,36 +851,10 @@
+ 
+         self.points = part_1 + part_2
+ 
+-    def get_moving_data(self, stopped_speed_threshold: Optional[float]=None, raw: bool=False, speed_extreemes_percentiles: float=IGNORE_TOP_SPEED_PERCENTILES, ignore_nonstandard_distances: bool = True) -> Optional[MovingData]:
+-        """
+-        Return a tuple of (moving_time, stopped_time, moving_distance,
+-        stopped_distance, max_speed) that may be used for detecting the time
+-        stopped, and max speed. Not that those values are not absolutely true,
+-        because the "stopped" or "moving" information aren't saved in the segment.
+-
+-        Because of errors in the GPS recording, it may be good to calculate
+-        them on a reduced and smoothed version of the track.
+-
+-        Parameters
+-        ----------
+-        stopped_speed_threshold : float
+-            speeds (km/h) below this threshold are treated as if having no
+-            movement. Default is 1 km/h.
+-
+-        Returns
+-        ----------
+-        moving_data : MovingData : named tuple
+-            moving_time : float
+-                time (seconds) of segment in which movement was occurring
+-            stopped_time : float
+-                time (seconds) of segment in which no movement was occurring
+-            stopped_distance : float
+-                distance (meters) travelled during stopped times
+-            moving_distance : float
+-                distance (meters) travelled during moving times
+-            max_speed : float
+-                Maximum speed (m/s) during the segment.
+-        """
++    def get_moving_data(self, stopped_speed_threshold: Optional[float]=None,
++        raw: bool=False, speed_extreemes_percentiles: float=
++        IGNORE_TOP_SPEED_PERCENTILES, ignore_nonstandard_distances: bool=True
++        ) ->MovingData:
+         if not stopped_speed_threshold:
+             stopped_speed_threshold = DEFAULT_STOPPED_SPEED_THRESHOLD
+ 

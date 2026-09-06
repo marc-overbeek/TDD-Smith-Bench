@@ -1,0 +1,24 @@
+--- a/src/mistune/plugins/table.py
++++ b/src/mistune/plugins/table.py
+@@ -193,10 +193,17 @@
+         md.renderer.register('table_cell', render_table_cell)
+ 
+ 
+-def table_in_quote(md: "Markdown") -> None:
+-    """Enable table plugin in block quotes."""
+-    md.block.insert_rule(md.block.block_quote_rules, 'table', before='paragraph')
+-    md.block.insert_rule(md.block.block_quote_rules, 'nptable', before='paragraph')
++def test_table_in_quote(self):
++    text = '> Cell | Cell\n> ---- | ----\n>  1  |  2\n'
++    md1 = create_markdown(escape=False)
++    md2 = create_markdown(escape=False, plugins=['table', table_in_quote])
++    self.assertNotIn('<table>', md1(text))
++    self.assertIn('<table>', md2(text))
++
++def table_in_quote(md: 'Markdown') ->None:
++    """Enable table plugin in quote."""
++    md.block.insert_rule(md.block.quote_rules, 'table', before='paragraph')
++    md.block.insert_rule(md.block.quote_rules, 'nptable', before='paragraph')
+ 
+ 
+ def table_in_list(md: "Markdown") -> None:

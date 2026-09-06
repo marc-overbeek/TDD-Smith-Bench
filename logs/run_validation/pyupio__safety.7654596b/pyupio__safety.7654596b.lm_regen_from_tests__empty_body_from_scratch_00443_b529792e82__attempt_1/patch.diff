@@ -1,0 +1,39 @@
+--- a/safety/auth/utils.py
++++ b/safety/auth/utils.py
+@@ -147,6 +147,36 @@
+         Returns:
+             bool: True if using authentication credentials, False otherwise.
+         """
++
++    def get_authentication_type(self) -> AuthenticationType:
++        """
++        Get the type of authentication being used.
++
++        Returns:
++            AuthenticationType: The type of authentication.
++        """
++        if self.api_key:
++            return AuthenticationType.api_key
++
++        if self.token:
++            return AuthenticationType.token
++
++        return AuthenticationType.none
++
++    def is_using_auth_credentials(self) ->bool:
++        pass
++
++    return self.get_authentication_type() != AuthenticationType.none
++
++    def is_using_auth_credentials(self) -> bool:
++        """
++        Check if the session is using authentication credentials.
++
++        This does NOT check if the client is authenticated.
++
++        Returns:
++            bool: True if using authentication credentials, False otherwise.
++        """
+         return self.get_authentication_type() != AuthenticationType.none
+ 
+     def get_authentication_type(self) -> AuthenticationType:

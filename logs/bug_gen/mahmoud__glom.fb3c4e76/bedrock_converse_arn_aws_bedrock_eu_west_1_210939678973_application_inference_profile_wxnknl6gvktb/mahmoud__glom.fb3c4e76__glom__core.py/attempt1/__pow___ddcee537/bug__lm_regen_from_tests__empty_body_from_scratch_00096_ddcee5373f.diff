@@ -1,0 +1,28 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1475,6 +1475,25 @@
+ 
+     def __mod__(self, arg):
+         return _t_child(self, '%', arg)
++
++    def test_t_arithmetic():
++        t = 2
++        assert glom(t, T + T) == 4
++        assert glom(t, T * T) == 4
++        assert glom(t, T ** T) == 4  # This uses __pow__
++        # ... more tests
++
++    def __add__(self, arg):
++        return _t_child(self, '+', arg)
++
++    def __sub__(self, arg):
++        return _t_child(self, '-', arg)
++
++    def __mul__(self, arg):
++        return _t_child(self, '*', arg)
++
++    elif op == ':':
++        cur = cur ** arg
+ 
+     def __pow__(self, arg):
+         return _t_child(self, ':', arg)

@@ -1,0 +1,77 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -311,47 +311,35 @@
+         return 1, -a, -b
+ 
+ 
+-def simplify_polyline(points: List["Location"], max_distance: Optional[float]) -> List["Location"]:
+-    """Does Ramer-Douglas-Peucker algorithm for simplification of polyline """
+-
+-    _max_distance = max_distance if max_distance is not None else 10
+-
+-    if len(points) < 3:
+-        return points
+-
+-    begin, end = points[0], points[-1]
+-
+-    # Use a "normal" line just to detect the most distant point (not its real distance)
+-    # this is because this is faster to compute than calling distance_from_line() for
+-    # every point.
+-    #
+-    # This is an approximation and may have some errors near the poles and if
+-    # the points are too distant, but it should be good enough for most use
+-    # cases...
+-    a, b, c = get_line_equation_coefficients(begin, end)
+-
+-    # Initialize to safe values
+-    tmp_max_distance: float = 0
+-    tmp_max_distance_position = 1
++def simplify_polyline(points: List['Location'], max_distance: Optional[float]
++    ) ->List['Location']:
++    if not points:
++        return []
+     
+-    # Check distance of all points between begin and end, exclusive
+-    for point_no, point in enumerate(points[1:-1], 1):
+-        d = abs(a * point.latitude + b * point.longitude + c)
+-        if d > tmp_max_distance:
+-            tmp_max_distance = d
+-            tmp_max_distance_position = point_no
+-
+-    # Now that we have the most distance point, compute its real distance:
+-    real_max_distance = distance_from_line(points[tmp_max_distance_position], begin, end)
+-
+-    # If furthest point is less than max_distance, remove all points between begin and end
+-    if real_max_distance is not None and real_max_distance < _max_distance:
+-        return [begin, end]
++    if len(points) <= 2 or max_distance is None:
++        return points[:]
+     
+-    # If furthest point is more than max_distance, use it as anchor and run
+-    # function again using (begin to anchor) and (anchor to end), remove extra anchor
+-    return (simplify_polyline(points[:tmp_max_distance_position + 1], _max_distance) +
+-            simplify_polyline(points[tmp_max_distance_position:], _max_distance)[1:])
++    # Find the point with maximum distance from the line segment
++    max_dist = 0
++    max_index = 0
++    
++    # Calculate distance from each point to the line formed by first and last points
++    for i in range(1, len(points) - 1):
++        dist = distance_from_line(points[i], points[0], points[-1])
++        if dist is not None and dist > max_dist:
++            max_dist = dist
++            max_index = i
++    
++    # If maximum distance is within tolerance, keep only first and last points
++    if max_dist <= max_distance:
++        return [points[0], points[-1]]
++    
++    # Otherwise, recursively simplify both parts
++    left_simplified = simplify_polyline(points[:max_index + 1], max_distance)
++    right_simplified = simplify_polyline(points[max_index:], max_distance)
++    
++    # Combine results, avoiding duplicate points
++    return left_simplified[:-1] + right_simplified
+ 
+ 
+ class Location:

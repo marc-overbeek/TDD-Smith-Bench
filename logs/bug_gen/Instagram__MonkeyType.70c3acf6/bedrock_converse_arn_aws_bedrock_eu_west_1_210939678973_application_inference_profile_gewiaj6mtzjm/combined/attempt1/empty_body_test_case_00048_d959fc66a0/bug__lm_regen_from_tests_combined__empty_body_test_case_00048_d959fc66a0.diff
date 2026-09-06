@@ -1,0 +1,381 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -59,21 +59,8 @@
+     DJANGO_CACHED_PROPERTY = 5
+ 
+     @classmethod
+-    def from_callable(cls, func: Callable[..., Any]) -> "FunctionKind":
+-        if "." not in func.__qualname__:
+-            return FunctionKind.MODULE
+-        func_or_desc = get_name_in_module(
+-            func.__module__, func.__qualname__, inspect.getattr_static
+-        )
+-        if isinstance(func_or_desc, classmethod):
+-            return FunctionKind.CLASS
+-        elif isinstance(func_or_desc, staticmethod):
+-            return FunctionKind.STATIC
+-        elif isinstance(func_or_desc, property):
+-            return FunctionKind.PROPERTY
+-        elif cached_property and isinstance(func_or_desc, cached_property):
+-            return FunctionKind.DJANGO_CACHED_PROPERTY
+-        return FunctionKind.INSTANCE
++    def from_callable(cls, func: Callable[..., Any]) ->'FunctionKind':
++        return FunctionKind.from_callable(func)
+ 
+ 
+ class ExistingAnnotationStrategy(enum.Enum):
+@@ -107,116 +94,93 @@
+     return qualname.split(".")[0]
+ 
+ 
+-def get_imports_for_annotation(anno: Any) -> ImportMap:
+-    """Return the imports (module, name) needed for the type in the annotation"""
++def get_imports_for_annotation(anno: Any) ->ImportMap:
+     imports = ImportMap()
+-    if (
+-        anno is inspect.Parameter.empty
+-        or anno is inspect.Signature.empty
+-        or not (
+-            isinstance(anno, type) or is_any(anno) or is_union(anno) or is_generic(anno)
+-        )
+-        or anno.__module__ == "builtins"
+-    ):
+-        return imports
+-    if is_any(anno):
+-        imports["typing"].add("Any")
+-    elif _is_optional(anno):
+-        imports["typing"].add("Optional")
+-        elem_type = _get_optional_elem(anno)
+-        elem_imports = get_imports_for_annotation(elem_type)
+-        imports.merge(elem_imports)
+-    elif is_generic(anno):
+-        if is_union(anno):
+-            imports["typing"].add("Union")
+-        else:
+-            imports[anno.__module__].add(
+-                _get_import_for_qualname(qualname_of_generic(anno))
+-            )
+-        elem_types = getattr(anno, "__args__", None) or []
+-        for et in elem_types:
+-            elem_imports = get_imports_for_annotation(et)
+-            imports.merge(elem_imports)
+-    else:
+-        name = _get_import_for_qualname(anno.__qualname__)
+-        imports[anno.__module__].add(name)
++    if hasattr(anno, "__module__") and anno.__module__ is not None:
++        if anno.__module__ == "typing":
++            imports["typing"].add(anno.__name__)
++        elif anno.__module__ != "builtins":
++            imports[anno.__module__].add(_get_import_for_qualname(anno.__qualname__))
+     return imports
+ 
+ 
+-def get_imports_for_signature(sig: inspect.Signature) -> ImportMap:
+-    """Return the imports (module, name) needed for all types in annotations"""
++def get_imports_for_signature(sig: inspect.Signature) ->ImportMap:
+     imports = ImportMap()
+     for param in sig.parameters.values():
+-        param_imports = get_imports_for_annotation(param.annotation)
+-        if not _is_optional(param.annotation) and param.default is None:
+-            imports["typing"].add("Optional")
+-        imports.merge(param_imports)
+-    return_imports = get_imports_for_annotation(sig.return_annotation)
+-    imports.merge(return_imports)
++        if param.annotation is not inspect.Parameter.empty:
++            imports.merge(get_imports_for_annotation(param.annotation))
++    if sig.return_annotation is not inspect.Signature.empty:
++        imports.merge(get_imports_for_annotation(sig.return_annotation))
+     return imports
+ 
+ 
+-def update_signature_args(
+-    sig: inspect.Signature,
+-    arg_types: Dict[str, type],
+-    has_self: bool,
+-    existing_annotation_strategy: ExistingAnnotationStrategy = ExistingAnnotationStrategy.REPLICATE,
+-) -> inspect.Signature:
+-    """Update argument annotations with the supplied types"""
++def update_signature_args(sig: inspect.Signature, arg_types: Dict[str, type
++    ], has_self: bool, existing_annotation_strategy:
++    ExistingAnnotationStrategy=ExistingAnnotationStrategy.REPLICATE
++    ) ->inspect.Signature:
+     params = []
+-    for arg_idx, name in enumerate(sig.parameters):
+-        param = sig.parameters[name]
+-        typ = arg_types.get(name)
+-        typ = inspect.Parameter.empty if typ is None else typ
+-        is_self = has_self and arg_idx == 0
+-        annotated = param.annotation is not inspect.Parameter.empty
+-        if (
+-            annotated
+-            and existing_annotation_strategy == ExistingAnnotationStrategy.OMIT
+-        ):
+-            # generate no annotation for already-annotated args when generating
+-            # a stub to apply, avoiding the possibility of "incompatible
+-            # annotation" errors
+-            param = param.replace(annotation=inspect.Parameter.empty)
+-        # Don't touch existing annotations unless asked to ignore them
+-        if not is_self and (
+-            (existing_annotation_strategy == ExistingAnnotationStrategy.IGNORE)
+-            or not annotated
+-        ):
+-            param = param.replace(annotation=typ)
+-        params.append(param)
++    for i, (param_name, param) in enumerate(sig.parameters.items()):
++        if i == 0 and has_self:
++            # Don't annotate the first argument of instance methods or classmethods
++            params.append(param)
++        elif param_name in arg_types:
++            new_annotation = arg_types[param_name]
++            if new_annotation is NoneType:
++                new_annotation = inspect.Parameter.empty
++            if (existing_annotation_strategy == ExistingAnnotationStrategy.REPLICATE and
++                    param.annotation is not inspect.Parameter.empty):
++                # Keep the existing annotation
++                params.append(param)
++            elif existing_annotation_strategy == ExistingAnnotationStrategy.IGNORE:
++                # Override with the new annotation
++                params.append(param.replace(annotation=new_annotation))
++            elif existing_annotation_strategy == ExistingAnnotationStrategy.OMIT:
++                # Omit the annotation if there was one
++                if param.annotation is not inspect.Parameter.empty:
++                    params.append(param.replace(annotation=inspect.Parameter.empty))
++                else:
++                    params.append(param)
++            else:
++                # Default behavior: replicate
++                params.append(param)
++        else:
++            params.append(param)
+     return sig.replace(parameters=params)
+ 
+ 
+-def update_signature_return(
+-    sig: inspect.Signature,
+-    return_type: Optional[type] = None,
+-    yield_type: Optional[type] = None,
+-    existing_annotation_strategy: ExistingAnnotationStrategy = ExistingAnnotationStrategy.REPLICATE,
+-) -> inspect.Signature:
+-    """Update return annotation with the supplied types"""
+-    anno = sig.return_annotation
+-    if anno is not inspect.Signature.empty:
+-        # If generating a stub to apply and there's already a return type
+-        # annotation, generate a stub with no return type annotation, to avoid
+-        # the possibility of "incompatible annotation" errors.
+-        if existing_annotation_strategy == ExistingAnnotationStrategy.OMIT:
+-            return sig.replace(return_annotation=inspect.Signature.empty)
+-        # Don't change pre-existing annotations unless asked to
+-        if existing_annotation_strategy == ExistingAnnotationStrategy.REPLICATE:
+-            return sig
+-    # NB: We cannot distinguish between functions that explicitly only
+-    # return None and those that do so implicitly. In the case of generator
+-    # functions both are typed as Iterator[<yield_type>]
+-    if (yield_type is not None) and (
+-        (return_type is None) or (return_type == NoneType)
+-    ):
+-        anno = make_iterator(yield_type)
+-    elif (yield_type is not None) and (return_type is not None):
+-        anno = make_generator(yield_type, NoneType, return_type)
+-    elif return_type is not None:
+-        anno = return_type
+-    return sig.replace(return_annotation=anno)
++def update_signature_return(sig: inspect.Signature, return_type: Optional[
++    type]=None, yield_type: Optional[type]=None,
++    existing_annotation_strategy: ExistingAnnotationStrategy=
++    ExistingAnnotationStrategy.REPLICATE) ->inspect.Signature:
++    if return_type is None and yield_type is None:
++        return sig
++
++    # Determine the new return annotation
++    new_return_annotation = sig.return_annotation
++    if return_type is not None:
++        new_return_annotation = return_type
++    if yield_type is not None:
++        if return_type is not None:
++            # Both return and yield types are specified
++            new_return_annotation = make_generator(yield_type, NoneType, return_type)
++        else:
++            # Only yield type is specified
++            new_return_annotation = make_iterator(yield_type)
++
++    # Handle existing annotation strategies
++    if existing_annotation_strategy == ExistingAnnotationStrategy.REPLICATE:
++        # Keep existing annotation if present
++        if sig.return_annotation is not inspect.Signature.empty:
++            new_return_annotation = sig.return_annotation
++    elif existing_annotation_strategy == ExistingAnnotationStrategy.IGNORE:
++        # Override with new annotation
++        pass
++    elif existing_annotation_strategy == ExistingAnnotationStrategy.OMIT:
++        # Omit annotation if there was one
++        if sig.return_annotation is not inspect.Signature.empty:
++            new_return_annotation = inspect.Signature.empty
++
++    return sig.replace(return_annotation=new_return_annotation)
+ 
+ 
+ def shrink_traced_types(
+@@ -612,16 +576,11 @@
+         # Value of type "type" is not indexable.
+         return cls[elems]  # type: ignore[no-any-return,index]
+ 
+-    def _add_typed_dict_class_stub(
+-        self,
+-        fields: Dict[str, type],
+-        class_name: str,
+-        base_class_name: str = "TypedDict",
+-        total: bool = True,
+-    ) -> None:
++    def _add_typed_dict_class_stub(self, fields: Dict[str, type], class_name:
++        str, base_class_name: str='TypedDict', total: bool=True) ->None:
+         attribute_stubs = []
+         for name, typ in fields.items():
+-            rewritten_type, stubs = self.rewrite_and_get_stubs(
++            rewritten_type, stubs = ReplaceTypedDictsWithStubs.rewrite_and_get_stubs(
+                 typ, class_name_hint=name
+             )
+             attribute_stubs.append(AttributeStub(name, rewritten_type))
+@@ -635,7 +594,7 @@
+             )
+         )
+ 
+-    def rewrite_anonymous_TypedDict(self, typed_dict: type) -> ForwardRef:  # type: ignore[override]
++    def rewrite_anonymous_TypedDict(self, typed_dict: type) ->ForwardRef:
+         class_name = get_typed_dict_class_name(self._class_name_hint)
+         required_fields, optional_fields = field_annotations(typed_dict)
+         has_required_fields = len(required_fields) != 0
+@@ -668,13 +627,10 @@
+ 
+ 
+ class ModuleStub(Stub):
+-    def __init__(
+-        self,
+-        function_stubs: Optional[Iterable[FunctionStub]] = None,
+-        class_stubs: Optional[Iterable[ClassStub]] = None,
+-        imports_stub: Optional[ImportBlockStub] = None,
+-        typed_dict_class_stubs: Optional[Iterable[ClassStub]] = None,
+-    ) -> None:
++    def __init__(self, function_stubs: Optional[Iterable[FunctionStub]]=None,
++        class_stubs: Optional[Iterable[ClassStub]]=None, imports_stub: Optional
++        [ImportBlockStub]=None, typed_dict_class_stubs: Optional[Iterable[
++        ClassStub]]=None) ->None:
+         self.function_stubs: Dict[str, FunctionStub] = {}
+         if function_stubs is not None:
+             self.function_stubs = {stub.name: stub for stub in function_stubs}
+@@ -717,15 +673,9 @@
+         FunctionKind.DJANGO_CACHED_PROPERTY,
+     }
+ 
+-    def __init__(
+-        self,
+-        module: str,
+-        qualname: str,
+-        kind: FunctionKind,
+-        sig: inspect.Signature,
+-        is_async: bool = False,
+-        typed_dict_class_stubs: Optional[Iterable[ClassStub]] = None,
+-    ) -> None:
++    def __init__(self, module: str, qualname: str, kind: FunctionKind, sig:
++        inspect.Signature, is_async: bool=False, typed_dict_class_stubs:
++        Optional[Iterable[ClassStub]]=None) ->None:
+         self.module = module
+         self.qualname = qualname
+         self.kind = kind
+@@ -745,14 +695,10 @@
+         )
+ 
+     @classmethod
+-    def from_callable_and_traced_types(
+-        cls,
+-        func: Callable[..., Any],
+-        arg_types: Dict[str, type],
+-        return_type: Optional[type],
+-        yield_type: Optional[type],
+-        existing_annotation_strategy: ExistingAnnotationStrategy = ExistingAnnotationStrategy.REPLICATE,
+-    ) -> "FunctionDefinition":
++    def from_callable_and_traced_types(cls, func: Callable[..., Any], arg_types:
++        Dict[str, type], return_type: Optional[type], yield_type: Optional[type
++        ], existing_annotation_strategy: ExistingAnnotationStrategy=
++        ExistingAnnotationStrategy.REPLICATE) ->'FunctionDefinition':
+         typed_dict_class_stubs: List[ClassStub] = []
+         new_arg_types = {}
+         for name, typ in arg_types.items():
+@@ -838,41 +784,45 @@
+     )
+ 
+ 
+-def build_module_stubs(entries: Iterable[FunctionDefinition]) -> Dict[str, ModuleStub]:
+-    """Given an iterable of function definitions, build the corresponding stubs"""
+-    mod_stubs: Dict[str, ModuleStub] = {}
++def build_module_stubs(entries: Iterable[FunctionDefinition]) ->Dict[str,
++    ModuleStub]:
++    modules: Dict[str, ModuleStub] = {}
+     for entry in entries:
+-        path = entry.qualname.split(".")
+-        name = path.pop()
+-        class_path = path
+-        # TODO: Handle nested classes
+-        klass = None
+-        if len(class_path) > 0:
+-            klass = ".".join(class_path)
+-        if entry.module not in mod_stubs:
+-            mod_stubs[entry.module] = ModuleStub()
+-        mod_stub = mod_stubs[entry.module]
+-        imports = get_imports_for_signature(entry.signature)
+-        # Import TypedDict, if needed.
+-        if entry.typed_dict_class_stubs:
+-            imports["mypy_extensions"].add("TypedDict")
+-        func_stub = FunctionStub(
+-            name, entry.signature, entry.kind, list(imports.keys()), entry.is_async
+-        )
+-        # Don't need to import anything from the same module
+-        imports.pop(entry.module, None)
+-        mod_stub.imports_stub.imports.merge(imports)
+-        if klass is not None:
+-            if klass not in mod_stub.class_stubs:
+-                mod_stub.class_stubs[klass] = ClassStub(klass)
+-            class_stub = mod_stub.class_stubs[klass]
+-            class_stub.function_stubs[func_stub.name] = func_stub
++        module_name = entry.module
++        if module_name not in modules:
++            modules[module_name] = ModuleStub()
++        module = modules[module_name]
++        if entry.kind == FunctionKind.MODULE:
++            module.function_stubs[entry.qualname] = FunctionStub(
++                entry.qualname,
++                entry.signature,
++                entry.kind,
++                is_async=entry.is_async,
++            )
+         else:
+-            mod_stub.function_stubs[func_stub.name] = func_stub
+-
+-        mod_stub.typed_dict_class_stubs.extend(entry.typed_dict_class_stubs)
+-
+-    return mod_stubs
++            # For non-module functions, we need to group them into classes
++            class_name = entry.qualname.split(".")[-1]
++            if class_name not in module.class_stubs:
++                module.class_stubs[class_name] = ClassStub(class_name)
++            class_stub = module.class_stubs[class_name]
++            class_stub.function_stubs[entry.qualname] = FunctionStub(
++                entry.qualname,
++                entry.signature,
++                entry.kind,
++                is_async=entry.is_async,
++            )
++        # Add any typed dict class stubs
++        module.typed_dict_class_stubs.extend(entry.typed_dict_class_stubs)
++    
++    # Merge imports from all function signatures
++    for module_stub in modules.values():
++        for func_stub in module_stub.function_stubs.values():
++            module_stub.imports_stub.merge(get_imports_for_signature(func_stub.signature))
++        for class_stub in module_stub.class_stubs.values():
++            for func_stub in class_stub.function_stubs.values():
++                module_stub.imports_stub.merge(get_imports_for_signature(func_stub.signature))
++    
++    return modules
+ 
+ 
+ def build_module_stubs_from_traces(

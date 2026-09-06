@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef create_cache_node(self, key, report_type, value):\n    cache_node = CacheNode(\n        key=key, report_type=report_type,\n        value=value, freq_node=None, pre=None, nxt=None)\n    self.cache[key] = cache_node\n\n    if self.freq_link_head is None or self.freq_link_head.freq != 0:\n        new_freq_node = FreqNode(0, None, None)\n        new_freq_node.append_cache_to_tail(cache_node)\n\n        if self.freq_link_head is not None:\n            self.freq_link_head.insert_before_me(new_freq_node)\n\n        self.freq_link_head = new_freq_node\n    else:\n        self.freq_link_head.append_cache_to_tail(cache_node)\n```",
+  "rewrite": "def create_cache_node(self, key, report_type, value):\n    cache_node = CacheNode(\n        key=key, report_type=report_type,\n        value=value, freq_node=None, pre=None, nxt=None)\n    self.cache[key] = cache_node\n\n    if self.freq_link_head is None or self.freq_link_head.freq != 0:\n        new_freq_node = FreqNode(0, None, None)\n        new_freq_node.append_cache_to_tail(cache_node)\n\n        if self.freq_link_head is not None:\n            self.freq_link_head.insert_before_me(new_freq_node)\n\n        self.freq_link_head = new_freq_node\n    else:\n        self.freq_link_head.append_cache_to_tail(cache_node)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

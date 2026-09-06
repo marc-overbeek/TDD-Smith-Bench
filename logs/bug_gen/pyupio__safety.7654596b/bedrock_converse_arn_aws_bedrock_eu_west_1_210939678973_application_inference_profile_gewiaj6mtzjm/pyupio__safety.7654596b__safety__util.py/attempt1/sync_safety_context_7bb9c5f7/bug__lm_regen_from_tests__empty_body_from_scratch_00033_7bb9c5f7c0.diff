@@ -1,0 +1,55 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -1067,27 +1067,32 @@
+ 
+ 
+ def sync_safety_context(f):
+-    """
+-    Decorator to sync the Safety context with the function arguments.
+-    """
+-    def new_func(*args, **kwargs):
+-        ctx = SafetyContext()
+-
+-        legacy_key_added = False
+-        if "session" in kwargs:
+-            legacy_key_added = True
+-            kwargs["key"] = kwargs.get("session").api_key
+-
+-        for attr in dir(ctx):
+-            if attr in kwargs:
+-                setattr(ctx, attr, kwargs.get(attr))
+-
+-        if legacy_key_added:
+-            kwargs.pop("key")
+-
++    def wrapper(*args, **kwargs):
++        context = click.get_current_context(silent=True)
++        if context:
++            cmd = context.command
++            if cmd:
++                SafetyContext().command = cmd.name
++                if hasattr(cmd, 'params'):
++                    for param in cmd.params:
++                        if param.name in kwargs:
++                            SafetyContext().params[param.name] = kwargs[param.name]
++            
++            # Set subcommand if available
++            if context.invoked_subcommand:
++                SafetyContext().subcommand = context.invoked_subcommand
++        
++        # Set safety source
++        SafetyContext().safety_source = 'cli'
++        
+         return f(*args, **kwargs)
+-
+-    return new_func
++    
++    # Preserve the original function's metadata
++    wrapper.__name__ = f.__name__
++    wrapper.__doc__ = f.__doc__
++    wrapper.__annotations__ = f.__annotations__
++    
++    return wrapper
+ 
+ 
+ @sync_safety_context

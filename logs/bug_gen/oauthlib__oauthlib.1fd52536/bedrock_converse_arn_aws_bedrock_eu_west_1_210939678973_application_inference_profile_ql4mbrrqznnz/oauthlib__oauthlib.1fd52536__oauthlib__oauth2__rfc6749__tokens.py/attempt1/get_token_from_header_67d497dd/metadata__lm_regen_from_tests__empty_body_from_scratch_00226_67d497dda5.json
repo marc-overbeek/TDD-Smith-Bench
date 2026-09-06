@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef get_token_from_header(request):\n    token = None\n    \n    # Check the Authorization header first\n    auth_header = request.headers.get('Authorization', '')\n    if auth_header:\n        split = auth_header.split()\n        if len(split) >= 2 and split[0].lower() == 'bearer':\n            token = split[1]\n    \n    # Fall back to access_token on the request object\n    if token is None:\n        token = request.access_token\n    \n    return token\n```",
+  "rewrite": "def get_token_from_header(request):\n    token = None\n    \n    # Check the Authorization header first\n    auth_header = request.headers.get('Authorization', '')\n    if auth_header:\n        split = auth_header.split()\n        if len(split) >= 2 and split[0].lower() == 'bearer':\n            token = split[1]\n    \n    # Fall back to access_token on the request object\n    if token is None:\n        token = request.access_token\n    \n    return token",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,29 @@
+--- a/monkeytype/tracing.py
++++ b/monkeytype/tracing.py
+@@ -250,16 +250,22 @@
+         # from a function returning (or yielding) None. In the latter case, the
+         # the last instruction that was executed should always be a return or a
+         # yield.
++        trace = self.traces.get(frame)
++        if trace is None:
++            return
++    
+         typ = get_type(arg, max_typed_dict_size=self.max_typed_dict_size)
+         last_opcode = frame.f_code.co_code[frame.f_lasti]
+-        trace = self.traces.get(frame)
+-        if trace is None:
+-            return
+-        elif last_opcode == YIELD_VALUE_OPCODE:
++    
++        if last_opcode == YIELD_VALUE_OPCODE:
+             trace.add_yield_type(typ)
++            # For generators, we don't delete the trace yet since we might get more yields
++            return
+         else:
++            # Regular return
+             if last_opcode == RETURN_VALUE_OPCODE:
+                 trace.return_type = typ
++            # Delete the trace and log it
+             del self.traces[frame]
+             self.logger.log(trace)
+ 

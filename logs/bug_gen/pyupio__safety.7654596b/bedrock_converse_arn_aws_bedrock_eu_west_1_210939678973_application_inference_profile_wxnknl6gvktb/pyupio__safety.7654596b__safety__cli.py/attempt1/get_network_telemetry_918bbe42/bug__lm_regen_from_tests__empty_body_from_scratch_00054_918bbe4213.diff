@@ -1,0 +1,140 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -56,62 +56,87 @@
+ def get_network_telemetry():
+     import psutil
+     import socket
+-    network_info = {}
++    import requests
++    
++    result = {}
++    
+     try:
+-        # Get network IO statistics
++        # Get network I/O counters
+         net_io = psutil.net_io_counters()
+-        network_info['bytes_sent'] = net_io.bytes_sent
+-        network_info['bytes_recv'] = net_io.bytes_recv
+-        network_info['packets_sent'] = net_io.packets_sent
+-        network_info['packets_recv'] = net_io.packets_recv
+-
+-        # Test network speed (download speed)
+-        test_url = "https://data.safetycli.com/api/v1/safety/announcements/"  # Test the download speed
+-        start_time = time.perf_counter()
+-        try:
+-            response = requests.get(test_url, timeout=10)
+-            end_time = time.perf_counter()
++        result['bytes_sent'] = net_io.bytes_sent
++        result['bytes_recv'] = net_io.bytes_recv
++        result['packets_sent'] = net_io.packets_sent
++        result['packets_recv'] = net_io.packets_recv
++        
++        # Get download speed
++        download_speed = None
++        try:
++            start_time = time.time()
++            response = requests.get('http://www.example.com', timeout=5)
++            end_time = time.time()
+             download_time = end_time - start_time
+-            download_speed = len(response.content) / download_time
+-            network_info['download_speed'] = download_speed
++            content_size = len(response.content)
++            download_speed = content_size / download_time if download_time > 0 else 0
+         except requests.RequestException as e:
+-            network_info['download_speed'] = None
+-            network_info['error'] = str(e)
+-
+-
+-        # Get network addresses
+-        net_if_addrs = psutil.net_if_addrs()
+-        network_info['interfaces'] = {iface: [addr.address for addr in addrs if addr.family == socket.AF_INET] for iface, addrs in net_if_addrs.items()}
+-
++            result['error'] = str(e)
++        
++        result['download_speed'] = download_speed
++        
++        # Get network interfaces and addresses
++        interfaces = {}
++        try:
++            net_if_addrs = psutil.net_if_addrs()
++            for interface, addrs in net_if_addrs.items():
++                ip_list = []
++                for addr in addrs:
++                    if addr.family == socket.AF_INET:
++                        ip_list.append(addr.address)
++                if ip_list:
++                    interfaces[interface] = ip_list
++        except Exception:
++            pass
++        
++        result['interfaces'] = interfaces
++        
+         # Get network connections
+-        net_connections = psutil.net_connections(kind='inet')
+-        network_info['connections'] = [
+-            {
+-                'fd': conn.fd,
+-                'family': conn.family,
+-                'type': conn.type,
+-                'laddr': f"{conn.laddr.ip}:{conn.laddr.port}",
+-                'raddr': f"{conn.raddr.ip}:{conn.raddr.port}" if conn.raddr else None,
+-                'status': conn.status
+-            }
+-            for conn in net_connections
+-        ]
+-
+-        # Get network interface stats
+-        net_if_stats = psutil.net_if_stats()
+-        network_info['interface_stats'] = {
+-            iface: {
+-                'isup': stats.isup,
+-                'duplex': stats.duplex,
+-                'speed': stats.speed,
+-                'mtu': stats.mtu
+-            }
+-            for iface, stats in net_if_stats.items()
+-        }
++        connections = []
++        try:
++            net_connections = psutil.net_connections()
++            for conn in net_connections:
++                try:
++                    conn_info = {
++                        'laddr': f"{conn.laddr.ip}:{conn.laddr.port}",
++                        'raddr': f"{conn.raddr.ip}:{conn.raddr.port}",
++                        'status': conn.status
++                    }
++                    connections.append(conn_info)
++                except (AttributeError, TypeError):
++                    pass
++        except Exception:
++            pass
++        
++        result['connections'] = connections
++        
++        # Get interface statistics
++        interface_stats = {}
++        try:
++            net_if_stats = psutil.net_if_stats()
++            for interface, stats in net_if_stats.items():
++                interface_stats[interface] = {
++                    'isup': stats.isup,
++                    'duplex': stats.duplex,
++                    'speed': stats.speed,
++                    'mtu': stats.mtu
++                }
++        except Exception:
++            pass
++        
++        result['interface_stats'] = interface_stats
++        
+     except psutil.AccessDenied as e:
+-        network_info['error'] = f"Access denied when trying to gather network telemetry: {e}"
+-
+-    return network_info
++        result['error'] = str(e)
++    
++    return result
+ 
+ def preprocess_args(f):
+     if '--debug' in sys.argv:

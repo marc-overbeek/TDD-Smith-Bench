@@ -1,0 +1,29 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -440,6 +440,26 @@
+             tensor = tensor.flip((-3))
+         return tensor.numpy()
+ 
++    def test_vflip_coords_transforms(self):
++        _trans_name = 'VFlipTransform'
++        params = (20,), (30,)
++        for coords, param in itertools.product(TestTransforms._coords_provider(), params):
++            gt_transformer = getattr(self, '{}_coords_gt'.format(_trans_name))
++            transformer = getattr(T, _trans_name)(*param)
++            result = transformer.apply_coords(np.copy(coords))
++            coords_gt, shape_gt = gt_transformer(np.copy(coords), *param)
++
++    def apply_coords(self, coords: np.ndarray) -> np.ndarray:
++        coords[:, 0] = self.width - coords[:, 0]
++        return coords
++
++    Flip the coordinates.
++    ...
++    Therefore they are flipped by `(W - x, H - y)`, not `(W - 1 - x, H - 1 - y)`.
++
++    coords[:, 1] = self.height - coords[:, 1]
++    return coords
++
+     def apply_coords(self, coords: np.ndarray) -> np.ndarray:
+         """
+         Flip the coordinates.

@@ -1,0 +1,33 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1296,29 +1296,7 @@
+         return ''.join(chunks)
+ 
+     def glomit(self, target, scope):
+-        all_args = []
+-        all_kwargs = {}
+-
+-        recurse = lambda spec: scope[glom](target, spec, scope)
+-        func = recurse(self.func) if _is_spec(self.func, strict=True) else self.func
+-
+-        for i in range(len(self._args) // 3):
+-            op, args, kwargs = self._args[i * 3: i * 3 + 3]
+-            if op == 'C':
+-                all_args.extend(args)
+-                all_kwargs.update({k: v for k, v in kwargs.items()
+-                                   if self._cur_kwargs[k] is kwargs})
+-            elif op == 'S':
+-                all_args.extend([recurse(arg) for arg in args])
+-                all_kwargs.update({k: recurse(v) for k, v in kwargs.items()
+-                                   if self._cur_kwargs[k] is kwargs})
+-            elif op == '*':
+-                if args is not None:
+-                    all_args.extend(recurse(args))
+-                if kwargs is not None:
+-                    all_kwargs.update(recurse(kwargs))
+-
+-        return func(*all_args, **all_kwargs)
++        pass
+ 
+ 
+ class Ref:

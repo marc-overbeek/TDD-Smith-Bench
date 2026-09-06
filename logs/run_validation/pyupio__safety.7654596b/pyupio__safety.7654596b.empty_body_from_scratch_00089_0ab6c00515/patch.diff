@@ -1,0 +1,35 @@
+--- a/safety/models.py
++++ b/safety/models.py
+@@ -420,30 +420,8 @@
+         """
+         return self.advisory.replace('\r', '') if self.advisory else "No advisory found for this vulnerability."
+ 
+-    def to_model_dict(self) -> Dict:
+-        """
+-        Convert the vulnerability to a dictionary for the model.
+-
+-        Returns:
+-            Dict: The dictionary representation of the vulnerability for the model.
+-        """
+-        try:
+-            affected_spec = next(iter(self.vulnerable_spec))
+-        except Exception:
+-            affected_spec = ""
+-
+-        repr = {
+-            "id": self.vulnerability_id,
+-            "package_name": self.package_name,
+-            "vulnerable_spec": affected_spec,
+-            "analyzed_specification": self.analyzed_requirement.raw
+-        }
+-
+-        if self.ignored:
+-            repr["ignored"] = {"reason": self.ignored_reason,
+-                               "expires": self.ignored_expires}
+-
+-        return repr
++    def to_model_dict(self) ->Dict:
++        pass
+ 
+ 
+ @dataclass

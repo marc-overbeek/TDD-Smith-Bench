@@ -1,0 +1,93 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -453,63 +453,43 @@
+ 
+ 
+ def load_path_content(path, file_type=None):
+-    """
+-    Loads and deserializes the content of the path.
+-    """
+-
+     if file_type is None:
+-        file_type = path.split('.')[-1]
++        _, file_type = os.path.splitext(path)
++        file_type = file_type.lstrip('.')
++    
+     if file_type == 'json':
+         with open(path, 'r') as the_file:
+-            content = json_loads(the_file.read())
++            return json_loads(the_file.read())
+     elif file_type in {'yaml', 'yml'}:
+         try:
+             import yaml
+-        except ImportError:  # pragma: no cover.
+-            raise ImportError('Pyyaml needs to be installed.') from None  # pragma: no cover.
++        except ImportError:
++            raise ImportError('Pyyaml needs to be installed.') from None
+         with open(path, 'r') as the_file:
+-            content = yaml.safe_load(the_file)
++            return yaml.safe_load(the_file)
+     elif file_type == 'toml':
+         try:
+-            if sys.version_info >= (3, 11):
+-                import tomllib as tomli
+-            else:
+-                import tomli
+-        except ImportError:  # pragma: no cover.
+-            raise ImportError('On python<=3.10 tomli needs to be installed.') from None  # pragma: no cover.
++            import tomli
++        except ImportError:
++            raise ImportError('Tomli needs to be installed.') from None
+         with open(path, 'rb') as the_file:
+-            content = tomli.load(the_file)
++            return tomli.load(the_file)
+     elif file_type == 'pickle':
+         with open(path, 'rb') as the_file:
+-            content = the_file.read()
+-            content = pickle_load(content)
++            return pickle_load(file_obj=the_file)
+     elif file_type in {'csv', 'tsv'}:
+         try:
+             import clevercsv
+-            content = clevercsv.read_dicts(path)
+-        except ImportError:  # pragma: no cover.
++            dict_reader = clevercsv.DictReader
++        except ImportError:
+             import csv
+-            with open(path, 'r') as the_file:
+-                content = list(csv.DictReader(the_file))
+-
+-        logger.info(f"NOTE: CSV content was empty in {path}")
+-
+-        # Everything in csv is string but we try to automatically convert any numbers we find
+-        for row in content:
+-            for key, value in row.items():
+-                value = value.strip()
+-                for type_ in [int, float, complex]:
+-                    try:
+-                        value = type_(value)
+-                    except Exception:
+-                        pass
+-                    else:
+-                        row[key] = value
+-                        break
++            dict_reader = csv.DictReader
++        with open(path, 'r') as csvfile:
++            reader = dict_reader(csvfile)
++            return list(reader)
+     else:
+-        raise UnsupportedFormatErr(f'Only json, yaml, toml, csv, tsv and pickle are supported.\n'
++        raise UnsupportedFormatErr('Only json, yaml, toml, csv, tsv and pickle are supported.\n'
+                                    f' The {file_type} extension is not known.')
+-    return content
+ 
+ 
+ def save_content_to_path(content, path, file_type=None, keep_backup=True):
+@@ -636,7 +616,6 @@
+             for type_key in ('old_type', 'new_type'):
+                 type_str = obj[type_key]
+                 obj[type_key] = TYPE_STR_TO_TYPE.get(type_str, type_str)
+-
+         return obj
+ 
+ 

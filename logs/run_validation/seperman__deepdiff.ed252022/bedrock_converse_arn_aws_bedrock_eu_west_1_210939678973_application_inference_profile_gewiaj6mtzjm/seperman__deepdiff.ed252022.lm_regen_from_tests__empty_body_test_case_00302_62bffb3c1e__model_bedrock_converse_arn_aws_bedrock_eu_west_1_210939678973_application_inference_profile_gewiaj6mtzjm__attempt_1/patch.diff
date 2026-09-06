@@ -1,0 +1,85 @@
+--- a/deepdiff/search.py
++++ b/deepdiff/search.py
+@@ -82,18 +82,10 @@
+ 
+     warning_num = 0
+ 
+-    def __init__(self,
+-                 obj,
+-                 item,
+-                 exclude_paths=SetOrdered(),
+-                 exclude_regex_paths=SetOrdered(),
+-                 exclude_types=SetOrdered(),
+-                 verbose_level=1,
+-                 case_sensitive=False,
+-                 match_string=False,
+-                 use_regexp=False,
+-                 strict_checking=True,
+-                 **kwargs):
++    def __init__(self, obj, item, exclude_paths=SetOrdered(),
++        exclude_regex_paths=SetOrdered(), exclude_types=SetOrdered(),
++        verbose_level=1, case_sensitive=False, match_string=False, use_regexp=
++        False, strict_checking=True, **kwargs):
+         if kwargs:
+             raise ValueError((
+                 "The following parameter(s) are not valid: %s\n"
+@@ -190,12 +182,8 @@
+ 
+         return skip
+ 
+-    def __search_dict(self,
+-                      obj,
+-                      item,
+-                      parent,
+-                      parents_ids=frozenset(),
+-                      print_as_attribute=False):
++    def __search_dict(self, obj, item, parent, parents_ids=frozenset(),
++        print_as_attribute=False):
+         """Search dictionaries"""
+         if print_as_attribute:
+             parent_text = "%s.%s"
+@@ -220,16 +208,34 @@
+             parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+ 
+             new_parent = parent_text % (parent, item_key_str)
+-            new_parent_cased = new_parent if self.case_sensitive else new_parent.lower()
+-
+-            str_item = str(item)
+-            if (self.match_string and str_item == new_parent_cased) or\
+-               (not self.match_string and str_item in new_parent_cased) or\
+-               (self.use_regexp and item.search(new_parent_cased)):
+-                self.__report(
+-                    report_key='matched_paths',
+-                    key=new_parent,
+-                    value=obj_child)
++        
++            # Handle string matching for paths
++            if isinstance(item, strings) and not self.use_regexp:
++                if self.match_string:
++                    if self.case_sensitive:
++                        if item == new_parent:
++                            self.__report(report_key='matched_paths', key=new_parent, value=obj_child)
++                    else:
++                        if item.lower() == new_parent.lower():
++                            self.__report(report_key='matched_paths', key=new_parent, value=obj_child)
++                else:
++                    if self.case_sensitive:
++                        if item in new_parent:
++                            self.__report(report_key='matched_paths', key=new_parent, value=obj_child)
++                    else:
++                        if item.lower() in new_parent.lower():
++                            self.__report(report_key='matched_paths', key=new_parent, value=obj_child)
++            elif self.use_regexp and isinstance(item, RE_COMPILED_TYPE):
++                if self.case_sensitive:
++                    if item.search(new_parent):
++                        self.__report(report_key='matched_paths', key=new_parent, value=obj_child)
++                else:
++                    if item.search(new_parent.lower()):
++                        self.__report(report_key='matched_paths', key=new_parent, value=obj_child)
++            elif not isinstance(item, strings) and not self.use_regexp:
++                # For non-string items, check if the path itself matches
++                if item == new_parent:
++                    self.__report(report_key='matched_paths', key=new_parent, value=obj_child)
+ 
+             self.__search(
+                 obj_child,

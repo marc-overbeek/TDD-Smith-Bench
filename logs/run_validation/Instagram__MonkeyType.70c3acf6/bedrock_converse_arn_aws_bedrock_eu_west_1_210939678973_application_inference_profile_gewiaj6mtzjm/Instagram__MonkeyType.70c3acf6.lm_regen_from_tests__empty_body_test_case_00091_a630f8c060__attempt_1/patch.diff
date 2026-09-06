@@ -1,0 +1,63 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -276,18 +276,18 @@
+     def rewrite_type_variable(self, type_variable): ...
+ 
+     def _rewrite_container(self, cls, container):
+-        if container.__module__ != "typing":
+-            return self.rewrite_malformed_container(container)
+-        args = getattr(container, "__args__", None)
+-        if args is None:
+-            return self.rewrite_malformed_container(container)
+-        elif args == ((),):  # special case of empty tuple `Tuple[()]`
+-            elems = self.make_builtin_tuple(())
+-        else:
+-            elems = self.make_builtin_tuple(
+-                self.rewrite(elem) for elem in container.__args__
+-            )
+-        return self.make_container_type(self.rewrite_container_type(cls), elems)
++            if container.__module__ != "typing":
++                return self.rewrite_malformed_container(container)
++            args = getattr(container, "__args__", None)
++            if args is None:
++                return self.rewrite_malformed_container(container)
++            elif args == ((),):  # special case of empty tuple `Tuple[()]`
++                elems = self.make_builtin_tuple(())
++            else:
++                elems = self.make_builtin_tuple(
++                    self.rewrite(elem) for elem in container.__args__
++                )
++            return self.make_container_type(self.rewrite_container_type(cls), elems)
+ 
+     def rewrite_Dict(self, dct):
+         return self._rewrite_container(Dict, dct)
+@@ -296,7 +296,7 @@
+         return self._rewrite_container(List, lst)
+ 
+     def rewrite_Set(self, st):
+-        return self._rewrite_container(Set, st)
++            return self._rewrite_container(Set, st)
+ 
+     def rewrite_Tuple(self, tup):
+         return self._rewrite_container(Tuple, tup)
+@@ -393,14 +393,14 @@
+     """
+ 
+     def _is_empty(self, typ):
+-        args = getattr(typ, "__args__", [])
+-        return args and all(is_any(e) for e in args)
++            args = getattr(typ, "__args__", [])
++            return args and all(is_any(e) for e in args)
+ 
+     def rewrite_Union(self, union):
+-        elems = tuple(self.rewrite(e) for e in union.__args__ if not self._is_empty(e))
+-        if elems:
+-            return Union[elems]
+-        return union
++            elems = tuple(self.rewrite(e) for e in union.__args__ if not self._is_empty(e))
++            if elems:
++                return Union[elems]
++            return union
+ 
+ 
+ class RewriteConfigDict(TypeRewriter):

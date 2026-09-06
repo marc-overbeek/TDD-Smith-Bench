@@ -1,0 +1,26 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -766,15 +766,20 @@
+ 
+     def length_3d(self) -> float:
+         """
+-        Computes 3-dimensional length of segment (latitude, longitude, and
+-        elevation).
++        Computes 3-dimensional length of the GPX file (latitude, longitude, and
++        elevation). This is the sum of 3D length of all segments in all tracks.
+ 
+         Returns
+         ----------
+         length : float
+             Length returned in meters
+         """
+-        return mod_geo.length_3d(self.points) # type: ignore
++        result: float = 0
++        for track in self.tracks:
++            length = track.length_3d()
++            if length is not None:
++                result += length
++        return result
+ 
+     def move(self, location_delta: mod_geo.LocationDelta) -> None:
+         """

@@ -1,0 +1,32 @@
+--- a/src/mistune/plugins/table.py
++++ b/src/mistune/plugins/table.py
+@@ -167,20 +167,20 @@
+     return html + '>' + text + '</' + tag + '>\n'
+ 
+ 
+-def table(md: "Markdown") -> None:
+-    """A mistune plugin to support table, spec defined at
+-    https://michelf.ca/projects/php-markdown/extra/#table
++def table(md: 'Markdown') ->None:
++    """A mistune plugin to support table. The syntax is same as
++    GitHub Flavored Markdown.
+ 
+     Here is an example:
+ 
+     .. code-block:: text
+ 
+-        First Header  | Second Header
+-        ------------- | -------------
+-        Content Cell  | Content Cell
+-        Content Cell  | Content Cell
+-
+-    :param md: Markdown instance
++        | Header 1 | Header 2 |
++        | -------- | -------- |
++        | Cell 1   | Cell 2   |
++        | Cell 3   | Cell 4   |
++
++    :param md: Markdown instance.
+     """
+     md.block.register('table', TABLE_PATTERN, parse_table, before='paragraph')
+     md.block.register('nptable', NP_TABLE_PATTERN, parse_nptable, before='paragraph')

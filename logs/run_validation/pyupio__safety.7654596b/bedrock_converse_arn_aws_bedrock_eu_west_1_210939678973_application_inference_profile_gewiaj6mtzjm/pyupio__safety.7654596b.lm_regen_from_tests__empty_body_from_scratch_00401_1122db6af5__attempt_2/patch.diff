@@ -1,0 +1,71 @@
+--- a/safety/auth/main.py
++++ b/safety/auth/main.py
+@@ -217,34 +217,44 @@
+     else:
+         raise ValueError(f"Cannot convert '{s}' to a boolean value.")
+ 
+-def get_proxy_config() -> Tuple[Optional[Dict[str, str]], Optional[int], bool]:
+-    """
+-    Retrieve the proxy configuration.
+-
+-    Returns:
+-        Tuple[Optional[Dict[str, str]], Optional[int], bool]: The proxy configuration, timeout, and whether it is required.
+-    """
++def get_proxy_config() ->Tuple[Optional[Dict[str, str]], Optional[int], bool]:
+     config = configparser.ConfigParser()
+     config.read(CONFIG)
+ 
+-    proxy_dictionary =  None
+-    required = False
++    proxy_dict = None
+     timeout = None
+-    proxy = None
+-
+-    if config.has_section("proxy"):
+-        proxy = dict(config.items("proxy"))
+-
+-    if proxy:
+-        try:
+-            proxy_dictionary = get_proxy_dict(proxy['protocol'], proxy['host'],
+-                                                proxy['port'])
+-            required = str_to_bool(proxy["required"])
+-            timeout = proxy["timeout"]
+-        except Exception as e:
+-            pass
+-
+-    return proxy_dictionary, timeout, required
++    use_cache = True
++
++    if 'proxy' in config.sections():
++        proxy_section = config['proxy']
++        # Check if either http or https proxy is configured and not empty
++        http_proxy = proxy_section.get('http', '').strip()
++        https_proxy = proxy_section.get('https', '').strip()
++        
++        if http_proxy or https_proxy:
++            proxy_dict = {}
++            if http_proxy:
++                proxy_dict['http'] = http_proxy
++            if https_proxy:
++                proxy_dict['https'] = https_proxy
++        
++        # Handle timeout
++        timeout_str = proxy_section.get('timeout', '').strip()
++        if timeout_str:
++            try:
++                timeout = int(timeout_str)
++            except (ValueError, TypeError):
++                timeout = None
++        
++        # Handle use_cache
++        use_cache_str = proxy_section.get('use_cache', '').strip()
++        if use_cache_str:
++            try:
++                use_cache = str_to_bool(use_cache_str)
++            except ValueError:
++                use_cache = True
++
++    return proxy_dict, timeout, use_cache
+ 
+ def clean_session(client) -> bool:
+     """

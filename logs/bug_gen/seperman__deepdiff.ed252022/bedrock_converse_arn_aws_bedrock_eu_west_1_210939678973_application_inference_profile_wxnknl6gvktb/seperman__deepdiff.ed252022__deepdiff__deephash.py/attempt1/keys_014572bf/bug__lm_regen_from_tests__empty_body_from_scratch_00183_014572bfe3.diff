@@ -1,0 +1,20 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -322,6 +322,17 @@
+     def __bool__(self):
+         return bool(self.hashes)
+ 
++    def values(self):
++        return (i[0] for i in self.hashes.values())  # Just grab the item and not its count
++
++    def items(self):
++        return ((i, v[0]) for i, v in self.hashes.items())
++
++    if self.hashes[UNPROCESSED_KEY]:
++        logger.warning("Can not hash the following items: {}.".format(self.hashes[UNPROCESSED_KEY]))
++    else:
++        del self.hashes[UNPROCESSED_KEY]
++
+     def keys(self):
+         return self.hashes.keys()
+ 

@@ -1,0 +1,224 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -336,116 +336,113 @@
+               help="Select the JSON version to be used in the output", show_default=True)
+ @click.pass_context
+ @clean_check_command
+-def check(ctx, db, full_report, stdin, files, cache, ignore, ignore_unpinned_requirements, output, json,
+-          html, bare, exit_code, policy_file, audit_and_monitor, project,
+-          save_json, save_html, apply_remediations,
+-          auto_remediation_limit, no_prompt, json_version):
+-    """
+-    [underline][DEPRECATED][/underline] `check` has been replaced by the `scan` command, and will be unsupported beyond 1 June 2024.Find vulnerabilities at a target file or enviroment.
+-    """
+-    LOG.info('Running check command')
+-
+-    non_interactive = (not sys.stdout.isatty() and os.environ.get("SAFETY_OS_DESCRIPTION", None) != 'run')
+-    silent_outputs = ['json', 'bare', 'html']
+-    is_silent_output = output in silent_outputs
+-    prompt_mode = bool(not non_interactive and not stdin and not is_silent_output) and not no_prompt
+-    kwargs = {'version': json_version} if output == 'json' else {}
+-    print_deprecation_message("check", date(2024, 6, 1), new_command="scan")
++def check(ctx, db, full_report, stdin, files, cache, ignore,
++    ignore_unpinned_requirements, output, json, html, bare, exit_code,
++    policy_file, audit_and_monitor, project, save_json, save_html,
++    apply_remediations, auto_remediation_limit, no_prompt, json_version):
++    
++    from safety.safety import check as safety_check
++    from safety.util import output_exception
++    from safety.output_utils import build_report
++    import json as json_module
++    
++    SafetyContext().params = ctx.params
++    
++    # Determine output format
++    if json:
++        output = 'json'
++    elif html:
++        output = 'html'
++    elif bare:
++        output = 'bare'
++    
++    # Handle stdin input
++    if stdin:
++        files = [sys.stdin]
++    
++    # Get packages from files
++    packages = get_packages(files, ignore_unpinned_requirements)
++    
++    # Perform the actual check
+     try:
+-        packages = get_packages(files, stdin)
+-
+-        ignore_severity_rules = None
+-        ignore, ignore_severity_rules, exit_code, ignore_unpinned_requirements, project = \
+-            get_processed_options(policy_file, ignore, ignore_severity_rules, exit_code, ignore_unpinned_requirements,
+-                                  project)
+-        is_env_scan = not stdin and not files
+-
+-        params = {'stdin': stdin, 'files': files, 'policy_file': policy_file, 'continue_on_error': not exit_code,
+-                  'ignore_severity_rules': ignore_severity_rules, 'project': project,
+-                  'audit_and_monitor': audit_and_monitor, 'prompt_mode': prompt_mode,
+-                  'auto_remediation_limit': auto_remediation_limit,
+-                  'apply_remediations': apply_remediations,
+-                  'ignore_unpinned_requirements': ignore_unpinned_requirements}
+-
+-        LOG.info('Calling the check function')
+-        vulns, db_full = safety.check(session=ctx.obj.auth.client, packages=packages, db_mirror=db, cached=cache, ignore_vulns=ignore,
+-                                      ignore_severity_rules=ignore_severity_rules, proxy=None,
+-                                      include_ignored=True, is_env_scan=is_env_scan, telemetry=ctx.obj.config.telemetry_enabled,
+-                                      params=params)
+-        LOG.debug('Vulnerabilities returned: %s', vulns)
+-        LOG.debug('full database returned is None: %s', db_full is None)
+-
+-        LOG.info('Safety is going to calculate remediations')
+-
+-        remediations = safety.calculate_remediations(vulns, db_full)
+-
+-        announcements = []
+-        if not db or is_a_remote_mirror(db):
+-            LOG.info('Not local DB used, Getting announcements')
+-            announcements = safety.get_announcements(ctx.obj.auth.client, telemetry=ctx.obj.config.telemetry_enabled)
+-
+-        announcements.extend(safety.add_local_notifications(packages, ignore_unpinned_requirements))
+-
+-        LOG.info('Safety is going to render the vulnerabilities report using %s output', output)
+-
+-        fixes = []
+-
+-        if apply_remediations and is_silent_output:
+-            # it runs and apply only automatic fixes.
+-            fixes = process_fixes(files, remediations, auto_remediation_limit, output, no_output=True,
+-                                  prompt=False)
+-
+-        output_report = SafetyFormatter(output, **kwargs).render_vulnerabilities(announcements, vulns, remediations,
+-                                                                                 full_report, packages, fixes)
+-
+-        # Announcements are send to stderr if not terminal, it doesn't depend on "exit_code" value
+-        stderr_announcements = filter_announcements(announcements=announcements, by_type='error')
+-        if stderr_announcements and non_interactive:
+-            LOG.info('sys.stdout is not a tty, error announcements are going to be send to stderr')
+-            click.secho(SafetyFormatter(output='text').render_announcements(stderr_announcements), fg="red",
+-                        file=sys.stderr)
+-
+-        found_vulns = list(filter(lambda v: not v.ignored, vulns))
+-        LOG.info('Vulnerabilities found (Not ignored): %s', len(found_vulns))
+-        LOG.info('All vulnerabilities found (ignored and Not ignored): %s', len(vulns))
+-
+-        click.secho(output_report, nl=should_add_nl(output, found_vulns), file=sys.stdout)
+-
+-        post_processing_report = (save_json or audit_and_monitor or apply_remediations)
+-
+-        if post_processing_report:
+-            if apply_remediations and not is_silent_output:
+-                # prompt_mode fixing after main check output if prompt is enabled.
+-                fixes = process_fixes(files, remediations, auto_remediation_limit, output, no_output=False,
+-                                      prompt=prompt_mode)
+-
+-            # Render fixes
+-            json_report = output_report if output == 'json' else \
+-                SafetyFormatter(output='json', version=json_version).render_vulnerabilities(announcements, vulns,
+-                                                                                            remediations, full_report,
+-                                                                                            packages, fixes)
+-
+-            safety.save_report(save_json, 'safety-report.json', json_report)
+-
+-        if save_html:
+-            html_report = output_report if output == 'html' else SafetyFormatter(output='html').render_vulnerabilities(
+-                announcements, vulns, remediations, full_report, packages, fixes)
+-
+-            safety.save_report(save_html, 'safety-report.html', html_report)
+-        print_deprecation_message("check", date(2024, 6, 1), new_command="scan")
+-        if exit_code and found_vulns:
+-            LOG.info('Exiting with default code for vulnerabilities found')
+-            sys.exit(EXIT_CODE_VULNERABILITIES_FOUND)
+-
+-        sys.exit(EXIT_CODE_OK)
+-
+-    except SafetyError as e:
+-        LOG.exception('Expected SafetyError happened: %s', e)
++        vulnerabilities, ignored_vulnerabilities = safety_check(
++            db=db,
++            packages=packages,
++            cache=cache,
++            ignore=ignore,
++            full_report=full_report,
++            telemetry=ctx.obj.config.telemetry_enabled,
++            policy_file=policy_file,
++            audit_and_monitor=audit_and_monitor,
++            project=project,
++            session=ctx.obj.auth.client
++        )
++    except Exception as e:
+         output_exception(e, exit_code_output=exit_code)
+-    except Exception as e:
+-        LOG.exception('Unexpected Exception happened: %s', e)
+-        exception = e if isinstance(e, SafetyException) else SafetyException(info=e)
+-        output_exception(exception, exit_code_output=exit_code)
++        return
++    
++    # Build the report
++    formatter = SafetyFormatter(output=output)
++    
++    # Get announcements
++    announcements = []
++    if not db:
++        announcements = safety.get_announcements(session=ctx.obj.auth.client, telemetry=ctx.obj.config.telemetry_enabled)
++    
++    # Filter announcements
++    filtered_announcements = filter_announcements(announcements)
++    
++    # Generate output
++    output_report = formatter.render(
++        vulnerabilities=vulnerabilities,
++        ignored_vulnerabilities=ignored_vulnerabilities,
++        packages=packages,
++        db=db,
++        full_report=full_report,
++        announcements=filtered_announcements,
++        output=output,
++        json_version=json_version
++    )
++    
++    # Handle saving to files
++    if save_json:
++        if os.path.isdir(save_json):
++            save_json = os.path.join(save_json, 'safety-report.json')
++        with open(save_json, 'w') as f:
++            f.write(output_report)
++    
++    if save_html:
++        if os.path.isdir(save_html):
++            save_html = os.path.join(save_html, 'safety-report.html')
++        with open(save_html, 'w') as f:
++            f.write(output_report)
++    
++    # Apply remediations if requested
++    if apply_remediations and vulnerabilities:
++        try:
++            fixes = process_fixes(
++                vulnerabilities=vulnerabilities,
++                packages=packages,
++                limit=auto_remediation_limit,
++                no_prompt=no_prompt,
++                session=ctx.obj.auth.client
++            )
++            if fixes:
++                # Apply the fixes to the requirement files
++                for file_path, fix_data in fixes.items():
++                    if file_path in files:
++                        # This would actually modify the files
++                        pass
++        except Exception as e:
++            output_exception(e, exit_code_output=exit_code)
++            return
++    
++    # Output the report
++    click.secho(output_report, nl=should_add_nl(output))
++    
++    # Exit with appropriate code if vulnerabilities found
++    if vulnerabilities and exit_code:
++        sys.exit(EXIT_CODE_VULNERABILITIES_FOUND)
+ 
+ 
+ def clean_license_command(f):

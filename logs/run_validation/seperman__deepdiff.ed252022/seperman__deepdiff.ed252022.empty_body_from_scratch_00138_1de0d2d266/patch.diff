@@ -1,0 +1,18 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -693,14 +693,7 @@
+             self._do_set_or_frozenset_item(items, func='difference')
+ 
+     def _do_set_or_frozenset_item(self, items, func):
+-        for path, value in items.items():
+-            elements = _path_to_elements(path)
+-            parent = self.get_nested_obj(obj=self, elements=elements[:-1])
+-            elem, action = elements[-1]
+-            obj = self._get_elem_and_compare_to_old_value(
+-                parent, path_for_err_reporting=path, expected_old_value=None, elem=elem, action=action, forced_old_value=set())
+-            new_value = getattr(obj, func)(value)
+-            self._simple_set_elem_value(parent, path_for_err_reporting=path, elem=elem, value=new_value, action=action)
++        pass
+ 
+     def _do_ignore_order_get_old(self, obj, remove_indexes_per_path, fixed_indexes_values, path_for_err_reporting):
+         """

@@ -1,0 +1,129 @@
+--- a/starlette/responses.py
++++ b/starlette/responses.py
+@@ -442,56 +442,78 @@
+         return http_if_range == self.headers["last-modified"] or http_if_range == self.headers["etag"]
+ 
+     @staticmethod
+-    def _parse_range_header(http_range: str, file_size: int) -> list[tuple[int, int]]:
+-        ranges: list[tuple[int, int]] = []
+-        try:
+-            units, range_ = http_range.split("=", 1)
+-        except ValueError:
+-            raise MalformedRangeHeader()
+-
+-        units = units.strip().lower()
+-
+-        if units != "bytes":
+-            raise MalformedRangeHeader("Only support bytes range")
+-
+-        ranges = [
+-            (
+-                int(_[0]) if _[0] else file_size - int(_[1]),
+-                int(_[1]) + 1 if _[0] and _[1] and int(_[1]) < file_size else file_size,
+-            )
+-            for _ in _RANGE_PATTERN.findall(range_)
+-            if _ != ("", "")
+-        ]
+-
+-        if len(ranges) == 0:
+-            raise MalformedRangeHeader("Range header: range must be requested")
+-
+-        if any(not (0 <= start < file_size) for start, _ in ranges):
+-            raise RangeNotSatisfiable(file_size)
+-
+-        if any(start > end for start, end in ranges):
+-            raise MalformedRangeHeader("Range header: start must be less than end")
+-
+-        if len(ranges) == 1:
+-            return ranges
+-
+-        # Merge ranges
+-        result: list[tuple[int, int]] = []
+-        for start, end in ranges:
+-            for p in range(len(result)):
+-                p_start, p_end = result[p]
+-                if start > p_end:
++    @staticmethod
++        def _parse_range_header(http_range: str, file_size: int) -> list[tuple[int, int]]:
++            ranges: list[tuple[int, int]] = []
++            try:
++                units, range_ = http_range.split("=", 1)
++            except ValueError:
++                raise MalformedRangeHeader()
++
++            units = units.strip().lower()
++
++            if units != "bytes":
++                raise MalformedRangeHeader("Only support bytes range")
++
++            # Parse individual ranges
++            range_matches = _RANGE_PATTERN.findall(range_)
++        
++            # Handle special case where range is empty (e.g., "bytes=")
++            if not range_matches:
++                raise MalformedRangeHeader("Range header: range must be requested")
++            
++            for start_str, end_str in range_matches:
++                if start_str == "" and end_str == "":
++                    # This shouldn't happen with valid syntax, but let's be safe
+                     continue
+-                elif end < p_start:
+-                    result.insert(p, (start, end))  # THIS IS NOT REACHED!
+-                    break
++                
++                if start_str == "":
++                    # Format: "bytes=-100" (last 100 bytes)
++                    start = file_size - int(end_str)
++                    end = file_size
++                elif end_str == "":
++                    # Format: "bytes=100-" (from byte 100 to end)
++                    start = int(start_str)
++                    end = file_size
+                 else:
+-                    result[p] = (min(start, p_start), max(end, p_end))
+-                    break
+-            else:
+-                result.append((start, end))
+-
+-        return result
++                    # Format: "bytes=100-200" (from byte 100 to 200)
++                    start = int(start_str)
++                    end = int(end_str) + 1  # End is inclusive in HTTP range, but exclusive in Python
++            
++                # Validate range boundaries
++                if start < 0 or start >= file_size:
++                    raise RangeNotSatisfiable(file_size)
++                
++                if end > file_size:
++                    end = file_size
++                
++                if start >= end:
++                    raise MalformedRangeHeader("Range header: start must be less than end")
++                
++                ranges.append((start, end))
++
++            if len(ranges) == 0:
++                raise MalformedRangeHeader("Range header: range must be requested")
++
++            # Sort ranges by start position
++            ranges.sort(key=lambda x: x[0])
++        
++            # Merge overlapping ranges
++            result: list[tuple[int, int]] = []
++            for start, end in ranges:
++                if not result:
++                    result.append((start, end))
++                else:
++                    # Check if current range overlaps with the last merged range
++                    last_start, last_end = result[-1]
++                    if start <= last_end:
++                        # Overlapping or adjacent ranges - merge them
++                        result[-1] = (last_start, max(end, last_end))
++                    else:
++                        # Non-overlapping range
++                        result.append((start, end))
++
++            return result
+ 
+     def generate_multipart(
+         self,

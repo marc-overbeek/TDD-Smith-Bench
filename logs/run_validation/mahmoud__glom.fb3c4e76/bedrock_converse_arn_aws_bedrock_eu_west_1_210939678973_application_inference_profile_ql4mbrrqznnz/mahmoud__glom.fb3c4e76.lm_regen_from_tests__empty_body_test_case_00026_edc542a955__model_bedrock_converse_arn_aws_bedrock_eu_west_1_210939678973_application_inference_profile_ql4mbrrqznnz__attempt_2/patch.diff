@@ -1,0 +1,292 @@
+--- a/glom/cli.py
++++ b/glom/cli.py
+@@ -50,57 +50,57 @@
+ # TODO: --default?
+ 
+ def glom_cli(target, spec, indent, debug, inspect, scalar):
+-    """Command-line interface to the glom library, providing nested data
+-    access and data restructuring with the power of Python.
+-    """
+-    if debug or inspect:
+-        stdin_open = not sys.stdin.closed
+-        spec = Inspect(spec,
+-                       echo=inspect,
+-                       recursive=inspect,
+-                       breakpoint=inspect and stdin_open,
+-                       post_mortem=debug and stdin_open)
+-
++    if inspect:
++        spec = Inspect(spec)
+     try:
+         result = glom.glom(target, spec)
+-    except GlomError as ge:
+-        print(f'{ge.__class__.__name__}: {ge}')
+-        return 1
+-
+-    if not indent:
++    except GlomError as e:
++        raise CommandLineError(str(e))
++    
++    if scalar:
++        sys.stdout.write(str(result))
++        return 0
++    
++    if indent == 0:
+         indent = None
+     
+-    if scalar and is_scalar(result):
+-        print(result, end='')
+-    else:
+-        print(json.dumps(result, indent=indent, sort_keys=True))
+-    return
++    try:
++        output = json.dumps(result, indent=indent)
++    except TypeError:
++        output = repr(result)
++    
++    print(output)
++    return 0
+ 
+ 
+ def get_command():
+-    posargs = PosArgSpec(str, max_count=2, display={'label': '[spec [target]]'})
+-    cmd = Command(glom_cli, posargs=posargs, middlewares=[mw_get_target])
+-    cmd.add('--target-file', str, missing=None, doc='path to target data source')
+-    cmd.add('--target-format', str, missing='json',
+-            doc='format of the source data (json or python)')
+-    cmd.add('--spec-file', str, missing=None, doc='path to glom spec definition')
+-    cmd.add('--spec-format', str, missing='python',
+-            doc='format of the glom spec definition (json, python, python-full)')
+-
+-    cmd.add('--indent', int, missing=2,
+-            doc='number of spaces to indent the result, 0 to disable pretty-printing')
+-    
+-    cmd.add('--scalar', parse_as=True,
+-            doc="if the result is a single value (not a collection), output it"
+-            " without quotes or whitespace, for easier usage in scripts")
+-    cmd.add('--debug', parse_as=True, doc='interactively debug any errors that come up')
+-    cmd.add('--inspect', parse_as=True, doc='interactively explore the data')
++    cmd = Command(glom_cli, name='glom')
++    
++    cmd.add(Flag('--target-file', missing=None))
++    cmd.add(Flag('--target-format', missing='json'))
++    cmd.add(Flag('--spec-file', missing=None))
++    cmd.add(Flag('--spec-format', missing='python'))
++    cmd.add(Flag('--indent', parse_as=int, missing=2))
++    cmd.add(Flag('--debug', parse_as=True, missing=False))
++    cmd.add(Flag('--inspect', parse_as=True, missing=False))
++    cmd.add(Flag('--scalar', parse_as=True, missing=False))
++    
++    cmd.add(mw_handle_target)
++    cmd.add(mw_get_target)
++    
++    cmd.add(PosArgSpec(display=PosArgDisplay(name='spec [target]', doc='glom spec and optional target data')))
++    
+     return cmd
+ 
+ 
+ def main(argv):
+     cmd = get_command()
+-    return cmd.run(argv) or 0
++    try:
++        return cmd.run(argv)
++    except CommandLineError:
++        raise
++    except SystemExit as e:
++        return e.code
+ 
+ 
+ def console_main():
+@@ -116,99 +116,109 @@
+ 
+ 
+ def mw_handle_target(target_text, target_format):
+-    """ Handles reading in a file specified in cli command.
+-
+-    Args:
+-        target_text (str): The target data to load, as text
+-        target_format (str): Valid formats include `json`, `toml`, and `yml`/`yaml`
+-    Returns:
+-        The content of the file that you specified
+-    Raises:
+-        CommandLineError: Issue with file format or appropriate file reading package not installed.
+-    """
+-    if not target_text:
+-        return {}
+-    target = {}
++    valid_formats = ('json', 'python', 'toml', 'yaml', 'yml')
++    if target_format not in valid_formats:
++        raise UsageError('expected target-format to be one of %r, got %r' % (valid_formats, target_format))
++    
+     if target_format == 'json':
+-        load_func = json.loads
++        try:
++            return {'target': json.loads(target_text)}
++        except ValueError as e:
++            raise CommandLineError('could not load target data: %s' % e)
++    elif target_format == 'python':
++        try:
++            return {'target': ast.literal_eval(target_text)}
++        except (ValueError, SyntaxError) as e:
++            raise CommandLineError('could not load target data: %s' % e)
+     elif target_format in ('yaml', 'yml'):
+         try:
+             import yaml
+-            load_func = yaml.safe_load
+-        except ImportError:  # pragma: no cover
+-            raise UsageError('No YAML package found. To process yaml files, run: pip install PyYAML')  # pragma: no cover
++            return {'target': yaml.safe_load(target_text)}
++        except Exception as e:
++            raise CommandLineError('could not load target data: %s' % e)
+     elif target_format == 'toml':
+-        missing =  UsageError('No TOML package found. To process toml files, upgrade to Python 3.11 or run: pip install tomli')
+-        try:
+-            import tomllib 
+-            load_func = tomllib.loads
+-        except ImportError:
++        try:
+             try:
+-                import tomli
+-                load_func = tomli.loads
+-            except ImportError:  # pragma: no cover
+-                raise missing  # pragma: no cover
+-    elif target_format == 'python':
+-        load_func = ast.literal_eval
++                import tomllib
++            except ImportError:
++                try:
++                    import tomli as tomllib
++                except ImportError:
++                    import toml as tomllib
++            return {'target': tomllib.loads(target_text)}
++        except (CommandLineError, UsageError):
++            raise
++        except Exception as e:
++            raise CommandLineError('could not load target data: %s' % e)
++
++
++@face_middleware(provides=['spec', 'target'])
++def mw_get_target(next_, posargs_, target_file, target_format, spec_file,
++    spec_format):
++    valid_spec_formats = ('json', 'python', 'python-full')
++    if spec_format not in valid_spec_formats:
++        raise UsageError('expected spec-format to be one of %r, got %r' % (valid_spec_formats, spec_format))
++    
++    posargs = list(posargs_)
++    
++    if spec_file and len(posargs) > 0:
++        raise UsageError('expected spec from file or argv, not both')
++    if target_file and len(posargs) > 1:
++        raise UsageError('expected target from file or argv, not both')
++    
++    if spec_file:
++        try:
++            spec_text = open(spec_file).read()
++        except IOError as e:
++            raise CommandLineError('could not read spec file: %s' % e)
++        spec_posarg = False
++    elif posargs:
++        spec_text = posargs.pop(0)
++        spec_posarg = True
+     else:
+-        raise UsageError('expected target-format to be one of python, json, toml, or yaml')
+-
+-
+-    try:
+-        target = load_func(target_text)
+-    except Exception as e:
+-        raise UsageError('could not load target data, got: %s: %s'
+-                         % (e.__class__.__name__, e))
+-
+-
+-    return target
+-
+-
+-@face_middleware(provides=['spec', 'target'])
+-def mw_get_target(next_, posargs_, target_file, target_format, spec_file, spec_format):
+-    spec_text, target_text = None, None
+-    if len(posargs_) == 2:
+-        spec_text, target_text = posargs_
+-    elif len(posargs_) == 1:
+-        spec_text, target_text = posargs_[0], None
+-
+-    if spec_text and spec_file:
+-        raise UsageError('expected spec file or spec argument, not both')
+-    elif spec_file:
+-        try:
+-            with open(spec_file) as f:
+-                spec_text = f.read()
+-        except OSError as ose:
+-            raise UsageError(f'could not read spec file {spec_file!r}, got: {ose}')
+-
+-    if not spec_text:
+-        spec = Path()
+-    elif spec_format == 'python':
+-        if spec_text[0] not in ('"', "'", "[", "{", "("):
+-            # intention: handle trivial path access, assume string
+-            spec_text = repr(spec_text)
+-        spec = ast.literal_eval(spec_text)
++        spec_text = '{}'
++        spec_posarg = False
++    
++    if spec_format == 'python':
++        if not spec_posarg and spec_text == '{}':
++            spec = {}
++        elif '.' in spec_text:
++            spec = glom.Path(*spec_text.split('.'))
++        else:
++            spec = spec_text
+     elif spec_format == 'json':
+-        spec = json.loads(spec_text)
++        try:
++            spec = json.loads(spec_text)
++        except ValueError as e:
++            raise CommandLineError('could not load spec: %s' % e)
+     elif spec_format == 'python-full':
+-        spec = _eval_python_full_spec(spec_text)
++        try:
++            spec = _eval_python_full_spec(spec_text)
++        except Exception as e:
++            raise CommandLineError('could not load spec: %s' % e)
++    
++    if target_file:
++        if target_file == '-':
++            target_text = sys.stdin.read()
++        else:
++            try:
++                target_text = open(target_file).read()
++            except IOError as e:
++                raise CommandLineError('could not read target file: %s' % e)
++    elif posargs:
++        target_arg = posargs.pop(0)
++        if target_arg == '-':
++            target_text = sys.stdin.read()
++        else:
++            target_text = target_arg
++    elif not isatty(sys.stdin):
++        target_text = sys.stdin.read()
+     else:
+-        raise UsageError('expected spec-format to be one of json, python, or python-full')
+-
+-    if target_text and target_file:
+-        raise UsageError('expected target file or target argument, not both')
+-    elif target_text == '-' or target_file == '-':
+-        target_text = sys.stdin.read()
+-    elif target_file:
+-        try:
+-            target_text = open(target_file).read()
+-        except OSError as ose:
+-            raise UsageError(f'could not read target file {target_file!r}, got: {ose}')
+-    elif not target_text and not isatty(sys.stdin):
+-        target_text = sys.stdin.read()
+-
+-    target = mw_handle_target(target_text, target_format)
+-
++        target_text = '{}'
++    
++    target_result = mw_handle_target(target_text, target_format)
++    target = target_result['target']
++    
+     return next_(spec=spec, target=target)
+ 
+ 

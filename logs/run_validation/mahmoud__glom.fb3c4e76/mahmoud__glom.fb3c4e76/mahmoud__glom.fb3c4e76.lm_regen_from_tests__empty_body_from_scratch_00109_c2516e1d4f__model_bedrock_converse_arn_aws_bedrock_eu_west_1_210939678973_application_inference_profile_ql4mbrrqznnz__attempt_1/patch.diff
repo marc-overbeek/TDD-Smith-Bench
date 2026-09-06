@@ -1,0 +1,26 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1804,6 +1804,23 @@
+     access or by converting to a dict.
+ 
+     """
++    let = S(v=Vars({'b': 2}, c=3))
++    assert glom(1, (let, A.v.a, S.v.a)) == 1
++    assert glom(1, (let, S.v.b)) == 2
++    assert glom(1, (let, S.v.c)) == 3
++
++    def glomit(self, target, spec):
++        return ScopeVars(self.base, self.defaults)
++
++    class ScopeVars:
++        def __init__(self, base, defaults):
++            self.__dict__ = dict(base)
++            self.__dict__.update(defaults)
++
++    def __init__(self, base, defaults):
++        self.__dict__ = dict(base)
++        self.__dict__.update(defaults)
++
+     def __init__(self, base, defaults):
+         self.__dict__ = dict(base)
+         self.__dict__.update(defaults)

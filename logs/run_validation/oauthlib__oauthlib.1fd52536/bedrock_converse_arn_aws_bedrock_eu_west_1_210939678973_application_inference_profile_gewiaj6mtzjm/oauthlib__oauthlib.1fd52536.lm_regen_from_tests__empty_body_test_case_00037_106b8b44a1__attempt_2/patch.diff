@@ -1,0 +1,446 @@
+--- a/oauthlib/oauth1/rfc5849/signature.py
++++ b/oauthlib/oauth1/rfc5849/signature.py
+@@ -52,186 +52,75 @@
+ 
+ # ==== Common functions ==========================================
+ 
+-def signature_base_string(
+-        http_method: str,
+-        base_str_uri: str,
+-        normalized_encoded_request_parameters: str) -> str:
+-    """
+-    Construct the signature base string.
+-
+-    The *signature base string* is the value that is calculated and signed by
+-    the client. It is also independently calculated by the server to verify
+-    the signature, and therefore must produce the exact same value at both
+-    ends or the signature won't verify.
+-
+-    The rules for calculating the *signature base string* are defined in
+-    section 3.4.1.1`_ of RFC 5849.
+-
+-    .. _`section 3.4.1.1`: https://tools.ietf.org/html/rfc5849#section-3.4.1.1
+-    """
+-
+-    # The signature base string is constructed by concatenating together,
+-    # in order, the following HTTP request elements:
+-
+-    # 1.  The HTTP request method in uppercase.  For example: "HEAD",
+-    #     "GET", "POST", etc.  If the request uses a custom HTTP method, it
+-    #     MUST be encoded (`Section 3.6`_).
+-    #
+-    # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    base_string = utils.escape(http_method.upper())
+-
+-    # 2.  An "&" character (ASCII code 38).
+-    base_string += '&'
+-
+-    # 3.  The base string URI from `Section 3.4.1.2`_, after being encoded
+-    #     (`Section 3.6`_).
+-    #
+-    # .. _`Section 3.4.1.2`: https://tools.ietf.org/html/rfc5849#section-3.4.1.2
+-    # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    base_string += utils.escape(base_str_uri)
+-
+-    # 4.  An "&" character (ASCII code 38).
+-    base_string += '&'
+-
+-    # 5.  The request parameters as normalized in `Section 3.4.1.3.2`_, after
+-    #     being encoded (`Section 3.6`).
+-    #
+-    # .. _`Sec 3.4.1.3.2`: https://tools.ietf.org/html/rfc5849#section-3.4.1.3.2
+-    # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    base_string += utils.escape(normalized_encoded_request_parameters)
+-
+-    return base_string
+-
+-
+-def base_string_uri(uri: str, host: str = None) -> str:
+-    """
+-    Calculates the _base string URI_.
+-
+-    The *base string URI* is one of the components that make up the
+-     *signature base string*.
+-
+-    The ``host`` is optional. If provided, it is used to override any host and
+-    port values in the ``uri``. The value for ``host`` is usually extracted from
+-    the "Host" request header from the HTTP request. Its value may be just the
+-    hostname, or the hostname followed by a colon and a TCP/IP port number
+-    (hostname:port). If a value for the``host`` is provided but it does not
+-    contain a port number, the default port number is used (i.e. if the ``uri``
+-    contained a port number, it will be discarded).
+-
+-    The rules for calculating the *base string URI* are defined in
+-    section 3.4.1.2`_ of RFC 5849.
+-
+-    .. _`section 3.4.1.2`: https://tools.ietf.org/html/rfc5849#section-3.4.1.2
+-
+-    :param uri: URI
+-    :param host: hostname with optional port number, separated by a colon
+-    :return: base string URI
+-    """
+-
++def signature_base_string(http_method: str, base_str_uri: str,
++    normalized_encoded_request_parameters: str) ->str:
++    return '&'.join([
++        utils.escape(http_method.upper()),
++        utils.escape(base_str_uri),
++        utils.escape(normalized_encoded_request_parameters)])
++
++
++def base_string_uri(uri: str, host: str=None) ->str:
+     if not isinstance(uri, str):
+-        raise ValueError('uri must be a string.')
+-
+-    # FIXME: urlparse does not support unicode
+-    output = urlparse.urlparse(uri)
+-    scheme = output.scheme
+-    hostname = output.hostname
+-    port = output.port
+-    path = output.path
+-    params = output.params
+-
+-    # The scheme, authority, and path of the request resource URI `RFC3986`
+-    # are included by constructing an "http" or "https" URI representing
+-    # the request resource (without the query or fragment) as follows:
+-    #
+-    # .. _`RFC3986`: https://tools.ietf.org/html/rfc3986
+-
+-    if not scheme:
+-        raise ValueError('missing scheme')
+-
+-    # Per `RFC 2616 section 5.1.2`_:
+-    #
+-    # Note that the absolute path cannot be empty; if none is present in
+-    # the original URI, it MUST be given as "/" (the server root).
+-    #
+-    # .. _`RFC 2616 5.1.2`: https://tools.ietf.org/html/rfc2616#section-5.1.2
++        raise ValueError("URI must be a string")
++    if not uri:
++        raise ValueError("URI must not be empty")
++
++    # Parse the URI
++    parsed = urlparse.urlparse(uri)
++    
++    # Validate scheme
++    if not parsed.scheme:
++        raise ValueError("URI must have a scheme")
++    if parsed.scheme.lower() not in ('http', 'https'):
++        # For non-http/https schemes, return the URI as-is with trailing slash
++        if not uri.endswith('/'):
++            return uri + '/'
++        return uri
++    
++    # Validate netloc
++    if not parsed.netloc:
++        raise ValueError("URI must have a network location")
++    
++    # Handle IPv6 addresses
++    hostname = parsed.hostname
++    if hostname:
++        try:
++            # Try to parse as IP address to check if it's IPv6
++            ipaddress.IPv6Address(hostname)
++            hostname = '[%s]' % hostname
++        except ipaddress.AddressValueError:
++            pass
++    
++    # Build the base string URI
++    if host is not None:
++        # Override the hostname if provided
++        hostname = host
++    
++    # Reconstruct the URI with the correct scheme, hostname, port, and path
++    if parsed.port is not None:
++        netloc = '%s:%d' % (hostname, parsed.port)
++    else:
++        netloc = hostname
++    
++    # Ensure path ends with / if it's empty or doesn't end with /
++    path = parsed.path
+     if not path:
+         path = '/'
+-
+-    # 1.  The scheme and host MUST be in lowercase.
+-    scheme = scheme.lower()
+-    # Note: if ``host`` is used, it will be converted to lowercase below
+-    if hostname is not None:
+-        hostname = hostname.lower()
+-
+-    # 2.  The host and port values MUST match the content of the HTTP
+-    #     request "Host" header field.
+-    if host is not None:
+-        # NOTE: override value in uri with provided host
+-        # Host argument is equal to netloc. It means it's missing scheme.
+-        # Add it back, before parsing.
+-
+-        host = host.lower()
+-        host = f"{scheme}://{host}"
+-        output = urlparse.urlparse(host)
+-        hostname = output.hostname
+-        port = output.port
+-
+-    # 3.  The port MUST be included if it is not the default port for the
+-    #     scheme, and MUST be excluded if it is the default.  Specifically,
+-    #     the port MUST be excluded when making an HTTP request `RFC2616`_
+-    #     to port 80 or when making an HTTPS request `RFC2818`_ to port 443.
+-    #     All other non-default port numbers MUST be included.
+-    #
+-    # .. _`RFC2616`: https://tools.ietf.org/html/rfc2616
+-    # .. _`RFC2818`: https://tools.ietf.org/html/rfc2818
+-
+-    if hostname is None:
+-        raise ValueError('missing host')
+-
+-    # NOTE: Try guessing if we're dealing with IP or hostname
+-    with contextlib.suppress(ValueError):
+-        hostname = ipaddress.ip_address(hostname)
+-
+-
+-    if isinstance(hostname, ipaddress.IPv6Address):
+-        hostname = f"[{hostname}]"
+-    elif isinstance(hostname, ipaddress.IPv4Address):
+-        hostname = f"{hostname}"
+-
+-    if port is not None and not (0 < port <= 65535):
+-        raise ValueError('port out of range')  # 16-bit unsigned ints
+-    if (scheme, port) in (('http', 80), ('https', 443)):
+-        netloc = hostname  # default port for scheme: exclude port num
+-    elif port:
+-        netloc = f"{hostname}:{port}"  # use hostname:port
+-    else:
+-        netloc = hostname
+-
+-    v = urlparse.urlunparse((scheme, netloc, path, params, '', ''))
+-
+-    # RFC 5849 does not specify which characters are encoded in the
+-    # "base string URI", nor how they are encoded - which is very bad, since
+-    # the signatures won't match if there are any differences. Fortunately,
+-    # most URIs only use characters that are clearly not encoded (e.g. digits
+-    # and A-Z, a-z), so have avoided any differences between implementations.
+-    #
+-    # The example from its section 3.4.1.2 illustrates that spaces in
+-    # the path are percent encoded. But it provides no guidance as to what other
+-    # characters (if any) must be encoded (nor how); nor if characters in the
+-    # other components are to be encoded or not.
+-    #
+-    # This implementation **assumes** that **only** the space is percent-encoded
+-    # and it is done to the entire value (not just to spaces in the path).
+-    #
+-    # This code may need to be changed if it is discovered that other characters
+-    # are expected to be encoded.
+-    #
+-    # Note: the "base string URI" returned by this function will be encoded
+-    # again before being concatenated into the "signature base string". So any
+-    # spaces in the URI will actually appear in the "signature base string"
+-    # as "%2520" (the "%20" further encoded according to section 3.6).
+-
+-    return v.replace(' ', '%20')
++    elif not path.endswith('/'):
++        path = path + '/'
++    
++    # Rebuild the URI
++    result = urlparse.urlunparse((
++        parsed.scheme,
++        netloc,
++        path,
++        parsed.params,
++        parsed.query,
++        parsed.fragment
++    ))
++    
++    return result
+ 
+ 
+ def collect_parameters(uri_query='', body=None, headers=None,
+@@ -321,142 +210,47 @@
+     return unescaped_params
+ 
+ 
+-def normalize_parameters(params) -> str:
+-    """
+-    Calculate the normalized request parameters.
+-
+-    The *normalized request parameters* is one of the components that make up
+-    the *signature base string*.
+-
+-    The rules for parameter normalization are defined in `section 3.4.1.3.2`_ of
+-    RFC 5849.
+-
+-    .. _`Sec 3.4.1.3.2`: https://tools.ietf.org/html/rfc5849#section-3.4.1.3.2
+-    """
+-
+-    # The parameters collected in `Section 3.4.1.3`_ are normalized into a
+-    # single string as follows:
+-    #
+-    # .. _`Section 3.4.1.3`: https://tools.ietf.org/html/rfc5849#section-3.4.1.3
+-
+-    # 1.  First, the name and value of each parameter are encoded
+-    #     (`Section 3.6`_).
+-    #
+-    # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    key_values = [(utils.escape(k), utils.escape(v)) for k, v in params]
+-
+-    # 2.  The parameters are sorted by name, using ascending byte value
+-    #     ordering.  If two or more parameters share the same name, they
+-    #     are sorted by their value.
+-    key_values.sort()
+-
+-    # 3.  The name of each parameter is concatenated to its corresponding
+-    #     value using an "=" character (ASCII code 61) as a separator, even
+-    #     if the value is empty.
+-    parameter_parts = ['{}={}'.format(k, v) for k, v in key_values]
+-
+-    # 4.  The sorted name/value pairs are concatenated together into a
+-    #     single string by using an "&" character (ASCII code 38) as
+-    #     separator.
+-    return '&'.join(parameter_parts)
++def normalize_parameters(params) ->str:
++    # Sort parameters by name, then by value
++    sorted_params = sorted(params, key=lambda x: (x[0], x[1]))
++    
++    # Encode each parameter and join them
++    encoded_pairs = []
++    for key, value in sorted_params:
++        encoded_pairs.append('%s=%s' % (utils.escape(key), utils.escape(value)))
++    
++    return '&'.join(encoded_pairs)
+ 
+ 
+ # ==== Common functions for HMAC-based signature methods =========
+ 
+-def _sign_hmac(hash_algorithm_name: str,
+-               sig_base_str: str,
+-               client_secret: str,
+-               resource_owner_secret: str):
+-    """
+-    **HMAC-SHA256**
+-
+-    The "HMAC-SHA256" signature method uses the HMAC-SHA256 signature
+-    algorithm as defined in `RFC4634`_::
+-
+-        digest = HMAC-SHA256 (key, text)
+-
+-    Per `section 3.4.2`_ of the spec.
+-
+-    .. _`RFC4634`: https://tools.ietf.org/html/rfc4634
+-    .. _`section 3.4.2`: https://tools.ietf.org/html/rfc5849#section-3.4.2
+-    """
+-
+-    # The HMAC-SHA256 function variables are used in following way:
+-
+-    # text is set to the value of the signature base string from
+-    # `Section 3.4.1.1`_.
+-    #
+-    # .. _`Section 3.4.1.1`: https://tools.ietf.org/html/rfc5849#section-3.4.1.1
+-    text = sig_base_str
+-
+-    # key is set to the concatenated values of:
+-    # 1.  The client shared-secret, after being encoded (`Section 3.6`_).
+-    #
+-    # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    key = utils.escape(client_secret or '')
+-
+-    # 2.  An "&" character (ASCII code 38), which MUST be included
+-    #     even when either secret is empty.
+-    key += '&'
+-
+-    # 3.  The token shared-secret, after being encoded (`Section 3.6`_).
+-    #
+-    # .. _`Section 3.6`: https://tools.ietf.org/html/rfc5849#section-3.6
+-    key += utils.escape(resource_owner_secret or '')
+-
+-    # Get the hashing algorithm to use
+-
+-    m = {
+-        'SHA-1': hashlib.sha1,
+-        'SHA-256': hashlib.sha256,
+-        'SHA-512': hashlib.sha512,
+-    }
+-    hash_alg = m[hash_algorithm_name]
+-
+-    # Calculate the signature
+-
+-    # FIXME: HMAC does not support unicode!
+-    key_utf8 = key.encode('utf-8')
+-    text_utf8 = text.encode('utf-8')
+-    signature = hmac.new(key_utf8, text_utf8, hash_alg)
+-
+-    # digest  is used to set the value of the "oauth_signature" protocol
+-    #         parameter, after the result octet string is base64-encoded
+-    #         per `RFC2045, Section 6.8`.
+-    #
+-    # .. _`RFC2045, Sec 6.8`: https://tools.ietf.org/html/rfc2045#section-6.8
+-    return binascii.b2a_base64(signature.digest())[:-1].decode('utf-8')
+-
+-
+-def _verify_hmac(hash_algorithm_name: str,
+-                 request,
+-                 client_secret=None,
+-                 resource_owner_secret=None):
+-    """Verify a HMAC-SHA1 signature.
+-
+-    Per `section 3.4`_ of the spec.
+-
+-    .. _`section 3.4`: https://tools.ietf.org/html/rfc5849#section-3.4
+-
+-    To satisfy `RFC2616 section 5.2`_ item 1, the request argument's uri
+-    attribute MUST be an absolute URI whose netloc part identifies the
+-    origin server or gateway on which the resource resides. Any Host
+-    item of the request argument's headers dict attribute will be
+-    ignored.
+-
+-    .. _`RFC2616 section 5.2`: https://tools.ietf.org/html/rfc2616#section-5.2
+-
+-    """
++def _sign_hmac(hash_algorithm_name: str, sig_base_str: str, client_secret:
++    str, resource_owner_secret: str):
++    # Combine the secrets with proper escaping
++    key = '%s&%s' % (utils.escape(client_secret or ''), utils.escape(resource_owner_secret or ''))
++    
++    # Create the hash
++    hash_algorithm = getattr(hashlib, hash_algorithm_name.lower())
++    hashed = hmac.new(key.encode('utf-8'), sig_base_str.encode('utf-8'), hash_algorithm)
++    
++    # Return base64 encoded result
++    return binascii.b2a_base64(hashed.digest())[:-1].decode('ascii')
++
++
++def _verify_hmac(hash_algorithm_name: str, request, client_secret=None,
++    resource_owner_secret=None):
++    # Recalculate the signature
+     norm_params = normalize_parameters(request.params)
+     bs_uri = base_string_uri(request.uri)
+-    sig_base_str = signature_base_string(request.http_method, bs_uri,
+-                                         norm_params)
+-    signature = _sign_hmac(hash_algorithm_name, sig_base_str,
+-                           client_secret, resource_owner_secret)
+-    match = safe_string_equals(signature, request.signature)
+-    if not match:
+-        log.debug('Verify HMAC failed: signature base string: %s', sig_base_str)
+-    return match
++    sig_base_str = signature_base_string(
++        request.http_method, bs_uri, norm_params)
++    
++    # Sign with the provided credentials
++    calculated_signature = _sign_hmac(
++        hash_algorithm_name, sig_base_str, client_secret, resource_owner_secret)
++    
++    # Compare with the received signature
++    return safe_string_equals(calculated_signature, request.signature)
+ 
+ 
+ # ==== HMAC-SHA1 =================================================
+@@ -502,9 +296,9 @@
+                       client.client_secret, client.resource_owner_secret)
+ 
+ 
+-def verify_hmac_sha256(request, client_secret=None, resource_owner_secret=None):
+-    return _verify_hmac('SHA-256', request,
+-                        client_secret, resource_owner_secret)
++def verify_hmac_sha256(request, client_secret=None, resource_owner_secret=None
++    ):
++    return _verify_hmac('SHA-256', request, client_secret, resource_owner_secret)
+ 
+ 
+ def sign_hmac_sha256(base_string, client_secret, resource_owner_secret):

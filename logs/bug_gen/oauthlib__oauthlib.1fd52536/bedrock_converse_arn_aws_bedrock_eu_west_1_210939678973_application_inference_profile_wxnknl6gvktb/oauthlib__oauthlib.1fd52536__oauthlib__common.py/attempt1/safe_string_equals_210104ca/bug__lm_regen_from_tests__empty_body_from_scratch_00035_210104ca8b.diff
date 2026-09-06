@@ -1,0 +1,39 @@
+--- a/oauthlib/common.py
++++ b/oauthlib/common.py
+@@ -250,20 +250,26 @@
+ 
+ 
+ def safe_string_equals(a, b):
+-    """ Near-constant time string comparison.
+-
+-    Used in order to avoid timing attacks on sensitive information such
+-    as secret keys during request verification (`rootLabs`_).
+-
+-    .. _`rootLabs`: http://rdist.root.org/2010/01/07/timing-independent-array-comparison/
+-
+-    """
++    """Constant time string comparison to prevent timing attacks.
++    
++    Compares two strings in constant time by always comparing all characters,
++    regardless of whether a mismatch is found early.
++    """
++    if a is None or b is None:
++        return a == b
++    
++    if isinstance(a, str):
++        a = a.encode('utf-8')
++    if isinstance(b, str):
++        b = b.encode('utf-8')
++    
+     if len(a) != len(b):
+         return False
+-
++    
+     result = 0
+     for x, y in zip(a, b):
+-        result |= ord(x) ^ ord(y)
++        result |= x ^ y
++    
+     return result == 0
+ 
+ 

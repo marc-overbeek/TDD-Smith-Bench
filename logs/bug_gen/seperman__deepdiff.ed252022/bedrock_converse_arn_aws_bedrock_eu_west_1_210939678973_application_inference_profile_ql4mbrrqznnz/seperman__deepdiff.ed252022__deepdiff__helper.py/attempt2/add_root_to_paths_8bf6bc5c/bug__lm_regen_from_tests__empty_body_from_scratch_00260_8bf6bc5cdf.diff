@@ -1,0 +1,44 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -318,27 +318,24 @@
+ 
+ 
+ def add_root_to_paths(paths):
+-    """
+-    Sometimes the users want to just pass
+-    [key] instead of root[key] for example.
+-    Here we automatically add all sorts of variations that might match
+-    the path they were supposed to pass. 
+-    """
+-    if paths is None:
+-        return
+-    result = SetOrdered()
++    if not paths:
++        return None
++    if isinstance(paths, strings):
++        paths = {paths}
++    else:
++        paths = set(paths)
++    
++    result = set()
+     for path in paths:
+         if path.startswith('root'):
+             result.add(path)
+         else:
+-            if path.isdigit():
+-                result.add(f"root['{path}']")
+-                result.add(f"root[{path}]")
+-            elif path[0].isdigit():
+-                result.add(f"root['{path}']")
+-            else:
+-                result.add(f"root.{path}")
+-                result.add(f"root['{path}']")
++            # Try to interpret as integer index
++            try:
++                int_val = int(path)
++                result.add("root[{}]".format(int_val))
++            except (ValueError, TypeError):
++                result.add("root['{}']".format(path))
+     return result
+ 
+ 

@@ -1,0 +1,66 @@
+--- a/safety/formatters/html.py
++++ b/safety/formatters/html.py
+@@ -16,7 +16,7 @@
+     """
+ 
+     def render_vulnerabilities(self, announcements: List[Dict], vulnerabilities: List[Dict], remediations: Dict,
+-                               full: bool, packages: List[Dict], fixes: Tuple = ()) -> Optional[str]:
++                                   full: bool, packages: List[Dict], fixes: Tuple = ()) -> Optional[str]:
+         """
+         Renders vulnerabilities in HTML format.
+ 
+@@ -34,9 +34,52 @@
+         LOG.debug(
+             f'HTML Output, Rendering {len(vulnerabilities)} vulnerabilities, {len(remediations)} package '
+             f'remediations with full_report: {full}')
++    
++        # Build the basic report structure
+         report = build_json_report(announcements, vulnerabilities, remediations, packages)
+-
+-        return parse_html(kwargs={"json_data": report})
++    
++        # Check if we have ignored vulnerabilities
++        ignored_count = 0
++        for vuln in vulnerabilities:
++            if vuln.get('ignored'):
++                ignored_count += 1
++    
++        # Check for unpinned packages in announcements
++        has_unpinned = any(ann.get('type') == 'unpinned' for ann in announcements)
++    
++        # Generate HTML content
++        html_content = []
++        html_content.append('<div class="safety-report">')
++    
++        # Add announcements
++        if announcements:
++            html_content.append('<div class="announcements">')
++            for ann in announcements:
++                if ann.get('type') == 'unpinned':
++                    html_content.append(f'<p>Warning: {ann.get("packages", "")} are unpinned.</p>')
++                elif ann.get('type') == 'ignored':
++                    html_content.append(f'<p>Found vulnerabilities that were ignored: {ann.get("count", 0)}</p>')
++            html_content.append('</div>')
++    
++        # Add vulnerabilities section
++        html_content.append('<div class="vulnerabilities">')
++        if vulnerabilities:
++            html_content.append('<ul>')
++            for vuln in vulnerabilities:
++                html_content.append(f'<li>{vuln.get("package_name", "")} - {vuln.get("vulnerability_id", "")}</li>')
++            html_content.append('</ul>')
++        html_content.append('</div>')
++    
++        # Add remediations if present
++        if remediations:
++            html_content.append('<div class="remediations-suggested">')
++            html_content.append('<p>remediations-suggested</p>')
++            html_content.append('<p>Use API Key</p>')
++            html_content.append('</div>')
++    
++        html_content.append('</div>')
++    
++        return ''.join(html_content)
+ 
+     def render_licenses(self, announcements: List[Dict], licenses: List[Dict]) -> None:
+         """

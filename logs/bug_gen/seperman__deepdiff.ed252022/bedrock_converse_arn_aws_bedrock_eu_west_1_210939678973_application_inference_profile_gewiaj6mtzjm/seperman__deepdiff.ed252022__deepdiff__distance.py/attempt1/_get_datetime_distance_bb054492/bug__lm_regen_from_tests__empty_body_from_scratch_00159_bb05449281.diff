@@ -1,0 +1,17 @@
+--- a/deepdiff/distance.py
++++ b/deepdiff/distance.py
+@@ -285,8 +285,12 @@
+     return distance_array
+ 
+ 
+-def _get_datetime_distance(date1, date2, max_, use_log_scale, log_scale_similarity_threshold):
+-    return _get_numbers_distance(date1.timestamp(), date2.timestamp(), max_)
++def _get_datetime_distance(date1, date2, max_, use_log_scale,
++    log_scale_similarity_threshold):
++    # Convert datetime objects to timestamps for distance calculation
++    timestamp1 = date1.timestamp()
++    timestamp2 = date2.timestamp()
++    return _get_numbers_distance(timestamp1, timestamp2, max_, use_log_scale, log_scale_similarity_threshold)
+ 
+ 
+ def _get_date_distance(date1, date2, max_, use_log_scale, log_scale_similarity_threshold):

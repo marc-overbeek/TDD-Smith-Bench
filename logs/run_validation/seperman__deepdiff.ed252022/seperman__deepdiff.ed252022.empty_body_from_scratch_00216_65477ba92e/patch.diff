@@ -1,0 +1,38 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -682,34 +682,7 @@
+             self._diff(next_level, parents_ids_added, local_tree=local_tree)
+ 
+     def _diff_set(self, level, local_tree=None):
+-        """Difference of sets"""
+-        t1_hashtable = self._create_hashtable(level, 't1')
+-        t2_hashtable = self._create_hashtable(level, 't2')
+-
+-        t1_hashes = set(t1_hashtable.keys())
+-        t2_hashes = set(t2_hashtable.keys())
+-
+-        hashes_added = t2_hashes - t1_hashes
+-        hashes_removed = t1_hashes - t2_hashes
+-
+-        items_added = [t2_hashtable[i].item for i in hashes_added]
+-        items_removed = [t1_hashtable[i].item for i in hashes_removed]
+-
+-        for item in items_added:
+-            if self._count_diff() is StopIteration:
+-                return  # pragma: no cover. This is already covered for addition.
+-
+-            change_level = level.branch_deeper(
+-                notpresent, item, child_relationship_class=SetRelationship)
+-            self._report_result('set_item_added', change_level, local_tree=local_tree)
+-
+-        for item in items_removed:
+-            if self._count_diff() is StopIteration:
+-                return  # pragma: no cover. This is already covered for addition.
+-
+-            change_level = level.branch_deeper(
+-                item, notpresent, child_relationship_class=SetRelationship)
+-            self._report_result('set_item_removed', change_level, local_tree=local_tree)
++        pass
+ 
+     @staticmethod
+     def _iterables_subscriptable(t1, t2):

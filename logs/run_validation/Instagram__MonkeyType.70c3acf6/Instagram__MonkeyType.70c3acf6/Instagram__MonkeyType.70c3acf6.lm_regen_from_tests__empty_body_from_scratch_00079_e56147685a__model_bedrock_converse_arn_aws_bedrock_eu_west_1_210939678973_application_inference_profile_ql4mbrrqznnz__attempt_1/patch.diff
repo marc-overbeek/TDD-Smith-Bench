@@ -1,0 +1,100 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -146,20 +146,84 @@
+     pass
+ 
+ 
+-def get_newly_imported_items(
+-    stub_module: Module, source_module: Module
+-) -> List[ImportItem]:
++def get_newly_imported_items(stub_module: Module, source_module: Module
++    ) ->List[ImportItem]:
+     context = CodemodContext()
+-    gatherer = GatherImportsVisitor(context)
+-    stub_module.visit(gatherer)
+-    stub_imports = list(gatherer.symbol_mapping.values())
+-
+-    context = CodemodContext()
+-    gatherer = GatherImportsVisitor(context)
+-    source_module.visit(gatherer)
+-    source_imports = list(gatherer.symbol_mapping.values())
+-
+-    return list(set(stub_imports).difference(set(source_imports)))
++    stub_visitor = GatherImportsVisitor(context)
++    stub_visitor.transform_module(stub_module)
++    
++    context2 = CodemodContext()
++    source_visitor = GatherImportsVisitor(context2)
++    source_visitor.transform_module(source_module)
++    
++    # Get all import items from stub
++    stub_items = set()
++    # raw_imports contains (module_name, obj_name, alias) tuples
++    for import_item in stub_visitor.symbol_mapping.values():
++        pass
++    
++    # Use a different approach - parse imports manually
++    stub_imports = set()
++    source_imports = set()
++    
++    def collect_imports(module):
++        items = set()
++        for stmt in module.body:
++            import libcst as cst
++            if isinstance(stmt, cst.SimpleStatementLine):
++                for s in stmt.body:
++                    if isinstance(s, cst.Import):
++                        if isinstance(s.names, cst.ImportStar):
++                            continue
++                        for alias in s.names:
++                            mod_name = alias.name.value if hasattr(alias.name, 'value') else str(alias.name)
++                            asname = alias.asname.name.value if alias.asname and hasattr(alias.asname, 'name') else None
++                            items.add(ImportItem(mod_name, None, asname))
++                    elif isinstance(s, cst.ImportFrom):
++                        if isinstance(s.names, cst.ImportStar):
++                            continue
++                        mod = s.module
++                        mod_name = mod.value if hasattr(mod, 'value') else str(mod)
++                        for alias in s.names:
++                            obj_name = alias.name.value if hasattr(alias.name, 'value') else str(alias.name)
++                            asname = alias.asname.name.value if alias.asname and hasattr(alias.asname, 'name') else None
++                            items.add(ImportItem(mod_name, obj_name, asname))
++        return items
++    
++    stub_imports = collect_imports(stub_module)
++    source_imports = collect_imports(source_module)
++    
++    return list(stub_imports - source_imports)
++
++def get_newly_imported_items(stub_module: Module, source_module: Module
++    ) ->List[ImportItem]:
++    import libcst as cst
++
++    def collect_imports(module):
++        items = set()
++        for stmt in module.body:
++            if isinstance(stmt, cst.SimpleStatementLine):
++                for s in stmt.body:
++                    if isinstance(s, cst.Import):
++                        if isinstance(s.names, cst.ImportStar):
++                            continue
++                        for alias in s.names:
++                            mod_name = cst.parse_module("").code_for_node(alias.name)
++                            asname = cst.parse_module("").code_for_node(alias.asname.name) if alias.asname else None
++                            items.add(ImportItem(mod_name, None, asname))
++                    elif isinstance(s, cst.ImportFrom):
++                        if isinstance(s.names, cst.ImportStar):
++                            continue
++                        mod_name = module.code_for_node(s.module) if s.module else ""
++                        for alias in s.names:
++                            obj_name = module.code_for_node(alias.name)
++                            asname = module.code_for_node(alias.asname.name) if alias.asname else None
++                            items.add(ImportItem(mod_name, obj_name, asname))
++        return items
++
++    stub_imports = collect_imports(stub_module)
++    source_imports = collect_imports(source_module)
++    return list(stub_imports - source_imports)
+ 
+ 
+ def apply_stub_using_libcst(

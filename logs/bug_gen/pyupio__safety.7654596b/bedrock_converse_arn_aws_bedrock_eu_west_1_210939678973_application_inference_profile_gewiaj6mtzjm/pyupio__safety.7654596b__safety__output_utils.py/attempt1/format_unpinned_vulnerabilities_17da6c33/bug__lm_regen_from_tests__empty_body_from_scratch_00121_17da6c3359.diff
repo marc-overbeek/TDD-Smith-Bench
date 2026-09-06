@@ -1,0 +1,68 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -1248,45 +1248,24 @@
+     return template.render(**kwargs)
+ 
+ 
+-def format_unpinned_vulnerabilities(unpinned_packages: Dict[str, List[Any]], columns: Optional[int] = None) -> List[str]:
+-    """
+-    Format unpinned vulnerabilities.
+-
+-    Args:
+-        unpinned_packages (Dict[str, List[Any]]): Unpinned packages and their vulnerabilities.
+-        columns (Optional[int], optional): Number of columns for formatting. Defaults to None.
+-
+-    Returns:
+-        List[str]: Formatted unpinned vulnerabilities.
+-    """
+-    lines = []
+-
++def format_unpinned_vulnerabilities(unpinned_packages: Dict[str, List[Any]],
++    columns: Optional[int]=None) ->List[str]:
+     if not unpinned_packages:
+-        return lines
+-
+-    for pkg_name, vulns in unpinned_packages.items():
+-        total = {vuln.vulnerability_id for vuln in vulns}
+-        pkg = vulns[0].pkg
+-        doc_msg: str = get_specifier_range_info(style=False, pin_hint=True)
+-
+-        match_text = 'vulnerabilities match' if len(total) > 1 else 'vulnerability matches'
+-        reqs = ', '.join([str(r) for r in pkg.get_unpinned_req()])
+-
+-        msg = f"-> Warning: {len(total)} known {match_text} the {pkg.name} versions that could be " \
+-              f"installed from your specifier{'s' if len(pkg.requirements) > 1 else ''}: {reqs} (unpinned). These vulnerabilities are not " \
+-              f"reported by default. To report these vulnerabilities set 'ignore-unpinned-requirements' to False " \
+-              f"under 'security' in your policy file. " \
+-              f"See https://docs.pyup.io/docs/safety-20-policy-file for more information."
+-
+-        kwargs = {'color': 'yellow', 'indent': '', 'sub_indent': ' ' * 3, 'start_line_decorator': '',
+-                  'end_line_decorator': ' '}
+-
+-        if columns:
+-            kwargs.update({'columns': columns})
+-
+-        msg = format_long_text(text=msg, **kwargs)
+-        doc_msg = format_long_text(text=doc_msg, **{**kwargs, **{'indent': ' ' * 3}})
+-
+-        lines.append(f'{msg}\n{doc_msg}')
+-
+-    return lines
++        return []
++    
++    if columns is None:
++        columns = get_terminal_size().columns
++    
++    result = []
++    result.append(format_long_text('Warning: the following packages are unpinned. Safety by default does not report', 
++                                   columns=columns, indent=' ' * 2, sub_indent=' ' * 4))
++    
++    packages_list = []
++    for pkg_name, vulnerabilities in unpinned_packages.items():
++        packages_list.append(pkg_name)
++    
++    packages_str = ', '.join(packages_list)
++    result.append(format_long_text(f'Warning: {packages_str} are unpinned. Safety by default does not report', 
++                                   columns=columns, indent=' ' * 2, sub_indent=' ' * 4))
++    
++    return result

@@ -1,0 +1,29 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -660,13 +660,11 @@
+ 
+     _state: dict[str, typing.Any]
+ 
+-    def __init__(self, state: dict[str, typing.Any] | None = None):
+-        if state is None:
+-            state = {}
+-        super().__setattr__("_state", state)
+-
+-    def __setattr__(self, key: typing.Any, value: typing.Any) -> None:
+-        self._state[key] = value
++    def __init__(self, state: (dict[str, typing.Any] | None)=None):
++        pass
++
++    def __setattr__(self, key: typing.Any, value: typing.Any) ->None:
++        pass
+ 
+     def __getattr__(self, key: typing.Any) -> typing.Any:
+         try:
+@@ -675,5 +673,5 @@
+             message = "'{}' object has no attribute '{}'"
+             raise AttributeError(message.format(self.__class__.__name__, key))
+ 
+-    def __delattr__(self, key: typing.Any) -> None:
+-        del self._state[key]
++    def __delattr__(self, key: typing.Any) ->None:
++        pass

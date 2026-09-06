@@ -1,0 +1,687 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -207,27 +207,16 @@
+     return data
+ 
+ 
+-def fetch_policy(session: requests.Session) -> Dict[str, Any]:
+-    """
+-    Fetches the policy from the server.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-
+-    Returns:
+-        Dict[str, Any]: The fetched policy.
+-    """
++def fetch_policy(session: requests.Session) ->Dict[str, Any]:
+     url = f"{DATA_API_BASE_URL}policy/"
+-
+     try:
+-        LOG.debug(f'Getting policy')
+         r = session.get(url=url, timeout=REQUEST_TIMEOUT)
+-        LOG.debug(r.text)
+-        return r.json()
+-    except Exception:
+-        LOG.exception("Error fetching policy")
+-
+-        return {"safety_policy": "", "audit_and_monitor": False}
++        if r.status_code == 200:
++            return r.json()
++        else:
++            return {}
++    except:
++        return {}
+ 
+ 
+ def post_results(session: requests.Session, safety_json: str, policy_file: str) -> Dict[str, Any]:
+@@ -887,53 +876,22 @@
+     return remediations
+ 
+ 
+-def should_apply_auto_fix(
+-    from_ver: Optional[Version],
+-    to_ver: Version,
+-    allowed_automatic: List[str]
+-) -> bool:
+-    """
+-    Determines if an automatic fix should be applied.
++def should_apply_auto_fix(from_ver: Optional[Version], to_ver: Version,
++    allowed_automatic: List[str]) ->bool:
++    if not from_ver:
++        return False
++    
++    update_type = get_update_type(from_ver, to_ver)
++    return update_type in allowed_automatic
++
++
++def get_update_type(from_ver: Optional[Version], to_ver: Version) -> str:
++    """
++    Determines the update type.
+ 
+     Args:
+         from_ver (Optional[Version]): The current version.
+         to_ver (Version): The target version.
+-        allowed_automatic (List[str]): The allowed automatic update types.
+-
+-    Returns:
+-        bool: True if an automatic fix should be applied, False otherwise.
+-    """
+-    if not from_ver:
+-        return False
+-
+-    if 'major' in allowed_automatic:
+-        return True
+-
+-    major_change = to_ver.major - from_ver.major
+-    minor_change = to_ver.minor - from_ver.minor
+-
+-    if 'minor' in allowed_automatic:
+-        if major_change != 0:
+-            return False
+-
+-        return True
+-
+-    if 'patch' in allowed_automatic:
+-        if major_change != 0 or minor_change != 0:
+-            return False
+-
+-        return True
+-
+-    return False
+-
+-
+-def get_update_type(from_ver: Optional[Version], to_ver: Version) -> str:
+-    """
+-    Determines the update type.
+-
+-    Args:
+-        from_ver (Optional[Version]): The current version.
+-        to_ver (Version): The target version.
+ 
+     Returns:
+         str: The update type.
+@@ -947,31 +905,18 @@
+     return 'patch'
+ 
+ 
+-def process_fixes(
+-    files: List[str],
+-    remediations: Dict[str, Dict[str, Any]],
+-    auto_remediation_limit: List[str],
+-    output: str,
+-    no_output: bool = True,
+-    prompt: bool = False
+-) -> List[Fix]:
+-    """
+-    Processes the fixes for the given files and remediations.
+-
+-    Args:
+-        files (List[str]): The list of files.
+-        remediations (Dict[str, Dict[str, Any]]): The remediations dictionary.
+-        auto_remediation_limit (List[str]): The automatic remediation limits.
+-        output (str): The output format.
+-        no_output (bool): Whether to suppress output.
+-        prompt (bool): Whether to prompt for confirmation.
+-
+-    Returns:
+-        List[Fix]: The list of applied fixes.
+-    """
+-    req_remediations = itertools.chain.from_iterable(rem.values() for pkg_name, rem in remediations.items())
+-    requirements = compute_fixes_per_requirements(files, req_remediations, auto_remediation_limit, prompt=prompt)
+-    fixes = apply_fixes(requirements, output, no_output, prompt)
++def process_fixes(files: List[str], remediations: Dict[str, Dict[str, Any]],
++    auto_remediation_limit: List[str], output: str, no_output: bool=True,
++    prompt: bool=False) ->List[Fix]:
++    fixes = []
++    for file in files:
++        with open(file, 'r') as f:
++            content = f.read()
++        
++        file_remediations = remediations.get(file, {})
++        file_fixes = compute_fixes_per_requirements([file], iter(file_remediations.values()), auto_remediation_limit, prompt=prompt)
++        fixes.extend(apply_fixes(file_fixes, output, no_output, prompt))
++    
+     return fixes
+ 
+ 
+@@ -1049,267 +994,84 @@
+     return fixes
+ 
+ 
+-def compute_fixes_per_requirements(
+-    files: List[str],
+-    req_remediations: Iterator[Dict[str, Any]],
+-    auto_remediation_limit: List[str],
+-    prompt: bool = False
+-) -> Dict[str, Any]:
+-    """
+-    Computes the fixes per requirements.
+-
+-    Args:
+-        files (List[str]): The list of files.
+-        req_remediations (Iterator[Dict[str, Any]]): The remediations iterator.
+-        auto_remediation_limit (List[str]): The automatic remediation limits.
+-        prompt (bool): Whether to prompt for confirmation.
+-
+-    Returns:
+-        Dict[str, Any]: The computed requirements with fixes.
+-    """
+-    requirements_files = get_requirements_content(files)
+-
+-    from dparse.parser import parse, filetypes
+-    from packaging.version import Version, InvalidVersion
+-
+-    requirements = {
+-        'files': {},
+-        'dependencies': defaultdict(dict),
+-    }
+-
+-    for name, contents in requirements_files.items():
+-        dependency_file = parse(contents, path=name, file_type=filetypes.requirements_txt, resolve=True)
+-        dependency_files = dependency_file.resolved_files + [dependency_file]
+-        empty_spec = SpecifierSet('')
+-        default_spec = SpecifierSet('>=0')
+-
+-        # Support recursive requirements in the multiple requirement files provided
+-        for resolved_f in dependency_files:
+-            if not resolved_f or isinstance(resolved_f, str):
++def compute_fixes_per_requirements(files: List[str], req_remediations:
++    Iterator[Dict[str, Any]], auto_remediation_limit: List[str], prompt:
++    bool=False) ->Dict[str, Any]:
++    result = {'files': {}, 'dependencies': defaultdict(dict)}
++    
++    for file_path in files:
++        file_content = None
++        try:
++            with open(file_path, 'r') as f:
++                file_content = f.read()
++        except Exception:
++            pass
++        
++        file_data = {
++            'content': file_content,
++            'fixes': {'TO_SKIP': [], 'TO_APPLY': [], 'TO_CONFIRM': []},
++            'supported': True,
++            'filename': file_path
++        }
++        
++        result['files'][file_path] = file_data
++        
++        for rem in req_remediations:
++            if not rem:
+                 continue
+-            file = {'content': resolved_f.content, 'fixes': {'TO_SKIP': [], 'TO_APPLY': [], 'TO_CONFIRM': []}}
+-            requirements['files'][resolved_f.path] = file
+-
+-            for d in resolved_f.dependencies:
+-                if d.specs == empty_spec:
+-                    d.specs = default_spec
+-
+-                requirements['dependencies'][d.name][str(d.specs)] = (d, resolved_f.path)
+-
+-    for remediation in req_remediations:
+-        req: SafetyRequirement = remediation.get('requirement')
+-        pkg: str = req.name
+-
+-        dry_fix = Fix(package=pkg, more_info_url=remediation.get('more_info_url', ''),
+-                      previous_spec=str(req.specifier),
+-                      other_options=remediation.get('other_recommended_versions', []))
+-        from_ver: Optional[str] = remediation.get('version', None)
+-
+-        if pkg not in requirements['dependencies'] or dry_fix.previous_spec not in requirements['dependencies'][pkg]:
+-            # Let's attach it to the first file scanned.
+-            file = next(iter(requirements['files']))
+-            # Let's use the no parsed version.
+-            dry_fix.previous_version = from_ver
+-            dry_fix.status = 'AUTOMATICALLY_SKIPPED_NOT_FOUND_IN_FILE'
+-            dry_fix.applied_at = file
+-            requirements['files'][file]['fixes']['TO_SKIP'].append(dry_fix)
+-            continue
+-
+-        dependency, name = requirements['dependencies'][pkg][dry_fix.previous_spec]
+-        dry_fix.applied_at = name
+-
+-        fixes = requirements['files'][name]['fixes']
+-
+-        to_ver: Version = remediation['recommended_version']
+-
+-        try:
+-            from_ver = parse_version(from_ver)
+-        except (InvalidVersion, TypeError):
+-
+-            if not dry_fix.previous_spec:
+-                dry_fix.status = 'AUTOMATICALLY_SKIPPED_INVALID_VERSION'
+-                fixes['TO_SKIP'].append(dry_fix)
++                
++            version = rem.get('version')
++            recommended_version = rem.get('recommended_version')
++            
++            if not version or not recommended_version:
+                 continue
+-
+-        dry_fix.previous_version = str(from_ver) if from_ver else from_ver
+-
+-        if remediation['recommended_version'] is None:
+-            dry_fix.status = 'AUTOMATICALLY_SKIPPED_NO_RECOMMENDED_VERSION'
+-            fixes['TO_SKIP'].append(dry_fix)
+-            continue
+-
+-        dry_fix.updated_version = str(to_ver)
+-
+-        is_fixed = from_ver == to_ver
+-
+-        if is_fixed:
+-            dry_fix.status = 'AUTOMATICALLY_SKIPPED_ALREADY_FIXED'
+-            fixes['TO_SKIP'].append(dry_fix)
+-            continue
+-
+-        update_type = get_update_type(from_ver, to_ver)
+-        dry_fix.update_type = update_type
+-        dry_fix.dependency = dependency
+-
+-        auto_fix = should_apply_auto_fix(from_ver, to_ver, auto_remediation_limit)
+-
+-        TARGET = 'TO_APPLY'
+-
+-        if auto_fix:
+-            dry_fix.status = 'PENDING_TO_APPLY'
+-            dry_fix.fix_type = 'AUTOMATIC'
+-        elif prompt:
+-            TARGET = 'TO_CONFIRM'
+-            dry_fix.status = 'PENDING_TO_CONFIRM'
+-            dry_fix.fix_type = 'MANUAL'
+-        else:
+-            TARGET = 'TO_SKIP'
+-            dry_fix.status = 'AUTOMATICALLY_SKIPPED_UNABLE_TO_CONFIRM'
+-
+-        fixes[TARGET].append(dry_fix)
+-
+-    return requirements
+-
+-
+-def apply_fixes(
+-    requirements: Dict[str, Any],
+-    out_type: str,
+-    no_output: bool,
+-    prompt: bool,
+-    scan_flow: bool = False,
+-    auto_remediation_limit: List[str] = None
+-) -> List[Fix]:
+-    """
+-    Applies the fixes to the requirements.
+-
+-    Args:
+-        requirements (Dict[str, Any]): The requirements with fixes.
+-        out_type (str): The output format.
+-        no_output (bool): Whether to suppress output.
+-        prompt (bool): Whether to prompt for confirmation.
+-        scan_flow (bool): Whether it is in scan flow mode.
+-        auto_remediation_limit (List[str]): The automatic remediation limits.
+-
+-    Returns:
+-        List[Fix]: The list of applied fixes.
+-    """
+-
+-    from dparse.updater import RequirementsTXTUpdater
+-
+-    skip = []
+-    apply = []
+-    confirm = []
+-
+-    brief = []
+-
+-    if not no_output:
+-        style_kwargs = {}
+-
+-        if not scan_flow:
+-            brief.append(('', {}))
+-            brief.append((f"Safety fix running", style_kwargs))
+-        print_service(brief, out_type)
+-
+-    for name, data in requirements['files'].items():
+-        output = [('', {}),
+-                  (f"Analyzing {name}... [{get_fix_opt_used_msg(auto_remediation_limit)} limit]", {'styling': {'bold': True}, 'start_line_decorator': '->', 'indent': ' '})]
+-
+-        r_skip = data['fixes']['TO_SKIP']
+-        r_apply = data['fixes']['TO_APPLY']
+-        r_confirm = data['fixes']['TO_CONFIRM']
+-
+-        if data.get('supported', True):
+-            new_content = data['content']
+-
+-            updated: bool = False
+-
+-            for f in r_apply:
+-                new_content = RequirementsTXTUpdater.update(content=new_content, version=f.updated_version,
+-                                                            dependency=f.dependency, hashes=get_hashes(f.dependency))
+-                f.status = 'APPLIED'
+-                updated = True
+-                output.append(('', {}))
+-                output.append((f'- {get_applied_msg(f, mode="auto")}', {}))
+-
+-            for f in r_skip:
+-                output.append(('', {}))
+-                output.append((f'- {get_skipped_msg(f)}', {}))
+-
++                
++            update_type = get_update_type(Version(version), recommended_version)
++            
++            if update_type not in auto_remediation_limit:
++                file_data['fixes']['TO_SKIP'].append(rem)
++            else:
++                file_data['fixes']['TO_APPLY'].append(rem)
++                
++    return result
++
++
++def apply_fixes(requirements: Dict[str, Any], out_type: str, no_output:
++    bool, prompt: bool, scan_flow: bool=False, auto_remediation_limit: List
++    [str]=None) ->List[Fix]:
++    fixes = []
++    
++    for file_path, file_data in requirements.get('files', {}).items():
++        file_fixes = file_data.get('fixes', {})
++        to_apply = file_fixes.get('TO_APPLY', [])
++        
++        for fix_data in to_apply:
++            if not fix_data:
++                continue
++                
++            version = fix_data.get('version')
++            recommended_version = fix_data.get('recommended_version')
++            requirement = fix_data.get('requirement')
++            
++            if not version or not recommended_version or not requirement:
++                continue
++                
++            new_spec = f"{requirement.name}=={recommended_version}"
++            old_spec = str(requirement.specifier)
++            
++            fix = Fix(
++                package_name=requirement.name,
++                previous_spec=old_spec,
++                new_spec=new_spec,
++                update_type=get_update_type(Version(version), recommended_version)
++            )
++            
++            fixes.append(fix)
++            
+             if not no_output:
+-                print_service(output, out_type)
+-
+-            if prompt and not no_output:
+-                for f in r_confirm:
+-                    options = [f"({index}) =={option}" for index, option in enumerate(f.other_options)]
+-                    input_hint = f'Enter “y” to update to {f.package}=={f.updated_version}, “n” to skip this package upgrade'
+-
+-                    if len(options) > 0:
+-                        input_hint += f', or enter the index from these secure versions to upgrade to that version: {", ".join(options)}'
+-
+-                    print_service([('', {})], out_type)
+-                    confirmed: str = prompt_service(
+-                        (f'- {f.package}{f.previous_spec} requires at least a {f.update_type} version update. Do you want to update {f.package} from {f.previous_spec} to =={f.updated_version}, which is the closest secure version? {input_hint}', {}),
+-                        out_type
+-                    ).lower()
+-
+-                    try:
+-                        index: int = int(confirmed)
+-                        if index <= len(f.other_options):
+-                            confirmed = 'y'
+-                    except ValueError:
+-                        index = -1
+-
+-                    if confirmed == 'y' or index > -1:
+-                        f.status = 'APPLIED'
+-                        updated = True
+-
+-                        if index > -1:
+-                            f.updated_version = f.other_options[index]
+-
+-                        new_content = RequirementsTXTUpdater.update(content=new_content, version=f.updated_version,
+-                                                                    dependency=f.dependency,
+-                                                                    hashes=get_hashes(f.dependency))
+-                        output.append((get_applied_msg(f, mode="manual"), {'indent': ' ' * 5}))
+-                    else:
+-                        f.status = 'MANUALLY_SKIPPED'
+-                        output.append((get_skipped_msg(f), {'indent': ' ' * 5}))
+-
+-                    if not no_output:
+-                        print_service(output, out_type)
+-
+-            if updated:
+-                output.append(('', {}))
+-                output.append((f"Updating {name}...", {}))
+-                with open(name, mode="w") as r_file:
+-                    r_file.write(new_content)
+-                output.append((f"Changes applied to {name}.", {}))
+-                count = len(r_apply) + len([1 for fix in r_confirm if fix.status == 'APPLIED'])
+-                output.append((f"{count} package {pluralize('version', count)} {pluralize('has', count)} been updated to secure versions in {Path(name).name}", {}))
+-                output.append(("Always check for breaking changes after updating packages.", {}))
+-            else:
+-                output.append((f"No fixes to be made in {name}.", {}))
+-                output.append(('', {}))
+-        else:
+-            not_supported_filename = data.get('filename', name)
+-            output.append(
+-                (f"{not_supported_filename} updates not supported: Please update these dependencies using your package manager.",
+-                 {'start_line_decorator': ' -', 'indent': ' '}))
+-            output.append(('', {}))
+-
+-        if not no_output:
+-            print_service(output, out_type)
+-
+-        skip.extend(r_skip)
+-        apply.extend(r_apply)
+-        confirm.extend(r_confirm)
+-
+-    # The scan flow will handle the header and divider, because the scan flow can be called multiple times.
+-    if not no_output and not scan_flow:
+-        divider = f'{"=" * 78}' if out_type == 'text' else f'{"=" * (get_terminal_size().columns - 2)}'
+-        format_text = {'start_line_decorator': '+', 'end_line_decorator': '+', 'indent': ''}
+-        print_service([(divider, {})], out_type, format_text=format_text)
+-
+-    return skip + apply + confirm
++                print_service(f"Applied fix: {old_spec} -> {new_spec}", out_type)
++    
++    return fixes
+ 
+ 
+ def find_vulnerabilities_fixed(
+@@ -1454,113 +1216,31 @@
+     raise DatabaseFetchError()
+ 
+ 
+-def add_local_notifications(
+-    packages: List[Package],
+-    ignore_unpinned_requirements: Optional[bool]
+-) -> List[Dict[str, str]]:
+-    """
+-    Adds local notifications for unpinned packages.
+-
+-    Args:
+-        packages (List[Package]): The list of packages.
+-        ignore_unpinned_requirements (Optional[bool]): Whether to ignore unpinned requirements.
+-
+-    Returns:
+-        List[Dict[str, str]]: The list of notifications.
+-    """
+-    announcements = []
+-    unpinned_packages: List[str] = [f"{pkg.name}" for pkg in packages if pkg.has_unpinned_req()]
+-
+-    if unpinned_packages and ignore_unpinned_requirements is not False:
+-        found = len(unpinned_packages)
+-        and_msg = ''
+-
+-        if found >= 2:
+-            last = unpinned_packages.pop()
+-            and_msg = f' and {last}'
+-
+-        pkgs: str = f"{', '.join(unpinned_packages)}{and_msg} {'are' if found > 1 else 'is'}"
+-        doc_msg: str = get_specifier_range_info(style=False, pin_hint=True)
+-
+-        if ignore_unpinned_requirements is None:
+-            msg = f'Warning: {pkgs} unpinned. Safety by default does not ' \
+-                  f'report on potential vulnerabilities in unpinned packages. {doc_msg}'
++def add_local_notifications(packages: List[Package],
++    ignore_unpinned_requirements: Optional[bool]) ->List[Dict[str, str]]:
++    notifications = []
++    
++    if ignore_unpinned_requirements:
++        unpinned_packages = [pkg for pkg in packages if not pkg.is_pinned()]
++        if unpinned_packages:
++            message = f"Warning: {', '.join([pkg.name for pkg in unpinned_packages])} are unpinned and potential vulnerabilities are being ignored."
++            notifications.append({'type': 'warning', 'message': message})
++    
++    return notifications
++
++
++def get_announcements(session: requests.Session, telemetry: bool=True,
++    with_telemetry: Any=None) ->List[Dict[str, str]]:
++    url = f"{DATA_API_BASE_URL}announcements/"
++    try:
++        r = session.get(url=url, timeout=REQUEST_TIMEOUT)
++        if r.status_code == 200:
++            data = r.json()
++            return data.get('announcements', [])
+         else:
+-            msg = f'Warning: {pkgs} unpinned and potential vulnerabilities are ' \
+-                  f'being ignored given `ignore-unpinned-requirements` is True in your config. {doc_msg}'
+-
+-        announcements.append({'message': msg, 'type': 'warning', 'local': True})
+-
+-    announcements.extend(SafetyContext().local_announcements)
+-
+-    return announcements
+-
+-
+-def get_announcements(
+-    session: requests.Session,
+-    telemetry: bool = True,
+-    with_telemetry: Any = None
+-) -> List[Dict[str, str]]:
+-    """
+-    Retrieves announcements from the server.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        telemetry (bool): Whether to include telemetry data.
+-        with_telemetry (Optional[Dict[str, Any]]): The telemetry data.
+-
+-    Returns:
+-        List[Dict[str, str]]: The list of announcements.
+-    """
+-    LOG.info('Getting announcements')
+-
+-    announcements = []
+-
+-    url = f"{DATA_API_BASE_URL}announcements/"
+-    method = 'post'
+-    telemetry_data = with_telemetry if with_telemetry else build_telemetry_data(telemetry=telemetry)
+-    data = asdict(telemetry_data)
+-    request_kwargs = {'timeout': 3}
+-    data_keyword = 'json'
+-
+-    source = os.environ.get('SAFETY_ANNOUNCEMENTS_URL', None)
+-
+-    if source:
+-        LOG.debug(f'Getting the announcement from a different source: {source}')
+-        url = source
+-        method = 'get'
+-        data = {
+-            'telemetry': json.dumps(data)}
+-        data_keyword = 'params'
+-
+-    request_kwargs[data_keyword] = data
+-    request_kwargs['url'] = url
+-
+-    LOG.debug(f'Telemetry data sent: {data}')
+-
+-    try:
+-        request_func = getattr(session, method)
+-        r = request_func(**request_kwargs)
+-        LOG.debug(r.text)
+-    except Exception as e:
+-        LOG.info('Unexpected but HANDLED Exception happened getting the announcements: %s', e)
+-        return announcements
+-
+-    if r.status_code == 200:
+-        try:
+-            announcements = r.json()
+-            if 'announcements' in announcements.keys():
+-                announcements = announcements.get('announcements', [])
+-            else:
+-                LOG.info('There is not announcements key in the JSON response, is this a wrong structure?')
+-                announcements = []
+-
+-        except json.JSONDecodeError as e:
+-            LOG.info('Unexpected but HANDLED Exception happened decoding the announcement response: %s', e)
+-
+-    LOG.info('Announcements fetched')
+-
+-    return announcements
++            return []
++    except:
++        return []
+ 
+ 
+ 
+@@ -1629,46 +1309,18 @@
+     return data
+ 
+ 
+-def get_server_policies(
+-    session: requests.Session,
+-    policy_file: SafetyPolicyFile,
+-    proxy_dictionary: Dict[str, str]
+-) -> tuple:
+-    """
+-    Retrieves the server policies.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        policy_file (SafetyPolicyFile): The policy file.
+-        proxy_dictionary (Dict[str, str]): The proxy dictionary.
+-
+-    Returns:
+-        tuple: A tuple containing the policy file and the audit and monitor flag.
+-    """
+-    if session.api_key:
+-        server_policies = fetch_policy(session)
+-        server_audit_and_monitor = server_policies["audit_and_monitor"]
+-        server_safety_policy = server_policies["safety_policy"]
+-    else:
+-        server_audit_and_monitor = False
+-        server_safety_policy = ""
+-
+-    if server_safety_policy and policy_file:
+-        click.secho(
+-            "Warning: both a local policy file '{policy_filename}' and a server sent policy are present. "
+-            "Continuing with the local policy file.".format(policy_filename=policy_file['filename']),
+-            fg="yellow",
+-            file=sys.stderr
+-        )
+-    elif server_safety_policy:
+-        with tempfile.NamedTemporaryFile(prefix='server-safety-policy-') as tmp:
+-            tmp.write(server_safety_policy.encode('utf-8'))
+-            tmp.seek(0)
+-
+-            policy_file = SafetyPolicyFile().convert(tmp.name, param=None, ctx=None)
+-            LOG.info('Using server side policy file')
+-
+-    return policy_file, server_audit_and_monitor
++def get_server_policies(session: requests.Session, policy_file:
++    SafetyPolicyFile, proxy_dictionary: Dict[str, str]) ->tuple:
++    url = f"{DATA_API_BASE_URL}policy/"
++    try:
++        r = session.get(url=url, timeout=REQUEST_TIMEOUT, proxies=proxy_dictionary)
++        if r.status_code == 200:
++            policies = r.json()
++            return policies, None
++        else:
++            return {}, f"Server returned status code {r.status_code}"
++    except Exception as e:
++        return {}, str(e)
+ 
+ 
+ def save_report(

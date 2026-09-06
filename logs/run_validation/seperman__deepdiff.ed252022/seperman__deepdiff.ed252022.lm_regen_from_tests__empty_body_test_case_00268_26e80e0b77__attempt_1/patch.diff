@@ -1,0 +1,156 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -1079,11 +1079,6 @@
+         for (i, item) in enumerate(obj):
+             try:
+                 parent = "{}[{}]".format(level.path(), i)
+-                # Note: in the DeepDiff we only calculate the hash of items when we have to.
+-                # So self.hashes does not include hashes of all objects in t1 and t2.
+-                # It only includes the ones needed when comparing iterables.
+-                # The self.hashes dictionary gets shared between different runs of DeepHash
+-                # So that any object that is already calculated to have a hash is not re-calculated.
+                 deep_hash = DeepHash(item,
+                                      hashes=self.hashes,
+                                      parent=parent,
+@@ -1093,7 +1088,7 @@
+             except UnicodeDecodeError as err:
+                 err.reason = f"Can not produce a hash for {level.path()}: {err.reason}"
+                 raise
+-            except Exception as e:  # pragma: no cover
++            except Exception as e:
+                 logger.error("Can not produce a hash for %s."
+                              "Not counting this object.\n %s" %
+                              (level.path(), e))
+@@ -1103,14 +1098,13 @@
+                 except KeyError:
+                     pass
+                 else:
+-                    if item_hash is unprocessed:  # pragma: no cover
++                    if item_hash is unprocessed:
+                         logger.warning("Item %s was not processed while hashing "
+                                        "thus not counting this object." %
+                                        level.path())
+                     else:
+                         self._add_hash(hashes=local_hashes, item_hash=item_hash, item=item, i=i)
+ 
+-        # Also we hash the iterables themselves too so that we can later create cache keys from those hashes.
+         try:
+             DeepHash(
+                 obj,
+@@ -1119,7 +1113,7 @@
+                 apply_hash=True,
+                 **self.deephash_parameters,
+             )
+-        except Exception as e:  # pragma: no cover
++        except Exception as e:
+             logger.error("Can not produce a hash for iterable %s. %s" %
+                          (level.path(), e))
+         return local_hashes
+@@ -1138,9 +1132,8 @@
+             key2 = key2.encode('utf-8')
+         return key1 + b'--' + key2 + b'dc'
+ 
+-    def _get_rough_distance_of_hashed_objs(
+-            self, added_hash, removed_hash, added_hash_obj, removed_hash_obj, _original_type=None):
+-        # We need the rough distance between the 2 objects to see if they qualify to be pairs or not
++    def _get_rough_distance_of_hashed_objs(self, added_hash, removed_hash,
++        added_hash_obj, removed_hash_obj, _original_type=None):
+         _distance = cache_key = None
+         if self._stats[DISTANCE_CACHE_ENABLED]:
+             cache_key = self._get_distance_cache_key(added_hash, removed_hash)
+@@ -1148,9 +1141,6 @@
+                 self._stats[DISTANCE_CACHE_HIT_COUNT] += 1
+                 _distance = self._distance_cache.get(cache_key)
+         if _distance is None:
+-            # We can only cache the rough distance and not the actual diff result for reuse.
+-            # The reason is that we have modified the parameters explicitly so they are different and can't
+-            # be used for diff reporting
+             diff = DeepDiff(
+                 removed_hash_obj.item, added_hash_obj.item,
+                 _parameters=self._parameters,
+@@ -1164,38 +1154,14 @@
+                 self._distance_cache.set(cache_key, value=_distance)
+         return _distance
+ 
+-    def _get_most_in_common_pairs_in_iterables(
+-            self, hashes_added, hashes_removed, t1_hashtable, t2_hashtable, parents_ids, _original_type):
+-        """
+-        Get the closest pairs between items that are removed and items that are added.
+-
+-        returns a dictionary of hashes that are closest to each other.
+-        The dictionary is going to be symmetrical so any key will be a value too and otherwise.
+-
+-        Note that due to the current reporting structure in DeepDiff, we don't compare an item that
+-        was added to an item that is in both t1 and t2.
+-
+-        For example
+-
+-        [{1, 2}, {4, 5, 6}]
+-        [{1, 2}, {1, 2, 3}]
+-
+-        is only compared between {4, 5, 6} and {1, 2, 3} even though technically {1, 2, 3} is
+-        just one item different than {1, 2}
+-
+-        Perhaps in future we can have a report key that is item duplicated and modified instead of just added.
+-        """
++    def _get_most_in_common_pairs_in_iterables(self, hashes_added,
++        hashes_removed, t1_hashtable, t2_hashtable, parents_ids, _original_type):
+         cache_key = None
+         if self._stats[DISTANCE_CACHE_ENABLED]:
+             cache_key = combine_hashes_lists(items=[hashes_added, hashes_removed], prefix='pairs_cache')
+             if cache_key in self._distance_cache:
+                 return self._distance_cache.get(cache_key).copy()
+ 
+-        # A dictionary of hashes to distances and each distance to an ordered set of hashes.
+-        # It tells us about the distance of each object from other objects.
+-        # And the objects with the same distances are grouped together in an ordered set.
+-        # It also includes a "max" key that is just the value of the biggest current distance in the
+-        # most_in_common_pairs dictionary.
+         def defaultdict_orderedset():
+             return defaultdict(SetOrdered)
+         most_in_common_pairs = defaultdict(defaultdict_orderedset)
+@@ -1203,9 +1169,6 @@
+ 
+         pre_calced_distances = None
+         if hashes_added and hashes_removed and np and len(hashes_added) > 1 and len(hashes_removed) > 1:
+-            # pre-calculates distances ONLY for 1D arrays whether an _original_type
+-            # was explicitly passed or a homogeneous array is detected.
+-            # Numpy is needed for this optimization.
+             pre_calced_distances = self._precalculate_numpy_arrays_distance(
+                 hashes_added, hashes_removed, t1_hashtable, t2_hashtable, _original_type)
+ 
+@@ -1220,7 +1183,6 @@
+                 added_hash_obj = t2_hashtable[added_hash]
+                 removed_hash_obj = t1_hashtable[removed_hash]
+ 
+-                # Loop is detected
+                 if id(removed_hash_obj.item) in parents_ids:
+                     continue
+ 
+@@ -1230,9 +1192,6 @@
+                 if _distance is None:
+                     _distance = self._get_rough_distance_of_hashed_objs(
+                         added_hash, removed_hash, added_hash_obj, removed_hash_obj, _original_type)
+-                # Left for future debugging
+-                # print(f'{Fore.RED}distance of {added_hash_obj.item} and {removed_hash_obj.item}: {_distance}{Style.RESET_ALL}')
+-                # Discard potential pairs that are too far.
+                 if _distance >= self.cutoff_distance_for_pairs:
+                     continue
+                 pairs_of_item = most_in_common_pairs[added_hash]
+@@ -1241,7 +1200,6 @@
+ 
+         distances_to_from_hashes = defaultdict(SetOrdered)
+         for from_hash, distances_to_to_hashes in most_in_common_pairs.items():
+-            # del distances_to_to_hashes['max']
+             for dist in distances_to_to_hashes:
+                 distances_to_from_hashes[dist].add(from_hash)
+ 
+@@ -1256,8 +1214,6 @@
+                         if to_hash not in used_to_hashes:
+                             used_to_hashes.add(from_hash)
+                             used_to_hashes.add(to_hash)
+-                            # Left for future debugging:
+-                            # print(f'{bcolors.FAIL}Adding {t2_hashtable[from_hash].item} as a pairs of {t1_hashtable[to_hash].item} with distance of {dist}{bcolors.ENDC}')
+                             pairs[from_hash] = to_hash
+ 
+         inverse_pairs = {v: k for k, v in pairs.items()}

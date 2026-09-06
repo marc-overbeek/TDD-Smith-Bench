@@ -1,0 +1,24 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -473,6 +473,21 @@
+                                         number_format_notation=self.number_format_notation)
+         return KEY_TO_VAL_STR.format(type_, obj)
+ 
++    def test_datetime_hash(self):
++        dt_utc = datetime.datetime(2025, 2, 3, 12, 0, 0, tzinfo=pytz.utc)
++        dt_ny = dt_utc.astimezone(pytz.timezone('America/New_York'))
++        assert dt_utc == dt_ny
++        result_utc = DeepHash(dt_utc, ignore_string_type_changes=True, hasher=
++            DeepHash.sha1hex)
++        result_ny = DeepHash(dt_ny, ignore_string_type_changes=True, hasher=
++            DeepHash.sha1hex)
++        assert result_utc[dt_utc] == result_ny[dt_ny]
++
++    def _prep_datetime(self, obj):
++        type_ = 'datetime'
++        obj = datetime_normalize(self.truncate_datetime, obj)
++        return KEY_TO_VAL_STR.format(type_, obj)
++
+     def _prep_datetime(self, obj):
+         type_ = 'datetime'
+         obj = datetime_normalize(self.truncate_datetime, obj)

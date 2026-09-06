@@ -1,0 +1,65 @@
+--- a/safety/auth/utils.py
++++ b/safety/auth/utils.py
+@@ -53,60 +53,8 @@
+     return info.get(CLAIM_EMAIL_VERIFIED_API) or info.get(CLAIM_EMAIL_VERIFIED_AUTH_SERVER)
+ 
+ 
+-def parse_response(func: Callable) -> Callable:
+-    """
+-    Decorator to parse the response from an HTTP request.
+-
+-    Args:
+-        func (Callable): The function to wrap.
+-
+-    Returns:
+-        Callable: The wrapped function.
+-    """
+-    def wrapper(*args, **kwargs):
+-        try:
+-            r = func(*args, **kwargs)
+-        except OAuthError as e:
+-            LOG.exception('OAuth failed: %s', e)
+-            raise InvalidCredentialError(message="Your token authentication expired, try login again.")
+-        except requests.exceptions.ConnectionError:
+-            raise NetworkConnectionError()
+-        except requests.exceptions.Timeout:
+-            raise RequestTimeoutError()
+-        except requests.exceptions.RequestException as e:
+-            raise e
+-
+-        if r.status_code == 403:
+-            raise InvalidCredentialError(credential="Failed authentication.",
+-                                               reason=r.text)
+-
+-        if r.status_code == 429:
+-            raise TooManyRequestsError(reason=r.text)
+-
+-        if r.status_code >= 400 and r.status_code < 500:
+-            error_code = None
+-            try:
+-                data = r.json()
+-                reason = data.get('detail', "Unable to find reason.")
+-                error_code = data.get("error_code", None)
+-            except Exception as e:
+-                reason = r.reason
+-
+-            raise SafetyError(message=reason, error_code=error_code)
+-
+-        if r.status_code >= 500:
+-            raise ServerError(reason=f"{r.reason} - {r.text}")
+-
+-        data = None
+-
+-        try:
+-            data = r.json()
+-        except json.JSONDecodeError as e:
+-            raise SafetyError(message=f"Bad JSON response: {e}")
+-
+-        return data
+-
+-    return wrapper
++def parse_response(func: Callable) ->Callable:
++    pass
+ 
+ class SafetyAuthSession(OAuth2Session):
+ 

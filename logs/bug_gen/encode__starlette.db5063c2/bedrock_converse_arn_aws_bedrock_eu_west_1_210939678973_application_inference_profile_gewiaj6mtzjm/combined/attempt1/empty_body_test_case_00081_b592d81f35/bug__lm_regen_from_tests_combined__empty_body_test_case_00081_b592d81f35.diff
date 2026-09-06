@@ -1,0 +1,20 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -469,7 +469,7 @@
+ 
+ 
+ class Host(BaseRoute):
+-    def __init__(self, host: str, app: ASGIApp, name: str | None = None) -> None:
++    def __init__(self, host: str, app: ASGIApp, name: (str | None)=None) ->None:
+         assert not host.startswith("/"), "Host must not start with '/'"
+         self.host = host
+         self.app = app
+@@ -477,7 +477,7 @@
+         self.host_regex, self.host_format, self.param_convertors = compile_path(host)
+ 
+     @property
+-    def routes(self) -> list[BaseRoute]:
++    def routes(self) ->list[BaseRoute]:
+         return getattr(self.app, "routes", [])
+ 
+     def matches(self, scope: Scope) -> tuple[Match, Scope]:

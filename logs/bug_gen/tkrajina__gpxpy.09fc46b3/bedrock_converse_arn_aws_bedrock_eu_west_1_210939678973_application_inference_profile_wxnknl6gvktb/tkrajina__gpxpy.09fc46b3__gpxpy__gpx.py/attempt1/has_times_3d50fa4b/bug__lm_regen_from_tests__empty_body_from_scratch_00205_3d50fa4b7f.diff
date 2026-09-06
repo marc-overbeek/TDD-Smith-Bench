@@ -1,0 +1,92 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2711,6 +2711,49 @@
+ 
+         return f'<?xml version="1.0" encoding="UTF-8"?>\n{content.strip()}'
+ 
++    def test_gpx_fill_time_data_raises_when_force_is_false(self) ->None:
++        gpx = self.parse('Mojstrovka.gpx')
++        start_time = mod_datetime.datetime(2018, 7, 4, 0, 0, 0)
++        end_time = mod_datetime.datetime(2018, 7, 4, 1, 0, 0)
++        gpx.fill_time_data_with_regular_intervals(start_time=start_time,
++            end_time=end_time)
++        with self.assertRaises(mod_gpx.GPXException):
++            gpx.fill_time_data_with_regular_intervals(start_time=start_time,
++                end_time=end_time, force=False)
++
++    if self.has_times() and not force:
++        raise GPXException('GPX file currently contains time data. Use force=True to overwrite.')
++
++    def has_times(self) -> bool:
++        """ See GPXTrackSegment.has_times() """
++        if not self.segments:
++            return False
++
++        for track_segment in self.segments:
++            if track_segment.has_times():
++                return True
++
++        return False
++
++    def has_times(self) -> bool:
++        """
++        Returns if points in this segment contains timestamps.
++
++        The first point, the last point, and 75% of the points must have times
++        for this method to return true.
++        """
++        if not self.points:
++            return True
++            # ... or otherwise one empty track segment would change the entire
++            # track's "has_times" status!
++
++        found = 0
++        for track_point in self.points:
++            if track_point.time:
++                found += 1
++
++        return len(self.points) > 2 and found / len(self.points) > .75
++
+     def has_times(self) -> bool:
+         """ See GPXTrackSegment.has_times() """
+         if not self.tracks:
+@@ -2721,6 +2764,39 @@
+             result = result and track.has_times()
+ 
+         return result
++
++    def has_elevations(self) -> bool:
++        """ See GPXTrackSegment.has_elevations()) """
++        if not self.tracks:
++            return False
++
++        result = True
++        for track in self.tracks:
++            result = result and track.has_elevations()
++
++        return result
++
++    def has_times(self) -> bool:
++        """ See GPXTrackSegment.has_times() """
++        if not self.tracks:
++            return False
++
++        for track in self.tracks:
++            if track.has_times():
++                return True
++
++        return False
++
++    def has_times(self) -> bool:
++        """ See GPXTrackSegment.has_times() """
++        if not self.tracks:
++            return False
++
++        for track in self.tracks:
++            if track.has_times():
++                return True
++
++        return False
+ 
+     def has_elevations(self) -> bool:
+         """ See GPXTrackSegment.has_elevations()) """

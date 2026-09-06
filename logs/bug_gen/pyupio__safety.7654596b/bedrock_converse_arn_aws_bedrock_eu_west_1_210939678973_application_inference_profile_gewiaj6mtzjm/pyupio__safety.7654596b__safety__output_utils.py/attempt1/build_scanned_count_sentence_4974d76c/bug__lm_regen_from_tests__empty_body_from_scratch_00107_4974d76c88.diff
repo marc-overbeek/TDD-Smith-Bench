@@ -1,0 +1,35 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -832,22 +832,16 @@
+     return [{'style': False, 'value': 'Using '}] + key_sentence + database_sentence
+ 
+ 
+-def build_scanned_count_sentence(packages: List[Package]) -> List[Dict[str, Any]]:
+-    """
+-    Build the sentence for the scanned count.
+-
+-    Args:
+-        packages (List[Package]): List of packages.
+-
+-    Returns:
+-        List[Dict[str, Any]]: Sentence for the scanned count.
+-    """
+-    scanned_count = 'No packages found'
+-    if len(packages) >= 1:
+-        scanned_count = 'Found and scanned {0} {1}'.format(len(packages),
+-                                                           'packages' if len(packages) > 1 else 'package')
+-
+-    return [{'style': True, 'value': scanned_count}]
++def build_scanned_count_sentence(packages: List[Package]) ->List[Dict[str, Any]
++    ]:
++    package_count = len(packages)
++    package_text = 'package' if package_count == 1 else 'packages'
++    
++    return [
++        {'style': False, 'value': 'Scanned '},
++        {'style': True, 'value': str(package_count)},
++        {'style': False, 'value': f' {package_text}'}
++    ]
+ 
+ 
+ def add_warnings_if_needed(brief_info: List[List[Dict[str, Any]]]):

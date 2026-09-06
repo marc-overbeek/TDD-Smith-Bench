@@ -1,0 +1,27 @@
+--- a/demo/inbox.py
++++ b/demo/inbox.py
+@@ -51,10 +51,20 @@
+ class LikesAggregator(AggregatorInterface[LikedEvent]):
+     type = EventType.LIKED
+ 
+-    def __init__(self, repo: RepoInterface) -> None:
+-        self.events_by_feedentry_id: Dict[FeedEntryId, List[LikedEvent]] = {}
+-        self.user_ids: Set[UserId] = set()
+-        super().__init__(repo)
++    def __init__(self, user: User, repo: RepoInterface) -> None:
++        self.user = user
++        self.repo = repo
++        self.events = self.repo.get_inbox_events_for_user_id(self.user.id)
++
++    def __init__(self, user: User, repo: RepoInterface) -> None:
++        self.user = user
++        self.repo = repo
++        self.events = self.repo.get_inbox_events_for_user_id(self.user.id)
++
++    def __init__(self, user: User, repo: RepoInterface) -> None:
++        self.user = user
++        self.repo = repo
++        self.events = self.repo.get_inbox_events_for_user_id(self.user.id)
+ 
+     def add(self, event):
+         self.events_by_feedentry_id.setdefault(event.feedentry_id, []).append(event)

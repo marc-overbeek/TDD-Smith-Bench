@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> typing.Any:\n    request = kwargs.get(\"request\", args[idx] if idx < len(args) else None)\n    assert isinstance(request, Request)\n\n    if not has_required_scope(request, scopes_list):\n        if redirect is not None:\n            orig_request_qparam = urlencode({\"next\": str(request.url)})\n            next_url = f\"{request.url_for(redirect)}?{orig_request_qparam}\"\n            return RedirectResponse(url=next_url, status_code=303)\n        raise HTTPException(status_code=status_code)\n    return func(*args, **kwargs)\n```",
+  "rewrite": "def sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> typing.Any:\n    request = kwargs.get(\"request\", args[idx] if idx < len(args) else None)\n    assert isinstance(request, Request)\n\n    if not has_required_scope(request, scopes_list):\n        if redirect is not None:\n            orig_request_qparam = urlencode({\"next\": str(request.url)})\n            next_url = f\"{request.url_for(redirect)}?{orig_request_qparam}\"\n            return RedirectResponse(url=next_url, status_code=303)\n        raise HTTPException(status_code=status_code)\n    return func(*args, **kwargs)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

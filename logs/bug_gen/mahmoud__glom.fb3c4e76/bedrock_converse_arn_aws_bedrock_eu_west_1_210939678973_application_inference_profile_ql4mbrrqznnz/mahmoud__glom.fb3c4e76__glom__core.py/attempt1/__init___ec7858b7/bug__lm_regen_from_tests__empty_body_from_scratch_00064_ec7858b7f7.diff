@@ -1,0 +1,29 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -896,12 +896,16 @@
+     .. _C# and others: https://en.wikipedia.org/w/index.php?title=Null_coalescing_operator&oldid=839493322#C#
+ 
+     """
++    if self.default and self.default_factory:
++
++    if self.default is not _MISSING and self.default_factory is not _MISSING:
++
+     def __init__(self, *subspecs, **kwargs):
+         self.subspecs = subspecs
+         self._orig_kwargs = dict(kwargs)
+         self.default = kwargs.pop('default', _MISSING)
+         self.default_factory = kwargs.pop('default_factory', _MISSING)
+-        if self.default and self.default_factory:
++        if self.default is not _MISSING and self.default_factory is not _MISSING:
+             raise ValueError('expected one of "default" or "default_factory", not both')
+         self.skip = kwargs.pop('skip', _MISSING)
+         if self.skip is _MISSING:
+@@ -914,7 +918,7 @@
+             self.skip_func = lambda v: v == self.skip
+         self.skip_exc = kwargs.pop('skip_exc', GlomError)
+         if kwargs:
+-            raise TypeError(f'unexpected keyword args: {sorted(kwargs.keys())!r}')
++            raise TypeError(f'unexpected keyword arguments: {sorted(kwargs.keys())!r}')
+ 
+     def glomit(self, target, scope):
+         skipped = []

@@ -1,0 +1,39 @@
+--- a/safety/alerts/__init__.py
++++ b/safety/alerts/__init__.py
+@@ -38,33 +38,9 @@
+ @click.option("--policy-file", type=SafetyPolicyFile(), default='.safety-policy.yml',
+               help="Define the policy file to be used")
+ @click.pass_context
+-def alert(ctx: click.Context, check_report: IO[str], policy_file: SafetyPolicyFile, key: str) -> None:
+-    """
+-    Command for processing the Safety Check JSON report.
+-
+-    Args:
+-        ctx (click.Context): The Click context object.
+-        check_report (IO[str]): The file containing the JSON report.
+-        policy_file (SafetyPolicyFile): The policy file to be used.
+-        key (str): The API key for the safetycli.com vulnerability database.
+-    """
+-    LOG.info('alert started')
+-    LOG.info(f'check_report is using stdin: {check_report == sys.stdin}')
+-
+-    with check_report:
+-        # TODO: This breaks --help for subcommands
+-        try:
+-            safety_report = json.load(check_report)
+-        except json.decoder.JSONDecodeError as e:
+-            LOG.info('Error in the JSON report.')
+-            click.secho("Error decoding input JSON: {}".format(e.msg), fg='red')
+-            sys.exit(1)
+-
+-    if not 'report_meta' in safety_report:
+-        click.secho("You must pass in a valid Safety Check JSON report", fg='red')
+-        sys.exit(1)
+-
+-    ctx.obj = Alert(report=safety_report, policy=policy_file if policy_file else {}, key=key)
++def alert(ctx: click.Context, check_report: IO[str], policy_file:
++    SafetyPolicyFile, key: str) ->None:
++    pass
+ 
+ # Adding subcommands for GitHub integration
+ alert.add_command(github.github_pr)

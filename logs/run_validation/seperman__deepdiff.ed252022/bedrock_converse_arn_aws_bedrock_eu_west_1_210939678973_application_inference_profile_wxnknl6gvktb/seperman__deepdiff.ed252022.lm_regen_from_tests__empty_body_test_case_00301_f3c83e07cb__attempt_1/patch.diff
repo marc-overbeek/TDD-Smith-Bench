@@ -1,0 +1,81 @@
+--- a/deepdiff/search.py
++++ b/deepdiff/search.py
+@@ -103,31 +103,31 @@
+ 
+         self.obj = obj
+         self.case_sensitive = case_sensitive if isinstance(item, strings) else True
+-        item = item if self.case_sensitive else item.lower()
++        self.item = item if self.case_sensitive else item.lower() if isinstance(item, strings) else item
+         self.exclude_paths = SetOrdered(exclude_paths)
+         self.exclude_regex_paths = [re.compile(exclude_regex_path) for exclude_regex_path in exclude_regex_paths]
+         self.exclude_types = SetOrdered(exclude_types)
+         self.exclude_types_tuple = tuple(
+-            exclude_types)  # we need tuple for checking isinstance
++            exclude_types)
+         self.verbose_level = verbose_level
+         self.update(
+             matched_paths=self.__set_or_dict(),
+             matched_values=self.__set_or_dict(),
+             unprocessed=[])
+         self.use_regexp = use_regexp
+-        if not strict_checking and isinstance(item, numbers):
+-            item = str(item)
++        self.strict_checking = strict_checking
++    
++        if not strict_checking and isinstance(self.item, numbers):
++            self.item = str(self.item)
+         if self.use_regexp:
+             try:
+-                item = re.compile(item)
++                self.item = re.compile(self.item)
+             except TypeError as e:
+-                raise TypeError(f"The passed item of {item} is not usable for regex: {e}") from None
+-        self.strict_checking = strict_checking
+-
+-        # Cases where user wants to match exact string item
++                raise TypeError(f"The passed item of {self.item} is not usable for regex: {e}") from None
++
+         self.match_string = match_string
+ 
+-        self.__search(obj, item, parents_ids=frozenset({id(obj)}))
++        self.__search(obj, self.item, parents_ids=frozenset({id(obj)}))
+ 
+         empty_keys = [k for k, v in self.items() if not v]
+ 
+@@ -149,20 +149,15 @@
+                      parent,
+                      parents_ids=frozenset(),
+                      is_namedtuple=False):
+-        """Search objects"""
+         found = False
+         if obj == item:
+             found = True
+-            # We report the match but also continue inside the match to see if there are
+-            # further matches inside the `looped` object.
+             self.__report(report_key='matched_values', key=parent, value=obj)
+ 
+         try:
+             if is_namedtuple:
+                 obj = obj._asdict()
+             else:
+-                # Skip magic methods. Slightly hacky, but unless people are defining
+-                # new magic methods they want to search, it should work fine.
+                 obj = {i: getattr(obj, i) for i in dir(obj)
+                        if not (i.startswith('__') and i.endswith('__'))}
+         except AttributeError:
+@@ -196,7 +191,6 @@
+                       parent,
+                       parents_ids=frozenset(),
+                       print_as_attribute=False):
+-        """Search dictionaries"""
+         if print_as_attribute:
+             parent_text = "%s.%s"
+         else:
+@@ -302,7 +296,6 @@
+                 obj, item, parent, parents_ids, is_namedtuple=True)
+ 
+     def __search(self, obj, item, parent="root", parents_ids=frozenset()):
+-        """The main search method"""
+         if self.__skip_this(item, parent):
+             return
+ 

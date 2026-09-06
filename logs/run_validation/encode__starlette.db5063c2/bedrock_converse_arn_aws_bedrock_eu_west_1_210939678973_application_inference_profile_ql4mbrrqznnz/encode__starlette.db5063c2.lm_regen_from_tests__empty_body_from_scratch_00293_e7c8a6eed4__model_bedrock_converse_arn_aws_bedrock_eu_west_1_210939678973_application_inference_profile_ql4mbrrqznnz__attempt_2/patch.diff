@@ -1,0 +1,128 @@
+--- a/starlette/requests.py
++++ b/starlette/requests.py
+@@ -38,28 +38,108 @@
+ 
+ def cookie_parser(cookie_string: str) -> dict[str, str]:
+     """
+-    This function parses a ``Cookie`` HTTP header into a dict of key/value pairs.
+-
+-    It attempts to mimic browser cookie parsing behavior: browsers and web servers
+-    frequently disregard the spec (RFC 6265) when setting and reading cookies,
+-    so we attempt to suit the common scenarios here.
+-
+-    This function has been adapted from Django 3.1.0.
+-    Note: we are explicitly _NOT_ using `SimpleCookie.load` because it is based
+-    on an outdated spec and will fail on lots of input we want to support
++    Parse a cookie string into a dictionary of key-value pairs.
++    
++    This function handles cookies in a lenient way, similar to how browsers parse them.
+     """
+     cookie_dict: dict[str, str] = {}
++    
++    # Try using the standard library's cookie parser first
++    try:
++        cookie: http_cookies.SimpleCookie = http_cookies.SimpleCookie()
++        cookie.load(cookie_string)
++        for key, morsel in cookie.items():
++            cookie_dict[key] = morsel.value
++    except http_cookies.CookieError:
++        pass
++    
++    # Fall back to manual parsing for cookies that the standard library rejects
+     for chunk in cookie_string.split(";"):
++        chunk = chunk.strip()
++        if not chunk:
++            continue
++        
+         if "=" in chunk:
+-            key, val = chunk.split("=", 1)
++            key, _, val = chunk.partition("=")
++            key = key.strip()
++            val = val.strip()
++            
++            # Strip quotes if present
++            if val and val[0] == '"' and val[-1] == '"':
++                val = val[1:-1]
++            
++            if key and key not in cookie_dict:
++                cookie_dict[key] = val
+         else:
+-            # Assume an empty name per
+-            # https://bugzilla.mozilla.org/show_bug.cgi?id=169091
+-            key, val = "", chunk
+-        key, val = key.strip(), val.strip()
+-        if key or val:
+-            # unquote using Python's algorithm.
+-            cookie_dict[key] = http_cookies._unquote(val)
++            # Cookie with no value
++            key = chunk.strip()
++            if key and key not in cookie_dict:
++                cookie_dict[key] = ""
++    
++    return cookie_dict
++
++def cookie_parser(cookie_string: str) -> dict[str, str]:
++    """
++    Parse a cookie string into a dictionary of key-value pairs.
++    
++    This function handles cookies in a lenient way, similar to how browsers parse them.
++    """
++    cookie_dict: dict[str, str] = {}
++    
++    for chunk in cookie_string.split(";"):
++        chunk = chunk.strip()
++        if not chunk:
++            continue
++        
++        if "=" in chunk:
++            key, _, val = chunk.partition("=")
++            key = key.strip()
++            val = val.strip()
++            
++            # Strip quotes if present
++            if val and val[0] == '"' and val[-1] == '"':
++                val = val[1:-1]
++            
++            if key:
++                cookie_dict[key] = val
++        else:
++            # Cookie with no value
++            key = chunk.strip()
++            if key:
++                cookie_dict[key] = ""
++    
++    return cookie_dict
++
++def cookie_parser(cookie_string: str) -> dict[str, str]:
++    """
++    Parse a cookie string into a dictionary of key-value pairs.
++    
++    This function handles cookies in a lenient way, similar to how browsers parse them.
++    """
++    cookie_dict: dict[str, str] = {}
++    cookie: http_cookies.SimpleCookie = http_cookies.SimpleCookie()
++    try:
++        cookie.load(cookie_string)
++    except http_cookies.CookieError:
++        pass
++    for key, morsel in cookie.items():
++        cookie_dict[key] = morsel.value
++    for chunk in cookie_string.split(";"):
++        chunk = chunk.strip()
++        if not chunk:
++            continue
++        if "=" in chunk:
++            key, _, val = chunk.partition("=")
++            key = key.strip()
++            val = val.strip()
++            if val and val[0] == '"' and val[-1] == '"':
++                val = val[1:-1]
++            if key and key not in cookie_dict:
++                cookie_dict[key] = val
++        else:
++            key = chunk.strip()
++            if key and key not in cookie_dict:
++                cookie_dict[key] = ""
+     return cookie_dict
+ 
+ 

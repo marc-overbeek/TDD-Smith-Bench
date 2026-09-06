@@ -1,0 +1,71 @@
+--- a/monkeytype/encoding.py
++++ b/monkeytype/encoding.py
+@@ -93,37 +93,46 @@
+ 
+ 
+ def typed_dict_from_dict(d: TypeDict) -> type:
+-    return TypedDict(
+-        d["qualname"], {k: type_from_dict(v) for k, v in d["elem_types"].items()}
+-    )
++    module = d["module"]
++    qualname = d["qualname"]
++    elem_types = d["elem_types"]
++    fields = {k: type_from_dict(v) for k, v in elem_types.items()}
++    return TypedDict(qualname, fields)
+ 
+ 
+ def type_from_dict(d: TypeDict) -> type:
+-    """Given a dictionary produced by type_to_dict, return the equivalent type.
+-
+-    Raises:
+-        NameLookupError if we can't reify the specified type
+-        InvalidTypeError if the named type isn't actually a type
+-    """
+-    module, qualname = d["module"], d["qualname"]
+-    if d.get("is_typed_dict", False):
++    if d.get("is_typed_dict"):
+         return typed_dict_from_dict(d)
++    
++    module = d["module"]
++    qualname = d["qualname"]
++    elem_types = d.get("elem_types")
++    
++    if qualname == "Any":
++        return Any  # type: ignore[return-value]
++    
++    if qualname == "Union":
++        from typing import Union
++        args = tuple(type_from_dict(t) for t in elem_types)
++        return Union[args]  # type: ignore[return-value]
++    
+     if module == "builtins" and qualname in _HIDDEN_BUILTIN_TYPES:
+         typ = _HIDDEN_BUILTIN_TYPES[qualname]
+     else:
+-        typ = get_name_in_module(module, qualname)
+-    if not (isinstance(typ, type) or is_any(typ) or is_generic(typ)):
++        typ = get_name_in_module(module, qualname, _HIDDEN_BUILTIN_TYPES)
++    
++    if not isinstance(typ, type) and not is_generic(typ):
+         raise InvalidTypeError(
+-            f"Attribute specified by '{qualname}' in module '{module}' "
+-            f"is of type {type(typ)}, not type."
++            f"Attribute specified by '{qualname}' in module '{module}' is not a type: {typ!r}"
+         )
+-    elem_type_dicts = d.get("elem_types")
+-    if elem_type_dicts is not None and is_generic(typ):
+-        elem_types = tuple(type_from_dict(e) for e in elem_type_dicts)
+-        # mypy complains that a value of type `type` isn't indexable. That's
+-        # true, but we know typ is a subtype that is indexable. Even checking
+-        # with hasattr(typ, '__getitem__') doesn't help
+-        typ = typ[elem_types]  # type: ignore[index]
++    
++    if elem_types is not None:
++        args = tuple(type_from_dict(t) for t in elem_types)
++        if args:
++            return typ[args]  # type: ignore[index]
++        else:
++            return typ[()]  # type: ignore[index]
++    
+     return typ
+ 
+ 

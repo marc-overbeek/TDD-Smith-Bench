@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef grep(item, path, debug, **kwargs):\n    \"\"\"\n    Deep Grep Commandline\n\n    Search for an item in a file.\n    It can read csv, tsv, json, yaml, and toml files.\n\n    \"\"\"\n    try:\n        content = load_path_content(path)\n    except Exception as e:\n        if debug:\n            raise\n        else:\n            click.echo(str(f\"Error when loading {path}: {e}\"))\n            sys.exit(1)\n\n    try:\n        result = DeepSearch(content, item, **kwargs)\n    except Exception as e:\n        if debug:\n            raise\n        else:\n            click.echo(str(f\"Error when running deep search on {path}: {e}\"))\n            sys.exit(1)\n\n    pprint(dict(result), indent=2)\n```",
+  "rewrite": "def grep(item, path, debug, **kwargs):\n    \"\"\"\n    Deep Grep Commandline\n\n    Search for an item in a file.\n    It can read csv, tsv, json, yaml, and toml files.\n\n    \"\"\"\n    try:\n        content = load_path_content(path)\n    except Exception as e:\n        if debug:\n            raise\n        else:\n            click.echo(str(f\"Error when loading {path}: {e}\"))\n            sys.exit(1)\n\n    try:\n        result = DeepSearch(content, item, **kwargs)\n    except Exception as e:\n        if debug:\n            raise\n        else:\n            click.echo(str(f\"Error when running deep search on {path}: {e}\"))\n            sys.exit(1)\n\n    pprint(dict(result), indent=2)",
+  "strategy": "lm_regen_from_tests"
+}

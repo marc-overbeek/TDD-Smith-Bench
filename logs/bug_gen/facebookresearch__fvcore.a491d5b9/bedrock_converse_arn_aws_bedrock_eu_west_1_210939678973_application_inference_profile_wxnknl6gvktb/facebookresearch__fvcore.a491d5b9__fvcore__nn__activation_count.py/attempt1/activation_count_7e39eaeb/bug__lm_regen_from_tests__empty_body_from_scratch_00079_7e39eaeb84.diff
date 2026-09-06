@@ -1,0 +1,64 @@
+--- a/fvcore/nn/activation_count.py
++++ b/fvcore/nn/activation_count.py
+@@ -93,33 +93,35 @@
+     __init__.__doc__ = JitModelAnalysis.__init__.__doc__
+ 
+ 
+-def activation_count(
+-    model: nn.Module,
+-    inputs: Tuple[Any, ...],
+-    supported_ops: Optional[Dict[str, Handle]] = None,
+-) -> Tuple[DefaultDict[str, float], Counter[str]]:
++def activation_count(model: nn.Module, inputs: Tuple[Any, ...],
++    supported_ops: Optional[Dict[str, Handle]]=None) ->Tuple[DefaultDict[
++    str, float], Counter[str]]:
+     """
+-    Given a model and an input to the model, compute the total number of
+-    activations of the model.
+-
++    Compute the activation count of a model.
++    
+     Args:
+-        model (nn.Module): The model to compute activation counts.
+-        inputs (tuple): Inputs that are passed to `model` to count activations.
+-            Inputs need to be in a tuple.
+-        supported_ops (dict(str,Callable) or None) : provide additional
+-            handlers for extra ops, or overwrite the existing handlers for
+-            convolution and matmul. The key is operator name and the value
+-            is a function that takes (inputs, outputs) of the op.
+-
++        model: The model to analyze.
++        inputs: The inputs to the model.
++        supported_ops: A dictionary mapping operation names to their activation count handles.
++                      If None, uses the default supported operations.
++    
+     Returns:
+-        tuple[defaultdict, Counter]: A dictionary that records the number of
+-            activation (mega) for each operation and a Counter that records the
+-            number of unsupported operations.
++        A tuple of (activation_count_dict, by_operator_counter) where:
++        - activation_count_dict: A DefaultDict mapping operation names to activation counts in millions
++        - by_operator_counter: A Counter of activation counts by operator type
+     """
+-    if supported_ops is None:
+-        supported_ops = {}
+-    act_counter = ActivationCountAnalysis(model, inputs).set_op_handle(**supported_ops)
+-    mega_acts = defaultdict(float)
+-    for op, act in act_counter.by_operator().items():
+-        mega_acts[op] = act / 1e6
+-    return mega_acts, act_counter.unsupported_ops()
++    analysis = ActivationCountAnalysis(model, inputs)
++    
++    if supported_ops is not None:
++        for op_name, handle in supported_ops.items():
++            analysis.set_op_handle(op_name, handle)
++    
++    # Get the activation counts by operator
++    by_operator = analysis.by_operator()
++    
++    # Convert to millions and create the result dictionary
++    ac_dict: DefaultDict[str, float] = defaultdict(float)
++    for op_name, count in by_operator.items():
++        ac_dict[op_name] = count / 1000000.0
++    
++    return ac_dict, by_operator

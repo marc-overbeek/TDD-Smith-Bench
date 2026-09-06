@@ -1,0 +1,57 @@
+--- a/src/mistune/plugins/formatting.py
++++ b/src/mistune/plugins/formatting.py
+@@ -66,24 +66,9 @@
+     return "<sub>" + text + "</sub>"
+ 
+ 
+-def _parse_to_end(
+-    inline: "InlineParser",
+-    m: Match[str],
+-    state: "InlineState",
+-    tok_type: str,
+-    end_pattern: Pattern[str],
+-) -> Optional[int]:
+-    pos = m.end()
+-    m1 = end_pattern.search(state.src, pos)
+-    if not m1:
+-        return None
+-    end_pos = m1.end()
+-    text = state.src[pos:end_pos-2]
+-    new_state = state.copy()
+-    new_state.src = text
+-    children = inline.render(new_state)
+-    state.append_token({'type': tok_type, 'children': children})
+-    return end_pos
++def _parse_to_end(inline: 'InlineParser', m: Match[str], state:
++    'InlineState', tok_type: str, end_pattern: Pattern[str]) ->Optional[int]:
++    pass
+ 
+ 
+ def _parse_script(
+@@ -126,24 +111,8 @@
+         md.renderer.register('strikethrough', render_strikethrough)
+ 
+ 
+-def mark(md: "Markdown") -> None:
+-    """A mistune plugin to add ``<mark>`` tag. Spec defined at
+-    https://facelessuser.github.io/pymdown-extensions/extensions/mark/:
+-
+-    .. code-block:: text
+-
+-        ==mark me== ==mark \\=\\= equal==
+-
+-    :param md: Markdown instance
+-    """
+-    md.inline.register(
+-        'mark',
+-        r'==(?=[^\s=])',
+-        parse_mark,
+-        before='link',
+-    )
+-    if md.renderer and md.renderer.NAME == 'html':
+-        md.renderer.register('mark', render_mark)
++def mark(md: 'Markdown') ->None:
++    pass
+ 
+ 
+ def insert(md: "Markdown") -> None:

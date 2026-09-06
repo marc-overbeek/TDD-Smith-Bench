@@ -1,0 +1,117 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -37,22 +37,8 @@
+ class SimpleTZ(mod_datetime.tzinfo):
+     __slots__ = ('offset',)
+ 
+-    def __init__(self, s: str="") -> None:
+-        self.offset = 0
+-        if s and len(s) >= 2:
+-            if s[0] in ('−', '-'):
+-                mult = -1
+-                s = s[1:]
+-            else:
+-                if s[0] == '+':
+-                    s = s[1:]
+-                mult = 1
+-            hour = int(s[:2]) if s[:2].isdigit() else 0
+-            if len(s) >= 4:
+-                minute = int(s[-2:]) if s[-2:].isdigit() else 0
+-            else:
+-                minute = 0
+-            self.offset = mult * (hour * 60 + minute)
++    def __init__(self, s: str='') ->None:
++        pass
+ 
+     def utcoffset(self, dt: Optional[mod_datetime.datetime]) -> mod_datetime.timedelta:
+         return mod_datetime.timedelta(minutes=self.offset)
+@@ -71,8 +57,8 @@
+     def __deepcopy__(self, memodict: Optional[Dict[Any, Any]]={}) -> mod_datetime.tzinfo:
+         return self.__class__(self.tzname(None))
+ 
+-    def __repr__(self) -> str:
+-        return f'SimpleTZ({self.tzname(None)!r})'
++    def __repr__(self) ->str:
++        pass
+ 
+     def __eq__(self, other: Any) -> bool:
+         return self.offset == other.offset # type: ignore
+@@ -178,35 +164,8 @@
+         self.possible = possible
+         self.mandatory = mandatory
+ 
+-    def from_xml(self, node: Any, version: str) -> Any:
+-        if self.attribute:
+-            if node is not None:
+-                result = node.get(self.attribute)
+-        else:
+-            __node = node.find(self.tag)
+-            if __node is not None:
+-                result = __node.text
+-            else:
+-                result = None
+-        if result is None:
+-            if self.mandatory:
+-                from . import gpx as mod_gpx
+-                raise mod_gpx.GPXException(f'{self.name} is mandatory in {self.tag} (got {result})')
+-            return None
+-
+-        if self.type_converter:
+-            try:
+-                result = self.type_converter.from_string(result)
+-            except Exception as e:
+-                from . import gpx as mod_gpx
+-                raise mod_gpx.GPXException(f'Invalid value for <{self.tag}>... {result} ({e})')
+-
+-        if self.possible:
+-            if not (result in self.possible):
+-                from . import gpx as mod_gpx
+-                raise mod_gpx.GPXException(f'Invalid value "{result}", possible: {self.possible}')
+-
+-        return result
++    def from_xml(self, node: Any, version: str) ->Any:
++        pass
+ 
+     def to_xml(self, value: Any, version: str, nsmap: Any=None, prettyprint: bool=True, indent: str='') -> Optional[str]:
+         if value is None:
+@@ -556,38 +515,8 @@
+     return ''.join(body)
+ 
+ 
+-def gpx_fields_from_xml(class_or_instance: Any, node: str, version: str) -> Any:
+-    if mod_inspect.isclass(class_or_instance):
+-        result = class_or_instance()
+-    else:
+-        result = class_or_instance
+-
+-    fields = result.gpx_10_fields
+-    if version == '1.1':
+-        fields = result.gpx_11_fields
+-
+-    node_path: List[Union[str, int]] = [node]
+-
+-    for gpx_field in fields:
+-        current_node = node_path[-1]
+-        if isinstance(gpx_field, str):
+-            gpx_field = gpx_field.partition(':')[0]
+-            if gpx_field.startswith('/'):
+-                node_path.pop()
+-            else:
+-                if current_node is None:
+-                    node_path.append(None)
+-                else:
+-                    node_path.append(cast(str, current_node).find(gpx_field))
+-        else:
+-            if current_node is not None:
+-                value = gpx_field.from_xml(current_node, version)
+-                setattr(result, gpx_field.name, value)
+-            elif gpx_field.attribute:
+-                value = gpx_field.from_xml(node, version)
+-                setattr(result, gpx_field.name, value)
+-
+-    return result
++def gpx_fields_from_xml(class_or_instance: Any, node: str, version: str) ->Any:
++    pass
+ 
+ def gpx_check_slots_and_default_values(classs: Callable[[], Any]) -> None:
+     """

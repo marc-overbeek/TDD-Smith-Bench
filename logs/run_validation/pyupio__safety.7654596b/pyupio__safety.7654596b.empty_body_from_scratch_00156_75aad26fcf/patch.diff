@@ -1,0 +1,40 @@
+--- a/safety/cli_util.py
++++ b/safety/cli_util.py
+@@ -765,36 +765,7 @@
+ 
+ 
+ def handle_cmd_exception(func):
+-    """
+-    Decorator to handle exceptions in command functions.
+-
+-    Args:
+-        func: The command function to wrap.
+-
+-    Returns:
+-        The wrapped function.
+-    """
+-    @wraps(func)
+-    def inner(ctx, output: Optional[ScanOutput], *args, **kwargs):
+-        if output:
+-            kwargs.update({"output": output})
+-
+-            if output is ScanOutput.NONE:
+-                return func(ctx, *args, **kwargs)
+-
+-        try:
+-            return func(ctx, *args, **kwargs)
+-        except click.ClickException as e:
+-            raise e
+-        except SafetyError as e:
+-            LOG.exception('Expected SafetyError happened: %s', e)
+-            output_exception(e, exit_code_output=True)
+-        except Exception as e:
+-            LOG.exception('Unexpected Exception happened: %s', e)
+-            exception = e if isinstance(e, SafetyException) else SafetyException(info=e)
+-            output_exception(exception, exit_code_output=True)
+-
+-    return inner
++    pass
+ 
+ def get_git_branch_name() -> Optional[str]:
+     """

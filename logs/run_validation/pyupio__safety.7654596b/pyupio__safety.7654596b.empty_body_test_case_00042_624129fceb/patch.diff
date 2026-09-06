@@ -1,0 +1,402 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -188,57 +188,16 @@
+     return None
+ 
+ 
+-def get_flags_from_context() -> Dict[str, str]:
+-    """
+-    Get the flags from the current click context.
+-
+-    Returns:
+-        Dict[str, str]: A dictionary of flags and their corresponding option names.
+-    """
+-    flags = {}
+-    context = click.get_current_context(silent=True)
+-
+-    if context:
+-        for option in context.command.params:
+-            flags_per_opt = option.opts + option.secondary_opts
+-            for flag in flags_per_opt:
+-                flags[flag] = option.name
+-
+-    return flags
+-
+-
+-def get_used_options() -> Dict[str, Dict[str, int]]:
+-    """
+-    Get the used options from the command-line arguments.
+-
+-    Returns:
+-        Dict[str, Dict[str, int]]: A dictionary of used options and their counts.
+-    """
+-    flags = get_flags_from_context()
+-    used_options = {}
+-
+-    for arg in sys.argv:
+-        cleaned_arg = arg if '=' not in arg else arg.split('=')[0]
+-        if cleaned_arg in flags:
+-            option_used = flags.get(cleaned_arg)
+-
+-            if option_used in used_options:
+-                used_options[option_used][cleaned_arg] = used_options[option_used].get(cleaned_arg, 0) + 1
+-            else:
+-                used_options[option_used] = {cleaned_arg: 1}
+-
+-    return used_options
+-
+-
+-def get_safety_version() -> str:
+-    """
+-    Get the version of Safety.
+-
+-    Returns:
+-        str: The Safety version.
+-    """
+-    from safety import VERSION
+-    return VERSION
++def get_flags_from_context() ->Dict[str, str]:
++    pass
++
++
++def get_used_options() ->Dict[str, Dict[str, int]]:
++    pass
++
++
++def get_safety_version() ->str:
++    pass
+ 
+ 
+ def get_primary_announcement(announcements: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+@@ -296,39 +255,9 @@
+             announcement.get('type', '').lower() == by_type]
+ 
+ 
+-def build_telemetry_data(telemetry: bool = True,
+-                         command: Optional[str] = None,
+-                         subcommand: Optional[str] = None) -> TelemetryModel:
+-    """Build telemetry data for the Safety context.
+-
+-    Args:
+-        telemetry (bool): Whether telemetry is enabled.
+-        command (Optional[str]): The command.
+-        subcommand (Optional[str]): The subcommand.
+-
+-    Returns:
+-        TelemetryModel: The telemetry data model.
+-    """
+-    context = SafetyContext()
+-
+-    body = {
+-        'os_type': os.environ.get("SAFETY_OS_TYPE", None) or platform.system(),
+-        'os_release': os.environ.get("SAFETY_OS_RELEASE", None) or platform.release(),
+-        'os_description': os.environ.get("SAFETY_OS_DESCRIPTION", None) or platform.platform(),
+-        'python_version': platform.python_version(),
+-        'safety_command': command if command else context.command,
+-        'safety_options': get_used_options()
+-    } if telemetry else {}
+-
+-    body['safety_version'] = get_safety_version()
+-    body['safety_source'] = os.environ.get("SAFETY_SOURCE", None) or context.safety_source
+-
+-    if not 'safety_options' in body:
+-        body['safety_options'] = {}
+-
+-    LOG.debug(f'Telemetry body built: {body}')
+-
+-    return TelemetryModel(**body)
++def build_telemetry_data(telemetry: bool=True, command: Optional[str]=None,
++    subcommand: Optional[str]=None) ->TelemetryModel:
++    pass
+ 
+ 
+ def build_git_data() -> Dict[str, Any]:
+@@ -423,74 +352,17 @@
+ 
+     return req.url
+ 
+-def get_processed_options(policy_file: Dict[str, Any], ignore: Dict[str, Any], ignore_severity_rules: Dict[str, Any],
+-    exit_code: bool, ignore_unpinned_requirements: Optional[bool] = None,
+-    project: Optional[str] = None) -> Tuple[Dict[str, Any], Dict[str, Any], bool, Optional[bool], Optional[str]]:
+-    """
+-    Get processed options from the policy file.
+-
+-    Args:
+-        policy_file (Dict[str, Any]): The policy file.
+-        ignore (Dict[str, Any]): The ignore settings.
+-        ignore_severity_rules (Dict[str, Any]): The ignore severity rules.
+-        exit_code (bool): The exit code setting.
+-        ignore_unpinned_requirements (Optional[bool]): The ignore unpinned requirements setting.
+-        project (Optional[str]): The project setting.
+-
+-    Returns:
+-        Tuple[Dict[str, Any], Dict[str, Any], bool, Optional[bool], Optional[str]]: The processed options.
+-    """
+-    if policy_file:
+-        project_config = policy_file.get('project', {})
+-        security = policy_file.get('security', {})
+-        ctx = click.get_current_context()
+-        source = ctx.get_parameter_source("exit_code")
+-
+-        if not project:
+-            project_id = project_config.get('id', None)
+-            if not project_id:
+-                project_id = None
+-            project = project_id
+-
+-        if ctx.get_parameter_source("ignore_unpinned_requirements") == click.core.ParameterSource.DEFAULT:
+-            ignore_unpinned_requirements = security.get('ignore-unpinned-requirements', None)
+-
+-        if not ignore:
+-            ignore = security.get('ignore-vulnerabilities', {})
+-        if source == click.core.ParameterSource.DEFAULT:
+-            exit_code = not security.get('continue-on-vulnerability-error', False)
+-        ignore_cvss_below = security.get('ignore-cvss-severity-below', 0.0)
+-        ignore_cvss_unknown = security.get('ignore-cvss-unknown-severity', False)
+-        ignore_severity_rules = {'ignore-cvss-severity-below': ignore_cvss_below,
+-                                 'ignore-cvss-unknown-severity': ignore_cvss_unknown}
+-
+-    return ignore, ignore_severity_rules, exit_code, ignore_unpinned_requirements, project
+-
+-
+-def get_fix_options(policy_file: Dict[str, Any], auto_remediation_limit: int) -> int:
+-    """
+-    Get fix options from the policy file.
+-
+-    Args:
+-        policy_file (Dict[str, Any]): The policy file.
+-        auto_remediation_limit (int): The auto remediation limit.
+-
+-    Returns:
+-        int: The auto remediation limit.
+-    """
+-    auto_fix = []
+-
+-    source = click.get_current_context().get_parameter_source("auto_remediation_limit")
+-    if source == click.core.ParameterSource.COMMANDLINE:
+-        return auto_remediation_limit
+-
+-    if policy_file:
+-        fix = policy_file.get('security-updates', {})
+-        auto_fix = fix.get('auto-security-updates-limit', None)
+-        if not auto_fix:
+-            auto_fix = []
+-
+-    return auto_fix
++def get_processed_options(policy_file: Dict[str, Any], ignore: Dict[str,
++    Any], ignore_severity_rules: Dict[str, Any], exit_code: bool,
++    ignore_unpinned_requirements: Optional[bool]=None, project: Optional[
++    str]=None) ->Tuple[Dict[str, Any], Dict[str, Any], bool, Optional[bool],
++    Optional[str]]:
++    pass
++
++
++def get_fix_options(policy_file: Dict[str, Any], auto_remediation_limit: int
++    ) ->int:
++    pass
+ 
+ 
+ class MutuallyExclusiveOption(click.Option):
+@@ -499,53 +371,11 @@
+     """
+ 
+     def __init__(self, *args, **kwargs):
+-        self.mutually_exclusive = set(kwargs.pop('mutually_exclusive', []))
+-        self.with_values = kwargs.pop('with_values', {})
+-        help = kwargs.get('help', '')
+-        if self.mutually_exclusive:
+-            ex_str = ', '.join(["{0} with values {1}".format(item, self.with_values.get(item)) if item in self.with_values else item for item in self.mutually_exclusive])
+-            kwargs['help'] = help + (
+-                ' NOTE: This argument is mutually exclusive with '
+-                ' arguments: [' + ex_str + '].'
+-            )
+-        super(MutuallyExclusiveOption, self).__init__(*args, **kwargs)
+-
+-    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+-        """
+-        Handle the parse result for mutually exclusive options.
+-
+-        Args:
+-            ctx (click.Context): The click context.
+-            opts (Dict[str, Any]): The options dictionary.
+-            args (List[str]): The arguments list.
+-
+-        Returns:
+-            Tuple[Any, List[str]]: The result and remaining arguments.
+-        """
+-        m_exclusive_used = self.mutually_exclusive.intersection(opts)
+-        option_used = m_exclusive_used and self.name in opts
+-
+-        exclusive_value_used = False
+-        for used in m_exclusive_used:
+-            value_used = opts.get(used, None)
+-            if not isinstance(value_used, List):
+-                value_used = [value_used]
+-            if value_used and set(self.with_values.get(used, [])).intersection(value_used):
+-                exclusive_value_used = True
+-
+-        if option_used and (not self.with_values or exclusive_value_used):
+-            options = ', '.join(self.opts)
+-            prohibited = ''.join(["\n * --{0} with {1}".format(item, self.with_values.get(
+-                        item)) if item in self.with_values else f"\n * {item}" for item in self.mutually_exclusive])
+-            raise click.UsageError(
+-                f"Illegal usage: `{options}` is mutually exclusive with: {prohibited}"
+-            )
+-
+-        return super(MutuallyExclusiveOption, self).handle_parse_result(
+-            ctx,
+-            opts,
+-            args
+-        )
++        pass
++
++    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any],
++        args: List[str]) ->Tuple[Any, List[str]]:
++        pass
+ 
+ 
+ class DependentOption(click.Option):
+@@ -553,46 +383,11 @@
+     A click option that depends on other options.
+     """
+     def __init__(self, *args, **kwargs):
+-        self.required_options = set(kwargs.pop('required_options', []))
+-        help = kwargs.get('help', '')
+-        if self.required_options:
+-            ex_str = ', '.join(self.required_options)
+-            kwargs['help'] = help + (
+-                f" Requires: [ {ex_str} ]"
+-            )
+-        super(DependentOption, self).__init__(*args, **kwargs)
+-
+-    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+-        """
+-        Handle the parse result for dependent options.
+-
+-        Args:
+-            ctx (click.Context): The click context.
+-            opts (Dict[str, Any]): The options dictionary.
+-            args (List[str]): The arguments list.
+-
+-        Returns:
+-            Tuple[Any, List[str]]: The result and remaining arguments.
+-        """
+-        missing_required_arguments = None
+-
+-        if self.name in opts:
+-            missing_required_arguments = self.required_options.difference(opts)
+-
+-        if missing_required_arguments:
+-            raise click.UsageError(
+-                "Illegal usage: `{}` needs the "
+-                "arguments `{}`.".format(
+-                    self.name,
+-                    ', '.join(missing_required_arguments)
+-                )
+-            )
+-
+-        return super(DependentOption, self).handle_parse_result(
+-            ctx,
+-            opts,
+-            args
+-        )
++        pass
++
++    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any],
++        args: List[str]) ->Tuple[Any, List[str]]:
++        pass
+ 
+ 
+ def transform_ignore(ctx: click.Context, param: click.Parameter, value: Tuple[str]) -> Dict[str, Dict[str, Optional[str]]]:
+@@ -620,32 +415,9 @@
+     return {}
+ 
+ 
+-def active_color_if_needed(ctx: click.Context, param: click.Parameter, value: str) -> str:
+-    """
+-    Activate color if needed based on the context and environment variables.
+-
+-    Args:
+-        ctx (click.Context): The click context.
+-        param (click.Parameter): The click parameter.
+-        value (str): The parameter value.
+-
+-    Returns:
+-        str: The parameter value.
+-    """
+-    if value == 'screen':
+-        ctx.color = True
+-
+-    color = os.environ.get("SAFETY_COLOR", None)
+-
+-    if color is not None:
+-        color = color.lower()
+-
+-        if color == '1' or color == 'true':
+-            ctx.color = True
+-        elif color == '0' or color == 'false':
+-            ctx.color = False
+-
+-    return value
++def active_color_if_needed(ctx: click.Context, param: click.Parameter,
++    value: str) ->str:
++    pass
+ 
+ 
+ def json_alias(ctx: click.Context, param: click.Parameter, value: bool) -> Optional[bool]:
+@@ -765,18 +537,10 @@
+     name = "filename"
+     envvar_list_splitter = os.path.pathsep
+ 
+-    def __init__(
+-        self,
+-        mode: str = "r",
+-        encoding: Optional[str] = None,
+-        errors: str = "strict",
+-        pure: bool = os.environ.get('SAFETY_PURE_YAML', 'false').lower() == 'true'
+-    ) -> None:
+-        self.mode = mode
+-        self.encoding = encoding
+-        self.errors = errors
+-        self.basic_msg = '\n' + click.style('Unable to load the Safety Policy file "{name}".', fg='red')
+-        self.pure = pure
++    def __init__(self, mode: str='r', encoding: Optional[str]=None, errors: str
++        ='strict', pure: bool=os.environ.get('SAFETY_PURE_YAML', 'false').lower
++        () == 'true') ->None:
++        pass
+ 
+     def to_info_dict(self) -> Dict[str, Any]:
+         """
+@@ -1155,30 +919,8 @@
+     return filtered_packages_licenses
+ 
+ 
+-def get_requirements_content(files: List[click.File]) -> Dict[str, str]:
+-    """
+-    Get the content of the requirements files.
+-
+-    Args:
+-        files (List[click.File]): The list of requirement files.
+-
+-    Returns:
+-        Dict[str, str]: The content of the requirement files.
+-
+-    Raises:
+-        InvalidProvidedReportError: If a file cannot be read.
+-    """
+-    requirements_files = {}
+-
+-    for f in files:
+-        try:
+-            f.seek(0)
+-            requirements_files[f.name] = f.read()
+-            f.close()
+-        except Exception as e:
+-            raise InvalidProvidedReportError(message=f"Unable to read a requirement file scanned in the report. {e}")
+-
+-    return requirements_files
++def get_requirements_content(files: List[click.File]) ->Dict[str, str]:
++    pass
+ 
+ 
+ def is_ignore_unpinned_mode(version: str) -> bool:

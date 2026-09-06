@@ -1,0 +1,15 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -650,6 +650,12 @@
+             vary = ", ".join([existing, vary])
+         self["vary"] = vary
+ 
++    def add_vary_header(self, vary: str) -> None:
++        existing = self.get("vary")
++        if existing is not None:
++            vary = ", ".join([existing, vary])
++        self["vary"] = vary
++
+ 
+ class State:
+     """

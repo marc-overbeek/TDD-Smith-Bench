@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef get_bn_batch_size_hook(module: nn.Module, input: Tuple[torch.Tensor]\n    ) ->Tuple[torch.Tensor]:\n    assert (\n        module not in batch_size_per_bn_layer\n    ), \"Some BN layers are reused. This is not supported and probably not desired.\"\n    x = input[0]\n    assert isinstance(\n        x, torch.Tensor\n    ), f\"BN layer should take tensor as input. Got {input}\"\n    # consider spatial dimensions as batch as well\n    batch_size = x.numel() // x.shape[1]\n    batch_size_per_bn_layer[module] = batch_size\n    return (x,)\n```",
+  "rewrite": "def get_bn_batch_size_hook(module: nn.Module, input: Tuple[torch.Tensor]\n    ) ->Tuple[torch.Tensor]:\n    assert (\n        module not in batch_size_per_bn_layer\n    ), \"Some BN layers are reused. This is not supported and probably not desired.\"\n    x = input[0]\n    assert isinstance(\n        x, torch.Tensor\n    ), f\"BN layer should take tensor as input. Got {input}\"\n    # consider spatial dimensions as batch as well\n    batch_size = x.numel() // x.shape[1]\n    batch_size_per_bn_layer[module] = batch_size\n    return (x,)",
+  "strategy": "lm_regen_from_tests"
+}

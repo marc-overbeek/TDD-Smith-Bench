@@ -1,0 +1,48 @@
+--- a/src/mistune/plugins/def_list.py
++++ b/src/mistune/plugins/def_list.py
+@@ -44,42 +44,9 @@
+     return pos
+ 
+ 
+-def _parse_def_item(block: "BlockParser", m: Match[str]) -> Iterable[Dict[str, Any]]:
+-    head = m.group("def_list_head")
+-    for line in head.splitlines():
+-        yield {
+-          'type': 'def_list_head',
+-          'text': line,
+-        }
+-
+-    src = m.group(0)
+-    end = len(head)
+-
+-    m2 = DD_START_RE.search(src, end)
+-    assert m2 is not None
+-    start = m2.start()
+-    prev_blank_line = src[end:start] == '\n'
+-    while m2:
+-        m2 = DD_START_RE.search(src, start + 1)
+-        if not m2:
+-            break
+-
+-        end = m2.start()
+-        text = src[start:end].replace(':', ' ', 1)
+-        children = _process_text(block, text, prev_blank_line)
+-        prev_blank_line = bool(HAS_BLANK_LINE_RE.search(text))
+-        yield {
+-          'type': 'def_list_item',
+-          'children': children,
+-        }
+-        start = end
+-
+-    text = src[start:].replace(':', ' ', 1)
+-    children = _process_text(block, text, prev_blank_line)
+-    yield {
+-      'type': 'def_list_item',
+-      'children': children,
+-    }
++def _parse_def_item(block: 'BlockParser', m: Match[str]) ->Iterable[Dict[
++    str, Any]]:
++    pass
+ 
+ 
+ def _process_text(block: "BlockParser", text: str, loose: bool) -> List[Any]:

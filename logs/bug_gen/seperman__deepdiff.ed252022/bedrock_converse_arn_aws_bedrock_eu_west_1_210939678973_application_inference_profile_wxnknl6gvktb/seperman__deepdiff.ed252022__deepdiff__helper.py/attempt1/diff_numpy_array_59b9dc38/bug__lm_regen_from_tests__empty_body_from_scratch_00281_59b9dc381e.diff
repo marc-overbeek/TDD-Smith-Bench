@@ -1,0 +1,60 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -671,12 +671,51 @@
+ 
+ def diff_numpy_array(A, B):
+     """
+-    Numpy Array A - B
+-    return items in A that are not in B
+-    By Divakar
+-    https://stackoverflow.com/a/52417967/1497443
+-    """
+-    return A[~np.isin(A, B)]
++    Find the indices where two numpy arrays differ.
++    
++    Returns a tuple of arrays containing the indices where A and B differ.
++    """
++    if np is None:
++        return None
++    
++    # Handle case where arrays have different shapes
++    if A.shape != B.shape:
++        return (np.array([]), np.array([]))
++    
++    # Find where arrays differ
++    diff_mask = A != B
++    
++    # Return indices where they differ
++    return np.where(diff_mask)
++
++def diff_numpy_array(A, B):
++    """
++    Find the indices where two numpy arrays differ.
++    
++    Returns a tuple of arrays containing the indices where A and B differ.
++    """
++    if np is None:
++        return None
++    
++    # Handle case where arrays have different shapes
++    if A.shape != B.shape:
++        return (np.array([]), np.array([]))
++    
++    # Create a mask for differences, handling NaN values
++    # NaN == NaN is False, but we want to treat them as equal
++    diff_mask = np.logical_or(A != B, np.isnan(A) != np.isnan(B))
++    
++    # Return indices where they differ
++    return np.where(diff_mask)
++
++def diff_numpy_array(A, B):
++    if np is None:
++        return None
++    
++    if A.shape != B.shape:
++        return (np.array([]), np.array([]))
++    
++    return np.where(A != B)
+ 
+ 
+ PYTHON_TYPE_TO_NUMPY_TYPE = {

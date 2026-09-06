@@ -1,0 +1,115 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -636,56 +636,64 @@
+     return "\n".join(formatted_lines)
+ 
+ 
+-def get_printable_list_of_scanned_items(scanning_target: str) -> Tuple[List[Dict[str, Any]], List[str]]:
+-    """
+-    Get a printable list of scanned items.
+-
+-    Args:
+-        scanning_target (str): The scanning target (environment, stdin, files, or file).
+-
+-    Returns:
+-        Tuple[List[Dict[str, Any]], List[str]]: Printable list of scanned items and scanned items data.
+-    """
+-    context = SafetyContext()
+-
+-    result = []
+-    scanned_items_data = []
+-
++def get_printable_list_of_scanned_items(scanning_target: str) ->Tuple[List[
++    Dict[str, Any]], List[str]]:
++    ctx = SafetyContext()
++    
+     if scanning_target == 'environment':
+-        locations = set(SafetyContext().scanned_full_path)
+-
+-        for path in locations:
+-            result.append([{'styled': False, 'value': '-> ' + path}])
+-            scanned_items_data.append(path)
+-
+-        if len(locations) <= 0:
+-            msg = 'No locations found in the environment'
+-            result.append([{'styled': False, 'value': msg}])
+-            scanned_items_data.append(msg)
+-
++        if not ctx.packages:
++            no_locations = 'No locations found in the environment'
++            return [[{'styled': False, 'value': no_locations}]], [no_locations]
++        else:
++            # For environment, we don't have specific file paths to show
++            return [], []
++            
++    elif scanning_target == 'file':
++        if hasattr(ctx, 'params') and 'file' in ctx.params:
++            file_param = ctx.params['file']
++            if hasattr(file_param, 'name'):
++                file_name = file_param.name
++                return [[{'styled': False, 'value': f'-> {file_name}'}]], [file_name]
++            else:
++                return [[{'styled': False, 'value': '-> unknown file'}]], ['unknown file']
++        else:
++            no_file = 'No file specified'
++            return [[{'styled': False, 'value': no_file}]], [no_file]
++            
++    elif scanning_target == 'files':
++        if hasattr(ctx, 'params') and 'files' in ctx.params:
++            files = ctx.params['files']
++            if files:
++                formatted_lines = []
++                data_list = []
++                for file_obj in files:
++                    if hasattr(file_obj, 'name'):
++                        file_name = file_obj.name
++                        formatted_lines.append([{'styled': False, 'value': f'-> {file_name}'}])
++                        data_list.append(file_name)
++                    else:
++                        formatted_lines.append([{'styled': False, 'value': '-> unknown file'}])
++                        data_list.append('unknown file')
++                return formatted_lines, data_list
++            else:
++                no_files = 'No files specified'
++                return [[{'styled': False, 'value': no_files}]], [no_files]
++        else:
++            no_files = 'No files specified'
++            return [[{'styled': False, 'value': no_files}]], [no_files]
++            
+     elif scanning_target == 'stdin':
+-        scanned_stdin = [pkg.name for pkg in context.packages if isinstance(pkg, Package)]
+-        value = 'No found packages in stdin'
+-        scanned_items_data = [value]
+-
+-        if len(scanned_stdin) > 0:
+-            value = ', '.join(scanned_stdin)
+-            scanned_items_data = scanned_stdin
+-
+-        result.append(
+-            [{'styled': False, 'value': value}])
+-
+-    elif scanning_target == 'files':
+-        for file in context.params.get('files', []):
+-            result.append([{'styled': False, 'value': f'-> {file.name}'}])
+-            scanned_items_data.append(file.name)
+-    elif scanning_target == 'file':
+-        file = context.params.get('file', None)
+-        name = file.name if file else ''
+-        result.append([{'styled': False, 'value': f'-> {name}'}])
+-        scanned_items_data.append(name)
+-
+-    return result, scanned_items_data
++        if not ctx.packages:
++            no_packages = 'No found packages in stdin'
++            return [[{'styled': False, 'value': no_packages}]], [no_packages]
++        else:
++            package_names = [pkg.name for pkg in ctx.packages]
++            return [[{'styled': False, 'value': pkg_name} for pkg_name in package_names]], package_names
++            
++    else:
++        # Default case
++        no_target = f'Unknown scanning target: {scanning_target}'
++        return [[{'styled': False, 'value': no_target}]], [no_target]
+ 
+ 
+ REPORT_HEADING = format_long_text(click.style('REPORT', bold=True))

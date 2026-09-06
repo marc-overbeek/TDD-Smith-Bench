@@ -1,0 +1,48 @@
+--- a/starlette/authentication.py
++++ b/starlette/authentication.py
+@@ -20,7 +20,8 @@
+ _P = ParamSpec("_P")
+ 
+ 
+-def has_required_scope(conn: HTTPConnection, scopes: typing.Sequence[str]) -> bool:
++def has_required_scope(conn: HTTPConnection, scopes: typing.Sequence[str]
++    ) ->bool:
+     for scope in scopes:
+         if scope not in conn.auth.scopes:
+             return False
+@@ -34,9 +35,8 @@
+ ) -> typing.Callable[[typing.Callable[_P, typing.Any]], typing.Callable[_P, typing.Any]]:
+     scopes_list = [scopes] if isinstance(scopes, str) else list(scopes)
+ 
+-    def decorator(
+-        func: typing.Callable[_P, typing.Any],
+-    ) -> typing.Callable[_P, typing.Any]:
++    def decorator(func: typing.Callable[_P, typing.Any]) ->typing.Callable[_P,
++        typing.Any]:
+         sig = inspect.signature(func)
+         for idx, parameter in enumerate(sig.parameters.values()):
+             if parameter.name == "request" or parameter.name == "websocket":
+@@ -46,7 +46,6 @@
+             raise Exception(f'No "request" or "websocket" argument on function "{func}"')
+ 
+         if type_ == "websocket":
+-            # Handle websocket functions. (Always async)
+             @functools.wraps(func)
+             async def websocket_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> None:
+                 websocket = kwargs.get("websocket", args[idx] if idx < len(args) else None)
+@@ -60,7 +59,6 @@
+             return websocket_wrapper
+ 
+         elif is_async_callable(func):
+-            # Handle async request/response functions.
+             @functools.wraps(func)
+             async def async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> typing.Any:
+                 request = kwargs.get("request", args[idx] if idx < len(args) else None)
+@@ -77,7 +75,6 @@
+             return async_wrapper
+ 
+         else:
+-            # Handle sync request/response functions.
+             @functools.wraps(func)
+             def sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> typing.Any:
+                 request = kwargs.get("request", args[idx] if idx < len(args) else None)

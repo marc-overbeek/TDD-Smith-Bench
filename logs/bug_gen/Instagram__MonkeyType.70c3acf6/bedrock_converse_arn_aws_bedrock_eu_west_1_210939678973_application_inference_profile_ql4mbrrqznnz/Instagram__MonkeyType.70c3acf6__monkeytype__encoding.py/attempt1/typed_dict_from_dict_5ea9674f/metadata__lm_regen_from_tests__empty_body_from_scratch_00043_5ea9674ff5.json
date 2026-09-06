@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef typed_dict_from_dict(d: TypeDict) -> type:\n    module = d[\"module\"]\n    qualname = d[\"qualname\"]\n    elem_types = d.get(\"elem_types\", {})\n    annotations = {k: type_from_dict(v) for k, v in elem_types.items()}\n    # Get the class name (last part of qualname)\n    name = qualname.split(\".\")[-1]\n    # Create a new TypedDict type dynamically\n    typed_dict_class = TypedDict(name, annotations)  # type: ignore[misc]\n    typed_dict_class.__module__ = module\n    typed_dict_class.__qualname__ = qualname\n    return typed_dict_class\n```",
+  "rewrite": "def typed_dict_from_dict(d: TypeDict) -> type:\n    module = d[\"module\"]\n    qualname = d[\"qualname\"]\n    elem_types = d.get(\"elem_types\", {})\n    annotations = {k: type_from_dict(v) for k, v in elem_types.items()}\n    # Get the class name (last part of qualname)\n    name = qualname.split(\".\")[-1]\n    # Create a new TypedDict type dynamically\n    typed_dict_class = TypedDict(name, annotations)  # type: ignore[misc]\n    typed_dict_class.__module__ = module\n    typed_dict_class.__qualname__ = qualname\n    return typed_dict_class",
+  "strategy": "lm_regen_from_tests"
+}

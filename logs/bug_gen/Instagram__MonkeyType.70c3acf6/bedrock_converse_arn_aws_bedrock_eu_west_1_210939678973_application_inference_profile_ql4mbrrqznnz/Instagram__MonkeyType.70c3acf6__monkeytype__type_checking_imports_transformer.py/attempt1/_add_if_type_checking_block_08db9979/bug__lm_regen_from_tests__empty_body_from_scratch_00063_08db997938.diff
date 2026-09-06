@@ -1,0 +1,19 @@
+--- a/monkeytype/type_checking_imports_transformer.py
++++ b/monkeytype/type_checking_imports_transformer.py
+@@ -110,12 +110,15 @@
+             import_module,
+         )
+ 
++        # Extract the if TYPE_CHECKING statement from the module
++        type_checking_block_statement = type_checking_block_module.body[0]
++
+         # Find the point of insertion for the TYPE_CHECKING block
+         statements_before_imports, statements_after_imports = self._split_module(module)
+ 
+         updated_body_list = [
+             *statements_before_imports,
+-            type_checking_block_module,
++            type_checking_block_statement,
+             *statements_after_imports,
+         ]
+ 

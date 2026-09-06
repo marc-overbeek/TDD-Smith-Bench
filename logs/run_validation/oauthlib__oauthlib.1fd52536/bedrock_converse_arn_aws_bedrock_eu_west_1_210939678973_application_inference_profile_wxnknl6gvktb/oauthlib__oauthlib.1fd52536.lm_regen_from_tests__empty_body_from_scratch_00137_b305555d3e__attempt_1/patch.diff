@@ -1,0 +1,50 @@
+--- a/oauthlib/oauth1/rfc5849/parameters.py
++++ b/oauthlib/oauth1/rfc5849/parameters.py
+@@ -86,24 +86,29 @@
+ 
+ 
+ def _append_params(oauth_params, params):
+-    """Append OAuth params to an existing set of parameters.
+-
+-    Both params and oauth_params is must be lists of 2-tuples.
+-
+-    Per `section 3.5.2`_ and `3.5.3`_ of the spec.
+-
+-    .. _`section 3.5.2`: https://tools.ietf.org/html/rfc5849#section-3.5.2
+-    .. _`3.5.3`: https://tools.ietf.org/html/rfc5849#section-3.5.3
+-
+-    """
+-    merged = list(params)
+-    merged.extend(oauth_params)
+-    # The request URI / entity-body MAY include other request-specific
+-    # parameters, in which case, the protocol parameters SHOULD be appended
+-    # following the request-specific parameters, properly separated by an "&"
+-    # character (ASCII code 38)
+-    merged.sort(key=lambda i: i[0].startswith('oauth_'))
+-    return merged
++    # Convert params to list of tuples if it's a string
++    if isinstance(params, str):
++        params = extract_params(params) or []
++    
++    # Separate oauth and non-oauth params
++    non_oauth_params = []
++    oauth_params_list = []
++    
++    for key, value in params:
++        if key.startswith('oauth_'):
++            oauth_params_list.append((key, value))
++        else:
++            non_oauth_params.append((key, value))
++    
++    # Add oauth_params from the function argument
++    for key, value in oauth_params:
++        oauth_params_list.append((key, value))
++    
++    # Sort oauth params by key
++    oauth_params_list.sort(key=lambda x: x[0])
++    
++    # Return non-oauth params first, then sorted oauth params
++    return non_oauth_params + oauth_params_list
+ 
+ 
+ def prepare_form_encoded_body(oauth_params, body):

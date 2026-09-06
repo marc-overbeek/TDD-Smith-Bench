@@ -1,0 +1,92 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -376,7 +376,9 @@
+ 
+ 
+ def type_in_type_group(item, type_group):
+-    return get_type(item) in type_group
++    if item is None:
++        return type(None) in type_group or None in type_group
++    return type(item) in type_group
+ 
+ 
+ def type_is_subclass_of_type_group(item, type_group):
+@@ -400,67 +402,17 @@
+ }
+ 
+ 
+-def number_to_string(number, significant_digits, number_format_notation="f"):
+-    """
+-    Convert numbers to string considering significant digits.
+-    """
+-    try:
+-        using = number_formatting[number_format_notation]
+-    except KeyError:
+-        raise ValueError("number_format_notation got invalid value of {}. The valid values are 'f' and 'e'".format(number_format_notation)) from None
+-
+-    if not isinstance(number, numbers):
+-        return number
+-    elif isinstance(number, Decimal):
+-        with localcontext() as ctx:
+-            # Precision = number of integer digits + significant_digits
+-            # Using number//1 to get the integer part of the number
+-            ctx.prec = len(str(abs(number // 1))) + significant_digits
+-            try:
+-                number = number.quantize(Decimal('0.' + '0' * significant_digits))
+-            except InvalidDecimalOperation:
+-                # Sometimes rounding up causes a higher precision to be needed for the quantize operation
+-                # For example '999.99999999' will become '1000.000000' after quantize
+-                ctx.prec += 1
+-                number = number.quantize(Decimal('0.' + '0' * significant_digits))
+-    elif isinstance(number, only_complex_number):
+-        # Case for complex numbers.
+-        number = number.__class__(
+-            "{real}+{imag}j".format(
+-                real=number_to_string(
+-                    number=number.real,
+-                    significant_digits=significant_digits,
+-                    number_format_notation=number_format_notation
+-                ),
+-                imag=number_to_string(
+-                    number=number.imag,
+-                    significant_digits=significant_digits,
+-                    number_format_notation=number_format_notation
+-                )
+-            )
+-        )
+-    else:
+-        # import pytest; pytest.set_trace()
+-        number = round(number=number, ndigits=significant_digits)
+-
+-        if significant_digits == 0:
+-            number = int(number)
+-
+-    if number == 0.0:
+-        # Special case for 0: "-0.xx" should compare equal to "0.xx"
+-        number = abs(number)
+-
+-    # Cast number to string
+-    result = (using % significant_digits).format(number)
+-    # https://bugs.python.org/issue36622
+-    if number_format_notation == 'e':
+-        # Removing leading 0 for exponential part.
+-        result = re.sub(
+-            pattern=r'(?<=e(\+|\-))0(?=\d)+',
+-            repl=r'',
+-            string=result
+-        )
+-    return result
++def number_to_string(number, significant_digits, number_format_notation='f'):
++    if number_format_notation not in number_formatting:
++        raise ValueError("number_format_notation must be 'f' or 'e'")
++    
++    if isinstance(number, only_complex_number):
++        real_part = number_to_string(number.real, significant_digits, number_format_notation)
++        imag_part = number_to_string(number.imag, significant_digits, number_format_notation)
++        return '{} + {}j'.format(real_part, imag_part)
++    
++    fmt = number_formatting[number_format_notation] % significant_digits
++    return fmt.format(number)
+ 
+ 
+ class DeepDiffDeprecationWarning(DeprecationWarning):

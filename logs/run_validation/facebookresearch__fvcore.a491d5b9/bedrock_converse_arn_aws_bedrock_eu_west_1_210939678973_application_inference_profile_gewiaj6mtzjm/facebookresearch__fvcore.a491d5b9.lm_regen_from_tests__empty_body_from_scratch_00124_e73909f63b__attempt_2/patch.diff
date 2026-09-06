@@ -1,0 +1,46 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -153,24 +153,25 @@
+     return flop
+ 
+ 
+-def conv_flop_jit(inputs: List[Any], outputs: List[Any]) -> typing.Counter[str]:
+-    """
+-    Count flops for convolution.
+-    """
+-    # Inputs of Convolution should be a list of length 12 or 13. They represent:
+-    # 0) input tensor, 1) convolution filter, 2) bias, 3) stride, 4) padding,
+-    # 5) dilation, 6) transposed, 7) out_pad, 8) groups, 9) benchmark_cudnn,
+-    # 10) deterministic_cudnn and 11) user_enabled_cudnn.
+-    # starting with #40737 it will be 12) user_enabled_tf32
+-    assert len(inputs) == 12 or len(inputs) == 13, len(inputs)
+-    x, w = inputs[:2]
+-    x_shape, w_shape, out_shape = (get_shape(x), get_shape(w), get_shape(outputs[0]))
+-    transposed = inputs[6].toIValue()
+-
+-    # use a custom name instead of "_convolution"
+-    return Counter(
+-        {"conv": conv_flop_count(x_shape, w_shape, out_shape, transposed=transposed)}
+-    )
++def conv_flop_jit(inputs: List[Any], outputs: List[Any]) ->typing.Counter[str]:
++    # Extract input and weight shapes
++    input_shape = get_shape(inputs[0])
++    weight_shape = get_shape(inputs[1])
++    output_shape = get_shape(outputs[0])
++    
++    # Check if this is a transposed convolution
++    # For aten::_convolution, the transposed flag is typically the 6th argument (index 5)
++    transposed = False
++    if len(inputs) > 5:
++        try:
++            transposed = inputs[5].toIValue()
++        except Exception:
++            pass
++    
++    # Calculate flops using the existing helper function
++    flops = conv_flop_count(input_shape, weight_shape, output_shape, transposed)
++    
++    return Counter({"conv": flops})
+ 
+ 
+ def einsum_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:

@@ -1,0 +1,16 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -29,7 +29,12 @@
+ 
+ class SetOrdered(SetOrderedBase):
+     def __repr__(self):
+-        return str(list(self))
++        if hasattr(self, 'view') and self.view == TREE_VIEW:
++            # For tree view, return a string representation that shows the diff structure
++            return str(self)
++        else:
++            # For other views, return the standard string representation
++            return str(self)
+ 
+ 
+ try:

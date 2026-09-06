@@ -1,0 +1,25 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -299,8 +299,22 @@
+             )
+         self._param_schedule = values
+ 
++    def test_scheduler(self):
++        config = self._get_valid_config()
++        scheduler = StepParamScheduler(**config)
++        schedule = [scheduler(epoch_num / self._num_updates) for epoch_num in
++            range(self._num_updates)]
++        expected_schedule = [0.1, 0.1, 0.1, 0.01, 0.01, 0.01, 0.001, 0.001, 
++            0.001, 0.0001, 0.0001, 0.0001]
++
+     def __call__(self, where: float) -> float:
+         ind = int((where + self.WHERE_EPSILON) * len(self._param_schedule))
++        ind = min(ind, len(self._param_schedule) - 1)
++        return self._param_schedule[ind]
++
++    def __call__(self, where: float) -> float:
++        ind = int((where + self.WHERE_EPSILON) * len(self._param_schedule))
++        ind = min(ind, len(self._param_schedule) - 1)
+         return self._param_schedule[ind]
+ 
+ 

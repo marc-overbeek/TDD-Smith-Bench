@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the test, I need to understand what `build_remediation_info_url` should do:\n\nThe test shows that `more_info_url` gets transformed from `'https://pyup.io/package/foo'` to `'https://pyup.io/package/foo?from=1.22.0&to=1.22.3'`.\n\nSo the function should append query parameters `from=<version>` and `to=<target_version>` to the base URL.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the test, I need to understand what `build_remediation_info_url` should do:\n\nThe test shows that `more_info_url` gets transformed from `'https://pyup.io/package/foo'` to `'https://pyup.io/package/foo?from=1.22.0&to=1.22.3'`.\n\nSo the function should append query parameters `from=<version>` and `to=<target_version>` to the base URL.\n\n```python\ndef build_remediation_info_url(base_url: str, version: Optional[str], spec:\n    str, target_version: Optional[str]='') ->str:\n    req = PreparedRequest()\n    params = {}\n    if version:\n        params['from'] = version\n    if target_version:\n        params['to'] = target_version\n    req.prepare_url(base_url, params)\n    return req.url\n```",
+  "rewrite": "def build_remediation_info_url(base_url: str, version: Optional[str], spec:\n    str, target_version: Optional[str]='') ->str:\n    req = PreparedRequest()\n    params = {}\n    if version:\n        params['from'] = version\n    if target_version:\n        params['to'] = target_version\n    req.prepare_url(base_url, params)\n    return req.url",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,255 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -43,25 +43,12 @@
+     from typing import NoReturn  # noqa
+ 
+ 
+-def module_path(path: str) -> Tuple[str, Optional[str]]:
+-    """Parse <module>[:<qualname>] into its constituent parts."""
+-    parts = path.split(":", 1)
+-    module = parts.pop(0)
+-    qualname = parts[0] if parts else None
+-    if os.sep in module:  # Smells like a path
+-        raise argparse.ArgumentTypeError(
+-            f"{module} does not look like a valid Python import path"
+-        )
+-
+-    return module, qualname
+-
+-
+-def module_path_with_qualname(path: str) -> Tuple[str, str]:
+-    """Require that path be of the form <module>:<qualname>."""
+-    module, qualname = module_path(path)
+-    if qualname is None:
+-        raise argparse.ArgumentTypeError("must be of the form <module>:<qualname>")
+-    return module, qualname
++def module_path(path: str) ->Tuple[str, Optional[str]]:
++    pass
++
++
++def module_path_with_qualname(path: str) ->Tuple[str, str]:
++    pass
+ 
+ 
+ def complain_about_no_traces(args: argparse.Namespace, stderr: IO[str]) -> None:
+@@ -80,24 +67,8 @@
+         print(f"No traces found for module {module}", file=stderr)
+ 
+ 
+-def get_monkeytype_config(path: str) -> Config:
+-    """Imports the config instance specified by path.
+-
+-    Path should be in the form module:qualname. Optionally, path may end with (),
+-    in which case we will call/instantiate the given class/function.
+-    """
+-    should_call = False
+-    if path.endswith("()"):
+-        should_call = True
+-        path = path[:-2]
+-    module, qualname = module_path_with_qualname(path)
+-    try:
+-        config = get_name_in_module(module, qualname)
+-    except MonkeyTypeError as mte:
+-        raise argparse.ArgumentTypeError(f"cannot import {path}: {mte}")
+-    if should_call:
+-        config = config()
+-    return config  # type: ignore[no-any-return]
++def get_monkeytype_config(path: str) ->Config:
++    pass
+ 
+ 
+ def display_sample_count(traces: List[CallTrace], stderr: IO[str]) -> None:
+@@ -264,13 +235,9 @@
+     print(output, file=file)
+ 
+ 
+-def list_modules_handler(
+-    args: argparse.Namespace, stdout: IO[str], stderr: IO[str]
+-) -> None:
+-    output, file = None, stdout
+-    modules = args.config.trace_store().list_modules()
+-    output = "\n".join(modules)
+-    print(output, file=file)
++def list_modules_handler(args: argparse.Namespace, stdout: IO[str], stderr:
++    IO[str]) ->None:
++    pass
+ 
+ 
+ def run_handler(args: argparse.Namespace, stdout: IO[str], stderr: IO[str]) -> None:
+@@ -293,174 +260,8 @@
+         args.limit = args.config.query_limit()
+ 
+ 
+-def main(argv: List[str], stdout: IO[str], stderr: IO[str]) -> int:
+-    parser = argparse.ArgumentParser(
+-        description="Generate and apply stub files from collected type information.",
+-    )
+-    parser.add_argument(
+-        "--disable-type-rewriting",
+-        action="store_true",
+-        default=False,
+-        help="Show types without rewrite rules applied (default: False)",
+-    )
+-    parser.add_argument(
+-        "--limit",
+-        "-l",
+-        type=int,
+-        default=None,
+-        help=(
+-            "How many traces to return from storage"
+-            " (default: 2000, unless changed in your config)"
+-        ),
+-    )
+-    parser.add_argument(
+-        "--verbose",
+-        "-v",
+-        action="store_true",
+-        default=False,
+-        help="Show verbose output (e.g. include trace-decoding-failed errors)",
+-    )
+-    parser.add_argument(
+-        "--config",
+-        "-c",
+-        type=str,
+-        default="monkeytype.config:get_default_config()",
+-        help=(
+-            "The <module>:<qualname> of the config to use"
+-            " (default: monkeytype_config:CONFIG if it exists, "
+-            "else monkeytype.config:DefaultConfig())"
+-        ),
+-    )
+-
+-    subparsers = parser.add_subparsers(title="commands", dest="command")
+-
+-    run_parser = subparsers.add_parser(
+-        "run",
+-        help="Run a Python script under MonkeyType tracing",
+-        description="Run a Python script under MonkeyType tracing",
+-    )
+-    run_parser.add_argument(
+-        "script_path",
+-        type=str,
+-        help="""Filesystem path to a Python script file to run under tracing""",
+-    )
+-    run_parser.add_argument(
+-        "-m", action="store_true", help="Run a library module as a script"
+-    )
+-    run_parser.add_argument(
+-        "script_args",
+-        nargs=argparse.REMAINDER,
+-    )
+-    run_parser.set_defaults(handler=run_handler)
+-
+-    apply_parser = subparsers.add_parser(
+-        "apply",
+-        help="Generate and apply a stub",
+-        description="Generate and apply a stub",
+-    )
+-    apply_parser.add_argument(
+-        "module_path",
+-        type=module_path,
+-        help="""A string of the form <module>[:<qualname>] (e.g.
+-my.module:Class.method). This specifies the set of functions/methods for which
+-we want to generate stubs.  For example, 'foo.bar' will generate stubs for
+-anything in the module 'foo.bar', while 'foo.bar:Baz' will only generate stubs
+-for methods attached to the class 'Baz' in module 'foo.bar'. See
+-https://www.python.org/dev/peps/pep-3155/ for a detailed description of the
+-qualname format.""",
+-    )
+-    apply_parser.add_argument(
+-        "--sample-count",
+-        action="store_true",
+-        default=False,
+-        help="Print to stderr the numbers of traces stubs are based on",
+-    )
+-    apply_parser.add_argument(
+-        "--ignore-existing-annotations",
+-        action="store_const",
+-        dest="existing_annotation_strategy",
+-        default=ExistingAnnotationStrategy.REPLICATE,
+-        const=ExistingAnnotationStrategy.IGNORE,
+-        help="Ignore existing annotations when applying stubs from traces.",
+-    )
+-    apply_parser.add_argument(
+-        "--pep_563",
+-        action="store_true",
+-        default=False,
+-        help="""Add the "from __future__ import annotation" import at the top
+-and keep the newly imported modules inside the "if TYPE_CHECKING" block.""",
+-    )
+-    apply_parser.set_defaults(handler=apply_stub_handler)
+-
+-    stub_parser = subparsers.add_parser(
+-        "stub", help="Generate a stub", description="Generate a stub"
+-    )
+-    stub_parser.add_argument(
+-        "module_path",
+-        type=module_path,
+-        help="""A string of the form <module>[:<qualname>] (e.g.
+-my.module:Class.method). This specifies the set of functions/methods for which
+-we want to generate stubs.  For example, 'foo.bar' will generate stubs for
+-anything in the module 'foo.bar', while 'foo.bar:Baz' will only generate stubs
+-for methods attached to the class 'Baz' in module 'foo.bar'. See
+-https://www.python.org/dev/peps/pep-3155/ for a detailed description of the
+-qualname format.""",
+-    )
+-    stub_parser.add_argument(
+-        "--sample-count",
+-        action="store_true",
+-        default=False,
+-        help="Print to stderr the numbers of traces stubs are based on",
+-    )
+-    group = stub_parser.add_mutually_exclusive_group()
+-    group.add_argument(
+-        "--ignore-existing-annotations",
+-        action="store_const",
+-        dest="existing_annotation_strategy",
+-        default=ExistingAnnotationStrategy.REPLICATE,
+-        const=ExistingAnnotationStrategy.IGNORE,
+-        help="Ignore existing annotations and generate stubs only from traces.",
+-    )
+-    group.add_argument(
+-        "--omit-existing-annotations",
+-        action="store_const",
+-        dest="existing_annotation_strategy",
+-        default=ExistingAnnotationStrategy.REPLICATE,
+-        const=ExistingAnnotationStrategy.OMIT,
+-        help="Omit from stub any existing annotations in source. Implied by --apply.",
+-    )
+-    stub_parser.add_argument(
+-        "--diff",
+-        action="store_true",
+-        default=False,
+-        help="Compare stubs generated with and without considering existing annotations.",
+-    )
+-    stub_parser.set_defaults(handler=print_stub_handler)
+-
+-    list_modules_parser = subparsers.add_parser(
+-        "list-modules",
+-        help="Listing of the unique set of module traces",
+-        description="Listing of the unique set of module traces",
+-    )
+-    list_modules_parser.set_defaults(handler=list_modules_handler)
+-
+-    args = parser.parse_args(argv)
+-    args.config = get_monkeytype_config(args.config)
+-    update_args_from_config(args)
+-
+-    handler = getattr(args, "handler", None)
+-    if handler is None:
+-        parser.print_help(file=stderr)
+-        return 1
+-
+-    with args.config.cli_context(args.command):
+-        try:
+-            handler(args, stdout, stderr)
+-        except HandlerError as err:
+-            print(f"ERROR: {err}", file=stderr)
+-            return 1
+-
+-    return 0
++def main(argv: List[str], stdout: IO[str], stderr: IO[str]) ->int:
++    pass
+ 
+ 
+ def entry_point_main() -> "NoReturn":

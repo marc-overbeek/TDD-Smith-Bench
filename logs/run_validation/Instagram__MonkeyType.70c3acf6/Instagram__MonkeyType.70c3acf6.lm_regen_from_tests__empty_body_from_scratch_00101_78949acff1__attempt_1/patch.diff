@@ -1,0 +1,44 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -815,24 +815,23 @@
+         )
+ 
+ 
+-def get_updated_definition(
+-    func: Callable[..., Any],
+-    traces: Iterable[CallTrace],
+-    max_typed_dict_size: int,
+-    rewriter: Optional[TypeRewriter] = None,
+-    existing_annotation_strategy: ExistingAnnotationStrategy = ExistingAnnotationStrategy.REPLICATE,
+-) -> FunctionDefinition:
+-    """Update the definition for func using the types collected in traces."""
+-    if rewriter is None:
+-        rewriter = NoOpRewriter()
+-    arg_types, return_type, yield_type = shrink_traced_types(
+-        traces, max_typed_dict_size
+-    )
+-    arg_types = {name: rewriter.rewrite(typ) for name, typ in arg_types.items()}
+-    if return_type is not None:
+-        return_type = rewriter.rewrite(return_type)
+-    if yield_type is not None:
+-        yield_type = rewriter.rewrite(yield_type)
++def get_updated_definition(func: Callable[..., Any], traces: Iterable[
++    CallTrace], max_typed_dict_size: int, rewriter: Optional[TypeRewriter]=
++    None, existing_annotation_strategy: ExistingAnnotationStrategy=
++    ExistingAnnotationStrategy.REPLICATE) ->FunctionDefinition:
++    arg_types, return_type, yield_type = shrink_traced_types(traces, max_typed_dict_size)
++    
++    # Apply rewriter if provided
++    if rewriter is not None:
++        new_arg_types = {}
++        for name, typ in arg_types.items():
++            new_arg_types[name] = rewriter.rewrite(typ)
++        arg_types = new_arg_types
++        if return_type is not None:
++            return_type = rewriter.rewrite(return_type)
++        if yield_type is not None:
++            yield_type = rewriter.rewrite(yield_type)
++    
+     return FunctionDefinition.from_callable_and_traced_types(
+         func, arg_types, return_type, yield_type, existing_annotation_strategy
+     )

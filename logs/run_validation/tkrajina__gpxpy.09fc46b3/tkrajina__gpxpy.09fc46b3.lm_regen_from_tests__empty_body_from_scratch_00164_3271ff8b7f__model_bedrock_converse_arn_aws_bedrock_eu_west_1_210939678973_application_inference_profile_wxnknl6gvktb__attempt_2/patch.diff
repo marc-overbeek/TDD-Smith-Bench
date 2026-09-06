@@ -1,0 +1,38 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1817,7 +1817,7 @@
+ 
+     def get_elevation_extremes(self) -> MinimumMaximum:
+         """
+-        Calculate elevation extremes of track
++        Calculate elevation extremes of GPX file
+ 
+         Returns
+         -------
+@@ -1827,19 +1827,17 @@
+             maximum: float
+                 Maximum elevation in meters
+         """
+-        if not self.segments:
++        if not self.tracks:
+             return MinimumMaximum(None, None)
+ 
+         elevations = []
+ 
+-        for track_segment in self.segments:
+-            (_min, _max) = track_segment.get_elevation_extremes()
+-            if _min is not None:
+-                elevations.append(_min)
+-            if _max is not None:
+-                elevations.append(_max)
+-
+-        if len(elevations) == 0:
++        for track in self.tracks:
++            for segment in track.segments:
++                segment_elevations = [x.elevation for x in segment.points if x.elevation is not None]
++                elevations.extend(segment_elevations)
++
++        if not elevations:
+             return MinimumMaximum(None, None)
+ 
+         return MinimumMaximum(min(elevations), max(elevations))

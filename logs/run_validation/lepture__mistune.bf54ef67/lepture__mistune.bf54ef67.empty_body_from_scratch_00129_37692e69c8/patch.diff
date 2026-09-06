@@ -1,0 +1,29 @@
+--- a/src/mistune/plugins/footnotes.py
++++ b/src/mistune/plugins/footnotes.py
+@@ -92,23 +92,9 @@
+     }
+ 
+ 
+-def md_footnotes_hook(
+-    md: "Markdown", result: Union[str, List[Dict[str, Any]]], state: BlockState
+-) -> str:
+-    assert isinstance(result, str)
+-    notes = state.env.get("footnotes")
+-    if not notes:
+-        return result
+-
+-    children = [
+-        parse_footnote_item(md.block, k, i + 1, state)
+-        for i, k in enumerate(notes)
+-    ]
+-    state = BlockState()
+-    state.tokens = [{'type': 'footnotes', 'children': children}]
+-    output = md.render_state(state)
+-    assert isinstance(output, str)
+-    return result + output
++def md_footnotes_hook(md: 'Markdown', result: Union[str, List[Dict[str, Any
++    ]]], state: BlockState) ->str:
++    pass
+ 
+ 
+ def render_footnote_ref(renderer: "BaseRenderer", key: str, index: int) -> str:

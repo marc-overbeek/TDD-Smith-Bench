@@ -1,0 +1,62 @@
+--- a/src/mistune/plugins/spoiler.py
++++ b/src/mistune/plugins/spoiler.py
+@@ -48,14 +48,12 @@
+     return state.cursor
+ 
+ 
+-def parse_inline_spoiler(
+-    inline: "InlineParser", m: Match[str], state: "InlineState"
+-) -> int:
+-    text = m.group("spoiler_text")
+-    new_state = state.copy()
+-    new_state.src = text
+-    children = inline.render(new_state)
+-    state.append_token({'type': 'inline_spoiler', 'children': children})
++def parse_inline_spoiler(inline: 'InlineParser', m: Match[str], state:
++    'InlineState') ->int:
++    text = m.group('spoiler_text')
++    children = inline.parse(text, state)
++    token = {'type': 'inline_spoiler', 'children': children}
++    state.append_token(token)
+     return m.end()
+ 
+ 
+@@ -63,29 +61,14 @@
+     return '<div class="spoiler">\n' + text + "</div>\n"
+ 
+ 
+-def render_inline_spoiler(renderer: "BaseRenderer", text: str) -> str:
+-    return '<span class="spoiler">' + text + "</span>"
++def render_inline_spoiler(renderer: 'BaseRenderer', text: str) ->str:
++    return '<span class="spoiler">' + text + '</span>'
+ 
+ 
+-def spoiler(md: "Markdown") -> None:
+-    """A mistune plugin to support block and inline spoiler. The
+-    syntax is inspired by stackexchange:
+-
+-    .. code-block:: text
+-
+-        Block level spoiler looks like block quote, but with `>!`:
+-
+-        >! this is spoiler
+-        >!
+-        >! the content will be hidden
+-
+-        Inline spoiler is surrounded by `>!` and `!<`, such as >! hide me !<.
+-
+-    :param md: Markdown instance
+-    """
+-    # reset block quote parser with block spoiler parser
+-    md.block.register('block_quote', None, parse_block_spoiler)
+-    md.inline.register('inline_spoiler', INLINE_SPOILER_PATTERN, parse_inline_spoiler)
+-    if md.renderer and md.renderer.NAME == 'html':
+-        md.renderer.register('block_spoiler', render_block_spoiler)
+-        md.renderer.register('inline_spoiler', render_inline_spoiler)
++def spoiler(md: 'Markdown') ->None:
++    md.inline.register_rule('inline_spoiler', INLINE_SPOILER_PATTERN)
++    md.inline.rules.append('inline_spoiler')
++    md.renderer.register_rule('inline_spoiler', render_inline_spoiler)
++    md.block.register_rule('block_spoiler', _BLOCK_SPOILER_START)
++    md.block.rules.append('block_spoiler')
++    md.renderer.register_rule('block_spoiler', render_block_spoiler)

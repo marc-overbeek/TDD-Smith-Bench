@@ -1,0 +1,21 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -520,16 +520,8 @@
+             "module.\n" + ", ".join(sorted(uncalled_mods))
+         )
+ 
+-    def _get_aliases(self, model: nn.Module) -> Dict[Union[str, nn.Module], str]:
+-        aliases = {}
+-        for name, module in _named_modules_with_dup(model):
+-            if module not in aliases:
+-                aliases[module] = name
+-            aliases[name] = aliases[module]
+-            if "/" in name:
+-                sub_name = name.split("/")[-1]
+-                aliases[sub_name] = aliases[module]
+-        return aliases
++    def _get_aliases(self, model: nn.Module) ->Dict[Union[str, nn.Module], str]:
++        pass
+ 
+     def _get_all_ancestors(self, module_name: str) -> Set[str]:
+         """

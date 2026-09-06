@@ -1,0 +1,38 @@
+--- a/demo/inbox.py
++++ b/demo/inbox.py
+@@ -61,19 +61,24 @@
+         self.user_ids.add(event.liker_id)
+ 
+     def aggregate(self):
+-        feedentries_by_id = self.repo.get_feed_entries_by_ids(
+-            self.events_by_feedentry_id.keys()
++        aggregators: List[AggregatorInterface] = [
++            CommentsAggregator(self.repo),
++            LikesAggregator(self.repo),
++            FollowersAggregator(self.repo),
++        ]
++        aggregators_by_type: Dict[EventType, List[AggregatorInterface]] = {}
++        for agg in aggregators:
++            aggregators_by_type.setdefault(agg.type, []).append(agg)
++
++        for event in self.events:
++            for aggregator in aggregators_by_type.get(event.type, []):
++                aggregator.add(event)
++
++        items = chain.from_iterable(
++            agg.aggregate() for agg in chain.from_iterable(aggregators_by_type.values())
+         )
+-        users_by_id = self.repo.get_users_by_ids(self.user_ids)
+ 
+-        return [
+-            AggregatedItem(
+-                type=self.type,
+-                text=self._describe(events, feedentries_by_id[fid], users_by_id),
+-                published=max(e.published for e in events),
+-            )
+-            for fid, events in self.events_by_feedentry_id.items()
+-        ]
++        return sorted(items, key=attrgetter("published"), reverse=True)
+ 
+     def _describe(self, events, feedentry, users_by_id: Dict[UserId, User]):
+         users = [users_by_id[e.liker_id].name for e in events]

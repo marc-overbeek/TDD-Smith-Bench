@@ -1,0 +1,14 @@
+--- a/starlette/authentication.py
++++ b/starlette/authentication.py
+@@ -34,9 +34,8 @@
+ ) -> typing.Callable[[typing.Callable[_P, typing.Any]], typing.Callable[_P, typing.Any]]:
+     scopes_list = [scopes] if isinstance(scopes, str) else list(scopes)
+ 
+-    def decorator(
+-        func: typing.Callable[_P, typing.Any],
+-    ) -> typing.Callable[_P, typing.Any]:
++    def decorator(func: typing.Callable[_P, typing.Any]) ->typing.Callable[_P,
++        typing.Any]:
+         sig = inspect.signature(func)
+         for idx, parameter in enumerate(sig.parameters.values()):
+             if parameter.name == "request" or parameter.name == "websocket":

@@ -1,0 +1,45 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -209,11 +209,37 @@
+ 
+ 
+ def short_repr(item, max_length=15):
+-    """Short representation of item if it is too long"""
+-    item = repr(item)
+-    if len(item) > max_length:
+-        item = '{}...{}'.format(item[:max_length - 3], item[-1])
+-    return item
++    r = repr(item)
++    if len(r) > max_length:
++        r = r[:max_length - 3] + '...'
++        # For strings, we need to close the quote
++        if repr(item)[0] in ('"', "'"):
++            r = r + repr(item)[0]
++    return r
++
++def short_repr(item, max_length=15):
++    r = repr(item)
++    if len(r) <= max_length:
++        return r
++    # Truncate and add ellipsis
++    r_short = r[:max_length - 3] + '...'
++    # Close with the last character of the original repr if it's a bracket/quote
++    last_char = r[-1]
++    if last_char in ('}', ']', ')', "'", '"'):
++        r_short += last_char
++    return r_short
++
++<full rewritten function code including the unchanged signature>
++
++def short_repr(item, max_length=15):
++    r = repr(item)
++    if len(r) <= max_length:
++        return r
++    r_short = r[:max_length - 3] + '...'
++    last_char = r[-1]
++    if last_char in ('}', ']', ')', "'", '"'):
++        r_short += last_char
++    return r_short
+ 
+ 
+ class ListItemRemovedOrAdded:  # pragma: no cover

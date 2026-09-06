@@ -1,0 +1,28 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -502,23 +502,8 @@
+                 "Unsupported operator {} encountered {} time(s)".format(op, freq)
+             )
+ 
+-    def _warn_uncalled_mods(self, uncalled_mods: Set[str]) -> None:
+-        if not self._enable_warn_uncalled_mods:
+-            return
+-        uncalled_mods = {x for x in uncalled_mods if self._has_forward(x)}
+-        if len(uncalled_mods) == 0:
+-            return
+-
+-        logger = logging.getLogger(__name__)
+-        logger.warning(
+-            "The following submodules of the model were never "
+-            "called during the trace of the graph. They may be "
+-            "unused, or they were accessed by direct calls to "
+-            ".forward() or via other python methods. In the latter "
+-            "case they will have zeros for statistics, though their "
+-            "statistics will still contribute to their parent calling "
+-            "module.\n" + ", ".join(sorted(uncalled_mods))
+-        )
++    def _warn_uncalled_mods(self, uncalled_mods: Set[str]) ->None:
++        pass
+ 
+     def _get_aliases(self, model: nn.Module) -> Dict[Union[str, nn.Module], str]:
+         aliases = {}

@@ -1,0 +1,97 @@
+--- a/src/mistune/renderers/_list.py
++++ b/src/mistune/renderers/_list.py
+@@ -24,30 +24,75 @@
+     return strip_end(text) + '\n'
+ 
+ 
+-def _render_list_item(
+-    renderer: "BaseRenderer",
+-    parent: Dict[str, Any],
+-    item: Dict[str, Any],
+-    state: "BlockState",
+-) -> str:
+-    leading = cast(str, parent["leading"])
+-    text = ""
+-    for tok in item["children"]:
+-        if tok["type"] == "list":
+-            tok["parent"] = parent
+-        elif tok["type"] == "blank_line":
+-            continue
+-        text += renderer.render_token(tok, state)
++def _render_list_item(renderer: 'BaseRenderer', parent: Dict[str, Any],
++    item: Dict[str, Any], state: 'BlockState') ->str:
++    leading = parent['leading']
++    indent = ' ' * len(leading)
++    
++    children = item.get('children', [])
++    text = ''
++    for child in children:
++        child['parent'] = parent
++        text += renderer.render_token(child, state)
++    
++    lines = text.splitlines()
++    if not lines:
++        return leading + '\n'
++    
++    result = []
++    for i, line in enumerate(lines):
++        if i == 0:
++            result.append(leading + line if line else leading)
++        else:
++            result.append(indent + line if line else '')
++    
++    return '\n'.join(result) + '\n'
+ 
++def _render_list_item(renderer: 'BaseRenderer', parent: Dict[str, Any],
++    item: Dict[str, Any], state: 'BlockState') ->str:
++    leading = parent['leading']
++    indent = ' ' * len(leading)
++    
++    children = item.get('children', [])
++    text = ''
++    for child in children:
++        child['parent'] = parent
++        text += renderer.render_token(child, state)
++    
+     lines = text.splitlines()
+-    text = (lines[0] if lines else '') + '\n'
+-    prefix = ' ' * len(leading)
++    if not lines:
++        return leading + '\n'
++    
++    result = leading + lines[0] + '\n'
+     for line in lines[1:]:
+         if line:
+-            text += prefix + line + '\n'
++            result += indent + line + '\n'
+         else:
+-            text += '\n'
+-    return leading + text
++            result += '\n'
++    return result
++
++def _render_list_item(renderer: 'BaseRenderer', parent: Dict[str, Any],
++    item: Dict[str, Any], state: 'BlockState') ->str:
++    leading = parent['leading']
++    indent = ' ' * len(leading)
++    
++    children = item.get('children', [])
++    text = ''
++    for child in children:
++        child['parent'] = parent
++        text += renderer.render_token(child, state)
++    
++    lines = text.splitlines()
++    if not lines:
++        return leading + '\n'
++    
++    result = leading + lines[0] + '\n'
++    for line in lines[1:]:
++        if line:
++            result += indent + line + '\n'
++        else:
++            result += '\n'
++    return result
+ 
+ 
+ def _render_ordered_list(

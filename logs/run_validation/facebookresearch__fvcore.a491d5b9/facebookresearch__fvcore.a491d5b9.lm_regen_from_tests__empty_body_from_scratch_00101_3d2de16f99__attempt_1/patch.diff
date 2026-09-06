@@ -1,0 +1,174 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -492,76 +492,103 @@
+     return _fastforward(single_child, statistics)
+ 
+ 
+-def _model_stats_table(
+-    statistics: Dict[str, Dict[str, str]],
+-    max_depth: int = 3,
+-    stat_columns: Optional[List[str]] = None,
+-) -> str:
+-    """
+-    Formats the statistics obtained from a model in a nice table.
+-
+-    Args:
+-        statistics (dict(str, dict(str, str))) : The statistics to print.
+-            Organized as a dictionary over modules, then as a dictionary
+-            over statistics in the model. The statistics are assumed to
+-            already be formatted for printing.
+-        max_depth (int) : The maximum submodule depth to recurse to.
+-        stat_columns (list(str)) : Specify the order of the columns to print.
+-            If None, columns are found automatically from the provided
+-            statistics.
+-
+-    Return:
+-        str : The formatted table.
++def _model_stats_table(statistics: Dict[str, Dict[str, str]], max_depth:
++    int=3, stat_columns: Optional[List[str]]=None) ->str:
++    """
++    Format statistics as a table with module names and their statistics.
++    
++    Args:
++        statistics: Dictionary mapping module names to their statistics
++        max_depth: Maximum depth of modules to display (default 3)
++        stat_columns: List of statistic column names to display
++        
++    Returns:
++        str: Formatted table as a string
+     """
+     if stat_columns is None:
+-        stat_columns = set()
+-        for stats in statistics.values():
+-            stat_columns.update(stats.keys())
+-        stat_columns = list(stat_columns)
+-
+-    headers = ["module"] + stat_columns
+-    table: List[List[str]] = []
+-
+-    def build_row(name: str, stats: Dict[str, str], indent_lvl: int) -> List[str]:
+-        indent = " " * indent_lvl
+-        row = [indent + name]
+-        for stat_name in stat_columns:  # pyre-ignore[16] Is not None at this point
+-            row_str = (indent + stats[stat_name]) if stat_name in stats else ""
+-            row.append(row_str)
+-        return row
+-
+-    # pyre-fixme[53]: Captured variable `root_prefix` is not annotated.
+-    def fill(indent_lvl: int, prefix: str) -> None:
+-        if indent_lvl > max_depth:
+-            return
+-        for mod_name in statistics:
+-            # 'if mod' excludes root = '', which is never a child
+-            if (
+-                mod_name
+-                and mod_name.count(".") == prefix.count(".")
+-                and mod_name.startswith(prefix)
+-            ):
+-                mod_name, curr_stats = _fastforward(mod_name, statistics)
+-                if root_prefix and mod_name.startswith(root_prefix):
+-                    # Skip the root_prefix shared by all submodules as it carries 0 information
+-                    pretty_mod_name = mod_name[len(root_prefix) :]
+-                else:
+-                    pretty_mod_name = mod_name
+-                row = build_row(pretty_mod_name, curr_stats, indent_lvl)
+-                table.append(row)
+-                fill(indent_lvl + 1, mod_name + ".")
+-
+-    root_name, curr_stats = _fastforward("", statistics)
+-    row = build_row(root_name or "model", curr_stats, indent_lvl=0)
+-    table.append(row)
+-    root_prefix = root_name + ("." if root_name else "")
+-    fill(indent_lvl=1, prefix=root_prefix)
+-
+-    old_ws = tabulate.PRESERVE_WHITESPACE
+-    tabulate.PRESERVE_WHITESPACE = True
+-    tab = tabulate.tabulate(table, headers=headers, tablefmt="pipe")
+-    tabulate.PRESERVE_WHITESPACE = old_ws
+-    return tab
++        stat_columns = []
++    
++    # Create a copy to avoid modifying the original
++    stats = {name: stat.copy() for name, stat in statistics.items()}
++    
++    # Filter by max_depth and prepare rows
++    rows = []
++    
++    for mod_name in sorted(statistics.keys()):
++        # Calculate depth
++        depth = mod_name.count(".")
++        
++        # Skip if exceeds max_depth
++        if depth > max_depth:
++            continue
++        
++        # Try to fastforward (combine single-child modules)
++        display_name, combined_stats = _fastforward(mod_name, stats)
++        
++        # Only add if this is the actual module we're processing
++        # (fastforward might have combined it with children)
++        if display_name == mod_name:
++            # Calculate indentation based on depth
++            indent = "  " * depth
++            
++            # Build row with module name and statistics
++            row = [indent + mod_name]
++            for col in stat_columns:
++                row.append(combined_stats.get(col, ""))
++            
++            rows.append(row)
++    
++    # Create table headers
++    headers = ["model"] + stat_columns
++    
++    # Format table using tabulate
++    table = tabulate.tabulate(rows, headers=headers, tablefmt="simple")
++    
++    return table
++
++def _model_stats_table(statistics: Dict[str, Dict[str, str]], max_depth:
++    int=3, stat_columns: Optional[List[str]]=None) ->str:
++    if stat_columns is None:
++        stat_columns = []
++    
++    # Create a copy to avoid modifying the original
++    stats = {name: stat.copy() for name, stat in statistics.items()}
++    
++    # Filter by max_depth
++    filtered_stats = {}
++    for mod_name, mod_stats in stats.items():
++        depth = mod_name.count(".")
++        if depth <= max_depth:
++            filtered_stats[mod_name] = mod_stats
++    
++    # Build rows for table
++    rows = []
++    processed = set()
++    
++    for mod_name in sorted(filtered_stats.keys()):
++        if mod_name in processed:
++            continue
++        
++        # Try to fastforward
++        display_name, combined_stats = _fastforward(mod_name, filtered_stats)
++        processed.add(display_name)
++        
++        # Calculate indentation based on depth of display_name
++        depth = display_name.count(".")
++        indent = "  " * depth
++        
++        # Build row
++        row = [indent + display_name]
++        for col in stat_columns:
++            row.append(combined_stats.get(col, ""))
++        
++        rows.append(row)
++    
++    # Create table
++    headers = ["model"] + stat_columns
++    table = tabulate.tabulate(rows, headers=headers, tablefmt="simple")
++    
++    return table
+ 
+ 
+ def flop_count_table(

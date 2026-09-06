@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef smooth_l1_loss(input: torch.Tensor, target: torch.Tensor, beta: float,\n    reduction: str='none') ->torch.Tensor:\n    diff = torch.abs(input - target)\n    loss = torch.where(\n        diff < beta,\n        0.5 * diff ** 2 / beta,\n        diff - 0.5 * beta\n    )\n    \n    if reduction == 'none':\n        return loss\n    elif reduction == 'mean':\n        return loss.mean()\n    elif reduction == 'sum':\n        return loss.sum()\n    else:\n        raise ValueError(f\"Invalid reduction mode: {reduction}\")\n```",
+  "rewrite": "def smooth_l1_loss(input: torch.Tensor, target: torch.Tensor, beta: float,\n    reduction: str='none') ->torch.Tensor:\n    diff = torch.abs(input - target)\n    loss = torch.where(\n        diff < beta,\n        0.5 * diff ** 2 / beta,\n        diff - 0.5 * beta\n    )\n    \n    if reduction == 'none':\n        return loss\n    elif reduction == 'mean':\n        return loss.mean()\n    elif reduction == 'sum':\n        return loss.sum()\n    else:\n        raise ValueError(f\"Invalid reduction mode: {reduction}\")",
+  "strategy": "lm_regen_from_tests"
+}

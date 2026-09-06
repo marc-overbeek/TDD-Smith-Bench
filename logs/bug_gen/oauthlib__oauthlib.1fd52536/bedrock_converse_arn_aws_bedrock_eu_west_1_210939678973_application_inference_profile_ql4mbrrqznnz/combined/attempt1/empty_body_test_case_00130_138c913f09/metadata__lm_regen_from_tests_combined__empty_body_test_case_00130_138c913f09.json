@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef __init__(self, request_validator=None, token_generator=None, expires_in=None, refresh_token_generator=None):\n    self.request_validator = request_validator\n    self.token_generator = token_generator or random_token_generator\n    self.refresh_token_generator = (\n        refresh_token_generator or self.token_generator\n    )\n    self.expires_in = expires_in or 3600\n\ndef validate_request(self, request):\n    token = get_token_from_header(request)\n    return self.request_validator.validate_jwt_bearer_token(\n        token, request.scopes, request)\n```",
+  "rewrite": "def __init__(self, request_validator=None, token_generator=None, expires_in=None, refresh_token_generator=None):\n    self.request_validator = request_validator\n    self.token_generator = token_generator or random_token_generator\n    self.refresh_token_generator = (\n        refresh_token_generator or self.token_generator\n    )\n    self.expires_in = expires_in or 3600\n\ndef validate_request(self, request):\n    token = get_token_from_header(request)\n    return self.request_validator.validate_jwt_bearer_token(\n        token, request.scopes, request)",
+  "strategy": "lm_regen_from_tests_combined"
+}

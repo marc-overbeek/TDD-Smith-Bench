@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef c2_xavier_fill(module: nn.Module) ->None:\n    \"\"\"\n    Initialize `module.weight` using the \"XavierFill\" implemented in Caffe2.\n    Also initializes `module.bias` to 0.\n\n    Args:\n        module (torch.nn.Module): module to initialize.\n    \"\"\"\n    # pyre-fixme[6]: For 1st argument expected `Tensor` but got `Union[Module, Tensor]`.\n    nn.init.kaiming_uniform_(module.weight, a=1)\n    if module.bias is not None:\n        # pyre-fixme[6]: For 1st argument expected `Tensor` but got `Union[Module,\n        #  Tensor]`.\n        nn.init.constant_(module.bias, 0)\n```",
+  "rewrite": "def c2_xavier_fill(module: nn.Module) ->None:\n    \"\"\"\n    Initialize `module.weight` using the \"XavierFill\" implemented in Caffe2.\n    Also initializes `module.bias` to 0.\n\n    Args:\n        module (torch.nn.Module): module to initialize.\n    \"\"\"\n    # pyre-fixme[6]: For 1st argument expected `Tensor` but got `Union[Module, Tensor]`.\n    nn.init.kaiming_uniform_(module.weight, a=1)\n    if module.bias is not None:\n        # pyre-fixme[6]: For 1st argument expected `Tensor` but got `Union[Module,\n        #  Tensor]`.\n        nn.init.constant_(module.bias, 0)",
+  "strategy": "lm_regen_from_tests"
+}

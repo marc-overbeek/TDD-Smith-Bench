@@ -1,0 +1,105 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -295,63 +295,46 @@
+     return None
+ 
+ 
+-def get_line_equation_coefficients(location1: "Location", location2: "Location") -> Iterable[float]:
+-    """
+-    Get line equation coefficients for:
+-        latitude * a + longitude * b + c = 0
+-
+-    This is a normal cartesian line (not spherical!)
+-    """
+-    if location1.longitude == location2.longitude:
+-        # Vertical line:
+-        return 0, 1, -location1.longitude
++def get_line_equation_coefficients(location1: 'Location', location2: 'Location'
++    ) ->Iterable[float]:
++    # Calculate coefficients (a, b, c) for the line equation ax + by + c = 0
++    # Given two points (x1, y1) and (x2, y2)
++    x1, y1 = location1.longitude, location1.latitude
++    x2, y2 = location2.longitude, location2.latitude
++    
++    a = y2 - y1
++    b = x1 - x2
++    c = x2 * y1 - x1 * y2
++    
++    return (a, b, c)
++
++
++def simplify_polyline(points: List['Location'], max_distance: Optional[float]
++    ) ->List['Location']:
++    if len(points) <= 2 or max_distance is None:
++        return points[:]
++    
++    # Simplify the polyline using the Douglas-Peucker algorithm
++    # Find the point with the maximum distance
++    max_dist = 0
++    index = 0
++    for i in range(1, len(points) - 1):
++        dist = distance_from_line(points[i], points[0], points[-1])
++        if dist is not None and dist > max_dist:
++            max_dist = dist
++            index = i
++    
++    # If max distance is greater than epsilon, recursively simplify
++    if max_dist > max_distance:
++        # Recursive call
++        rec_results1 = simplify_polyline(points[:index+1], max_distance)
++        rec_results2 = simplify_polyline(points[index:], max_distance)
++        
++        # Combine results (excluding the duplicate point)
++        return rec_results1[:-1] + rec_results2
+     else:
+-        a = (location1.latitude - location2.latitude) / (location1.longitude - location2.longitude)
+-        b = location1.latitude - location1.longitude * a
+-        return 1, -a, -b
+-
+-
+-def simplify_polyline(points: List["Location"], max_distance: Optional[float]) -> List["Location"]:
+-    """Does Ramer-Douglas-Peucker algorithm for simplification of polyline """
+-
+-    _max_distance = max_distance if max_distance is not None else 10
+-
+-    if len(points) < 3:
+-        return points
+-
+-    begin, end = points[0], points[-1]
+-
+-    # Use a "normal" line just to detect the most distant point (not its real distance)
+-    # this is because this is faster to compute than calling distance_from_line() for
+-    # every point.
+-    #
+-    # This is an approximation and may have some errors near the poles and if
+-    # the points are too distant, but it should be good enough for most use
+-    # cases...
+-    a, b, c = get_line_equation_coefficients(begin, end)
+-
+-    # Initialize to safe values
+-    tmp_max_distance: float = 0
+-    tmp_max_distance_position = 1
+-    
+-    # Check distance of all points between begin and end, exclusive
+-    for point_no, point in enumerate(points[1:-1], 1):
+-        d = abs(a * point.latitude + b * point.longitude + c)
+-        if d > tmp_max_distance:
+-            tmp_max_distance = d
+-            tmp_max_distance_position = point_no
+-
+-    # Now that we have the most distance point, compute its real distance:
+-    real_max_distance = distance_from_line(points[tmp_max_distance_position], begin, end)
+-
+-    # If furthest point is less than max_distance, remove all points between begin and end
+-    if real_max_distance is not None and real_max_distance < _max_distance:
+-        return [begin, end]
+-    
+-    # If furthest point is more than max_distance, use it as anchor and run
+-    # function again using (begin to anchor) and (anchor to end), remove extra anchor
+-    return (simplify_polyline(points[:tmp_max_distance_position + 1], _max_distance) +
+-            simplify_polyline(points[tmp_max_distance_position:], _max_distance)[1:])
++        # Return the simplified polyline
++        return [points[0], points[-1]]
+ 
+ 
+ class Location:

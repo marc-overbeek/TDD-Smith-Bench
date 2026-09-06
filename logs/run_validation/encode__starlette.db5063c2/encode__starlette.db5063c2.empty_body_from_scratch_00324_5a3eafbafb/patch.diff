@@ -1,0 +1,29 @@
+--- a/starlette/middleware/exceptions.py
++++ b/starlette/middleware/exceptions.py
+@@ -15,22 +15,10 @@
+ 
+ 
+ class ExceptionMiddleware:
+-    def __init__(
+-        self,
+-        app: ASGIApp,
+-        handlers: typing.Mapping[typing.Any, typing.Callable[[Request, Exception], Response]] | None = None,
+-        debug: bool = False,
+-    ) -> None:
+-        self.app = app
+-        self.debug = debug  # TODO: We ought to handle 404 cases if debug is set.
+-        self._status_handlers: StatusHandlers = {}
+-        self._exception_handlers: ExceptionHandlers = {
+-            HTTPException: self.http_exception,
+-            WebSocketException: self.websocket_exception,
+-        }
+-        if handlers is not None:
+-            for key, value in handlers.items():
+-                self.add_exception_handler(key, value)
++    def __init__(self, app: ASGIApp, handlers: (typing.Mapping[typing.Any,
++        typing.Callable[[Request, Exception], Response]] | None)=None, debug:
++        bool=False) ->None:
++        pass
+ 
+     def add_exception_handler(
+         self,

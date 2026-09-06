@@ -1,0 +1,39 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -53,10 +53,10 @@
+     Returns a constant value for a param.
+     """
+ 
+-    def __init__(self, value: float) -> None:
++    def __init__(self, value: float) ->None:
+         self._value = value
+ 
+-    def __call__(self, where: float) -> float:
++    def __call__(self, where: float) ->float:
+         if where >= 1.0:
+             raise RuntimeError(
+                 f"where in ParamScheduler must be in [0, 1]: got {where}"
+@@ -381,12 +381,8 @@
+     training.
+     """
+ 
+-    def __init__(
+-        self,
+-        schedulers: Sequence[ParamScheduler],
+-        lengths: List[float],
+-        interval_scaling: Sequence[str],
+-    ) -> None:
++    def __init__(self, schedulers: Sequence[ParamScheduler], lengths: List[
++        float], interval_scaling: Sequence[str]) ->None:
+         if len(schedulers) != len(lengths):
+             raise ValueError("Schedulers and lengths must be same length")
+         if len(schedulers) == 0:
+@@ -405,7 +401,7 @@
+         self._schedulers = schedulers
+         self._interval_scaling = interval_scaling
+ 
+-    def __call__(self, where: float) -> float:
++    def __call__(self, where: float) ->float:
+         # Find scheduler corresponding to where
+         i = 0
+         running_total = self._lengths[i]

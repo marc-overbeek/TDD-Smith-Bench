@@ -1,0 +1,11 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -259,7 +259,7 @@
+ 
+         value: typing.Any = args[0] if args else []
+         if kwargs:
+-            value = ImmutableMultiDict(value).multi_items() + ImmutableMultiDict(kwargs).multi_items()
++            value = list(ImmutableMultiDict(value).multi_items()) + list(ImmutableMultiDict(kwargs).multi_items())
+ 
+         if not value:
+             _items: list[tuple[typing.Any, typing.Any]] = []

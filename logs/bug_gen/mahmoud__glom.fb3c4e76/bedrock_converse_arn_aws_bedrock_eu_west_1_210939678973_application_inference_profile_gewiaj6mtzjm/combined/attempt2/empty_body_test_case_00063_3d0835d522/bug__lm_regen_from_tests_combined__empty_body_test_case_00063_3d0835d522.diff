@@ -1,0 +1,111 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1713,50 +1713,73 @@
+ 
+ 
+ def _format_slice(x):
+-    if type(x) is not slice:
+-        return bbrepr(x)
+-    fmt = lambda v: "" if v is None else bbrepr(v)
+-    if x.step is None:
+-        return fmt(x.start) + ":" + fmt(x.stop)
+-    return fmt(x.start) + ":" + fmt(x.stop) + ":" + fmt(x.step)
++    if isinstance(x, slice):
++        if x.step is None:
++            if x.start is None:
++                return ':'
++            elif x.stop is None:
++                return str(x.start) + ':'
++            else:
++                return str(x.start) + ':' + str(x.stop)
++        else:
++            if x.start is None:
++                return ':' + str(x.step)
++            elif x.stop is None:
++                return str(x.start) + ':' + str(x.step)
++            else:
++                return str(x.start) + ':' + str(x.stop) + ':' + str(x.step)
++    else:
++        return repr(x)
+ 
+ 
+ def _format_t(path, root=T):
+-    prepr = [{T: 'T', S: 'S', A: 'A'}[root]]
+-    i = 0
+-    while i < len(path):
+-        op, arg = path[i], path[i + 1]
++    if not path:
++        return root.__class__.__name__
++    ops, args = path[0::2], path[1::2]
++    cur = root
++    for i, op in enumerate(ops):
++        arg = args[i]
+         if op == '.':
+-            prepr.append('.' + arg)
++            cur = '%s.%s' % (cur, arg)
+         elif op == '[':
+-            if type(arg) is tuple:
+-                index = ", ".join([_format_slice(x) for x in arg])
+-            else:
+-                index = _format_slice(arg)
+-            prepr.append(f"[{index}]")
++            cur = '%s[%s]' % (cur, _format_slice(arg))
++        elif op == 'P':
++            cur = '%s(%s)' % (cur, repr(arg))
+         elif op == '(':
+             args, kwargs = arg
+-            prepr.append(format_invocation(args=args, kwargs=kwargs, repr=bbrepr))
+-        elif op == 'P':
+-            return _format_path(path)
++            if kwargs:
++                kwarg_strs = ['%s=%s' % (k, bbrepr(v)) for k, v in kwargs.items()]
++                all_args = [bbrepr(a) for a in args] + kwarg_strs
++            else:
++                all_args = [bbrepr(a) for a in args]
++            cur = '%s(%s)' % (cur, ', '.join(all_args))
++        elif op == '+':
++            cur = '%s + %s' % (cur, bbrepr(arg))
++        elif op == '-':
++            cur = '%s - %s' % (cur, bbrepr(arg))
++        elif op == '*':
++            cur = '%s * %s' % (cur, bbrepr(arg))
++        elif op == '/':
++            cur = '%s / %s' % (cur, bbrepr(arg))
++        elif op == '%':
++            cur = '%s %% %s' % (cur, bbrepr(arg))
++        elif op == ':':
++            cur = '%s ** %s' % (cur, bbrepr(arg))
++        elif op == '&':
++            cur = '%s & %s' % (cur, bbrepr(arg))
++        elif op == '|':
++            cur = '%s | %s' % (cur, bbrepr(arg))
++        elif op == '^':
++            cur = '%s ^ %s' % (cur, bbrepr(arg))
++        elif op == '~':
++            cur = '~%s' % cur
++        elif op == '_':
++            cur = '-%s' % cur
+         elif op == 'x':
+-            prepr.append(".__star__()")
++            cur = '%s.__star__()' % cur
+         elif op == 'X':
+-            prepr.append(".__starstar__()")
+-        elif op in ('_', '~'):  # unary arithmetic operators
+-            if any([o in path[:i] for o in '+-/%:&|^~_']):
+-                prepr = ['('] + prepr + [')']
+-            prepr = ['-' if op == '_' else op] + prepr
+-        else:  # binary arithmetic operators
+-            formatted_arg = bbrepr(arg)
+-            if type(arg) is TType:
+-                arg_path = arg.__ops__
+-                if any([o in arg_path for o in '+-/%:&|^~_']):
+-                    formatted_arg = '(' + formatted_arg + ')'
+-            prepr.append(' ' + ('**' if op == ':' else op) + ' ')
+-            prepr.append(formatted_arg)
+-        i += 2
+-    return "".join(prepr)
++            cur = '%s.__starstar__()' % cur
++    return cur
+ 
+ 
+ class Val:

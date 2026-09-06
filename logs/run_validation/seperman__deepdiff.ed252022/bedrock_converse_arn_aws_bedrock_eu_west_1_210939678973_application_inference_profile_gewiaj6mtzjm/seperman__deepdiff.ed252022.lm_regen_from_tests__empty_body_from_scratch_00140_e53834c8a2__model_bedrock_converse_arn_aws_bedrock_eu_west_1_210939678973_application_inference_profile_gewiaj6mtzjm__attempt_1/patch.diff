@@ -1,0 +1,18 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -780,9 +780,12 @@
+                         new_obj.append(new_item)
+                 else:
+                     # pop a random item from the fixed_indexes_per_path dictionary
+-                    self._raise_or_log(INDEXES_NOT_FOUND_WHEN_IGNORE_ORDER.format(fixed_indexes_per_path))
+-                    new_item = fixed_indexes_per_path.pop(next(iter(fixed_indexes_per_path)))
+-                    new_obj.append(new_item)
++                    if fixed_indexes_per_path:
++                        self._raise_or_log(INDEXES_NOT_FOUND_WHEN_IGNORE_ORDER.format(fixed_indexes_per_path))
++                        new_item = fixed_indexes_per_path.pop(next(iter(fixed_indexes_per_path)))
++                        new_obj.append(new_item)
++                    else:
++                        break
+ 
+             if isinstance(obj, tuple):
+                 new_obj = tuple(new_obj)

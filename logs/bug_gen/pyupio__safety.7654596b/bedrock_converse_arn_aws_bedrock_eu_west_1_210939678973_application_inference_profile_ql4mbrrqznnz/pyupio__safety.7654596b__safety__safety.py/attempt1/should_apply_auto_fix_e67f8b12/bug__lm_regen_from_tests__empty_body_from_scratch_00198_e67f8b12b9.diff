@@ -1,0 +1,61 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -887,43 +887,22 @@
+     return remediations
+ 
+ 
+-def should_apply_auto_fix(
+-    from_ver: Optional[Version],
+-    to_ver: Version,
+-    allowed_automatic: List[str]
+-) -> bool:
+-    """
+-    Determines if an automatic fix should be applied.
+-
+-    Args:
+-        from_ver (Optional[Version]): The current version.
+-        to_ver (Version): The target version.
+-        allowed_automatic (List[str]): The allowed automatic update types.
+-
+-    Returns:
+-        bool: True if an automatic fix should be applied, False otherwise.
+-    """
+-    if not from_ver:
++def should_apply_auto_fix(from_ver: Optional[Version], to_ver: Version,
++    allowed_automatic: List[str]) ->bool:
++    if not allowed_automatic:
+         return False
+-
+-    if 'major' in allowed_automatic:
+-        return True
+-
+-    major_change = to_ver.major - from_ver.major
+-    minor_change = to_ver.minor - from_ver.minor
+-
+-    if 'minor' in allowed_automatic:
+-        if major_change != 0:
+-            return False
+-
+-        return True
+-
+-    if 'patch' in allowed_automatic:
+-        if major_change != 0 or minor_change != 0:
+-            return False
+-
+-        return True
+-
++    
++    update_type = get_update_type(from_ver, to_ver)
++    
++    allowed_hierarchy = ['patch', 'minor', 'major']
++    
++    for allowed in allowed_automatic:
++        if allowed in allowed_hierarchy:
++            allowed_index = allowed_hierarchy.index(allowed)
++            update_index = allowed_hierarchy.index(update_type) if update_type in allowed_hierarchy else len(allowed_hierarchy)
++            if update_index <= allowed_index:
++                return True
++    
+     return False
+ 
+ 

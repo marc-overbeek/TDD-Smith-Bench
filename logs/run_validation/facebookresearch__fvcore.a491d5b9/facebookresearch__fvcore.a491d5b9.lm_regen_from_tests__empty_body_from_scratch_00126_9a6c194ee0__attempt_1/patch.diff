@@ -1,0 +1,87 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -218,14 +218,77 @@
+ 
+ def matmul_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+     """
+-    Count flops for matmul.
+-    """
+-    # Inputs should be a list of length 2.
+-    # Inputs contains the shapes of two matrices.
++    Count flops for the matmul operation.
++    """
++    # inputs should be a list of length 2 containing two tensors
++    assert len(inputs) == 2, len(inputs)
++    
+     input_shapes = [get_shape(v) for v in inputs]
+-    assert len(input_shapes) == 2, input_shapes
+-    assert input_shapes[0][-1] == input_shapes[1][-2], input_shapes
+-    flop = prod(input_shapes[0]) * input_shapes[-1][-1]
++    shape_0 = input_shapes[0]
++    shape_1 = input_shapes[1]
++    
++    # Handle different matmul cases
++    # Case 1: Both 2D: (m, n) @ (n, p) -> m * n * p
++    # Case 2: Both ND with batch: (..., m, n) @ (..., n, p) -> batch * m * n * p
++    # Case 3: Mixed dimensions with broadcasting
++    
++    # Get the matrix dimensions
++    # For shape_0: last dimension is n, second-to-last is m (or batch dims then m)
++    # For shape_1: second-to-last dimension is n, last is p (or batch dims then n, p)
++    
++    m = shape_0[-2]
++    n = shape_0[-1]
++    p = shape_1[-1]
++    
++    # Calculate batch size (product of all dimensions except last 2)
++    batch_size = 1
++    
++    # For shape_0, all dimensions except last 2 are batch dimensions
++    for i in range(len(shape_0) - 2):
++        batch_size *= shape_0[i]
++    
++    # For shape_1, we need to account for broadcasting
++    # If shape_1 has fewer dimensions, it broadcasts
++    # We need to match batch dimensions properly
++    if len(shape_1) > 2:
++        # shape_1 has batch dimensions
++        batch_size_1 = 1
++        for i in range(len(shape_1) - 2):
++            batch_size_1 *= shape_1[i]
++        # Take the maximum batch size (broadcasting)
++        batch_size = max(batch_size, batch_size_1)
++    
++    flop = batch_size * m * n * p
++    return flop
++
++def matmul_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
++    """
++    Count flops for the matmul operation.
++    """
++    assert len(inputs) == 2, len(inputs)
++    
++    input_shapes = [get_shape(v) for v in inputs]
++    shape_0 = input_shapes[0]
++    shape_1 = input_shapes[1]
++    
++    # Get the matrix dimensions
++    m = shape_0[-2]
++    n = shape_0[-1]
++    p = shape_1[-1]
++    
++    # Calculate batch size from shape_0
++    batch_size = 1
++    for i in range(len(shape_0) - 2):
++        batch_size *= shape_0[i]
++    
++    # If shape_1 has batch dimensions, use those (they should match or broadcast)
++    if len(shape_1) > 2:
++        batch_size_1 = 1
++        for i in range(len(shape_1) - 2):
++            batch_size_1 *= shape_1[i]
++        batch_size = max(batch_size, batch_size_1)
++    
++    flop = batch_size * m * n * p
+     return flop
+ 
+ 

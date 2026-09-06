@@ -1,0 +1,65 @@
+--- a/deepdiff/search.py
++++ b/deepdiff/search.py
+@@ -103,31 +103,30 @@
+ 
+         self.obj = obj
+         self.case_sensitive = case_sensitive if isinstance(item, strings) else True
+-        item = item if self.case_sensitive else item.lower()
++        item_cased = item if self.case_sensitive else item.lower() if isinstance(item, strings) else item
+         self.exclude_paths = SetOrdered(exclude_paths)
+         self.exclude_regex_paths = [re.compile(exclude_regex_path) for exclude_regex_path in exclude_regex_paths]
+         self.exclude_types = SetOrdered(exclude_types)
+         self.exclude_types_tuple = tuple(
+-            exclude_types)  # we need tuple for checking isinstance
++            exclude_types)
+         self.verbose_level = verbose_level
+         self.update(
+             matched_paths=self.__set_or_dict(),
+             matched_values=self.__set_or_dict(),
+             unprocessed=[])
+         self.use_regexp = use_regexp
+-        if not strict_checking and isinstance(item, numbers):
+-            item = str(item)
++        if not strict_checking and isinstance(item_cased, numbers):
++            item_cased = str(item_cased)
+         if self.use_regexp:
+             try:
+-                item = re.compile(item)
++                item_cased = re.compile(item_cased)
+             except TypeError as e:
+-                raise TypeError(f"The passed item of {item} is not usable for regex: {e}") from None
++                raise TypeError(f"The passed item of {item_cased} is not usable for regex: {e}") from None
+         self.strict_checking = strict_checking
+ 
+-        # Cases where user wants to match exact string item
+         self.match_string = match_string
+ 
+-        self.__search(obj, item, parents_ids=frozenset({id(obj)}))
++        self.__search(obj, item_cased, parents_ids=frozenset({id(obj)}))
+ 
+         empty_keys = [k for k, v in self.items() if not v]
+ 
+@@ -196,7 +195,6 @@
+                       parent,
+                       parents_ids=frozenset(),
+                       print_as_attribute=False):
+-        """Search dictionaries"""
+         if print_as_attribute:
+             parent_text = "%s.%s"
+         else:
+@@ -242,7 +240,6 @@
+                           item,
+                           parent="root",
+                           parents_ids=frozenset()):
+-        """Search iterables except dictionaries, sets and strings."""
+         for i, thing in enumerate(obj):
+             new_parent = "{}[{}]".format(parent, i)
+             if self.__skip_this(thing, parent=new_parent):
+@@ -302,7 +299,6 @@
+                 obj, item, parent, parents_ids, is_namedtuple=True)
+ 
+     def __search(self, obj, item, parent="root", parents_ids=frozenset()):
+-        """The main search method"""
+         if self.__skip_this(item, parent):
+             return
+ 

@@ -1,0 +1,18 @@
+--- a/starlette/formparsers.py
++++ b/starlette/formparsers.py
+@@ -125,14 +125,7 @@
+     max_file_size = 1024 * 1024  # 1MB
+     max_part_size = 1024 * 1024  # 1MB
+ 
+-    def __init__(
+-        self,
+-        headers: Headers,
+-        stream: typing.AsyncGenerator[bytes, None],
+-        *,
+-        max_files: int | float = 1000,
+-        max_fields: int | float = 1000,
+-    ) -> None:
++    def __init__(self, headers: Headers, stream: typing.AsyncGenerator[bytes, None], *, max_files: (int | float) = 1000, max_fields: (int | float) = 1000) -> None:
+         assert multipart is not None, "The `python-multipart` library must be installed to use form parsing."
+         self.headers = headers
+         self.stream = stream

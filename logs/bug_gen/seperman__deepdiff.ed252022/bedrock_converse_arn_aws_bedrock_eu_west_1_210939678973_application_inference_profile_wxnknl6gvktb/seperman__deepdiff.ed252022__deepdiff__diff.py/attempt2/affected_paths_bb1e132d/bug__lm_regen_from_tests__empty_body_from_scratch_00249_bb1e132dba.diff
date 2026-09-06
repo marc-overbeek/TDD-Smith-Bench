@@ -1,0 +1,25 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -1803,6 +1803,7 @@
+         return self._stats
+ 
+     @property
++    @property
+     def affected_paths(self):
+         """
+         Get the list of paths that were affected.
+@@ -1828,10 +1829,11 @@
+         for key in REPORT_KEYS:
+             value = self.get(key)
+             if value:
+-                if isinstance(value, SetOrdered):
+-                    result |= value
++                if isinstance(value, dict):
++                    result |= SetOrdered(value.keys())
+                 else:
+-                    result |= SetOrdered(value.keys())
++                    # It's a list or SetOrdered
++                    result |= SetOrdered(value)
+         return result
+ 
+     @property

@@ -1,0 +1,29 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -460,9 +460,23 @@
+             return target
+         raise MatchError("{0!r} {1} {2!r}", lhs, _M_OP_MAP.get(op, op), rhs)
+ 
+-    def __repr__(self):
+-        op = _M_OP_MAP.get(self.op, self.op)
+-        return f"{self.lhs!r} {op} {self.rhs!r}"
++    assert repr(~Or(M) & Or(M)) == '~(M) & M'
++
++    def __repr__(self):
++        child_reprs = [_bool_child_repr(c) for c in self.children]
++        if self._m_repr() and self.default is _MISSING:
++            return f" {self.OP} ".join(child_reprs)
++        if self.default is not _MISSING:
++            child_reprs.append("default=" + repr(self.default))
++        return self.__class__.__name__ + "(" + ", ".join(child_reprs) + ")"
++
++    def __repr__(self):
++        child_reprs = [_bool_child_repr(c) for c in self.children]
++        if self._m_repr() and self.default is _MISSING:
++            return f" {self.OP} ".join(child_reprs)
++        if self.default is not _MISSING:
++            child_reprs.append("default=" + repr(self.default))
++        return self.__class__.__name__ + "(" + ", ".join(child_reprs) + ")"
+ 
+ 
+ class _MType:

@@ -1,0 +1,18 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -789,7 +789,14 @@
+         for track_point in self.points:
+             track_point.move(location_delta)
+ 
+-    def walk(self, only_points: bool=False) -> Iterator[Any]: # Union[GPXTrackPoint, Tuple[GPXTrackPoint, int]]]:
++    def get_nearest_location(self, location: mod_geo.Location) -> Optional[NearestLocationData]:
++        return min((NearestLocationData(pt, -1, -1, pt_no) for (pt, pt_no) in self.walk())
++                   ...
++
++    for point in segment.walk():
++        self.assertTrue(point)
++
++    def walk(self, only_points: bool=False) -> Iterator[Any]:
+         """
+         Generator for iterating over segment points
+ 

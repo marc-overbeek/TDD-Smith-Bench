@@ -1,0 +1,47 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -452,22 +452,29 @@
+     return child
+ 
+ 
+-def _try_combine(
+-    stats1: Dict[str, str], stats2: Dict[str, str]
+-) -> Optional[Dict[str, str]]:
+-    """
+-    Try combine two statistics dict to display in one row. If they conflict,
+-    returns None.
+-    """
+-    ret = {}
+-    if set(stats1.keys()) != set(stats2.keys()):
++def _try_combine(stats1: Dict[str, str], stats2: Dict[str, str]) ->Optional[
++    Dict[str, str]]:
++    # Try to combine two dictionaries of statistics
++    # If they have overlapping keys, we can combine them
++    # If they have no overlapping keys, we cannot combine them
++    # If they have the same keys but different values, we might not be able to combine
++    
++    # Check if there's any overlap in keys
++    common_keys = set(stats1.keys()) & set(stats2.keys())
++    
++    # If no common keys, we can't meaningfully combine
++    if not common_keys:
+         return None
+-    for k, v1 in stats1.items():
+-        v2 = stats2[k]
+-        if v1 != v2 and len(v1) and len(v2):
+-            return None
+-        ret[k] = v1 if len(v1) else v2
+-    return ret
++    
++    # Create combined dictionary
++    combined = stats1.copy()
++    
++    # Add keys from stats2 that aren't in stats1
++    for key, value in stats2.items():
++        if key not in stats1:
++            combined[key] = value
++    
++    return combined
+ 
+ 
+ def _fastforward(

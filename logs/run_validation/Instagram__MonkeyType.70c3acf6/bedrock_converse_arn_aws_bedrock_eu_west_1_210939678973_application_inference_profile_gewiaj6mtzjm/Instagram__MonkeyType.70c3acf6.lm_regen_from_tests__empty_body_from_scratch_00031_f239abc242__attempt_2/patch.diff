@@ -1,0 +1,20 @@
+--- a/monkeytype/compat.py
++++ b/monkeytype/compat.py
+@@ -46,8 +46,15 @@
+         return typ is Union or isinstance(typ, _GenericAlias)
+ 
+ 
+-def is_generic_of(typ: Any, gen: Any) -> bool:
+-    return is_generic(typ) and typ.__origin__ is gen.__origin__
++def is_generic_of(typ: Any, gen: Any) ->bool:
++    if not is_generic(typ):
++        return False
++    if hasattr(typ, '__origin__'):
++        return typ.__origin__ is gen
++    else:
++        # Handle cases where __origin__ might not be directly accessible
++        # such as with certain generic types in different Python versions
++        return getattr(typ, '__origin__', None) is gen
+ 
+ 
+ def qualname_of_generic(typ: Any) -> str:

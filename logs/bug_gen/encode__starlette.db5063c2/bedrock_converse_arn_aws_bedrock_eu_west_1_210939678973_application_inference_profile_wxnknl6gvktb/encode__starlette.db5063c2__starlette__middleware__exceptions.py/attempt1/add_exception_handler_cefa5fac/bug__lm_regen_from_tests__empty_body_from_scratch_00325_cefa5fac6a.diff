@@ -1,0 +1,10 @@
+--- a/starlette/middleware/exceptions.py
++++ b/starlette/middleware/exceptions.py
+@@ -42,6 +42,7 @@
+         else:
+             assert issubclass(exc_class_or_status_code, Exception)
+             self._exception_handlers[exc_class_or_status_code] = handler
++        # this is an exact match
+ 
+     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+         if scope["type"] not in ("http", "websocket"):

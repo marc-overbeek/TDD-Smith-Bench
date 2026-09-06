@@ -1,0 +1,45 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -333,39 +333,9 @@
+         stats = self._analyze()
+         return stats.uncalled_mods
+ 
+-    def set_op_handle(self, *args, **kwargs: Optional[Handle]) -> "JitModelAnalysis":
+-        """
+-        Sets additional operator handles, or replaces existing ones.
+-
+-        Args:
+-            args: (str, Handle) pairs of operator names and handles.
+-            kwargs: mapping from operator names to handles.
+-
+-        If a handle is ``None``, the op will be explicitly ignored. Otherwise,
+-        handle should be a function that calculates the desirable statistic
+-        from an operator. The function must take two arguments, which are the
+-        inputs and outputs of the operator, in the form of ``list(torch._C.Value)``.
+-        The function should return a counter object with per-operator statistics.
+-
+-        Examples
+-        ::
+-            handlers = {"aten::linear": my_handler}
+-            counter.set_op_handle("aten::matmul", None, "aten::bmm", my_handler2)
+-                   .set_op_handle(**handlers)
+-        """
+-        self._stats = None
+-        if len(args) % 2 != 0:
+-            raise TypeError(
+-                "set_op_handle should be called with pairs of names and handles!"
+-            )
+-        for name, handle in zip(args[::2], args[1::2]):
+-            kwargs[name] = handle
+-        for name, handle in kwargs.items():
+-            if handle is None:
+-                self._ignored_ops.add(name)
+-            else:
+-                self._op_handles[name] = handle
+-        return self
++    def set_op_handle(self, *args, **kwargs: Optional[Handle]
++        ) ->'JitModelAnalysis':
++        pass
+ 
+     def clear_op_handles(self) -> "JitModelAnalysis":
+         """

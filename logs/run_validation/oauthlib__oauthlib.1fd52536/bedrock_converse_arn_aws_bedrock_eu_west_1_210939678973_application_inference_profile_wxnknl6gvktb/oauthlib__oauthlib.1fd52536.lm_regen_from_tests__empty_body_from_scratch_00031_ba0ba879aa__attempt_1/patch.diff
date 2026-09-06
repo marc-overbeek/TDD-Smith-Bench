@@ -1,0 +1,14 @@
+--- a/oauthlib/common.py
++++ b/oauthlib/common.py
+@@ -217,8 +217,9 @@
+ 
+ def verify_signed_token(public_pem, token):
+     import jwt
+-
+-    return jwt.decode(token, public_pem, algorithms=['RS256'])
++    
++    claims = jwt.decode(token, public_pem, algorithms=['RS256'])
++    return claims
+ 
+ 
+ def generate_client_id(length=30, chars=CLIENT_ID_CHARACTER_SET):

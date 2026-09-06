@@ -1,0 +1,37 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2360,32 +2360,8 @@
+ 
+         return result
+ 
+-    def get_uphill_downhill(self) -> UphillDownhill:
+-        """
+-        Calculates the uphill and downhill elevation climbs for the gpx file.
+-        If elevation for some points is not found those are simply ignored.
+-
+-        Returns
+-        -------
+-        uphill_downhill: UphillDownhill named tuple
+-            uphill: float
+-                Uphill elevation climbs in meters
+-            downhill: float
+-                Downhill elevation descent in meters
+-        """
+-        if not self.tracks:
+-            return UphillDownhill(0, 0)
+-
+-        uphill: float = 0
+-        downhill: float = 0
+-
+-        for track in self.tracks:
+-            current_uphill, current_downhill = track.get_uphill_downhill()
+-
+-            uphill += current_uphill or 0
+-            downhill += current_downhill or 0
+-
+-        return UphillDownhill(uphill, downhill)
++    def get_uphill_downhill(self) ->UphillDownhill:
++        pass
+ 
+     def get_location_at(self, time: mod_datetime.datetime) -> List[mod_geo.Location]:
+         """

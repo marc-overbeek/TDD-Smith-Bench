@@ -1,0 +1,32 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -588,13 +588,24 @@
+     """
+     __slots__ = ('key', 'default')
+ 
+-    def __init__(self, key, default=_MISSING):
++    def __init__(self, key):
+         if type(key) in (Required, Optional):
+-            raise TypeError("double wrapping of Optional")
++            raise TypeError("double wrapping of Required")
+         hash(key)  # ensure is a valid key
+-        if _precedence(key) != 0:
+-            raise ValueError(f"Optional() keys must be == match constants, not {key!r}")
+-        self.key, self.default = key, default
++        if _precedence(key) == 0:
++            raise ValueError("== match constants are already required: " + bbrepr(key))
++        self.key = key
++
++    with pytest.raises(ValueError):
++        Required('key')
++
++    def __init__(self, key):
++        if type(key) in (Required, Optional):
++            raise TypeError("double wrapping of Required")
++        hash(key)  # ensure is a valid key
++        if _precedence(key) == 0:
++            raise ValueError("== match constants are already required: " + bbrepr(key))
++        self.key = key
+ 
+     def glomit(self, target, scope):
+         if target != self.key:

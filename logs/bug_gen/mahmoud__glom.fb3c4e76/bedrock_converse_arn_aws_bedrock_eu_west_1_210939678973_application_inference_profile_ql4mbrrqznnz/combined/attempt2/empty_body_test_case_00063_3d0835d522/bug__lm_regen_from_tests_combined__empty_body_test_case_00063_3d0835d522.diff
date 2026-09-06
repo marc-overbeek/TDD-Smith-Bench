@@ -1,0 +1,129 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1713,50 +1713,92 @@
+ 
+ 
+ def _format_slice(x):
+-    if type(x) is not slice:
+-        return bbrepr(x)
+-    fmt = lambda v: "" if v is None else bbrepr(v)
+-    if x.step is None:
+-        return fmt(x.start) + ":" + fmt(x.stop)
+-    return fmt(x.start) + ":" + fmt(x.stop) + ":" + fmt(x.step)
++    if isinstance(x, slice):
++        parts = [x.start, x.stop, x.step]
++        if parts[2] is None:
++            parts = parts[:2]
++            if parts[1] is None:
++                parts = parts[:1]
++        return ':'.join(['' if p is None else repr(p) for p in parts])
++    return repr(x)
+ 
+ 
+ def _format_t(path, root=T):
+-    prepr = [{T: 'T', S: 'S', A: 'A'}[root]]
+-    i = 0
+-    while i < len(path):
+-        op, arg = path[i], path[i + 1]
++    root_str = {T: 'T', S: 'S', A: 'A'}.get(root, 'T')
++    
++    if not path:
++        return root_str
++    
++    # Operator precedence for arithmetic
++    _precedence = {
++        '|': 1, '^': 2, '&': 3,
++        '+': 4, '-': 4,
++        '*': 5, '/': 5, '%': 5, '#': 5,
++        ':': 6,
++    }
++    
++    unary_ops = {'~': '~', '_': '-'}
++    binary_ops = {
++        '+': '+', '-': '-', '*': '*', '/': '/', '%': '%',
++        ':': '**', '&': '&', '|': '|', '^': '^', '#': '//'
++    }
++    
++    def needs_parens(op, parent_op, is_right=False):
++        p = _precedence.get(op, 100)
++        pp = _precedence.get(parent_op, 100)
++        if p < pp:
++            return True
++        if p == pp and is_right:
++            return True
++        return False
++    
++    parts = list(zip(path[::2], path[1::2]))
++    
++    result = root_str
++    result_op = None
++    
++    for i, (op, arg) in enumerate(parts):
+         if op == '.':
+-            prepr.append('.' + arg)
++            result = result + '.' + arg
++            result_op = None
+         elif op == '[':
+-            if type(arg) is tuple:
+-                index = ", ".join([_format_slice(x) for x in arg])
++            if isinstance(arg, slice):
++                result = result + '[' + _format_slice(arg) + ']'
++            elif isinstance(arg, tuple) and all(isinstance(a, slice) or isinstance(a, int) for a in arg):
++                result = result + '[' + ', '.join(_format_slice(a) if isinstance(a, slice) else repr(a) for a in arg) + ']'
+             else:
+-                index = _format_slice(arg)
+-            prepr.append(f"[{index}]")
++                result = result + '[' + bbrepr(arg) + ']'
++            result_op = None
++        elif op == 'P':
++            result = result + '.' + repr(arg)
++            result_op = None
+         elif op == '(':
+             args, kwargs = arg
+-            prepr.append(format_invocation(args=args, kwargs=kwargs, repr=bbrepr))
+-        elif op == 'P':
+-            return _format_path(path)
++            arg_strs = [bbrepr(a) for a in args]
++            kwarg_strs = [f'{k}={bbrepr(v)}' for k, v in kwargs.items()]
++            all_args = ', '.join(arg_strs + kwarg_strs)
++            result = result + '(' + all_args + ')'
++            result_op = None
++        elif op in unary_ops:
++            result = unary_ops[op] + result
++            result_op = op
++        elif op in binary_ops:
++            arg_repr = bbrepr(arg) if not isinstance(arg, TType) else repr(arg)
++            cur_prec = _precedence.get(op, 100)
++            if result_op is not None:
++                prev_prec = _precedence.get(result_op, 100)
++                if prev_prec < cur_prec:
++                    result = '(' + result + ')'
++            result = result + ' ' + binary_ops[op] + ' ' + arg_repr
++            result_op = op
+         elif op == 'x':
+-            prepr.append(".__star__()")
++            result = result + '.__star__()'
++            result_op = None
+         elif op == 'X':
+-            prepr.append(".__starstar__()")
+-        elif op in ('_', '~'):  # unary arithmetic operators
+-            if any([o in path[:i] for o in '+-/%:&|^~_']):
+-                prepr = ['('] + prepr + [')']
+-            prepr = ['-' if op == '_' else op] + prepr
+-        else:  # binary arithmetic operators
+-            formatted_arg = bbrepr(arg)
+-            if type(arg) is TType:
+-                arg_path = arg.__ops__
+-                if any([o in arg_path for o in '+-/%:&|^~_']):
+-                    formatted_arg = '(' + formatted_arg + ')'
+-            prepr.append(' ' + ('**' if op == ':' else op) + ' ')
+-            prepr.append(formatted_arg)
+-        i += 2
+-    return "".join(prepr)
++            result = result + '.__starstar__()'
++            result_op = None
++    
++    return result
+ 
+ 
+ class Val:

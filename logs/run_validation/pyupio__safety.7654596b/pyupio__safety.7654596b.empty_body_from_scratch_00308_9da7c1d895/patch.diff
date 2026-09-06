@@ -1,0 +1,61 @@
+--- a/safety/scan/ecosystems/python/dependencies.py
++++ b/safety/scan/ecosystems/python/dependencies.py
+@@ -13,55 +13,9 @@
+ from packaging.utils import canonicalize_name
+ 
+ 
+-def get_closest_ver(versions: List[str], version: Optional[str], spec: SpecifierSet) -> dict:
+-    """
+-    Gets the closest version to the specified version within a list of versions.
+-
+-    Args:
+-        versions (List[str]): The list of versions.
+-        version (Optional[str]): The target version.
+-        spec (SpecifierSet): The version specifier set.
+-
+-    Returns:
+-        dict: A dictionary containing the upper and lower closest versions.
+-    """
+-    results = {'upper': None, 'lower': None}
+-
+-    if (not version and not spec) or not versions:
+-        return results
+-
+-    sorted_versions = sorted(versions, key=lambda ver: parse_version(ver), reverse=True)
+-
+-    if not version:
+-        sorted_versions = spec.filter(sorted_versions, prereleases=False)
+-
+-        upper = None
+-        lower = None
+-
+-        try:
+-            sorted_versions = list(sorted_versions)
+-            upper = sorted_versions[0]
+-            lower = sorted_versions[-1]
+-            results['upper'] = upper
+-            results['lower'] = lower if upper != lower else None
+-        except IndexError:
+-            pass
+-
+-        return results
+-
+-    current_v = parse_version(version)
+-
+-    for v in sorted_versions:
+-        index = parse_version(v)
+-
+-        if index > current_v:
+-            results['upper'] = index
+-
+-        if index < current_v:
+-            results['lower'] = index
+-            break
+-
+-    return results
++def get_closest_ver(versions: List[str], version: Optional[str], spec:
++    SpecifierSet) ->dict:
++    pass
+ 
+ 
+ def is_pinned_requirement(spec: SpecifierSet) -> bool:

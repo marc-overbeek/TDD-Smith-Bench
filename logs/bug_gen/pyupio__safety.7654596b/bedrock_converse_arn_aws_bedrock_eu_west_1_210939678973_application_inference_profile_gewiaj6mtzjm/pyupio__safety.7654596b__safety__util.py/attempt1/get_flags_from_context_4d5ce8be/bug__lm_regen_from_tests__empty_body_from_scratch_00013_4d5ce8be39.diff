@@ -1,0 +1,34 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -188,22 +188,16 @@
+     return None
+ 
+ 
+-def get_flags_from_context() -> Dict[str, str]:
+-    """
+-    Get the flags from the current click context.
+-
+-    Returns:
+-        Dict[str, str]: A dictionary of flags and their corresponding option names.
+-    """
++def get_flags_from_context() ->Dict[str, str]:
++    ctx = click.get_current_context()
+     flags = {}
+-    context = click.get_current_context(silent=True)
+-
+-    if context:
+-        for option in context.command.params:
+-            flags_per_opt = option.opts + option.secondary_opts
+-            for flag in flags_per_opt:
+-                flags[flag] = option.name
+-
++    
++    # Get all parameters from the current context
++    for param in ctx.command.params:
++        if hasattr(param, 'opts') and param.opts:
++            for opt in param.opts:
++                flags[opt] = param.name
++    
+     return flags
+ 
+ 

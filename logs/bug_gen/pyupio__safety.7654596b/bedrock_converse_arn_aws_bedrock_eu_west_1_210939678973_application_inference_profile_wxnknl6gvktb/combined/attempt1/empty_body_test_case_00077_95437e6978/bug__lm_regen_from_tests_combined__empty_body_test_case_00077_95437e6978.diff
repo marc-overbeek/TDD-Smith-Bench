@@ -1,0 +1,124 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -268,31 +268,32 @@
+         return {}
+ 
+ 
+-def fetch_database_file(path: str, db_name: str, cached: int = 0, ecosystem: Optional[Ecosystem] = None) -> Dict[str, Any]:
+-    """
+-    Fetches the database from a local file.
+-
+-    Args:
+-        path (str): The path to the local file.
+-        db_name (str): The name of the database.
+-        cached (int): The cache validity in seconds.
+-        ecosystem (Optional[Ecosystem]): The ecosystem.
+-
+-    Returns:
+-        Dict[str, Any]: The fetched database.
+-    """
+-    full_path = (Path(path) / (ecosystem.value if ecosystem else '') / db_name).expanduser().resolve()
+-
+-    if not full_path.exists():
+-        raise DatabaseFileNotFoundError(db=path)
+-
+-    with open(full_path) as f:
+-        data = json.loads(f.read())
+-
++def fetch_database_file(path: str, db_name: str, cached: int=0, ecosystem:
++    Optional[Ecosystem]=None) ->Dict[str, Any]:
++    if ecosystem is None:
++        ecosystem = Ecosystem.PYTHON
++    
++    db_path = os.path.join(path, db_name)
++    
++    if cached:
++        cached_data = get_from_cache(db_name=db_name, cache_valid_seconds=cached)
++        if cached_data:
++            LOG.info('Database %s returned from cache.', db_name)
++            return cached_data
++    
++    if not os.path.isfile(db_path):
++        raise DatabaseFileNotFoundError(db_path=db_path)
++    
++    try:
++        with open(db_path, 'r') as f:
++            data = read_vulnerabilities(f)
++    except (IOError, OSError) as e:
++        raise DatabaseFileNotFoundError(db_path=db_path)
++    
+     if cached:
+         LOG.info('Writing %s to cache because cached value was %s', db_name, cached)
+         write_to_cache(db_name, data)
+-
++    
+     return data
+ 
+ 
+@@ -1416,42 +1417,31 @@
+ 
+ 
+ @sync_safety_context
+-def get_licenses(
+-    *,
+-    session: requests.Session,
+-    db_mirror: Union[Optional[str], bool] = False,
+-    cached: int = 0,
+-    telemetry: bool = True
+-) -> Dict[str, Any]:
+-    """
+-    Retrieves the licenses from the database.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        db_mirror (Union[Optional[str], bool]): The database mirror.
+-        cached (int): The cache validity in seconds.
+-        telemetry (bool): Whether to include telemetry data.
+-
+-    Returns:
+-        Dict[str, Any]: The licenses dictionary.
+-    """
+-    if db_mirror:
+-        mirrors = [db_mirror]
++def get_licenses(*, session: requests.Session, db_mirror: Union[Optional[
++    str], bool]=False, cached: int=0, telemetry: bool=True) ->Dict[str, Any]:
++    if not session.api_key:
++        raise InvalidCredentialError(credential=None, reason='Your authentication credential is invalid. See https://docs.safetycli.com/safety-docs/support/invalid-api-key-error.')
++    
++    db_name = "licenses.json"
++    
++    if is_a_remote_mirror(db_mirror) or db_mirror is False:
++        mirrors = API_MIRRORS if session.is_using_auth_credentials() else OPEN_MIRRORS
++        
++        for mirror in mirrors:
++            if is_a_remote_mirror(mirror):
++                data = fetch_database_url(session, mirror, db_name=db_name, cached=cached,
++                                        telemetry=telemetry, ecosystem=Ecosystem.PYTHON, from_cache=True)
++                if data:
++                    return data
++        
++        raise DatabaseFetchError()
+     else:
+-        mirrors = API_MIRRORS
+-
+-    db_name = "licenses.json"
+-
+-    for mirror in mirrors:
+-        # mirror can either be a local path or a URL
+-        if is_a_remote_mirror(mirror):
+-            licenses = fetch_database_url(session, mirror, db_name=db_name, cached=cached,
+-                                          telemetry=telemetry)
+-        else:
+-            licenses = fetch_database_file(mirror, db_name=db_name, ecosystem=None)
+-        if licenses:
+-            return licenses
+-    raise DatabaseFetchError()
++        data = fetch_database_file(db_mirror, db_name=db_name, cached=cached,
++                                  ecosystem=Ecosystem.PYTHON)
++        if data:
++            return data
++        
++        raise DatabaseFileNotFoundError(db_path=db_mirror)
+ 
+ 
+ def add_local_notifications(

@@ -1,0 +1,18 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -715,6 +715,15 @@
+             raise TypeError('can only check if Path starts with string, Path or T')
+         o_path = other.__ops__
+         return self.path_t.__ops__[:len(o_path)] == o_path
++
++    def from_t(self):
++        '''return the same path but starting from T'''
++        t_path = self.path_t.__ops__
++        if t_path[0] is S:
++            new_t = TType()
++            new_t.__ops__ = (T,) + t_path[1:]
++            return Path(new_t)
++        return self
+ 
+     def from_t(self):
+         '''return the same path but starting from T'''

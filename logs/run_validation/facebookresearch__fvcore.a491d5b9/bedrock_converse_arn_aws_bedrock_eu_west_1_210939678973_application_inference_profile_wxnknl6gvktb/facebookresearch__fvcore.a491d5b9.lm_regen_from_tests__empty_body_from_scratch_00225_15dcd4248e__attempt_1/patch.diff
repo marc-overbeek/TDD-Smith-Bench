@@ -1,0 +1,31 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -675,16 +675,21 @@
+         else:
+             return img[..., self.y0 : self.y0 + self.h, self.x0 : self.x0 + self.w, :]
+ 
++    def apply_coords(self, coords):
++        coords[:, 0] += self.x0
++        coords[:, 1] += self.y0
++        return coords
++
+     def apply_coords(self, coords: np.ndarray) -> np.ndarray:
+         """
+         Apply crop transform on coordinates.
+-
+-        Args:
+-            coords (ndarray): floating point array of shape Nx2. Each row is
+-                (x, y).
+-        Returns:
+-            ndarray: cropped coordinates.
+-        """
++        ...
++        """
++        coords[:, 0] -= self.x0
++        coords[:, 1] -= self.y0
++        return coords
++
++    def apply_coords(self, coords: np.ndarray) -> np.ndarray:
+         coords[:, 0] -= self.x0
+         coords[:, 1] -= self.y0
+         return coords

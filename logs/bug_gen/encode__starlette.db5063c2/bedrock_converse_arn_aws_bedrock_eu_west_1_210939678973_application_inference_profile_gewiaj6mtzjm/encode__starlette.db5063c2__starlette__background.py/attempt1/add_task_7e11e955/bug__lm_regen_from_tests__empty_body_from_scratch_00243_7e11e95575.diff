@@ -1,0 +1,10 @@
+--- a/starlette/background.py
++++ b/starlette/background.py
+@@ -35,6 +35,7 @@
+     def add_task(self, func: typing.Callable[P, typing.Any], *args: P.args, **kwargs: P.kwargs) -> None:
+         task = BackgroundTask(func, *args, **kwargs)
+         self.tasks.append(task)
++        # this is an exact match
+ 
+     async def __call__(self) -> None:
+         for task in self.tasks:

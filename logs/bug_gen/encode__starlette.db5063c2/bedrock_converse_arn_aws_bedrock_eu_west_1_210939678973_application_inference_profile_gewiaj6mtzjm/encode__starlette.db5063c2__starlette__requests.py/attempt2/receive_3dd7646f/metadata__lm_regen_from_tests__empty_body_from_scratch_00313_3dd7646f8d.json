@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the broken tests and the code, I can see there are multiple issues with the `receive` property in the `Request` class:\n\n1. There are duplicate `receive` method definitions\n2. The `receive` property is defined as a property but then redefined as a method\n3. The `__init__` method is also duplicated\n\nThe target function is `receive(self)` which should be a property that returns `self._receive`. Looking at the correct pattern from the code, it should simply return `self._receive`.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "Looking at the broken tests and the code, I can see there are multiple issues with the `receive` property in the `Request` class:\n\n1. There are duplicate `receive` method definitions\n2. The `receive` property is defined as a property but then redefined as a method\n3. The `__init__` method is also duplicated\n\nThe target function is `receive(self)` which should be a property that returns `self._receive`. Looking at the correct pattern from the code, it should simply return `self._receive`.\n\n```\n@property\ndef receive(self) -> Receive:\n    return self._receive\n```",
+  "rewrite": "@property\ndef receive(self) -> Receive:\n    return self._receive",
+  "strategy": "lm_regen_from_tests"
+}

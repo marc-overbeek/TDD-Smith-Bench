@@ -1,0 +1,19 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -218,14 +218,8 @@
+ 
+ 
+ class CommaSeparatedStrings(typing.Sequence[str]):
+-    def __init__(self, value: str | typing.Sequence[str]):
+-        if isinstance(value, str):
+-            splitter = shlex(value, posix=True)
+-            splitter.whitespace = ","
+-            splitter.whitespace_split = True
+-            self._items = [item.strip() for item in splitter]
+-        else:
+-            self._items = list(value)
++    def __init__(self, value: (str | typing.Sequence[str])):
++        pass
+ 
+     def __len__(self) -> int:
+         return len(self._items)

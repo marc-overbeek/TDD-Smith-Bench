@@ -1,0 +1,24 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -168,10 +168,18 @@
+     def __iter__(self) -> Iterator[Any]:
+         return (self.min_latitude, self.max_latitude, self.min_longitude, self.max_longitude,).__iter__()
+ 
++    def max_bounds(self, bounds: "GPXBounds") -> "GPXBounds":
++        return GPXBounds(self._min(self.min_latitude, bounds.min_latitude),
++            self._max(self.max_latitude, bounds.max_latitude),
++            self._min(self.min_longitude, bounds.min_longitude),
++            self._max(self.max_longitude, bounds.max_longitude))
++
+     def _min(self, a: Optional[float], b: Optional[float]) -> Optional[float]:
+-        if a is not None and b is not None:
+-            return min(a, b)
+-        return None
++        if a is None:
++            return b
++        if b is None:
++            return a
++        return min(a, b)
+ 
+     def _max(self, a: Optional[float], b: Optional[float]) -> Optional[float]:
+         if a is not None and b is not None:

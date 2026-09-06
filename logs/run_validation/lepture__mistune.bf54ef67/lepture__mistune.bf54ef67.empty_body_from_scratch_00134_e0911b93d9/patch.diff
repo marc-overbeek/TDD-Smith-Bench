@@ -1,0 +1,41 @@
+--- a/src/mistune/plugins/ruby.py
++++ b/src/mistune/plugins/ruby.py
+@@ -14,35 +14,9 @@
+ _ruby_re = re.compile(RUBY_PATTERN)
+ 
+ 
+-def parse_ruby(inline: "InlineParser", m: Match[str], state: "InlineState") -> int:
+-    text = m.group(0)[1:-2]
+-    items = text.split(')')
+-    tokens = []
+-    for item in items:
+-        rb, rt = item.split('(')
+-        tokens.append({
+-            'type': 'ruby',
+-            'raw': rb,
+-            'attrs': {'rt': rt}
+-        })
+-
+-    end_pos = m.end()
+-
+-    next_match = _ruby_re.match(state.src, end_pos)
+-    if next_match:
+-        for tok in tokens:
+-            state.append_token(tok)
+-        return parse_ruby(inline, next_match, state)
+-
+-    # repeat link logic
+-    if end_pos < len(state.src):
+-        link_pos = _parse_ruby_link(inline, state, end_pos, tokens)
+-        if link_pos:
+-            return link_pos
+-
+-    for tok in tokens:
+-        state.append_token(tok)
+-    return end_pos
++def parse_ruby(inline: 'InlineParser', m: Match[str], state: 'InlineState'
++    ) ->int:
++    pass
+ 
+ 
+ def _parse_ruby_link(

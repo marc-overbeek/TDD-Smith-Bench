@@ -1,0 +1,40 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1169,9 +1169,11 @@
+ 
+         return UphillDownhill(uphill, downhill)
+ 
++    elevations = [x.elevation for x in self.points if x.elevation is not None]
++
+     def get_elevation_extremes(self) -> MinimumMaximum:
+         """
+-        Calculate elevation extremes of track segment
++        Calculate elevation extremes of GPX file
+ 
+         Returns
+         -------
+@@ -1181,12 +1183,21 @@
+             maximum: float
+                 Maximum elevation in meters
+         """
+-        if not self.points:
++        if not self.tracks:
+             return MinimumMaximum(None, None)
+ 
+-        elevations = [x.elevation for x in self.points if x.elevation is not None]
+-        if not elevations:
++        elevations = []
++
++        for track in self.tracks:
++            (_min, _max) = track.get_elevation_extremes()
++            if _min is not None:
++                elevations.append(_min)
++            if _max is not None:
++                elevations.append(_max)
++
++        if len(elevations) == 0:
+             return MinimumMaximum(None, None)
++
+         return MinimumMaximum(min(elevations), max(elevations))
+ 
+     def get_location_at(self, time: mod_datetime.datetime) -> Optional[GPXTrackPoint]:

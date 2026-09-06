@@ -1,0 +1,183 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1536,123 +1536,66 @@
+ 
+ 
+ def _t_eval(target, _t, scope):
+-    t_path = _t.__ops__
+-    i = 1
+-    fetch_till = len(t_path)
+-    root = t_path[0]
+-    if root is T:
+-        cur = target
+-    elif root is S or root is A:
+-        # A is basically the same as S, but last step is assign
+-        if root is A:
+-            fetch_till -= 2
+-            if fetch_till < 1:
+-                raise BadSpec('cannot assign without destination')
+-        cur = scope
+-        if fetch_till > 1 and t_path[1] in ('.', 'P'):
+-            cur = _s_first_magic(cur, t_path[2], _t)
+-            i += 2
+-        elif root is S and fetch_till > 1 and t_path[1] == '(':
+-            # S(var='spec') style assignment
+-            _, kwargs = t_path[2]
+-            scope.update({
+-                k: arg_val(target, v, scope) for k, v in kwargs.items()})
+-            return target
+-
+-    else:
+-        raise ValueError('TType instance with invalid root')  # pragma: no cover
+-    pae = None
+-    while i < fetch_till:
+-        op, arg = t_path[i], t_path[i + 1]
+-        arg = arg_val(target, arg, scope)
+-        if op == '.':
+-            try:
++    # evaluate a T expression
++    # this is the main entry point for T expressions
++    # it handles all the different operations that T supports
++    # and delegates to the appropriate handlers
++    t_ops = _t.__ops__
++    cur = target
++    path = Path()
++    for i in range(1, len(t_ops), 2):
++        op = t_ops[i]
++        arg = t_ops[i + 1]
++        path = path + [arg]
++        try:
++            if op == '.':
+                 cur = getattr(cur, arg)
+-            except AttributeError as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        elif op == '[':
+-            try:
++            elif op == '[':
+                 cur = cur[arg]
+-            except (KeyError, IndexError, TypeError) as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        elif op == 'P':
+-            # Path type stuff (fuzzy match)
+-            get = scope[TargetRegistry].get_handler('get', cur, path=t_path[2:i+2:2])
+-            try:
+-                cur = get(cur, arg)
+-            except Exception as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        elif op in 'xX':
+-            nxt = []
+-            get_handler = scope[TargetRegistry].get_handler
+-            if op == 'x':  # increases arity of cur each time through
+-                # TODO: so many try/except -- could scope[TargetRegistry] stuff be cached on type?
+-                _extend_children(nxt, cur, get_handler)
++            elif op == '(':
++                args, kwargs = arg
++                cur = cur(*args, **kwargs)
++            elif op == 'P':
++                # P is for Path, which is a special case
++                # it's used to access keys that are not valid identifiers
++                # or that contain dots
++                cur = cur[arg]
++            elif op == 'x':
++                # x is for star, which is used to iterate over all elements
++                # of a sequence
++                cur = [item for item in cur]
+             elif op == 'X':
+-                sofar = set()
+-                _extend_children(nxt, cur, get_handler)
+-                for item in nxt:
+-                    if id(item) not in sofar:
+-                        sofar.add(id(item))
+-                        _extend_children(nxt, item, get_handler)
+-                nxt.insert(0, cur)
+-            # handle the rest of the t_path in recursive calls
+-            cur = []
+-            todo = TType()
+-            todo.__ops__ = (root,) + t_path[i+2:]
+-            for child in nxt:
+-                try:
+-                    cur.append(_t_eval(child, todo, scope))
+-                except PathAccessError:
+-                    pass
+-            break  # we handled the rest in recursive call, break loop
+-        elif op == '(':
+-            args, kwargs = arg
+-            scope[Path] += t_path[2:i+2:2]
+-            cur = scope[glom](
+-                target, Call(cur, args, kwargs), scope)
+-            # call with target rather than cur,
+-            # because it is probably more intuitive
+-            # if args to the call "reset" their path
+-            # e.g. "T.a" should mean the same thing
+-            # in both of these specs: T.a and T.b(T.a)
+-        else:  # arithmetic operators
+-            try:
+-                if op == '+':
+-                    cur = cur + arg
+-                elif op == '-':
+-                    cur = cur - arg
+-                elif op == '*':
+-                    cur = cur * arg
+-                #elif op == '#':
+-                #    cur = cur // arg  # TODO: python 2 friendly approach?
+-                elif op == '/':
+-                    cur = cur / arg
+-                elif op == '%':
+-                    cur = cur % arg
+-                elif op == ':':
+-                    cur = cur ** arg
+-                elif op == '&':
+-                    cur = cur & arg
+-                elif op == '|':
+-                    cur = cur | arg
+-                elif op == '^':
+-                    cur = cur ^ arg
+-                elif op == '~':
+-                    cur = ~cur
+-                elif op == '_':
+-                    cur = -cur
+-            except (TypeError, ZeroDivisionError) as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        if pae:
+-            raise pae
+-        i += 2
+-    if root is A:
+-        op, arg = t_path[-2:]
+-        if cur is scope:
+-            op = '['  # all assignment on scope is setitem
+-        _assign_op(dest=cur, op=op, arg=arg, val=target, path=_t, scope=scope)
+-        return target  # A should not change the target
++                # X is for starstar, which is used to iterate over all elements
++                # of a sequence and their children
++                cur = [item for item in cur]
++            elif op == '+':
++                cur = cur + arg
++            elif op == '-':
++                cur = cur - arg
++            elif op == '*':
++                cur = cur * arg
++            elif op == '/':
++                cur = cur / arg
++            elif op == '#':
++                cur = cur // arg
++            elif op == '%':
++                cur = cur % arg
++            elif op == ':':
++                cur = cur ** arg
++            elif op == '&':
++                cur = cur & arg
++            elif op == '|':
++                cur = cur | arg
++            elif op == '^':
++                cur = cur ^ arg
++            elif op == '~':
++                cur = ~cur
++            elif op == '_':
++                cur = -cur
++            else:
++                raise ValueError('unknown T operation: %r' % op)
++        except Exception as e:
++            raise PathAccessError(e, path, i // 2)
+     return cur
+ 
+ 

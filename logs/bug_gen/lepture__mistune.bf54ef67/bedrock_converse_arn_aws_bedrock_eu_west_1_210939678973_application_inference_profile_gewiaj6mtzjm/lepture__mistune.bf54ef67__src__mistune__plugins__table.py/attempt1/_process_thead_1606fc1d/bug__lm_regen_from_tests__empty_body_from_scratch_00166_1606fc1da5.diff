@@ -1,0 +1,52 @@
+--- a/src/mistune/plugins/table.py
++++ b/src/mistune/plugins/table.py
+@@ -90,24 +90,25 @@
+     return m.end()
+ 
+ 
+-def _process_thead(
+-    header: str, align: str
+-) -> Union[Tuple[None, None], Tuple[Dict[str, Any], List[str]]]:
++def _process_thead(header: str, align: str) ->Union[Tuple[None, None],
++    Tuple[Dict[str, Any], List[str]]]:
+     headers = CELL_SPLIT.split(header)
+-    aligns = CELL_SPLIT.split(align)
++    aligns = []
++    
++    for a in CELL_SPLIT.split(align):
++        a = a.strip()
++        if ALIGN_CENTER.match(a):
++            aligns.append('center')
++        elif ALIGN_LEFT.match(a):
++            aligns.append('left')
++        elif ALIGN_RIGHT.match(a):
++            aligns.append('right')
++        else:
++            aligns.append(None)
++    
+     if len(headers) != len(aligns):
+-      return None, None
+-
+-    for i, v in enumerate(aligns):
+-        if ALIGN_CENTER.match(v):
+-            aligns[i] = 'center'
+-        elif ALIGN_LEFT.match(v):
+-            aligns[i] = 'left'
+-        elif ALIGN_RIGHT.match(v):
+-            aligns[i] = 'right'
+-        else:
+-            aligns[i] = None
+-
++        return None, None
++    
+     children = [
+         {
+             'type': 'table_cell',
+@@ -116,6 +117,7 @@
+         }
+         for i, text in enumerate(headers)
+     ]
++    
+     thead = {'type': 'table_head', 'children': children}
+     return thead, aligns
+ 

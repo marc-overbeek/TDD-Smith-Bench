@@ -1,0 +1,30 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -655,18 +655,17 @@
+     return truncate_datetime
+ 
+ 
++def test_cartesian_product_numpy(self):
++    result = cartesian_product_numpy(np.array([3, 1, 2, 4, 3]), np.array([5, 2, 4]))
++    expected = [[3, 5], [3, 2], [3, 4], [1, 5], [1, 2], [1, 4], [2, 5], [2, 2], [2, 4], [4, 5], [4, 2], [4, 4], [3, 5], [3, 2], [3, 4]]
++    assert expected == result.tolist()
++
+ def cartesian_product_numpy(*arrays):
+-    """
+-    Cartesian product of Numpy arrays by Paul Panzer
+-    https://stackoverflow.com/a/49445693/1497443
+-    """
+     la = len(arrays)
+-    dtype = np.result_type(*arrays)
+-    arr = np.empty((la, *map(len, arrays)), dtype=dtype)
+-    idx = slice(None), *repeat(None, la)
+-    for i, a in enumerate(arrays):
+-        arr[i, ...] = a[idx[:la - i]]
+-    return arr.reshape(la, -1).T
++    arr = np.empty([len(a) for a in arrays] + [la], dtype=arrays[0].dtype)
++    for i, a in enumerate(np.ix_(*arrays)):
++        arr[..., i] = a
++    return arr.reshape(-1, la)
+ 
+ 
+ def diff_numpy_array(A, B):

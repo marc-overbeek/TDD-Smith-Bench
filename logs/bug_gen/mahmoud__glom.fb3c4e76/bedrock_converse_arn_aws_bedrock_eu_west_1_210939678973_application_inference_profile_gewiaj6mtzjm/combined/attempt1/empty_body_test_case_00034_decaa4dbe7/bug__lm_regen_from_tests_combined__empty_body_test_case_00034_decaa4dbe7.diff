@@ -1,0 +1,147 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -30,14 +30,10 @@
+ 
+ 
+ def target_iter(target, scope):
+-    iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
+-
+-    try:
+-        iterator = iterate(target)
+-    except Exception as e:
+-        raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+-                        % (target.__class__.__name__, Path(*scope[Path]), e))
+-    return iterator
++    if hasattr(target, '__iter__') and not isinstance(target, (str, bytes)):
++        return target
++    else:
++        return [target]
+ 
+ 
+ class Group:
+@@ -73,22 +69,23 @@
+         self.spec = spec
+ 
+     def glomit(self, target, scope):
+-        scope[MODE] = GROUP
+-        scope[CUR_AGG] = None  # reset aggregation tripwire for sub-specs
+-        scope[ACC_TREE] = {}
+-
+-        # handle the basecase where the spec stops immediately
+-        # TODO: something smarter
+-        if type(self.spec) in (dict, list):
+-            ret = type(self.spec)()
++        # This method is part of the Group class, but since we're rewriting the function
++        # we'll implement the core logic here
++        if scope[MODE] is not GROUP:
++            # Not in group mode, treat as regular glom operation
++            return scope[glom](target, self.spec, scope)
++    
++        # In group mode, process with accumulation
++        scope[CUR_AGG] = self
++        tree = scope[ACC_TREE]
++    
++        # Check if this is an aggregation operation
++        if hasattr(self, 'agg'):
++            # This is an aggregation spec, use its agg method
++            return self.agg(target, tree)
+         else:
+-            ret = None
+-
+-        for t in target_iter(target, scope):
+-            last, ret = ret, scope[glom](t, self.spec, scope)
+-            if ret is STOP:
+-                return last
+-        return ret
++            # Regular spec processing
++            return scope[glom](target, self.spec, scope)
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__
+@@ -96,63 +93,29 @@
+ 
+ 
+ def GROUP(target, spec, scope):
+-    """
+-    Group mode dispatcher; also sentinel for current mode = group
+-    """
+-    recurse = lambda spec: scope[glom](target, spec, scope)
+-    tree = scope[ACC_TREE]  # current accumulator support structure
+-    if callable(getattr(spec, "agg", None)):
+-        return spec.agg(target, tree)
+-    elif callable(spec):
+-        return spec(target)
+-    _spec_type = type(spec)
+-    if _spec_type not in (dict, list):
+-        raise BadSpec("Group mode expected dict, list, callable, or"
+-                      " aggregator, not: %r" % (spec,))
+-    _spec_id = id(spec)
+-    try:
+-        acc = tree[_spec_id]  # current accumulator
+-    except KeyError:
+-        acc = tree[_spec_id] = _spec_type()
+-    if _spec_type is dict:
+-        done = True
+-        for keyspec, valspec in spec.items():
+-            if tree.get(keyspec, None) is STOP:
+-                continue
+-            key = recurse(keyspec)
+-            if key is SKIP:
+-                done = False  # SKIP means we still want more vals
+-                continue
+-            if key is STOP:
+-                tree[keyspec] = STOP
+-                continue
+-            if key not in acc:
+-                # TODO: guard against key == id(spec)
+-                tree[key] = {}
+-            scope[ACC_TREE] = tree[key]
+-            result = recurse(valspec)
+-            if result is STOP:
+-                tree[keyspec] = STOP
+-                continue
+-            done = False  # SKIP or returning a value means we still want more vals
+-            if result is not SKIP:
+-                acc[key] = result
+-        if done:
+-            return STOP
+-        return acc
+-    elif _spec_type is list:
+-        for valspec in spec:
+-            if type(valspec) is dict:
+-                # doesn't make sense due to arity mismatch. did you mean [Auto({...})] ?
+-                raise BadSpec('dicts within lists are not'
+-                              ' allowed while in Group mode: %r' % spec)
+-            result = recurse(valspec)
+-            if result is STOP:
+-                return STOP
+-            if result is not SKIP:
+-                acc.append(result)
+-        return acc
+-    raise ValueError(f"{_spec_type} not a valid spec type for Group mode")  # pragma: no cover
++    # Handle the case where we're in group mode but need to process a single item
++    if scope[MODE] is GROUP:
++        # If we're already in group mode, just process normally
++        return scope[glom](target, spec, scope)
++    
++    # Otherwise, set up group mode and process
++    scope[MODE] = GROUP
++    scope[CUR_AGG] = None
++    scope[ACC_TREE] = {}
++    
++    # Handle base case where spec is dict or list
++    if isinstance(spec, (dict, list)):
++        ret = type(spec)()
++    else:
++        ret = None
++    
++    # Process each item in target
++    for t in target_iter(target, scope):
++        last, ret = ret, scope[glom](t, spec, scope)
++        if ret is STOP:
++            return last
++    
++    return ret
+ 
+ 
+ class First:

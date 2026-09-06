@@ -1,0 +1,83 @@
+--- a/safety/scan/ecosystems/python/main.py
++++ b/safety/scan/ecosystems/python/main.py
+@@ -146,77 +146,9 @@
+     )
+ 
+ 
+-def get_vulnerability(
+-    vuln_id: str, cve, data, specifier,
+-    db, name, ignore_vulns: IgnoredItems,
+-    affected: PythonSpecification
+-) -> Vulnerability:
+-    """
+-    Creates a Vulnerability object from the given data.
+-
+-    Args:
+-        vuln_id (str): The vulnerability ID.
+-        cve: The CVE object.
+-        data: The vulnerability data.
+-        specifier: The specifier set.
+-        db: The database.
+-        name: The package name.
+-        ignore_vulns (IgnoredItems): The ignored vulnerabilities.
+-        affected (PythonSpecification): The affected specification.
+-
+-    Returns:
+-        Vulnerability: The created Vulnerability object.
+-    """
+-    base_domain = db.get('meta', {}).get('base_domain')
+-    unpinned_ignored = ignore_vulns[vuln_id].specifications \
+-        if vuln_id in ignore_vulns.keys() else None
+-    should_ignore = not unpinned_ignored or str(affected.specifier) in unpinned_ignored
+-    ignored: bool = bool(ignore_vulns and
+-                     vuln_id in ignore_vulns and
+-                     should_ignore)
+-    more_info_url = f"{base_domain}{data.get('more_info_path', '')}"
+-    severity = None
+-
+-    if cve and (cve.cvssv2 or cve.cvssv3):
+-        severity = Severity(source=cve.name, cvssv2=cve.cvssv2, cvssv3=cve.cvssv3)
+-
+-    analyzed_requirement = affected
+-    analyzed_version = next(iter(analyzed_requirement.specifier)).version if affected.is_pinned() else None
+-
+-    vulnerable_spec = set()
+-    vulnerable_spec.add(specifier)
+-
+-    reason = None
+-    expires = None
+-    ignore_code = None
+-
+-    if ignored:
+-        reason = ignore_vulns[vuln_id].reason
+-        expires = str(ignore_vulns[vuln_id].expires) if ignore_vulns[vuln_id].expires else None
+-        ignore_code = ignore_vulns[vuln_id].code.value
+-
+-    return Vulnerability(
+-        vulnerability_id=vuln_id,
+-        package_name=name,
+-        ignored=ignored,
+-        ignored_reason=reason,
+-        ignored_expires=expires,
+-        ignored_code=ignore_code,
+-        vulnerable_spec=vulnerable_spec,
+-        all_vulnerable_specs=data.get("specs", []),
+-        analyzed_version=analyzed_version,
+-        analyzed_requirement=str(analyzed_requirement),
+-        advisory=data.get("advisory"),
+-        is_transitive=data.get("transitive", False),
+-        published_date=data.get("published_date"),
+-        fixed_versions=[ver for ver in data.get("fixed_versions", []) if ver],
+-        closest_versions_without_known_vulnerabilities=data.get("closest_secure_versions", []),
+-        resources=data.get("vulnerability_resources"),
+-        CVE=cve,
+-        severity=severity,
+-        affected_versions=data.get("affected_versions", []),
+-        more_info_url=more_info_url
+-    )
++def get_vulnerability(vuln_id: str, cve, data, specifier, db, name,
++    ignore_vulns: IgnoredItems, affected: PythonSpecification) ->Vulnerability:
++    pass
+ 
+ class PythonFile(InspectableFile, Remediable):
+     """

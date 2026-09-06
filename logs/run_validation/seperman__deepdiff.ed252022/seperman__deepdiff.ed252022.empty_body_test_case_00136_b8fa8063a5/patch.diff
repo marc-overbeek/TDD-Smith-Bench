@@ -1,0 +1,53 @@
+--- a/deepdiff/model.py
++++ b/deepdiff/model.py
+@@ -231,21 +231,7 @@
+                     force=FORCE_DEFAULT), change.t1, change.t2))
+ 
+     def _from_tree_set_item_added_or_removed(self, tree, key):
+-        if key in tree:
+-            set_item_info = self[key]
+-            is_dict = isinstance(set_item_info, Mapping)
+-            for change in tree[key]:
+-                path = change.up.path(
+-                )  # we want't the set's path, the added item is not directly accessible
+-                item = change.t2 if key == 'set_item_added' else change.t1
+-                if self.ADD_QUOTES_TO_STRINGS and isinstance(item, strings):
+-                    item = "'%s'" % item
+-                if is_dict:
+-                    if path not in set_item_info:
+-                        set_item_info[path] = set()
+-                    set_item_info[path].add(item)
+-                else:
+-                    set_item_info.add("{}[{}]".format(path, str(item)))
++        pass
+                     # this syntax is rather peculiar, but it's DeepDiff 2.x compatible)
+ 
+     def _from_tree_set_item_added(self, tree):
+@@ -339,24 +325,9 @@
+         self._from_tree_set_item_added(tree)
+         self._from_tree_repetition_change(tree)
+ 
+-    def _from_tree_iterable_item_added_or_removed(self, tree, report_type, delta_report_key):
+-        if report_type in tree:
+-            for change in tree[report_type]:  # report each change
+-                # determine change direction (added or removed)
+-                # Report t2 (the new one) whenever possible.
+-                # In cases where t2 doesn't exist (i.e. stuff removed), report t1.
+-                if change.t2 is not notpresent:
+-                    item = change.t2
+-                else:
+-                    item = change.t1
+-
+-                # do the reporting
+-                path, param, _ = change.path(force=FORCE_DEFAULT, get_parent_too=True)
+-                try:
+-                    iterable_items_added_at_indexes = self[delta_report_key][path]
+-                except KeyError:
+-                    iterable_items_added_at_indexes = self[delta_report_key][path] = dict_()
+-                iterable_items_added_at_indexes[param] = item
++    def _from_tree_iterable_item_added_or_removed(self, tree, report_type,
++        delta_report_key):
++        pass
+ 
+     def _from_tree_type_changes(self, tree):
+         if 'type_changes' in tree:

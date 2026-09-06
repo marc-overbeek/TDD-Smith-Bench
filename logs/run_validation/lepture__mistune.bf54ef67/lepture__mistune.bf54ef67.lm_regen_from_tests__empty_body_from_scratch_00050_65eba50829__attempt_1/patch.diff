@@ -1,0 +1,13 @@
+--- a/src/mistune/util.py
++++ b/src/mistune/util.py
+@@ -7,6 +7,10 @@
+ 
+ 
+ def expand_leading_tab(text: str, width: int = 4) -> str:
++    def repl(m: Match[str]) -> str:
++        s = m.group(1)
++        return s + ' ' * (width - len(s))
++
+     def repl(m: Match[str]) -> str:
+         s = m.group(1)
+         return s + ' ' * (width - len(s))

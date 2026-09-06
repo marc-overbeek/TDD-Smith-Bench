@@ -1,0 +1,27 @@
+--- a/src/mistune/directives/_rst.py
++++ b/src/mistune/directives/_rst.py
+@@ -31,11 +31,21 @@
+ 
+     @staticmethod
+     def parse_content(m: Match[str]) -> str:
+-        full_content = m.group(0)
+         text = m.group('text')
+-        pretext = full_content[:-len(text)]
++        if not text:
++            return ''
+         leading = len(m.group(1)) + 2
+-        return '\n'.join(line[leading:] for line in text.splitlines()) + '\n'
++        return '\n'.join(line[leading:] if len(line) > leading else line.lstrip() for line in text.splitlines()) + '\n'
++
++    return '\n'.join(line[leading:] for line in text.splitlines()) + '\n'
++
++    def parse_content(m: Match[str]) -> str:
++        text = m.group('text')
++        if not text:
++            return ''
++        leading = len(m.group(1)) + 2
++        lines = text.splitlines()
++        return '\n'.join(line[leading:] for line in lines) + '\n'
+ 
+ 
+ class RSTDirective(BaseDirective):

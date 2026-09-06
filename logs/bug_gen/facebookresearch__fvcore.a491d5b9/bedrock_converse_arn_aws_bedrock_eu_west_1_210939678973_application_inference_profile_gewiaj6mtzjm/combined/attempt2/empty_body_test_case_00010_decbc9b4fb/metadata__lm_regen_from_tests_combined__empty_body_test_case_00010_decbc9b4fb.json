@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef __init__(self, num_updates: Union[int, float], values: List[float]) -> None:\n    if num_updates <= 0:\n        raise ValueError(\"Number of updates must be larger than 0\")\n    if not (isinstance(values, Sequence) and len(values) > 0):\n        raise ValueError(\n            \"Step scheduler requires a list of at least one param value\"\n        )\n    self._param_schedule = values\n    self._num_updates = num_updates\n\ndef __call__(self, where: float) -> float:\n    if where >= 1.0:\n        raise RuntimeError(\n            f\"where in ParamScheduler must be in [0, 1]: got {where}\"\n        )\n    ind = int((where + self.WHERE_EPSILON) * self._num_updates)\n    return self._param_schedule[ind]\n```",
+  "rewrite": "def __init__(self, num_updates: Union[int, float], values: List[float]) -> None:\n    if num_updates <= 0:\n        raise ValueError(\"Number of updates must be larger than 0\")\n    if not (isinstance(values, Sequence) and len(values) > 0):\n        raise ValueError(\n            \"Step scheduler requires a list of at least one param value\"\n        )\n    self._param_schedule = values\n    self._num_updates = num_updates\n\ndef __call__(self, where: float) -> float:\n    if where >= 1.0:\n        raise RuntimeError(\n            f\"where in ParamScheduler must be in [0, 1]: got {where}\"\n        )\n    ind = int((where + self.WHERE_EPSILON) * self._num_updates)\n    return self._param_schedule[ind]",
+  "strategy": "lm_regen_from_tests_combined"
+}

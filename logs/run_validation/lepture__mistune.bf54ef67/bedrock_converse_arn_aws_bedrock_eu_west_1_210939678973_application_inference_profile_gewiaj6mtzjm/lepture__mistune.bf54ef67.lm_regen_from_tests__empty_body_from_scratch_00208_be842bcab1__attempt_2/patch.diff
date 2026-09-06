@@ -1,0 +1,27 @@
+--- a/src/mistune/renderers/_list.py
++++ b/src/mistune/renderers/_list.py
+@@ -50,16 +50,16 @@
+     return leading + text
+ 
+ 
+-def _render_ordered_list(
+-    renderer: "BaseRenderer", token: Dict[str, Any], state: "BlockState"
+-) -> Iterable[str]:
+-    attrs = token["attrs"]
+-    start = attrs.get("start", 1)
+-    for item in token["children"]:
+-        leading = str(start) + token["bullet"] + " "
++def _render_ordered_list(renderer: 'BaseRenderer', token: Dict[str, Any],
++    state: 'BlockState') ->Iterable[str]:
++    start = token.get('start', 1)
++    bullet = token['bullet']
++    tight = token['tight']
++    for item in token['children']:
++        leading = '{}{} '.format(start, bullet)
+         parent = {
+             'leading': leading,
+-            'tight': token['tight'],
++            'tight': tight,
+         }
+         yield _render_list_item(renderer, parent, item, state)
+         start += 1

@@ -1,0 +1,22 @@
+--- a/src/mistune/plugins/task_lists.py
++++ b/src/mistune/plugins/task_lists.py
+@@ -48,15 +48,14 @@
+         md.renderer.register('task_list_item', render_task_list_item)
+ 
+ 
+-def _rewrite_all_list_items(
+-    tokens: Iterable[Dict[str, Any]]
+-) -> Iterable[Dict[str, Any]]:
++def _rewrite_all_list_items(tokens: Iterable[Dict[str, Any]]) ->Iterable[Dict
++    [str, Any]]:
+     for tok in tokens:
+         if tok['type'] == 'list_item':
+             _rewrite_list_item(tok)
+-        if 'children' in tok:
++        elif 'children' in tok:
+             _rewrite_all_list_items(tok['children'])
+-    return tokens
++        yield tok
+ 
+ 
+ def _rewrite_list_item(tok: Dict[str, Any]) -> None:

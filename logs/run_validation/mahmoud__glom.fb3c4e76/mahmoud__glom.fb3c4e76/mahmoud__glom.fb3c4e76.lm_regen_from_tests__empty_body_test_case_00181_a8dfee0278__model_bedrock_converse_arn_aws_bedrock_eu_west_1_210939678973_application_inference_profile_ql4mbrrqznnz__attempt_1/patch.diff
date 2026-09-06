@@ -1,0 +1,42 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -75,7 +75,6 @@
+             fb = FunctionBuilder.from_func(meth)
+             fb.args = fb.args[1:]  # drop self
+             arg_names = fb.get_arg_names()
+-            # TODO: something fancier with defaults:
+             kwargs = []
+             if len(args) > 1 and arg_names:
+                 args, kwargs = (), zip(arg_names, args)
+@@ -105,9 +104,6 @@
+             if yld is SKIP:
+                 continue
+             elif yld is self.sentinel or yld is STOP:
+-                # NB: sentinel defaults to STOP so I was torn whether
+-                # to also check for STOP, and landed on the side of
+-                # never letting STOP through.
+                 return
+             yield yld
+         return
+@@ -116,21 +112,6 @@
+         return type(self)(subspec=self.subspec, _iter_stack=[(opname, args, callback)] + self._iter_stack)
+ 
+     def map(self, subspec):
+-        """Return a new :class:`Iter()` spec which will apply the provided
+-        *subspec* to each element of the iterable.
+-
+-        >>> glom(range(5), Iter().map(lambda x: x * 2).all())
+-        [0, 2, 4, 6, 8]
+-
+-        Because a spec can be a callable, :meth:`Iter.map()` does
+-        everything the built-in :func:`map` does, but with the full
+-        power of glom specs.
+-
+-        >>> glom(['a', 'B', 'C'], Iter().map(T.islower()).all())
+-        [True, False, False]
+-        """
+-        # whatever validation you want goes here
+-        # TODO: DRY the self._add_op with a decorator?
+         return self._add_op(
+             'map',
+             (subspec,),

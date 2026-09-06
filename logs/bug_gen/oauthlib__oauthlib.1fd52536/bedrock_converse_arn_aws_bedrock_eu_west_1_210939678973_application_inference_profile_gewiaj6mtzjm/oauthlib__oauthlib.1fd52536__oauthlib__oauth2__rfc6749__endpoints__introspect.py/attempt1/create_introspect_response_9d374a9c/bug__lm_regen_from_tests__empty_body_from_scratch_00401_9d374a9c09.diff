@@ -1,0 +1,40 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/introspect.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/introspect.py
+@@ -46,7 +46,7 @@
+ 
+     @catch_errors_and_unavailability
+     def create_introspect_response(self, uri, http_method='POST', body=None,
+-                                   headers=None):
++        headers=None):
+         """Create introspect valid or invalid response
+ 
+         If the authorization server is unable to determine the state
+@@ -60,6 +60,28 @@
+             'Pragma': 'no-cache',
+         }
+         request = Request(uri, http_method, body, headers)
++    
++        # Check if method is supported
++        if http_method.upper() not in self.valid_request_methods:
++            error = "invalid_request"
++            description = "Unsupported request method"
++            resp_headers.update({'WWW-Authenticate': 'Bearer error="invalid_client"'})
++            return resp_headers, json.dumps({
++                'error': error,
++                'error_description': description
++            }), 400
++    
++        # Check for query parameters in URI (should not be allowed)
++        from urllib.parse import urlparse, parse_qs
++        parsed_uri = urlparse(uri)
++        if parsed_uri.query:
++            error = "invalid_request"
++            description = "query parameters are not allowed"
++            return resp_headers, json.dumps({
++                'error': error,
++                'error_description': description
++            }), 400
++    
+         try:
+             self.validate_introspect_request(request)
+             log.debug('Token introspect valid for %r.', request)

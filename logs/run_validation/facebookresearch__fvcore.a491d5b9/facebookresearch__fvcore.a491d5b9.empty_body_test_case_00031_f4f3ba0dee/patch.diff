@@ -1,0 +1,68 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -22,20 +22,8 @@
+ Handle = Callable[[List[Any], List[Any]], Union[typing.Counter[str], Number]]
+ 
+ 
+-def get_shape(val: Any) -> Optional[List[int]]:
+-    """
+-    Get the shapes from a jit value object.
+-
+-    Args:
+-        val (torch._C.Value): jit value object.
+-
+-    Returns:
+-        list(int): return a list of ints.
+-    """
+-    if val.isCompleteTensor():
+-        return val.type().sizes()
+-    else:
+-        return None
++def get_shape(val: Any) ->Optional[List[int]]:
++    pass
+ 
+ 
+ """
+@@ -229,40 +217,8 @@
+     return flop
+ 
+ 
+-def norm_flop_counter(affine_arg_index: int) -> Handle:
+-    """
+-    Args:
+-        affine_arg_index: index of the affine argument in inputs
+-    """
+-
+-    def norm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-        """
+-        Count flops for norm layers.
+-        """
+-        # Inputs[0] contains the shape of the input.
+-        input_shape = get_shape(inputs[0])
+-        has_affine = get_shape(inputs[affine_arg_index]) is not None
+-        assert 2 <= len(input_shape) <= 5, input_shape
+-        # 5 is just a rough estimate
+-        flop = prod(input_shape) * (5 if has_affine else 4)
+-        return flop
+-
+-    return norm_flop_jit
+-
+-
+-def batchnorm_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-    training = inputs[5].toIValue()
+-    assert isinstance(training, bool), "Signature of aten::batch_norm has changed!"
+-    if training:
+-        return norm_flop_counter(1)(inputs, outputs)  # pyre-ignore
+-    has_affine = get_shape(inputs[1]) is not None
+-    input_shape = prod(get_shape(inputs[0]))
+-    return input_shape * (2 if has_affine else 1)
+-
+-
+-def elementwise_flop_counter(input_scale: float = 1, output_scale: float = 0) -> Handle:
+-    """
+-    Count flops by
++def norm_flop_counter(affine_arg_index: int) ->Handle:
++    pass
+         input_tensor.numel() * input_scale + output_tensor.numel() * output_scale
+ 
+     Args:

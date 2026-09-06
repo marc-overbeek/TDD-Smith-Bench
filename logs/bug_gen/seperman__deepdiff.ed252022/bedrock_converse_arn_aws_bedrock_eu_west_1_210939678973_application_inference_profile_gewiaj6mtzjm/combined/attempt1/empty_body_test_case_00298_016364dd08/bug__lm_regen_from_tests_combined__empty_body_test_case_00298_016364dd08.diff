@@ -1,0 +1,122 @@
+--- a/deepdiff/search.py
++++ b/deepdiff/search.py
+@@ -82,18 +82,10 @@
+ 
+     warning_num = 0
+ 
+-    def __init__(self,
+-                 obj,
+-                 item,
+-                 exclude_paths=SetOrdered(),
+-                 exclude_regex_paths=SetOrdered(),
+-                 exclude_types=SetOrdered(),
+-                 verbose_level=1,
+-                 case_sensitive=False,
+-                 match_string=False,
+-                 use_regexp=False,
+-                 strict_checking=True,
+-                 **kwargs):
++    def __init__(self, obj, item, exclude_paths=SetOrdered(),
++        exclude_regex_paths=SetOrdered(), exclude_types=SetOrdered(),
++        verbose_level=1, case_sensitive=False, match_string=False, use_regexp=
++        False, strict_checking=True, **kwargs):
+         if kwargs:
+             raise ValueError((
+                 "The following parameter(s) are not valid: %s\n"
+@@ -190,12 +182,8 @@
+ 
+         return skip
+ 
+-    def __search_dict(self,
+-                      obj,
+-                      item,
+-                      parent,
+-                      parents_ids=frozenset(),
+-                      print_as_attribute=False):
++    def __search_dict(self, obj, item, parent, parents_ids=frozenset(),
++        print_as_attribute=False):
+         """Search dictionaries"""
+         if print_as_attribute:
+             parent_text = "%s.%s"
+@@ -220,12 +208,27 @@
+             parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+ 
+             new_parent = parent_text % (parent, item_key_str)
++        
++            # Check if this parent should be excluded
++            skip = False
++            if new_parent in self.exclude_paths:
++                skip = True
++            elif self.exclude_regex_paths and any(
++                    [exclude_regex_path.search(new_parent) for exclude_regex_path in self.exclude_regex_paths]):
++                skip = True
++            else:
++                if isinstance(obj_child, self.exclude_types_tuple):
++                    skip = True
++        
++            if skip:
++                continue
++
++            # Handle path matching
+             new_parent_cased = new_parent if self.case_sensitive else new_parent.lower()
+-
+             str_item = str(item)
+             if (self.match_string and str_item == new_parent_cased) or\
+                (not self.match_string and str_item in new_parent_cased) or\
+-               (self.use_regexp and item.search(new_parent_cased)):
++               (self.use_regexp and isinstance(item, RE_COMPILED_TYPE) and item.search(new_parent_cased)):
+                 self.__report(
+                     report_key='matched_paths',
+                     key=new_parent,
+@@ -269,10 +272,11 @@
+         obj_text = obj if self.case_sensitive else obj.lower()
+ 
+         is_matched = False
+-        if self.use_regexp:
++        if self.use_regexp and isinstance(item, RE_COMPILED_TYPE):
+             is_matched = item.search(obj_text)
+         elif (self.match_string and item == obj_text) or (not self.match_string and item in obj_text):
+             is_matched = True
++    
+         if is_matched:
+             self.__report(report_key='matched_values', key=parent, value=obj)
+ 
+@@ -303,7 +307,18 @@
+ 
+     def __search(self, obj, item, parent="root", parents_ids=frozenset()):
+         """The main search method"""
+-        if self.__skip_this(item, parent):
++        # Skip if this parent is excluded
++        skip = False
++        if parent in self.exclude_paths:
++            skip = True
++        elif self.exclude_regex_paths and any(
++                [exclude_regex_path.search(parent) for exclude_regex_path in self.exclude_regex_paths]):
++            skip = True
++        else:
++            if isinstance(obj, self.exclude_types_tuple):
++                skip = True
++    
++        if skip:
+             return
+ 
+         elif isinstance(obj, strings) and isinstance(item, (strings, RE_COMPILED_TYPE)):
+@@ -319,7 +334,17 @@
+             self.__search_dict(obj, item, parent, parents_ids)
+ 
+         elif isinstance(obj, tuple):
+-            self.__search_tuple(obj, item, parent, parents_ids)
++            # Checking to see if it has _fields. Which probably means it is a named
++            # tuple.
++            try:
++                obj._asdict
++            # It must be a normal tuple
++            except AttributeError:
++                self.__search_iterable(obj, item, parent, parents_ids)
++            # We assume it is a namedtuple then
++            else:
++                self.__search_obj(
++                    obj, item, parent, parents_ids, is_namedtuple=True)
+ 
+         elif isinstance(obj, (set, frozenset)):
+             if self.warning_num < 10:

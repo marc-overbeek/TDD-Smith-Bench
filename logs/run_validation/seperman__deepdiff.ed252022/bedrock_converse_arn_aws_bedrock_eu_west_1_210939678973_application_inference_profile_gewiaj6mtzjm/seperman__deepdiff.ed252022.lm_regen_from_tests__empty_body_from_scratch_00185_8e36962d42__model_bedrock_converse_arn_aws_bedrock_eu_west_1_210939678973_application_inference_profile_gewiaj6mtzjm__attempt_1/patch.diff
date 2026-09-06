@@ -1,0 +1,23 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -328,8 +328,20 @@
+     def values(self):
+         return (i[0] for i in self.hashes.values())  # Just grab the item and not its count
+ 
++    obj = 'a'
++    result = list(DeepHash(obj).items())
++    assert [('a',
++        '980410da9522db17c3ab8743541f192a5ab27772a6154dbc7795ee909e653a5c')
++        ] == result
++
+     def items(self):
+         return ((i, v[0]) for i, v in self.hashes.items())
++
++    def items(self):
++        return ((i, v[0]) for i, v in self.hashes.items())
++
++    def items(self):
++        return ((i, v[0]) for i, v in self.hashes.items() if i is not UNPROCESSED_KEY)
+ 
+     def _prep_obj(self, obj, parent, parents_ids=EMPTY_FROZENSET, is_namedtuple=False, is_pydantic_object=False):
+         """prepping objects"""

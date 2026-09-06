@@ -1,0 +1,14 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -911,6 +911,11 @@
+             return
+         self.index[trace.func].add(trace)
+ 
++    def log(self, trace: CallTrace) -> None:
++        if not self.re.match(trace.funcname):
++            return
++        self.index[trace.func].add(trace)
++
+     def get_stubs(self) -> Dict[str, ModuleStub]:
+         defs = (
+             get_updated_definition(func, traces, self.max_typed_dict_size)

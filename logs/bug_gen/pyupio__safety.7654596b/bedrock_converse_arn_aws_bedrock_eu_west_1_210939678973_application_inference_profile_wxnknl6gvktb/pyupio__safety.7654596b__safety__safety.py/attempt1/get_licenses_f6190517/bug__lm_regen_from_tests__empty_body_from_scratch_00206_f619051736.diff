@@ -1,0 +1,87 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1416,41 +1416,60 @@
+ 
+ 
+ @sync_safety_context
+-def get_licenses(
+-    *,
+-    session: requests.Session,
+-    db_mirror: Union[Optional[str], bool] = False,
+-    cached: int = 0,
+-    telemetry: bool = True
+-) -> Dict[str, Any]:
+-    """
+-    Retrieves the licenses from the database.
++@sync_safety_context
++def get_licenses(*, session: requests.Session, db_mirror: Union[Optional[
++    str], bool]=False, cached: int=0, telemetry: bool=True) ->Dict[str, Any]:
++    """
++    Fetches the licenses database.
+ 
+     Args:
+         session (requests.Session): The requests session.
+-        db_mirror (Union[Optional[str], bool]): The database mirror.
++        db_mirror (Union[Optional[str], bool]): The database mirror path or URL.
+         cached (int): The cache validity in seconds.
+         telemetry (bool): Whether to include telemetry data.
+ 
+     Returns:
+-        Dict[str, Any]: The licenses dictionary.
+-    """
+-    if db_mirror:
+-        mirrors = [db_mirror]
++        Dict[str, Any]: The licenses database.
++    """
++    # Check if we have valid credentials
++    if not session.api_key:
++        raise InvalidCredentialError(
++            credential=None,
++            reason='Your authentication credential is invalid. See https://docs.safetycli.com/safety-docs/support/invalid-api-key-error.'
++        )
++    
++    db_name = "licenses.json"
++    
++    # If db_mirror is a local path, fetch from file
++    if db_mirror and not is_a_remote_mirror(db_mirror):
++        return fetch_database_file(db_mirror, db_name=db_name, cached=cached)
++    
++    # Otherwise fetch from remote mirror
++    if session.is_using_auth_credentials():
++        mirrors = API_MIRRORS
+     else:
+-        mirrors = API_MIRRORS
+-
+-    db_name = "licenses.json"
+-
++        mirrors = OPEN_MIRRORS
++    
+     for mirror in mirrors:
+-        # mirror can either be a local path or a URL
+         if is_a_remote_mirror(mirror):
+-            licenses = fetch_database_url(session, mirror, db_name=db_name, cached=cached,
+-                                          telemetry=telemetry)
++            try:
++                data = fetch_database_url(
++                    session, 
++                    mirror, 
++                    db_name=db_name, 
++                    cached=cached,
++                    telemetry=telemetry
++                )
++                return data
++            except (InvalidCredentialError, TooManyRequestsError, ServerError, DatabaseFetchError):
++                raise
+         else:
+-            licenses = fetch_database_file(mirror, db_name=db_name, ecosystem=None)
+-        if licenses:
+-            return licenses
++            try:
++                data = fetch_database_file(mirror, db_name=db_name, cached=cached)
++                return data
++            except DatabaseFileNotFoundError:
++                raise
++    
+     raise DatabaseFetchError()
+ 
+ 

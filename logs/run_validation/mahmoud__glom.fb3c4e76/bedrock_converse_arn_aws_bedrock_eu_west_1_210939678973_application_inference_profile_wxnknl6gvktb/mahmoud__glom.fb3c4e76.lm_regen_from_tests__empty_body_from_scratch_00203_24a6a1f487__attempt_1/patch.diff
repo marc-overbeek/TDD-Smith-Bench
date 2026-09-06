@@ -1,0 +1,28 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -168,6 +168,25 @@
+ 
+         """
+         return glom(target, self)
++
++    assert Match(('a', 'b')).matches(('a', 'b', 'c')) is False
++    assert Match(M).matches(False) is False
++    assert Match(M).matches(True) is True
++
++    def matches(self, target):
++        """A convenience method on a :class:`Match` instance, returns
++        ``True`` if the *target* matches, ``False`` if not.
++
++        >>> Match(int).matches(-1.0)
++        False
++        """
++
++    def matches(self, target):
++        try:
++            glom(target, self)
++        except GlomError:
++            return False
++        return True
+ 
+     def matches(self, target):
+         """A convenience method on a :class:`Match` instance, returns

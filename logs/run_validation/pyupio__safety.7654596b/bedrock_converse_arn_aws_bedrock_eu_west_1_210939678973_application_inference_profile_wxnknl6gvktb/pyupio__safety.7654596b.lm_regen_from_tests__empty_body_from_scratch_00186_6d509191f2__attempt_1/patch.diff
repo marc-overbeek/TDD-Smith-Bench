@@ -1,0 +1,106 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -315,22 +315,17 @@
+     return False
+ 
+ 
+-def fetch_database(
+-    session: requests.Session,
+-    full: bool = False,
+-    db: Union[Optional[str], bool] = False,
+-    cached: int = 0,
+-    telemetry: bool = True,
+-    ecosystem: Optional[Ecosystem] = None,
+-    from_cache: bool = True
+-) -> Dict[str, Any]:
+-    """
+-    Fetches the database from a mirror or a local file.
++def fetch_database(session: requests.Session, full: bool=False, db: Union[
++    Optional[str], bool]=False, cached: int=0, telemetry: bool=True,
++    ecosystem: Optional[Ecosystem]=None, from_cache: bool=True) ->Dict[str, Any
++    ]:
++    """
++    Fetches the database from the configured source.
+ 
+     Args:
+         session (requests.Session): The requests session.
+         full (bool): Whether to fetch the full database.
+-        db (Optional[str]): The path to the local database file.
++        db (Union[Optional[str], bool]): The database mirror or path.
+         cached (int): The cache validity in seconds.
+         telemetry (bool): Whether to include telemetry data.
+         ecosystem (Optional[Ecosystem]): The ecosystem.
+@@ -339,31 +334,53 @@
+     Returns:
+         Dict[str, Any]: The fetched database.
+     """
+-    if session.is_using_auth_credentials():
++    if ecosystem is None:
++        ecosystem = Ecosystem.PYTHON
++    
++    db_name = "insecure_full.json" if full else "insecure.json"
++    
++    # Determine which mirrors to use
++    if db is True:
++        mirrors = OPEN_MIRRORS
++    elif db is False:
+         mirrors = API_MIRRORS
+-    elif db:
++    else:
++        # db is a string path
+         mirrors = [db]
+-    else:
+-        mirrors = OPEN_MIRRORS
+-
+-    db_name = "insecure_full.json" if full else "insecure.json"
++    
++    # Try each mirror
+     for mirror in mirrors:
+-        # mirror can either be a local path or a URL
+-        if is_a_remote_mirror(mirror):
+-            if ecosystem is None:
+-                ecosystem = Ecosystem.PYTHON
+-            data = fetch_database_url(session, mirror, db_name=db_name, cached=cached,
+-                                      telemetry=telemetry, ecosystem=ecosystem, from_cache=from_cache)
+-        else:
+-            data = fetch_database_file(mirror, db_name=db_name, cached=cached,
+-                                       ecosystem=ecosystem)
+-        if data:
++        try:
++            # Check if mirror is a remote URL or local path
++            if is_a_remote_mirror(mirror):
++                data = fetch_database_url(
++                    session=session,
++                    mirror=mirror,
++                    db_name=db_name,
++                    cached=cached,
++                    telemetry=telemetry,
++                    ecosystem=ecosystem,
++                    from_cache=from_cache
++                )
++            else:
++                # Local file path
++                data = fetch_database_file(
++                    path=mirror,
++                    db_name=db_name,
++                    cached=cached,
++                    ecosystem=ecosystem
++                )
++            
++            # Validate the database
+             if is_valid_database(data):
+                 return data
+-            raise MalformedDatabase(fetched_from=mirror,
+-                                    reason=f'Not supported schema version. '
+-                                           f'This Safety version supports only schema version {JSON_SCHEMA_VERSION}')
+-
++        except (DatabaseFileNotFoundError, DatabaseFetchError, NetworkConnectionError, 
++                RequestTimeoutError, ServerError, MalformedDatabase, InvalidCredentialError,
++                TooManyRequestsError):
++            # Try next mirror
++            continue
++    
++    # If we get here, raise an error
+     raise DatabaseFetchError()
+ 
+ 

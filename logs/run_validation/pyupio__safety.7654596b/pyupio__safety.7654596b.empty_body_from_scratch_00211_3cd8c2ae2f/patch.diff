@@ -1,0 +1,52 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1629,46 +1629,9 @@
+     return data
+ 
+ 
+-def get_server_policies(
+-    session: requests.Session,
+-    policy_file: SafetyPolicyFile,
+-    proxy_dictionary: Dict[str, str]
+-) -> tuple:
+-    """
+-    Retrieves the server policies.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        policy_file (SafetyPolicyFile): The policy file.
+-        proxy_dictionary (Dict[str, str]): The proxy dictionary.
+-
+-    Returns:
+-        tuple: A tuple containing the policy file and the audit and monitor flag.
+-    """
+-    if session.api_key:
+-        server_policies = fetch_policy(session)
+-        server_audit_and_monitor = server_policies["audit_and_monitor"]
+-        server_safety_policy = server_policies["safety_policy"]
+-    else:
+-        server_audit_and_monitor = False
+-        server_safety_policy = ""
+-
+-    if server_safety_policy and policy_file:
+-        click.secho(
+-            "Warning: both a local policy file '{policy_filename}' and a server sent policy are present. "
+-            "Continuing with the local policy file.".format(policy_filename=policy_file['filename']),
+-            fg="yellow",
+-            file=sys.stderr
+-        )
+-    elif server_safety_policy:
+-        with tempfile.NamedTemporaryFile(prefix='server-safety-policy-') as tmp:
+-            tmp.write(server_safety_policy.encode('utf-8'))
+-            tmp.seek(0)
+-
+-            policy_file = SafetyPolicyFile().convert(tmp.name, param=None, ctx=None)
+-            LOG.info('Using server side policy file')
+-
+-    return policy_file, server_audit_and_monitor
++def get_server_policies(session: requests.Session, policy_file:
++    SafetyPolicyFile, proxy_dictionary: Dict[str, str]) ->tuple:
++    pass
+ 
+ 
+ def save_report(

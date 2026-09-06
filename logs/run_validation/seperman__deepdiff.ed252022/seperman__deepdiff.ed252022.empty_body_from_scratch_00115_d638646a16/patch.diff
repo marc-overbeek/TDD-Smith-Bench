@@ -1,0 +1,28 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -316,23 +316,8 @@
+         return obj
+ 
+     def _set_new_value(self, parent, parent_to_obj_elem, parent_to_obj_action,
+-                       obj, elements, path, elem, action, new_value):
+-        """
+-        Set the element value on an object and if necessary convert the object to the proper mutable type
+-        """
+-        if isinstance(obj, tuple):
+-            # convert this object back to a tuple later
+-            obj = self._coerce_obj(
+-                parent, obj, path, parent_to_obj_elem,
+-                parent_to_obj_action, elements,
+-                to_type=list, from_type=tuple)
+-        if elem != 0 and self.force and isinstance(obj, list) and len(obj) == 0:
+-            # it must have been a dictionary    
+-            obj = {}
+-            self._simple_set_elem_value(obj=parent, path_for_err_reporting=path, elem=parent_to_obj_elem,
+-                                        value=obj, action=parent_to_obj_action)
+-        self._simple_set_elem_value(obj=obj, path_for_err_reporting=path, elem=elem,
+-                                    value=new_value, action=action)
++        obj, elements, path, elem, action, new_value):
++        pass
+ 
+     def _simple_delete_elem(self, obj, path_for_err_reporting, elem=None, action=None):
+         """

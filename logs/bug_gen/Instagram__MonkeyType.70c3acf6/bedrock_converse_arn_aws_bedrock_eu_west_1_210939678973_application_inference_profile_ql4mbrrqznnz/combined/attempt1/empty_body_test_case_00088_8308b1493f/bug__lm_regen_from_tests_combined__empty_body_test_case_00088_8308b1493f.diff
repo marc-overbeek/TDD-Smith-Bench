@@ -1,0 +1,109 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -181,65 +181,56 @@
+ 
+ 
+ def get_dict_type(dct, max_typed_dict_size):
+-    """Return a TypedDict for `dct` if all the keys are strings.
+-    Else, default to the union of the keys and of the values."""
+-    if len(dct) == 0:
+-        # Special-case this because returning an empty TypedDict is
+-        # unintuitive, especially when you've "disabled" TypedDict generation
+-        # by setting `max_typed_dict_size` to 0.
+-        return Dict[Any, Any]
+-    if all(isinstance(k, str) for k in dct.keys()) and (
+-        max_typed_dict_size is None or len(dct) <= max_typed_dict_size
+-    ):
+-        return make_typed_dict(
+-            required_fields={
+-                k: get_type(v, max_typed_dict_size) for k, v in dct.items()
+-            }
+-        )
++    if max_typed_dict_size == 0 or len(dct) > max_typed_dict_size:
++        key_types = [get_type(k, max_typed_dict_size) for k in dct.keys()]
++        value_types = [get_type(v, max_typed_dict_size) for v in dct.values()]
++        key_type = shrink_types(key_types, max_typed_dict_size) if key_types else Any
++        value_type = shrink_types(value_types, max_typed_dict_size) if value_types else Any
++        if isinstance(dct, defaultdict):
++            return DefaultDict[key_type, value_type]
++        return Dict[key_type, value_type]
+     else:
+-        key_type = shrink_types(
+-            (get_type(k, max_typed_dict_size) for k in dct.keys()), max_typed_dict_size
+-        )
+-        val_type = shrink_types(
+-            (get_type(v, max_typed_dict_size) for v in dct.values()),
+-            max_typed_dict_size,
+-        )
+-        return Dict[key_type, val_type]
++        required_fields = {k: get_type(v, max_typed_dict_size) for k, v in dct.items()}
++        if isinstance(dct, defaultdict):
++            key_types = [get_type(k, max_typed_dict_size) for k in dct.keys()]
++            value_types = [get_type(v, max_typed_dict_size) for v in dct.values()]
++            key_type = shrink_types(key_types, max_typed_dict_size) if key_types else Any
++            value_type = shrink_types(value_types, max_typed_dict_size) if value_types else Any
++            return DefaultDict[key_type, value_type]
++        if all(isinstance(k, str) for k in dct.keys()):
++            return make_typed_dict(required_fields=required_fields)
++        key_types = [get_type(k, max_typed_dict_size) for k in dct.keys()]
++        value_types = [get_type(v, max_typed_dict_size) for v in dct.values()]
++        key_type = shrink_types(key_types, max_typed_dict_size) if key_types else Any
++        value_type = shrink_types(value_types, max_typed_dict_size) if value_types else Any
++        return Dict[key_type, value_type]
+ 
+ 
+ def get_type(obj, max_typed_dict_size):
+-    """Return the static type that would be used in a type hint"""
+     if isinstance(obj, type):
+         return Type[obj]
+     elif isinstance(obj, _BUILTIN_CALLABLE_TYPES):
+         return Callable
+-    elif isinstance(obj, types.GeneratorType):
++    elif isinstance(obj, dict):
++        return get_dict_type(obj, max_typed_dict_size)
++    elif isinstance(obj, (list, tuple, set, frozenset)):
++        typ = type(obj)
++        if isinstance(obj, list):
++            elem_types = [get_type(e, max_typed_dict_size) for e in obj]
++            elem_type = shrink_types(elem_types, max_typed_dict_size) if elem_types else Any
++            return List[elem_type]
++        elif isinstance(obj, tuple):
++            if len(obj) == 0:
++                return Tuple[()]
++            elem_types = tuple(get_type(e, max_typed_dict_size) for e in obj)
++            return Tuple[elem_types]
++        elif isinstance(obj, (set, frozenset)):
++            elem_types = [get_type(e, max_typed_dict_size) for e in obj]
++            elem_type = shrink_types(elem_types, max_typed_dict_size) if elem_types else Any
++            return Set[elem_type]
++    elif inspect.isgenerator(obj):
+         return Iterator[Any]
+-    typ = type(obj)
+-    if typ is list:
+-        elem_type = shrink_types(
+-            (get_type(e, max_typed_dict_size) for e in obj), max_typed_dict_size
+-        )
+-        return List[elem_type]
+-    elif typ is set:
+-        elem_type = shrink_types(
+-            (get_type(e, max_typed_dict_size) for e in obj), max_typed_dict_size
+-        )
+-        return Set[elem_type]
+-    elif typ is dict:
+-        return get_dict_type(obj, max_typed_dict_size)
+-    elif typ is defaultdict:
+-        key_type = shrink_types(
+-            (get_type(k, max_typed_dict_size) for k in obj.keys()), max_typed_dict_size
+-        )
+-        val_type = shrink_types(
+-            (get_type(v, max_typed_dict_size) for v in obj.values()),
+-            max_typed_dict_size,
+-        )
+-        return DefaultDict[key_type, val_type]
+-    elif typ is tuple:
+-        return Tuple[tuple(get_type(e, max_typed_dict_size) for e in obj)]
+-    return typ
++    return type(obj)
+ 
+ 
+ NoneType = type(None)

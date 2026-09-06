@@ -1,0 +1,66 @@
+--- a/src/mistune/renderers/markdown.py
++++ b/src/mistune/renderers/markdown.py
+@@ -19,15 +19,8 @@
+         out += '\n\n'.join(self.render_referrences(state)) + '\n'
+         return strip_end(out)
+ 
+-    def render_referrences(self, state: BlockState) -> Iterable[str]:
+-        ref_links = state.env['ref_links']
+-        for key in ref_links:
+-            attrs = ref_links[key]
+-            text = '[' + attrs['label'] + ']: ' + attrs['url']
+-            title = attrs.get('title')
+-            if title:
+-                text += ' "' + title + '"'
+-            yield text
++    def render_referrences(self, state: BlockState) ->Iterable[str]:
++        pass
+ 
+     def render_children(self, token: Dict[str, Any], state: BlockState) -> str:
+         children = token['children']
+@@ -100,18 +93,8 @@
+     def block_text(self, token: Dict[str, Any], state: BlockState) -> str:
+         return self.render_children(token, state) + '\n'
+ 
+-    def block_code(self, token: Dict[str, Any], state: BlockState) -> str:
+-        attrs = token.get("attrs", {})
+-        info = cast(str, attrs.get("info", ""))
+-        code = cast(str, token["raw"])
+-        if code and code[-1] != "\n":
+-            code += "\n"
+-
+-        marker = token.get('marker')
+-        if not marker:
+-            marker = _get_fenced_marker(code)
+-        marker2 = cast(str, marker)
+-        return marker2 + info + "\n" + code + marker2 + "\n\n"
++    def block_code(self, token: Dict[str, Any], state: BlockState) ->str:
++        pass
+ 
+     def block_quote(self, token: Dict[str, Any], state: BlockState) -> str:
+         text = indent(self.render_children(token, state), '> ', lambda _: True)
+@@ -128,22 +111,5 @@
+         return render_list(self, token, state)
+ 
+ 
+-def _get_fenced_marker(code: str) -> str:
+-    found = fenced_re.findall(code)
+-    if not found:
+-        return '```'
+-
+-    ticks = []  # `
+-    waves = []  # ~
+-    for s in found:
+-        if s[0] == '`':
+-            ticks.append(len(s))
+-        else:
+-            waves.append(len(s))
+-
+-    if not ticks:
+-        return '```'
+-
+-    if not waves:
+-        return '~~~'
+-    return '`' * (max(ticks) + 1)
++def _get_fenced_marker(code: str) ->str:
++    pass

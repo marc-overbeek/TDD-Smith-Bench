@@ -1,0 +1,18 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -368,13 +368,8 @@
+             return "Optional[" + self.rewrite(elem_type) + "]"
+         return self._rewrite_container(Union, union)
+ 
+-    def rewrite(self, typ: type) -> str:
+-        rendered = super().rewrite(typ)
+-        if getattr(typ, "__module__", None) == "typing":
+-            rendered = rendered.replace("typing.", "")
+-        # Temporary hacky workaround for #76 to fix remaining NoneType hints by search-replace
+-        rendered = rendered.replace("NoneType", "None")
+-        return rendered
++    def rewrite(self, typ: type) ->str:
++        pass
+ 
+ 
+ def render_annotation(anno: Any) -> str:

@@ -1,0 +1,25 @@
+--- a/src/mistune/directives/_base.py
++++ b/src/mistune/directives/_base.py
+@@ -54,15 +54,20 @@
+     @staticmethod
+     def parse_options(m: Match[str]) -> List[Tuple[str, str]]:
+         text = m.group('options')
+-        if not text.strip():
++        if not text or not text.strip():
+             return []
+ 
+         options = []
+         for line in re.split(r'\n+', text):
+-            line = line.strip()[1:]
++            line = line.strip()
++            if not line or not line.startswith(':'):
++                continue
++            line = line[1:]
+             if not line:
+                 continue
+             i = line.find(':')
++            if i == -1:
++                continue
+             k = line[:i]
+             v = line[i + 1:].strip()
+             options.append((k, v))

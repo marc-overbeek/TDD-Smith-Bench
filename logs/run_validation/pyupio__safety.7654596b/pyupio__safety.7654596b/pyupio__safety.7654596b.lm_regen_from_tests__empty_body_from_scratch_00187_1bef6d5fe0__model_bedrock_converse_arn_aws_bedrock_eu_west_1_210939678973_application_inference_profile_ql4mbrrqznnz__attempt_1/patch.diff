@@ -1,0 +1,35 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -367,22 +367,16 @@
+     raise DatabaseFetchError()
+ 
+ 
+-def get_vulnerabilities(pkg: str, spec: str, db: Dict[str, Any]) -> Iterator[Dict[str, Any]]:
+-    """
+-    Retrieves vulnerabilities for a package from the database.
+-
+-    Args:
+-        pkg (str): The package name.
+-        spec (str): The specifier set.
+-        db (Dict[str, Any]): The database.
+-
+-    Returns:
+-        Iterator[Dict[str, Any]]: An iterator of vulnerabilities.
+-    """
+-    for entry in db['vulnerable_packages'][pkg]:
+-        for entry_spec in entry["specs"]:
+-            if entry_spec == spec:
+-                yield entry
++for data in get_vulnerabilities(pkg=name, spec=specifier, db=db_full):
++
++for vuln in db_full.get('vulnerable_packages', {}).get(package.name, []):
++    vuln_id: str = str(next(filter(lambda i: i.get('type', None) == 'pyup', vuln.get('ids', []))).get('id', ''))
++
++def get_vulnerabilities(pkg: str, spec: str, db: Dict[str, Any]) ->Iterator[
++    Dict[str, Any]]:
++    for entry in db.get('vulnerable_packages', {}).get(pkg, []):
++        if spec in entry.get('specs', []):
++            yield entry
+ 
+ 
+ def get_vulnerability_from(

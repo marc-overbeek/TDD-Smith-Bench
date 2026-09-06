@@ -1,0 +1,61 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -533,39 +533,28 @@
+     return content
+ 
+ 
+-def get_final_brief(total_vulns_found: int, remediations: Dict[str, Any], ignored: Dict[str, Any], total_ignored: int, kwargs: Optional[Dict[str, Any]] = None) -> str:
+-    """
+-    Get the final brief summary.
+-
+-    Args:
+-        total_vulns_found (int): Total vulnerabilities found.
+-        remediations (Dict[str, Any]): Remediation details.
+-        ignored (Dict[str, Any]): Ignored vulnerabilities details.
+-        total_ignored (int): Total ignored vulnerabilities.
+-        kwargs (Optional[Dict[str, Any]], optional): Additional arguments for formatting. Defaults to None.
+-
+-    Returns:
+-        str: Final brief summary.
+-    """
++def get_final_brief(total_vulns_found: int, remediations: Dict[str, Any],
++    ignored: Dict[str, Any], total_ignored: int, kwargs: Optional[Dict[str,
++    Any]]=None) ->str:
+     if not kwargs:
+         kwargs = {}
+ 
+-    rem_count: int = get_remediations_count(remediations)
+-    total_vulns = max(0, total_vulns_found - total_ignored)
+-
+-    vuln_text = 'vulnerabilities' if total_ignored > 1 else 'vulnerability'
+-    pkg_text = 'packages were' if len(ignored.keys()) > 1 else 'package was'
+-
+-    policy_file_text = ' using a safety policy file' if is_using_a_safety_policy_file() else ''
+-
+-    vuln_brief = f" {total_vulns} vulnerabilit{'y was' if total_vulns == 1 else 'ies were'} reported."
+-    ignored_text = f' {total_ignored} {vuln_text} from {len(ignored.keys())} {pkg_text} ignored.' if ignored else ''
+-    remediation_text = f" {rem_count} remediation{' was' if rem_count == 1 else 's were'} " \
+-                       f"recommended." if is_using_api_key() else ''
+-
+-    raw_brief = f"Scan was completed{policy_file_text}.{vuln_brief}{ignored_text}{remediation_text}"
+-
+-    return format_long_text(raw_brief, start_line_decorator=' ', **kwargs)
++    vuln_word = 'vulnerability' if total_vulns_found == 1 else 'vulnerabilities'
++    ignored_word = 'vulnerability' if total_ignored == 1 else 'vulnerabilities'
++
++    brief_text = f'{total_vulns_found} {vuln_word} reported'
++
++    if total_ignored > 0:
++        brief_text += f', {total_ignored} {ignored_word} ignored'
++
++    if is_using_api_key() and remediations:
++        remediations_count = get_remediations_count(remediations)
++        rem_word = 'remediation' if remediations_count == 1 else 'remediations'
++        brief_text += f', {remediations_count} {rem_word} recommended'
++
++    brief_text += '.'
++
++    return format_long_text(brief_text, start_line_decorator=' ', **kwargs)
+ 
+ 
+ def get_final_brief_license(licenses: List[str], kwargs: Optional[Dict[str, Any]] = None) -> str:

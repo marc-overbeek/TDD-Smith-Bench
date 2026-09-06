@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef make_query(table: str, module: str, qualname: Optional[str], limit: int\n    ) ->ParameterizedQuery:\n    query = f\"SELECT * FROM {table} WHERE module = ?\"\n    values = [module]\n    \n    if qualname is not None:\n        query += \" AND qualname LIKE ?\"\n        values.append(f\"{qualname}%\")\n    \n    query += \" ORDER BY created_at DESC\"\n    \n    if limit > 0:\n        query += \" LIMIT ?\"\n        values.append(limit)\n    \n    return (query, values)\n```",
+  "rewrite": "def make_query(table: str, module: str, qualname: Optional[str], limit: int\n    ) ->ParameterizedQuery:\n    query = f\"SELECT * FROM {table} WHERE module = ?\"\n    values = [module]\n    \n    if qualname is not None:\n        query += \" AND qualname LIKE ?\"\n        values.append(f\"{qualname}%\")\n    \n    query += \" ORDER BY created_at DESC\"\n    \n    if limit > 0:\n        query += \" LIMIT ?\"\n        values.append(limit)\n    \n    return (query, values)",
+  "strategy": "lm_regen_from_tests"
+}

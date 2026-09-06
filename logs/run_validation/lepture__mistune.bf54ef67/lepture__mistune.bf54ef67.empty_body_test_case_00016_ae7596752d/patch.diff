@@ -1,0 +1,180 @@
+--- a/src/mistune/block_parser.py
++++ b/src/mistune/block_parser.py
+@@ -219,168 +219,15 @@
+             return self.parse_method(m2, state)
+         return None
+ 
+-    def parse_ref_link(self, m: Match[str], state: BlockState) -> Optional[int]:
+-        """Parse link references and save the link information into ``state.env``.
+-
+-        Here is an example of a link reference:
+-
+-        .. code-block:: markdown
+-
+-            a [link][example]
+-
+-            [example]: https://example.com "Optional title"
+-
+-        This method will save the link reference into ``state.env`` as::
+-
+-            state.env['ref_links']['example'] = {
+-                'url': 'https://example.com',
+-                'title': "Optional title",
+-            }
+-        """
+-        end_pos = state.append_paragraph()
+-        if end_pos:
+-            return end_pos
+-
+-        label = m.group('reflink_1')
+-        key = unikey(label)
+-        if not key:
+-            return None
+-
+-        href, href_pos = parse_link_href(state.src, m.end(), block=True)
+-        if href is None:
+-            return None
+-
+-        assert href_pos is not None
+-
+-        _blank = self.BLANK_LINE.search(state.src, href_pos)
+-        if _blank:
+-            max_pos = _blank.start()
+-        else:
+-            max_pos = state.cursor_max
+-
+-        title, title_pos = parse_link_title(state.src, href_pos, max_pos)
+-        if title_pos:
+-            m2 = _BLANK_TO_LINE.match(state.src, title_pos)
+-            if m2:
+-                title_pos = m2.end()
+-            else:
+-                title_pos = None
+-                title = None
+-
+-        if title_pos is None:
+-            m3 = _BLANK_TO_LINE.match(state.src, href_pos)
+-            if m3:
+-                href_pos = m3.end()
+-            else:
+-                href_pos = None
+-                href = None
+-
+-        end_pos = title_pos or href_pos
+-        if not end_pos:
+-            return None
+-
+-        if key not in state.env['ref_links']:
+-            assert href is not None
+-            href = unescape_char(href)
+-            data = {'url': escape_url(href), 'label': label}
+-            if title:
+-                data['title'] = title
+-            state.env['ref_links'][key] = data
+-        return end_pos
+-
+-    def extract_block_quote(
+-        self, m: Match[str], state: BlockState
+-    ) -> Tuple[str, Optional[int]]:
+-        """Extract text and cursor end position of a block quote."""
+-
+-        # cleanup at first to detect if it is code block
+-        text = m.group('quote_1') + '\n'
+-        text = expand_leading_tab(text, 3)
+-        text = _BLOCK_QUOTE_TRIM.sub('', text)
+-
+-        sc = self.compile_sc(['blank_line', 'indent_code', 'fenced_code'])
+-        require_marker = bool(sc.match(text))
+-
+-        state.cursor = m.end() + 1
+-
+-        end_pos: Optional[int] = None
+-        if require_marker:
+-            m2 = _STRICT_BLOCK_QUOTE.match(state.src, state.cursor)
+-            if m2:
+-                quote = m2.group(0)
+-                quote = _BLOCK_QUOTE_LEADING.sub('', quote)
+-                quote = expand_leading_tab(quote, 3)
+-                quote = _BLOCK_QUOTE_TRIM.sub('', quote)
+-                text += quote
+-                state.cursor = m2.end()
+-        else:
+-            prev_blank_line = False
+-            break_sc = self.compile_sc([
+-                'blank_line', 'thematic_break', 'fenced_code',
+-                'list', 'block_html',
+-            ])
+-            while state.cursor < state.cursor_max:
+-                m3 = _STRICT_BLOCK_QUOTE.match(state.src, state.cursor)
+-                if m3:
+-                    quote = m3.group(0)
+-                    quote = _BLOCK_QUOTE_LEADING.sub('', quote)
+-                    quote = expand_leading_tab(quote, 3)
+-                    quote = _BLOCK_QUOTE_TRIM.sub('', quote)
+-                    text += quote
+-                    state.cursor = m3.end()
+-                    if not quote.strip():
+-                        prev_blank_line = True
+-                    else:
+-                        prev_blank_line = bool(_LINE_BLANK_END.search(quote))
+-                    continue
+-
+-                if prev_blank_line:
+-                    # CommonMark Example 249
+-                    # because of laziness, a blank line is needed between
+-                    # a block quote and a following paragraph
+-                    break
+-
+-                m4 = break_sc.match(state.src, state.cursor)
+-                if m4:
+-                    end_pos = self.parse_method(m4, state)
+-                    if end_pos:
+-                        break
+-
+-                # lazy continuation line
+-                pos = state.find_line_end()
+-                line = state.get_text(pos)
+-                line = expand_leading_tab(line, 3)
+-                text += line
+-                state.cursor = pos
+-
+-        # according to CommonMark Example 6, the second tab should be
+-        # treated as 4 spaces
+-        return expand_tab(text), end_pos
+-
+-    def parse_block_quote(self, m: Match[str], state: BlockState) -> int:
+-        """Parse token for block quote. Here is an example of the syntax:
+-
+-        .. code-block:: markdown
+-
+-            > a block quote starts
+-            > with right arrows
+-        """
+-        text, end_pos = self.extract_block_quote(m, state)
+-        # scan children state
+-        child = state.child_state(text)
+-        if state.depth() >= self.max_nested_level - 1:
+-            rules = list(self.block_quote_rules)
+-            rules.remove('block_quote')
+-        else:
+-            rules = self.block_quote_rules
+-
+-        self.parse(child, rules)
+-        token = {'type': 'block_quote', 'children': child.tokens}
+-        if end_pos:
+-            state.prepend_token(token)
+-            return end_pos
+-        state.append_token(token)
+-        return state.cursor
++    def parse_ref_link(self, m: Match[str], state: BlockState) ->Optional[int]:
++        pass
++
++    def extract_block_quote(self, m: Match[str], state: BlockState) ->Tuple[str,
++        Optional[int]]:
++        pass
++
++    def parse_block_quote(self, m: Match[str], state: BlockState) ->int:
++        pass
+ 
+     def parse_list(self, m: Match[str], state: BlockState) -> int:
+         """Parse tokens for ordered and unordered list."""

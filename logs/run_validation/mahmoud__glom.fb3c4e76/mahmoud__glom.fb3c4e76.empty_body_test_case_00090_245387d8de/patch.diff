@@ -1,0 +1,184 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -215,21 +215,7 @@
+     __slots__ = ('flags', 'func', 'match_func', 'pattern')
+ 
+     def __init__(self, pattern, flags=0, func=None):
+-        if func not in _RE_VALID_FUNCS:
+-            raise _RE_FUNC_ERROR
+-        regex = re.compile(pattern, flags)
+-        if func is re.match:
+-            match_func = regex.match
+-        elif func is re.search:
+-            match_func = regex.search
+-        else:
+-            if _RE_FULLMATCH:
+-                match_func = regex.fullmatch
+-            else:
+-                regex = re.compile(fr"(?:{pattern})\Z", flags)
+-                match_func = regex.match
+-        self.flags, self.func = flags, func
+-        self.match_func, self.pattern = match_func, pattern
++        pass
+ 
+     def glomit(self, target, scope):
+         if type(target) not in _RE_TYPES:
+@@ -242,42 +228,26 @@
+         return target
+ 
+     def __repr__(self):
+-        args = '(' + bbrepr(self.pattern)
+-        if self.flags:
+-            args += ', flags=' + bbrepr(self.flags)
+-        if self.func is not None:
+-            args += ', func=' + self.func.__name__
+-        args += ')'
+-        return self.__class__.__name__ + args
++        pass
+ 
+ 
+ #TODO: combine this with other functionality elsewhere?
+ def _bool_child_repr(child):
+-    if child is M:
+-        return repr(child)
+-    elif isinstance(child, _MExpr):
+-        return "(" + bbrepr(child) + ")"
+-    return bbrepr(child)
++    pass
+ 
+ 
+ class _Bool:
+     def __init__(self, *children, **kw):
+-        self.children = children
+-        if not children:
+-            raise ValueError("need at least one operand for {}".format(
+-                self.__class__.__name__))
+-        self.default = kw.pop('default', _MISSING)
+-        if kw:
+-            raise TypeError('got unexpected kwargs: %r' % list(kw.keys()))
++        pass
+ 
+     def __and__(self, other):
+-        return And(self, other)
++        pass
+ 
+     def __or__(self, other):
+-        return Or(self, other)
++        pass
+ 
+     def __invert__(self):
+-        return Not(self)
++        pass
+ 
+     def glomit(self, target, scope):
+         try:
+@@ -288,21 +258,10 @@
+             raise
+ 
+     def _m_repr(self):
+-        """should this Or() repr as M |?"""
+-        # only used by And() and Or(), not Not(), so len(children) >= 1
+-        if isinstance(self.children[0], (_MType, _MExpr)):
+-            return True
+-        if type(self.children[0]) in (And, Or, Not):
+-            return self.children[0]._m_repr()
+-        return False
+-
+-    def __repr__(self):
+-        child_reprs = [_bool_child_repr(c) for c in self.children]
+-        if self._m_repr() and self.default is _MISSING:
+-            return f" {self.OP} ".join(child_reprs)
+-        if self.default is not _MISSING:
+-            child_reprs.append("default=" + repr(self.default))
+-        return self.__class__.__name__ + "(" + ", ".join(child_reprs) + ")"
++        pass
++
++    def __repr__(self):
++        pass
+ 
+ 
+ class And(_Bool):
+@@ -358,7 +317,7 @@
+     __slots__ = ('child',)
+ 
+     def __init__(self, child):
+-        self.child = child
++        pass
+ 
+     def glomit(self, target, scope):
+         try:  # one child must match without exception
+@@ -369,18 +328,10 @@
+             raise GlomError("child shouldn't have passed", self.child)
+ 
+     def _m_repr(self):
+-        if isinstance(self.child, (_MType, _MExpr)):
+-            return True
+-        if type(self.child) not in (And, Or, Not):
+-            return False
+-        return self.child._m_repr()
+-
+-    def __repr__(self):
+-        if self.child is M:
+-            return '~M'
+-        if self._m_repr():  # is in M repr
+-            return "~(" + bbrepr(self.child) + ")"
+-        return "Not(" + bbrepr(self.child) + ")"
++        pass
++
++    def __repr__(self):
++        pass
+ 
+ 
+ _M_OP_MAP = {'=': '==', '!': '!=', 'g': '>=', 'l': '<='}
+@@ -428,7 +379,7 @@
+         self.lhs, self.op, self.rhs = lhs, op, rhs
+ 
+     def __and__(self, other):
+-        return And(self, other)
++        pass
+ 
+     __rand__ = __and__
+ 
+@@ -436,7 +387,7 @@
+         return Or(self, other)
+ 
+     def __invert__(self):
+-        return Not(self)
++        pass
+ 
+     def glomit(self, target, scope):
+         lhs, op, rhs = self.lhs, self.op, self.rhs
+@@ -461,8 +412,7 @@
+         raise MatchError("{0!r} {1} {2!r}", lhs, _M_OP_MAP.get(op, op), rhs)
+ 
+     def __repr__(self):
+-        op = _M_OP_MAP.get(self.op, self.op)
+-        return f"{self.lhs!r} {op} {self.rhs!r}"
++        pass
+ 
+ 
+ class _MType:
+@@ -536,7 +486,7 @@
+         return _MExpr(self, '>', other)
+ 
+     def __lt__(self, other):
+-        return _MExpr(self, '<', other)
++        pass
+ 
+     def __ge__(self, other):
+         return _MExpr(self, 'g', other)
+@@ -553,10 +503,10 @@
+         return Or(self, other)
+ 
+     def __invert__(self):
+-        return Not(self)
+-
+-    def __repr__(self):
+-        return "M"
++        pass
++
++    def __repr__(self):
++        pass
+ 
+     def glomit(self, target, spec):
+         if target:

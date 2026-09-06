@@ -1,0 +1,39 @@
+--- a/safety/cli_util.py
++++ b/safety/cli_util.py
+@@ -129,12 +129,30 @@
+     """
+     @wraps(func)
+     def inner(ctx, *args, **kwargs):
+-
+-        if not ctx.obj:
+-            from .models import SafetyCLI
+-            ctx.obj = SafetyCLI()
+-
+-        return func(ctx, *args, **kwargs)
++        from safety.auth.cli import login
++        from safety.auth.util import fail_if_authenticated
++        from safety.auth.cli import get_authorization_data, process_browser_callback
++        from rich.console import Console
++        import sys
++    
++        fail_if_authenticated()
++    
++        auth_url, initial_state = get_authorization_data()
++        auth_data = process_browser_callback(auth_url, initial_state=initial_state, ctx=ctx, headless=False)
++    
++        console = Console()
++        console.print()
++        console.print("You're authenticated")
++        console.print(f" Account: {auth_data['name']}, {auth_data['email']} (email verification required)")
++        console.print()
++        console.print("To complete your account open the “verify your email” email sent to")
++        console.print(auth_data['email'])
++        console.print()
++        console.print("Can’t find the verification email? Login at")
++        console.print("`https://platform.safetycli.com/login/` to resend the verification email")
++        console.print()
++    
++        sys.exit(0)
+ 
+     return inner
+ 

@@ -1,0 +1,344 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -188,57 +188,50 @@
+     return None
+ 
+ 
+-def get_flags_from_context() -> Dict[str, str]:
+-    """
+-    Get the flags from the current click context.
+-
+-    Returns:
+-        Dict[str, str]: A dictionary of flags and their corresponding option names.
+-    """
+-    flags = {}
+-    context = click.get_current_context(silent=True)
+-
+-    if context:
+-        for option in context.command.params:
+-            flags_per_opt = option.opts + option.secondary_opts
+-            for flag in flags_per_opt:
+-                flags[flag] = option.name
+-
+-    return flags
+-
+-
+-def get_used_options() -> Dict[str, Dict[str, int]]:
+-    """
+-    Get the used options from the command-line arguments.
+-
+-    Returns:
+-        Dict[str, Dict[str, int]]: A dictionary of used options and their counts.
+-    """
+-    flags = get_flags_from_context()
+-    used_options = {}
+-
+-    for arg in sys.argv:
+-        cleaned_arg = arg if '=' not in arg else arg.split('=')[0]
+-        if cleaned_arg in flags:
+-            option_used = flags.get(cleaned_arg)
+-
+-            if option_used in used_options:
+-                used_options[option_used][cleaned_arg] = used_options[option_used].get(cleaned_arg, 0) + 1
+-            else:
+-                used_options[option_used] = {cleaned_arg: 1}
+-
+-    return used_options
+-
+-
+-def get_safety_version() -> str:
+-    """
+-    Get the version of Safety.
+-
+-    Returns:
+-        str: The Safety version.
+-    """
+-    from safety import VERSION
+-    return VERSION
++def get_flags_from_context() ->Dict[str, str]:
++    try:
++        ctx = click.get_current_context()
++        command = ctx.command
++        if command and hasattr(command, 'params'):
++            flags = {}
++            for param in command.params:
++                if isinstance(param, click.Option):
++                    for opt in param.opts:
++                        flags[opt] = param.name
++            return flags
++    except (RuntimeError, AttributeError):
++        pass
++    return {}
++
++
++def get_used_options() ->Dict[str, Dict[str, int]]:
++    try:
++        flags = get_flags_from_context()
++        used_options = defaultdict(lambda: defaultdict(int))
++        
++        for arg in sys.argv[1:]:
++            if arg.startswith('-'):
++                if '=' in arg:
++                    flag = arg.split('=')[0]
++                else:
++                    flag = arg
++                
++                if flag in flags:
++                    param_name = flags[flag]
++                    used_options[param_name][flag] += 1
++        
++        return {k: dict(v) for k, v in used_options.items()}
++    except Exception:
++        pass
++    return {}
++
++
++def get_safety_version() ->str:
++    try:
++        from safety import __version__
++        return __version__
++    except Exception:
++        return "unknown"
+ 
+ 
+ def get_primary_announcement(announcements: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+@@ -265,20 +258,17 @@
+     return None
+ 
+ 
+-def get_basic_announcements(announcements: List[Dict[str, Any]], include_local: bool = True) -> List[Dict[str, Any]]:
+-    """
+-    Get the basic announcements from a list of announcements.
+-
+-    Args:
+-        announcements (List[Dict[str, Any]]): The list of announcements.
+-        include_local (bool): Whether to include local announcements.
+-
+-    Returns:
+-        List[Dict[str, Any]]: The list of basic announcements.
+-    """
+-    return [announcement for announcement in announcements if
+-            announcement.get('type', '').lower() != 'primary_announcement' and not announcement.get('local', False)
+-            or (announcement.get('local', False) and include_local)]
++def get_basic_announcements(announcements: List[Dict[str, Any]],
++    include_local: bool=True) ->List[Dict[str, Any]]:
++    basic = [announcement for announcement in announcements 
++             if announcement.get('type', '').lower() in ('error', 'warning', 'notice')]
++    
++    if include_local:
++        ctx = SafetyContext()
++        if ctx.local_announcements:
++            basic.extend(ctx.local_announcements)
++    
++    return basic
+ 
+ 
+ def filter_announcements(announcements: List[Dict[str, Any]], by_type: str = 'error') -> List[Dict[str, Any]]:
+@@ -296,39 +286,28 @@
+             announcement.get('type', '').lower() == by_type]
+ 
+ 
+-def build_telemetry_data(telemetry: bool = True,
+-                         command: Optional[str] = None,
+-                         subcommand: Optional[str] = None) -> TelemetryModel:
+-    """Build telemetry data for the Safety context.
+-
+-    Args:
+-        telemetry (bool): Whether telemetry is enabled.
+-        command (Optional[str]): The command.
+-        subcommand (Optional[str]): The subcommand.
+-
+-    Returns:
+-        TelemetryModel: The telemetry data model.
+-    """
+-    context = SafetyContext()
+-
+-    body = {
+-        'os_type': os.environ.get("SAFETY_OS_TYPE", None) or platform.system(),
+-        'os_release': os.environ.get("SAFETY_OS_RELEASE", None) or platform.release(),
+-        'os_description': os.environ.get("SAFETY_OS_DESCRIPTION", None) or platform.platform(),
+-        'python_version': platform.python_version(),
+-        'safety_command': command if command else context.command,
+-        'safety_options': get_used_options()
+-    } if telemetry else {}
+-
+-    body['safety_version'] = get_safety_version()
+-    body['safety_source'] = os.environ.get("SAFETY_SOURCE", None) or context.safety_source
+-
+-    if not 'safety_options' in body:
+-        body['safety_options'] = {}
+-
+-    LOG.debug(f'Telemetry body built: {body}')
+-
+-    return TelemetryModel(**body)
++def build_telemetry_data(telemetry: bool=True, command: Optional[str]=None,
++    subcommand: Optional[str]=None) ->TelemetryModel:
++    if not telemetry:
++        return TelemetryModel()
++    
++    ctx = SafetyContext()
++    if command is None:
++        command = ctx.command
++    if subcommand is None:
++        subcommand = ctx.subcommand
++    
++    git_data = build_git_data()
++    
++    return TelemetryModel(
++        os_type=platform.system(),
++        os_release=platform.release(),
++        python_version=platform.python_version(),
++        safety_command=command,
++        safety_options=get_used_options(),
++        safety_version=get_safety_version(),
++        git_data=git_data
++    )
+ 
+ 
+ def build_git_data() -> Dict[str, Any]:
+@@ -423,48 +402,52 @@
+ 
+     return req.url
+ 
+-def get_processed_options(policy_file: Dict[str, Any], ignore: Dict[str, Any], ignore_severity_rules: Dict[str, Any],
+-    exit_code: bool, ignore_unpinned_requirements: Optional[bool] = None,
+-    project: Optional[str] = None) -> Tuple[Dict[str, Any], Dict[str, Any], bool, Optional[bool], Optional[str]]:
+-    """
+-    Get processed options from the policy file.
+-
+-    Args:
+-        policy_file (Dict[str, Any]): The policy file.
+-        ignore (Dict[str, Any]): The ignore settings.
+-        ignore_severity_rules (Dict[str, Any]): The ignore severity rules.
+-        exit_code (bool): The exit code setting.
+-        ignore_unpinned_requirements (Optional[bool]): The ignore unpinned requirements setting.
+-        project (Optional[str]): The project setting.
+-
+-    Returns:
+-        Tuple[Dict[str, Any], Dict[str, Any], bool, Optional[bool], Optional[str]]: The processed options.
+-    """
+-    if policy_file:
+-        project_config = policy_file.get('project', {})
+-        security = policy_file.get('security', {})
+-        ctx = click.get_current_context()
+-        source = ctx.get_parameter_source("exit_code")
+-
+-        if not project:
+-            project_id = project_config.get('id', None)
+-            if not project_id:
+-                project_id = None
+-            project = project_id
+-
+-        if ctx.get_parameter_source("ignore_unpinned_requirements") == click.core.ParameterSource.DEFAULT:
+-            ignore_unpinned_requirements = security.get('ignore-unpinned-requirements', None)
+-
+-        if not ignore:
+-            ignore = security.get('ignore-vulnerabilities', {})
+-        if source == click.core.ParameterSource.DEFAULT:
+-            exit_code = not security.get('continue-on-vulnerability-error', False)
+-        ignore_cvss_below = security.get('ignore-cvss-severity-below', 0.0)
+-        ignore_cvss_unknown = security.get('ignore-cvss-unknown-severity', False)
+-        ignore_severity_rules = {'ignore-cvss-severity-below': ignore_cvss_below,
+-                                 'ignore-cvss-unknown-severity': ignore_cvss_unknown}
+-
+-    return ignore, ignore_severity_rules, exit_code, ignore_unpinned_requirements, project
++def get_processed_options(policy_file: Dict[str, Any], ignore: Dict[str,
++    Any], ignore_severity_rules: Dict[str, Any], exit_code: bool,
++    ignore_unpinned_requirements: Optional[bool]=None, project: Optional[
++    str]=None) ->Tuple[Dict[str, Any], Dict[str, Any], bool, Optional[bool],
++    Optional[str]]:
++    
++    if not policy_file:
++        policy_file = {}
++    
++    try:
++        source = click.get_current_context().get_parameter_source
++    except RuntimeError:
++        source = None
++    
++    security_pf = policy_file.get('security', {})
++    
++    if source and source('ignore') == click.core.ParameterSource.COMMANDLINE:
++        final_ignore = ignore
++    elif ignore:
++        final_ignore = ignore
++    else:
++        final_ignore = security_pf.get('ignore-vulnerabilities', {})
++    
++    if source and source('ignore_severity_rules') == click.core.ParameterSource.COMMANDLINE:
++        final_severity_rules = ignore_severity_rules
++    elif ignore_severity_rules:
++        final_severity_rules = ignore_severity_rules
++    else:
++        final_severity_rules = {
++            'ignore-cvss-severity-below': security_pf.get('ignore-cvss-severity-below', 0.0),
++            'ignore-cvss-unknown-severity': security_pf.get('ignore-cvss-unknown-severity', False)
++        }
++    
++    if source and source('exit_code') == click.core.ParameterSource.COMMANDLINE:
++        final_exit_code = exit_code
++    else:
++        continue_on_error = security_pf.get('continue-on-vulnerability-error', False)
++        final_exit_code = not continue_on_error
++    
++    if ignore_unpinned_requirements is None:
++        ignore_unpinned_requirements = security_pf.get('ignore-unpinned-requirements', None)
++    
++    if project is None:
++        project = policy_file.get('project-id', None)
++    
++    return final_ignore, final_severity_rules, final_exit_code, ignore_unpinned_requirements, project
+ 
+ 
+ def get_fix_options(policy_file: Dict[str, Any], auto_remediation_limit: int) -> int:
+@@ -511,17 +494,6 @@
+         super(MutuallyExclusiveOption, self).__init__(*args, **kwargs)
+ 
+     def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+-        """
+-        Handle the parse result for mutually exclusive options.
+-
+-        Args:
+-            ctx (click.Context): The click context.
+-            opts (Dict[str, Any]): The options dictionary.
+-            args (List[str]): The arguments list.
+-
+-        Returns:
+-            Tuple[Any, List[str]]: The result and remaining arguments.
+-        """
+         m_exclusive_used = self.mutually_exclusive.intersection(opts)
+         option_used = m_exclusive_used and self.name in opts
+ 
+@@ -563,17 +535,6 @@
+         super(DependentOption, self).__init__(*args, **kwargs)
+ 
+     def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+-        """
+-        Handle the parse result for dependent options.
+-
+-        Args:
+-            ctx (click.Context): The click context.
+-            opts (Dict[str, Any]): The options dictionary.
+-            args (List[str]): The arguments list.
+-
+-        Returns:
+-            Tuple[Any, List[str]]: The result and remaining arguments.
+-        """
+         missing_required_arguments = None
+ 
+         if self.name in opts:
+@@ -765,13 +726,7 @@
+     name = "filename"
+     envvar_list_splitter = os.path.pathsep
+ 
+-    def __init__(
+-        self,
+-        mode: str = "r",
+-        encoding: Optional[str] = None,
+-        errors: str = "strict",
+-        pure: bool = os.environ.get('SAFETY_PURE_YAML', 'false').lower() == 'true'
+-    ) -> None:
++    def __init__(self, mode: str='r', encoding: Optional[str]=None, errors: str='strict', pure: bool=os.environ.get('SAFETY_PURE_YAML', 'false').lower() == 'true') ->None:
+         self.mode = mode
+         self.encoding = encoding
+         self.errors = errors

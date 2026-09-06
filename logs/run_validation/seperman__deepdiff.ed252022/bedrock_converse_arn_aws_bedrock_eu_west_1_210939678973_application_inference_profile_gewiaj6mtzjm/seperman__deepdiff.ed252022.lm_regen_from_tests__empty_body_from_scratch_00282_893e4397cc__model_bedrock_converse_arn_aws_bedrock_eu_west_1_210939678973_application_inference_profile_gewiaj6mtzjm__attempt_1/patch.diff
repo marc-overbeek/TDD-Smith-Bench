@@ -1,0 +1,65 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -687,18 +687,50 @@
+ 
+ 
+ def get_homogeneous_numpy_compatible_type_of_seq(seq):
+-    """
+-    Return with the numpy dtype if the array can be converted to a non-object numpy array.
+-    Originally written by mgilson https://stackoverflow.com/a/13252348/1497443
+-    This is the modified version.
+-    """
+-    iseq = iter(seq)
+-    first_type = type(next(iseq))
+-    if first_type in {int, float, Decimal}:
+-        type_ = first_type if all((type(x) is first_type) for x in iseq) else False
+-        return PYTHON_TYPE_TO_NUMPY_TYPE.get(type_, False)
+-    else:
+-        return False
++    if not seq:
++        return np_float64
++    
++    # Get all unique types from the sequence
++    types = set()
++    for item in seq:
++        item_type = get_type(item)
++        if item_type in numpy_dtypes:
++            types.add(item_type)
++        elif isinstance(item, (int, float, Decimal)):
++            # Map Python types to numpy types
++            if item_type in PYTHON_TYPE_TO_NUMPY_TYPE:
++                types.add(PYTHON_TYPE_TO_NUMPY_TYPE[item_type])
++            else:
++                # Default to float64 for numeric types
++                types.add(np_float64)
++        elif isinstance(item, bool):
++            types.add(np_bool_)
++        else:
++            # For non-numeric types, we can't make them homogeneous
++            # Return a generic approach or fall back to object type
++            return np_object
++    
++    # If we have multiple numpy types, find the most general one
++    if len(types) == 1:
++        return list(types)[0]
++    
++    # If we have numeric types, find the most appropriate common type
++    if types & set(numpy_numbers):
++        # Prioritize floating point types for mixed numeric types
++        if np_float64 in types:
++            return np_float64
++        elif np_float32 in types:
++            return np_float32
++        elif np_int64 in types:
++            return np_int64
++        else:
++            # Find the largest numeric type
++            numeric_types = [t for t in types if t in numpy_numbers]
++            if numeric_types:
++                return max(numeric_types, key=lambda x: x.itemsize)
++    
++    # Default fallback
++    return np_object
+ 
+ 
+ def detailed__dict__(obj, ignore_private_variables=True, ignore_keys=frozenset(), include_keys=None):

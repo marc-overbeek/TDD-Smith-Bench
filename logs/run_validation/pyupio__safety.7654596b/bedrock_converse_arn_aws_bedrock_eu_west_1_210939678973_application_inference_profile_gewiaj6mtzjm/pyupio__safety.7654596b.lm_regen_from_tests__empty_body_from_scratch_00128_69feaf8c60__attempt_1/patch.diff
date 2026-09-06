@@ -1,0 +1,21 @@
+--- a/safety/errors.py
++++ b/safety/errors.py
+@@ -92,9 +92,15 @@
+     Args:
+         message (str): The error message.
+     """
+-    def __init__(self, message: str = "Unable to load vulnerability database"):
+-        self.message = message
+-        super().__init__(self.message)
++    def __init__(self, credential: Optional[str] = None,
++                     message: str = "Your authentication credential is invalid. See {link}.",
++                     reason: Optional[str] = None):
++            self.credential = credential
++            self.link = 'https://docs.safetycli.com/safety-docs/support/invalid-api-key-error'
++            self.message = message.format(credential=f" '{self.credential}' ", link=self.link) if self.credential else message.format(link=self.link)
++            info = f" Reason: {reason}"
++            self.message = self.message + (info if reason else "")
++            super().__init__(self.message)
+ 
+     def get_exit_code(self) -> int:
+         """

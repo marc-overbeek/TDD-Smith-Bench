@@ -1,0 +1,18 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/base.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/base.py
+@@ -37,6 +37,15 @@
+     @property
+     def available(self):
+         return self._available
++
++    @available.setter
++    endpoint = BaseEndpoint()
++    self.assertFalse(endpoint.catch_errors)
++    self.assertTrue(endpoint.available)
++    endpoint.catch_errors = True
++    self.assertTrue(endpoint.catch_errors)
++    endpoint.available = False
++    self.assertFalse(endpoint.available)
+ 
+     @available.setter
+     def available(self, available):

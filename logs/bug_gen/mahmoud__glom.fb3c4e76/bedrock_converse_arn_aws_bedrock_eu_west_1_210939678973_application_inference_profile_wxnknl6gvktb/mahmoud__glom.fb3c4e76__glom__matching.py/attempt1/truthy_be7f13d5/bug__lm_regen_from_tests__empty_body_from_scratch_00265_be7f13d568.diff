@@ -1,0 +1,17 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -920,6 +920,14 @@
+         def truthy(val):
+             return bool(val)
+ 
++        bools = [True, False, False, True, False]
++        spec = Iter().filter().all()
++        out = glom(bools, spec)
++        assert out == [True, True]
++
++        def truthy(val):
++            return bool(val)
++
+         validate = kwargs.pop('validate', _MISSING if kwargs else truthy)
+         type_arg = kwargs.pop('type', _MISSING)
+         instance_of = kwargs.pop('instance_of', _MISSING)

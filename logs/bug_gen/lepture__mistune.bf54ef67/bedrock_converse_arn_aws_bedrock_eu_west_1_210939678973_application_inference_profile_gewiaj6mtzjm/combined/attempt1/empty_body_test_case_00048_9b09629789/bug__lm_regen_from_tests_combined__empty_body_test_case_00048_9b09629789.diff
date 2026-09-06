@@ -1,0 +1,175 @@
+--- a/src/mistune/plugins/footnotes.py
++++ b/src/mistune/plugins/footnotes.py
+@@ -26,69 +26,39 @@
+ INLINE_FOOTNOTE = r'\[\^(?P<footnote_key>' + LINK_LABEL + r')\]'
+ 
+ 
+-def parse_inline_footnote(
+-    inline: "InlineParser", m: Match[str], state: "InlineState"
+-) -> int:
+-    key = unikey(m.group("footnote_key"))
+-    ref = state.env.get("ref_footnotes")
+-    if ref and key in ref:
+-        notes = state.env.get('footnotes')
+-        if not notes:
+-            notes = []
+-        if key not in notes:
+-            notes.append(key)
+-            state.env['footnotes'] = notes
+-        state.append_token({
+-          'type': 'footnote_ref',
+-          'raw': key,
+-          'attrs': {'index': notes.index(key) + 1}
+-        })
+-    else:
+-        state.append_token({'type': 'text', 'raw': m.group(0)})
++def parse_inline_footnote(inline: 'InlineParser', m: Match[str], state:
++    'InlineState') ->int:
++    key = m.group('footnote_key')
++    if key not in state.env.setdefault('footnote_keys', []):
++        state.env['footnote_keys'].append(key)
+     return m.end()
+ 
+ 
+-def parse_ref_footnote(
+-    block: "BlockParser", m: Match[str], state: BlockState
+-) -> int:
+-    ref = state.env.get("ref_footnotes")
+-    if not ref:
+-        ref = {}
+-
+-    key = unikey(m.group('footnote_key'))
+-    if key not in ref:
+-        ref[key] = m.group('footnote_text')
+-        state.env['ref_footnotes'] = ref
++def parse_ref_footnote(block: 'BlockParser', m: Match[str], state: BlockState
++    ) ->int:
++    key = m.group('footnote_key')
++    text = m.group('footnote_text')
++    state.env.setdefault('footnotes', []).append(key)
++    state.tokens.append({
++        'type': 'footnote_item',
++        'key': key,
++        'text': text,
++        'index': len(state.env['footnotes'])
++    })
+     return m.end()
+ 
+ 
+-def parse_footnote_item(
+-    block: "BlockParser", key: str, index: int, state: BlockState
+-) -> Dict[str, Any]:
+-    ref = state.env.get("ref_footnotes")
+-    if not ref:
+-        raise ValueError("Missing 'ref_footnotes'.")
+-    text = ref[key]
+-
+-    lines = text.splitlines()
+-    second_line = None
+-    for second_line in lines[1:]:
+-        if second_line:
+-            break
+-
+-    if second_line:
+-      spaces = len(second_line) - len(second_line.lstrip())
+-      pattern = re.compile(r'^ {' + str(spaces) + r',}', flags=re.M)
+-      text = pattern.sub('', text).strip()
+-      items = _PARAGRAPH_SPLIT.split(text)
+-      children = [{'type': 'paragraph', 'text': s} for s in items]
+-    else:
+-      text = text.strip()
+-      children = [{'type': 'paragraph', 'text': text}]
++def parse_footnote_item(block: 'BlockParser', key: str, index: int, state:
++    BlockState) ->Dict[str, Any]:
++    notes = state.env.get('footnotes', [])
++    if key not in notes:
++        return {}
++    text = state.env.get('footnote_texts', {}).get(key, '')
+     return {
+         'type': 'footnote_item',
+-        'children': children,
+-        'attrs': {'key': key, 'index': index}
++        'key': key,
++        'text': text,
++        'index': index
+     }
+ 
+ 
+@@ -111,65 +81,21 @@
+     return result + output
+ 
+ 
+-def render_footnote_ref(renderer: "BaseRenderer", key: str, index: int) -> str:
+-    i = str(index)
+-    html = '<sup class="footnote-ref" id="fnref-' + i + '">'
+-    return html + '<a href="#fn-' + i + '">' + i + '</a></sup>'
++def render_footnote_ref(renderer: 'BaseRenderer', key: str, index: int) ->str:
++    return f'<sup id="fnref-{unikey(key)}"><a href="#fn-{unikey(key)}" class="footnote-ref">{index}</a></sup>'
+ 
+ 
+-def render_footnotes(renderer: "BaseRenderer", text: str) -> str:
+-    return '<section class="footnotes">\n<ol>\n' + text + "</ol>\n</section>\n"
++def render_footnotes(renderer: 'BaseRenderer', text: str) ->str:
++    return f'<div class="footnotes">\n<hr />\n{text}\n</div>'
+ 
+ 
+-def render_footnote_item(
+-    renderer: "BaseRenderer", text: str, key: str, index: int
+-) -> str:
+-    i = str(index)
+-    back = '<a href="#fnref-' + i + '" class="footnote">&#8617;</a>'
+-    text = text.rstrip()[:-4] + back + '</p>'
+-    return '<li id="fn-' + i + '">' + text + '</li>\n'
++def render_footnote_item(renderer: 'BaseRenderer', text: str, key: str,
++    index: int) ->str:
++    return f'<li id="fn-{unikey(key)}">{text}<a href="#fnref-{unikey(key)}" class="footnote-backref">&#8617;</a></li>'
+ 
+ 
+-def footnotes(md: "Markdown") -> None:
+-    """A mistune plugin to support footnotes, spec defined at
+-    https://michelf.ca/projects/php-markdown/extra/#footnotes
+-
+-    Here is an example:
+-
+-    .. code-block:: text
+-
+-        That's some text with a footnote.[^1]
+-
+-        [^1]: And that's the footnote.
+-
+-    It will be converted into HTML:
+-
+-    .. code-block:: html
+-
+-        <p>That's some text with a footnote.<sup class="footnote-ref" id="fnref-1"><a href="#fn-1">1</a></sup></p>
+-        <section class="footnotes">
+-        <ol>
+-        <li id="fn-1"><p>And that's the footnote.<a href="#fnref-1" class="footnote">&#8617;</a></p></li>
+-        </ol>
+-        </section>
+-
+-    :param md: Markdown instance
+-    """
+-    md.inline.register(
+-        'footnote',
+-        INLINE_FOOTNOTE,
+-        parse_inline_footnote,
+-        before='link',
+-    )
+-    md.block.register(
+-        'ref_footnote',
+-        REF_FOOTNOTE,
+-        parse_ref_footnote,
+-        before='ref_link',
+-    )
+-    md.after_render_hooks.append(md_footnotes_hook)
+-
+-    if md.renderer and md.renderer.NAME == 'html':
+-        md.renderer.register('footnote_ref', render_footnote_ref)
+-        md.renderer.register('footnote_item', render_footnote_item)
+-        md.renderer.register('footnotes', render_footnotes)
++def footnotes(md: 'Markdown') ->None:
++    md.block_rules.insert(0, 'footnote_item')
++    md.inline_rules.insert(0, 'footnote')
++    md.register_plugin('footnotes')
++    md.postprocessors.append(md_footnotes_hook)

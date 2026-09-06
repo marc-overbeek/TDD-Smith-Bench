@@ -1,0 +1,37 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -1803,6 +1803,7 @@
+         return self._stats
+ 
+     @property
++    @property
+     def affected_paths(self):
+         """
+         Get the list of paths that were affected.
+@@ -1822,16 +1823,23 @@
+             SetOrdered(['root[3][1]', 'root[4]', 'root[5]', 'root[6]', 'root[2]'])
+             >>> ddiff.affected_root_keys
+             SetOrdered([3, 4, 5, 6, 2])
+-
+         """
+         result = SetOrdered()
+         for key in REPORT_KEYS:
+-            value = self.get(key)
++            value = self.tree.get(key)
+             if value:
+                 if isinstance(value, SetOrdered):
+                     result |= value
+                 else:
+-                    result |= SetOrdered(value.keys())
++                    for item in value:
++                        if hasattr(item, 'path'):
++                            result.add(item.path())
++                        elif isinstance(item, dict):
++                            # Handle dictionary items where keys are paths
++                            result |= SetOrdered(item.keys())
++                        else:
++                            # Handle other cases where item itself might be a path
++                            result.add(str(item))
+         return result
+ 
+     @property

@@ -1,0 +1,15 @@
+--- a/fvcore/nn/distributed.py
++++ b/fvcore/nn/distributed.py
+@@ -39,10 +39,8 @@
+ 
+ class _AllGather(Function):
+     @staticmethod
+-    def forward(ctx, x: torch.Tensor) -> Tuple[torch.Tensor, ...]:
+-        output = [torch.zeros_like(x) for _ in range(dist.get_world_size())]
+-        dist.all_gather(output, x)
+-        return tuple(output)
++    def forward(ctx, x: torch.Tensor) ->Tuple[torch.Tensor, ...]:
++        pass
+ 
+     @staticmethod
+     def backward(ctx, *grads: torch.Tensor) -> torch.Tensor:

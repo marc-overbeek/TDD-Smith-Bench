@@ -1,0 +1,13 @@
+--- a/monkeytype/db/base.py
++++ b/monkeytype/db/base.py
+@@ -63,6 +63,10 @@
+         self.store = store
+         self.traces: List[CallTrace] = []
+ 
++    def __init__(self, store: CallTraceStore) -> None:
++        self.store = store
++        self.traces: List[CallTrace] = []
++
+     def log(self, trace: CallTrace) -> None:
+         if not trace.func.__module__ == "__main__":
+             self.traces.append(trace)

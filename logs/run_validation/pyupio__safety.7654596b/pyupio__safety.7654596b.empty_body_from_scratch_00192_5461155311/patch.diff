@@ -1,0 +1,113 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -567,102 +567,14 @@
+ 
+ 
+ @sync_safety_context
+-def check(
+-    *,
+-    session: requests.Session,
+-    packages: List[Package] = [],
+-    db_mirror: Union[Optional[str], bool] = False,
+-    cached: int = 0,
+-    ignore_vulns: Optional[Dict[str, Any]] = None,
+-    ignore_severity_rules: Optional[Dict[str, Any]] = None,
+-    proxy: Optional[Dict[str, Any]] = None,
+-    include_ignored: bool = False,
+-    is_env_scan: bool = True,
+-    telemetry: bool = True,
+-    params: Optional[Dict[str, Any]] = None,
+-    project: Optional[str] = None
+-) -> tuple:
+-    """
+-    Performs a vulnerability check on the provided packages.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        packages (List[Package]): The list of packages to check.
+-        db_mirror (Union[Optional[str], bool]): The database mirror.
+-        cached (int): The cache validity in seconds.
+-        ignore_vulns (Optional[Dict[str, Any]]): The ignored vulnerabilities.
+-        ignore_severity_rules (Optional[Dict[str, Any]]): The severity rules for ignoring vulnerabilities.
+-        proxy (Optional[Dict[str, Any]]): The proxy settings.
+-        include_ignored (bool): Whether to include ignored vulnerabilities.
+-        is_env_scan (bool): Whether it is an environment scan.
+-        telemetry (bool): Whether to include telemetry data.
+-        params (Optional[Dict[str, Any]]): Additional parameters.
+-        project (Optional[str]): The project name.
+-
+-    Returns:
+-        tuple: A tuple containing the list of vulnerabilities and the full database.
+-    """
+-    SafetyContext().command = 'check'
+-    db = fetch_database(session, db=db_mirror, cached=cached, telemetry=telemetry)
+-    db_full = None
+-    vulnerable_packages = frozenset(db.get('vulnerable_packages', []))
+-    vulnerabilities = []
+-    found_pkgs = {}
+-    requirements = iter([])
+-
+-    for p in packages:
+-        requirements = itertools.chain(p.requirements, requirements)
+-        found_pkgs[canonicalize_name(p.name)] = p
+-
+-    # Let's report by req, pinned in environment will be ==version
+-    for req in requirements:
+-        vuln_per_req = {}
+-        name = canonicalize_name(req.name)
+-
+-        pkg = found_pkgs.get(name, None)
+-
+-        if not pkg.version:
+-            if not db_full:
+-                db_full = fetch_database(session, full=True, db=db_mirror, cached=cached,
+-                                         telemetry=telemetry)
+-            pkg.refresh_from(db_full)
+-
+-        if name in vulnerable_packages:
+-            # we have a candidate here, build the spec set
+-            for specifier in db['vulnerable_packages'][name]:
+-                spec_set = SpecifierSet(specifiers=specifier)
+-
+-                if is_vulnerable(spec_set, req, pkg):
+-                    if not db_full:
+-                        db_full = fetch_database(session, full=True, db=db_mirror, cached=cached,
+-                                                 telemetry=telemetry)
+-                    if not pkg.latest_version:
+-                        pkg.refresh_from(db_full)
+-
+-                    for data in get_vulnerabilities(pkg=name, spec=specifier, db=db_full):
+-                        try:
+-                            vuln_id: str = str(next(filter(lambda i: i.get('type', None) == 'pyup', data.get('ids', []))).get('id', ''))
+-                        except StopIteration:
+-                            vuln_id: str = ''
+-
+-                        if vuln_id in vuln_per_req:
+-                            vuln_per_req[vuln_id].vulnerable_spec.add(specifier)
+-                            continue
+-
+-                        cve = get_cve_from(data, db_full)
+-
+-                        ignore_vuln_if_needed(pkg, vuln_id, cve, ignore_vulns, ignore_severity_rules, req)
+-
+-                        vulnerability = get_vulnerability_from(vuln_id, cve, data, specifier, db_full, name, pkg,
+-                                                               ignore_vulns, req)
+-
+-                        should_add_vuln = not (vulnerability.is_transitive and is_env_scan)
+-
+-                        if (include_ignored or vulnerability.vulnerability_id not in ignore_vulns) and should_add_vuln:
+-                            vuln_per_req[vulnerability.vulnerability_id] = vulnerability
+-                            vulnerabilities.append(vulnerability)
+-
+-    return vulnerabilities, db_full
++def check(*, session: requests.Session, packages: List[Package]=[],
++    db_mirror: Union[Optional[str], bool]=False, cached: int=0,
++    ignore_vulns: Optional[Dict[str, Any]]=None, ignore_severity_rules:
++    Optional[Dict[str, Any]]=None, proxy: Optional[Dict[str, Any]]=None,
++    include_ignored: bool=False, is_env_scan: bool=True, telemetry: bool=
++    True, params: Optional[Dict[str, Any]]=None, project: Optional[str]=None
++    ) ->tuple:
++    pass
+ 
+ 
+ def precompute_remediations(

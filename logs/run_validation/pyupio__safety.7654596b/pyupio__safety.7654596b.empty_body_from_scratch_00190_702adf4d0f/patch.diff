@@ -1,0 +1,68 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -481,61 +481,10 @@
+                cvssv3=cve_meta.get("cvssv3", None))
+ 
+ 
+-def ignore_vuln_if_needed(
+-    pkg: Package,
+-    vuln_id: str,
+-    cve: Optional[CVE],
+-    ignore_vulns: Dict[str, Any],
+-    ignore_severity_rules: Dict[str, Any],
+-    req: SafetyRequirement
+-) -> None:
+-    """
+-    Determines if a vulnerability should be ignored based on severity rules and updates the ignore_vulns dictionary.
+-
+-    Args:
+-        pkg (Package): The package.
+-        vuln_id (str): The vulnerability ID.
+-        cve (Optional[CVE]): The CVE object.
+-        ignore_vulns (Dict[str, Any]): The ignored vulnerabilities.
+-        ignore_severity_rules (Dict[str, Any]): The severity rules for ignoring vulnerabilities.
+-        req (SafetyRequirement): The affected requirement.
+-    """
+-    if not ignore_severity_rules:
+-        ignore_severity_rules = {}
+-
+-    if not isinstance(ignore_vulns, dict):
+-        return
+-
+-    severity = None
+-
+-    if cve:
+-        if cve.cvssv2 and cve.cvssv2.get("base_score", None):
+-            severity = cve.cvssv2.get("base_score", None)
+-
+-        if cve.cvssv3 and cve.cvssv3.get("base_score", None):
+-            severity = cve.cvssv3.get("base_score", None)
+-
+-    ignore_severity_below = float(ignore_severity_rules.get('ignore-cvss-severity-below', 0.0))
+-    ignore_unknown_severity = bool(ignore_severity_rules.get('ignore-cvss-unknown-severity', False))
+-
+-    if severity:
+-        if float(severity) < ignore_severity_below:
+-            reason = 'Ignored by severity rule in policy file, {0} < {1}'.format(float(severity), ignore_severity_below)
+-            ignore_vulns[vuln_id] = {'reason': reason, 'expires': None}
+-    elif ignore_unknown_severity:
+-        reason = 'Unknown CVSS severity, ignored by severity rule in policy file.'
+-        ignore_vulns[vuln_id] = {'reason': reason, 'expires': None}
+-
+-    version = next(iter(req.specifier)).version if is_pinned_requirement(req.specifier) else pkg.version
+-
+-    is_prev_not_ignored: bool = vuln_id not in ignore_vulns
+-    is_req_not_ignored: bool = 'requirements' in ignore_vulns.get(vuln_id, {}) and str(req.specifier) not in ignore_vulns.get(vuln_id, {}).get('requirements', set())
+-
+-    if (is_prev_not_ignored or is_req_not_ignored) and is_ignore_unpinned_mode(version):
+-        reason = IGNORE_UNPINNED_REQ_REASON
+-        requirements = set()
+-        requirements.add(str(req.specifier))
+-        ignore_vulns[vuln_id] = {'reason': reason, 'expires': None, 'requirements': requirements}
++def ignore_vuln_if_needed(pkg: Package, vuln_id: str, cve: Optional[CVE],
++    ignore_vulns: Dict[str, Any], ignore_severity_rules: Dict[str, Any],
++    req: SafetyRequirement) ->None:
++    pass
+ 
+ 
+ def is_vulnerable(vulnerable_spec: SpecifierSet, requirement: SafetyRequirement, package: Package) -> bool:

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef __init__(self, client_id, **kwargs):\n    super().__init__(client_id, **kwargs)\n    self.client_secret = kwargs.get('client_secret')\n```\n\n```python\ndef prepare_request_body(self, device_code, body='', scope=None,\n                         include_client_id=False, **kwargs):\n    kwargs['client_id'] = self.client_id\n    kwargs['include_client_id'] = include_client_id\n    scope = self.scope if scope is None else scope\n    return prepare_token_request(self.grant_type, body=body, device_code=device_code,\n                                 scope=scope, **kwargs)\n```",
+  "rewrite": "def __init__(self, client_id, **kwargs):\n    super().__init__(client_id, **kwargs)\n    self.client_secret = kwargs.get('client_secret')\n\ndef prepare_request_body(self, device_code, body='', scope=None,\n                         include_client_id=False, **kwargs):\n    kwargs['client_id'] = self.client_id\n    kwargs['include_client_id'] = include_client_id\n    scope = self.scope if scope is None else scope\n    return prepare_token_request(self.grant_type, body=body, device_code=device_code,\n                                 scope=scope, **kwargs)",
+  "strategy": "lm_regen_from_tests_combined"
+}

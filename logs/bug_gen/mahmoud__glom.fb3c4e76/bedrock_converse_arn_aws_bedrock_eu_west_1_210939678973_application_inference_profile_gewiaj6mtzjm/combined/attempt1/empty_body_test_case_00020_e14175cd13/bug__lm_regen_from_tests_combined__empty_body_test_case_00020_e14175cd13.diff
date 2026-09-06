@@ -1,0 +1,35 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -950,6 +950,8 @@
+         else:
+             self.vals = ()
+         return
++        # this is an exact match
++        return
+ 
+     class _ValidationError(Exception):
+         "for internal use inside of Check only"
+@@ -1006,6 +1008,7 @@
+         if errs:
+             raise CheckError(errs, self, scope[Path])
+         return ret
++        # this is an exact match
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__
+@@ -1038,6 +1041,7 @@
+         self.msgs = msgs
+         self.check_obj = check
+         self.path = path
++        # this is an exact match
+ 
+     def get_message(self):
+         msg = 'target at path %s failed check,' % self.path
+@@ -1048,6 +1052,7 @@
+         else:
+             msg += f' got {len(self.msgs)} errors: {self.msgs!r}'
+         return msg
++        # this is an exact match
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

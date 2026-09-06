@@ -1,0 +1,92 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -239,44 +239,53 @@
+     return s
+ 
+ 
+-def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0, prev_target=_MISSING, last_branch=True):
+-    """
+-    unpack a scope into a multi-line but short summary
+-    """
+-    segments = []
+-    indent = " " + "|" * depth
+-    tick = "| " if depth else "- "
+-    def mk_fmt(label, t=None):
+-        pre = indent + (t or tick) + label + ": "
+-        fmt_width = width - len(pre)
+-        return lambda v: pre + _format_trace_value(v, fmt_width)
+-    fmt_t = mk_fmt("Target")
+-    fmt_s = mk_fmt("Spec")
+-    fmt_b = mk_fmt("Spec", "+ ")
+-    recurse = lambda s, last=False: format_target_spec_trace(s, root_error, width, depth + 1, prev_target, last)
+-    tb_exc_line = lambda e: "".join(traceback.format_exception_only(type(e), e))[:-1]
+-    fmt_e = lambda e: indent + tick + tb_exc_line(e)
+-    for scope, spec, target, error, branches in _unpack_stack(scope):
+-        if target is not prev_target:
+-            segments.append(fmt_t(target))
+-        prev_target = target
+-        if branches:
+-            segments.append(fmt_b(spec))
+-            segments.extend([recurse(s) for s in branches[:-1]])
+-            segments.append(recurse(branches[-1], last_branch))
++def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0,
++    prev_target=_MISSING, last_branch=True):
++    stack = _unpack_stack(scope)
++    if not stack:
++        return ''
++
++    lines = []
++    for i, (cur_scope, spec, target, error, branches) in enumerate(stack):
++        if i == 0:
++            # First entry - show the initial target
++            if prev_target is not _MISSING and prev_target != target:
++                lines.append(f' - Target: {target}')
+         else:
+-            segments.append(fmt_s(spec))
+-        if error is not None and error is not root_error:
+-            last_line_error = True
+-            segments.append(fmt_e(error))
++            # Subsequent entries - show the path and target
++            lines.append(f' - Target: {target}')
++            
++        # Show spec info
++        if type(spec) in (TType, Path):
++            lines.append(f' - Spec: {bbrepr(spec)}')
+         else:
+-            last_line_error = False
+-    if depth:  # \ on first line, X on last line
+-        remark = lambda s, m: s[:depth + 1] + m + s[depth + 2:]
+-        segments[0] = remark(segments[0], "\\")
+-        if not last_branch or last_line_error:
+-            segments[-1] = remark(segments[-1], "X")
+-    return "\n".join(segments)
++            lines.append(f' - Spec: {type(spec).__name__}')
++            
++        # Handle errors
++        if error is not None:
++            if hasattr(error, 'get_message'):
++                lines.append(f'   {error.get_message()}')
++            else:
++                lines.append(f'   {error}')
++                
++        # Handle branches for non-last entries
++        if i < len(stack) - 1 and branches:
++            # Add branch information
++            for j, branch in enumerate(branches):
++                if j == 0:
++                    lines.append(' + Spec: ' + str(branch[1]))
++                else:
++                    lines.append(' | Spec: ' + str(branch[1]))
++                    
++    # Format the trace with proper indentation and width
++    result_lines = []
++    for line in lines:
++        if len(line) > width:
++            # Truncate long lines
++            line = line[:width-3] + '...'
++        result_lines.append(line)
++        
++    return '\n'.join(result_lines)
+ 
+ 
+ # TODO: not used (yet)

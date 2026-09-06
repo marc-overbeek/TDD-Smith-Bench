@@ -1,0 +1,42 @@
+--- a/safety/alerts/utils.py
++++ b/safety/alerts/utils.py
+@@ -24,22 +24,24 @@
+ import requests
+ 
+ 
+-def highest_base_score(vulns: List[Dict[str, Any]]) -> float:
+-    """
+-    Calculates the highest CVSS base score from a list of vulnerabilities.
+-
+-    Args:
+-        vulns (List[Dict[str, Any]]): The list of vulnerabilities.
+-
+-    Returns:
+-        float: The highest CVSS base score.
+-    """
+-    highest_base_score = 0
++def highest_base_score(vulns: List[Dict[str, Any]]) ->float:
++    if not vulns:
++        return 10.0
++    
++    scores = []
+     for vuln in vulns:
+-        if vuln['severity'] is not None:
+-            highest_base_score = max(highest_base_score, (vuln['severity'].get('cvssv3', {}) or {}).get('base_score', 10))
+-
+-    return highest_base_score
++        severity = vuln.get('severity', {})
++        if severity:
++            cvssv3 = severity.get('cvssv3', {})
++            if cvssv3:
++                base_score = cvssv3.get('base_score')
++                if base_score is not None:
++                    scores.append(base_score)
++    
++    if not scores:
++        return 10.0
++    
++    return max(scores)
+ 
+ 
+ def generate_branch_name(pkg: str, remediation: Dict[str, Any]) -> str:

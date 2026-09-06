@@ -1,0 +1,34 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -175,6 +175,31 @@
+             return itertools.chain.from_iterable(iterator)
+         return super()._fold(iterator)
+ 
++    ret, op = self.init(), self.op
++    for v in iterator:
++        ret = op(ret, v)
++    return ret
++
++    def _fold(self, iterator):
++        if self.lazy:
++            return itertools.chain.from_iterable(iterator)
++        return super()._fold(iterator)
++
++    def _fold(self, iterator):
++        if self.lazy:
++            return itertools.chain.from_iterable(iterator)
++        # For non-lazy case, we want to flatten by concatenating iterables
++        ret = self.init()
++        op = self.op
++        for v in iterator:
++            ret = op(ret, v)
++        return ret
++
++    def _fold(self, iterator):
++        if self.lazy:
++            return itertools.chain.from_iterable(iterator)
++        return super()._fold(iterator)
++
+     def __repr__(self):
+         cn = self.__class__.__name__
+         args = () if self.subspec is T else (self.subspec,)

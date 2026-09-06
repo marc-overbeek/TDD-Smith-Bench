@@ -1,0 +1,42 @@
+--- a/deepdiff/search.py
++++ b/deepdiff/search.py
+@@ -220,17 +220,28 @@
+             parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+ 
+             new_parent = parent_text % (parent, item_key_str)
+-            new_parent_cased = new_parent if self.case_sensitive else new_parent.lower()
+-
+-            str_item = str(item)
+-            if (self.match_string and str_item == new_parent_cased) or\
+-               (not self.match_string and str_item in new_parent_cased) or\
+-               (self.use_regexp and item.search(new_parent_cased)):
+-                self.__report(
+-                    report_key='matched_paths',
+-                    key=new_parent,
+-                    value=obj_child)
+-
++        
++            # Check if the key itself matches
++            if isinstance(item_key, strings):
++                key_to_check = item_key if self.case_sensitive else item_key.lower()
++                str_item = str(item) if not isinstance(item, RE_COMPILED_TYPE) else None
++            
++                if str_item is not None:
++                    if (self.match_string and str_item == key_to_check) or\
++                       (not self.match_string and str_item in key_to_check):
++                        self.__report(
++                            report_key='matched_paths',
++                            key=new_parent,
++                            value=obj_child)
++            
++                if self.use_regexp and isinstance(item, RE_COMPILED_TYPE):
++                    if item.search(key_to_check):
++                        self.__report(
++                            report_key='matched_paths',
++                            key=new_parent,
++                            value=obj_child)
++
++            # Recursively search the value
+             self.__search(
+                 obj_child,
+                 item,

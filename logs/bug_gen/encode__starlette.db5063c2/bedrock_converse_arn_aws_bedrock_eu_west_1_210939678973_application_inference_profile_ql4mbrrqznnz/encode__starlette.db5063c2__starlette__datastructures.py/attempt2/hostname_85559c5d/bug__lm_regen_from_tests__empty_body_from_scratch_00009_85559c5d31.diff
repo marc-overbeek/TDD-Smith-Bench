@@ -1,0 +1,31 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -96,8 +96,27 @@
+         return self.components.password
+ 
+     @property
++    if hostname is None:
++        netloc = self.netloc
++        _, _, hostname = netloc.rpartition("@")
++        if hostname[-1] != "]":
++            hostname = hostname.rsplit(":", 1)[0]
++
++    @property
+     def hostname(self) -> None | str:
+-        return self.components.hostname
++        hostname = self.components.hostname
++        if hostname and ":" in hostname:
++            # IPv6 address - return with brackets
++            return f"[{hostname}]"
++        return hostname
++
++    <full rewritten function code including the unchanged signature>
++    @property
++    def hostname(self) -> None | str:
++        hostname = self.components.hostname
++        if hostname is not None and ":" in hostname:
++            return f"[{hostname}]"
++        return hostname
+ 
+     @property
+     def port(self) -> int | None:

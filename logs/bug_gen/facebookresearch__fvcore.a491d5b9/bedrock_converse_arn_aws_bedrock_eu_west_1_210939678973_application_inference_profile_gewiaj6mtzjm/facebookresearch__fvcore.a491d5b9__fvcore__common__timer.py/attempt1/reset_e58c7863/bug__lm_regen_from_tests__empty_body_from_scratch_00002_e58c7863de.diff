@@ -1,0 +1,18 @@
+--- a/fvcore/common/timer.py
++++ b/fvcore/common/timer.py
+@@ -14,6 +14,15 @@
+ 
+     def __init__(self) -> None:
+         self.reset()
++
++    for pause_second in (0.1, 0.15):
++        timer = Timer()
++        for t in ((pause_second,) * 10):
++            if timer.is_paused():
++                timer.resume()
++            time.sleep(t)
++            timer.pause()
++            self.assertTrue(math.isclose(pause_second, timer.avg_seconds(), rel_tol=0.1))
+ 
+     def reset(self) -> None:
+         """

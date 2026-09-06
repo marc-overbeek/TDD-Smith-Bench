@@ -1,0 +1,76 @@
+--- a/src/markupsafe/__init__.py
++++ b/src/markupsafe/__init__.py
+@@ -21,24 +21,20 @@
+     def __call__(self, s: t.Any, /) -> Markup: ...
+ 
+ 
+-def escape(s: t.Any, /) -> Markup:
+-    """Replace the characters ``&``, ``<``, ``>``, ``'``, and ``"`` in
+-    the string with HTML-safe sequences. Use this if you need to display
+-    text that might contain such characters in HTML.
++def escape(s: t.Any, /) ->Markup:
++    """Convert the characters &, <, >, ', and " in string s to HTML-safe
++    sequences. Use this if you need to display text that might contain
++    such characters in HTML.
+ 
+     If the object has an ``__html__`` method, it is called and the
+-    return value is assumed to already be safe for HTML.
+-
+-    :param s: An object to be converted to a string and escaped.
+-    :return: A :class:`Markup` string with the escaped text.
++    return value is assumed to be safe.
++
++    If the object does not have an ``__html__`` method, it is converted
++    to a string and escaped.
++
++    >>> escape("<script>alert('xss')</script>")
++    Markup('&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;')
+     """
+-    # If the object is already a plain string, skip __html__ check and string
+-    # conversion. This is the most common use case.
+-    # Use type(s) instead of s.__class__ because a proxy object may be reporting
+-    # the __class__ of the proxied value.
+-    if type(s) is str:
+-        return Markup(_escape_inner(s))
+-
+     if hasattr(s, "__html__"):
+         return Markup(s.__html__())
+ 
+@@ -151,7 +147,7 @@
+     def __rmul__(self, value: t.SupportsIndex, /) -> te.Self:
+         return self.__class__(super().__mul__(value))
+ 
+-    def __mod__(self, value: t.Any, /) -> te.Self:
++    def __mod__(self, value: t.Any, /) ->te.Self:
+         if isinstance(value, tuple):
+             # a tuple of arguments, each wrapped
+             value = tuple(_MarkupEscapeHelper(x, self.escape) for x in value)
+@@ -228,7 +224,7 @@
+         return self.__class__(value).unescape()
+ 
+     @classmethod
+-    def escape(cls, s: t.Any, /) -> te.Self:
++    def escape(cls, s: t.Any, /) ->te.Self:
+         """Escape a string. Calls :func:`escape` and ensures that for
+         subclasses the correct type is returned.
+         """
+@@ -237,7 +233,7 @@
+         if rv.__class__ is not cls:
+             return cls(rv)
+ 
+-        return rv  # type: ignore[return-value]
++        return rv
+ 
+     def __getitem__(self, key: t.SupportsIndex | slice, /) -> te.Self:
+         return self.__class__(super().__getitem__(key))
+@@ -366,8 +362,8 @@
+     def __getitem__(self, key: t.Any, /) -> te.Self:
+         return self.__class__(self.obj[key], self.escape)
+ 
+-    def __str__(self, /) -> str:
+-        return str(self.escape(self.obj))
++    def __str__(self, /) ->str:
++        return str(self)
+ 
+     def __repr__(self, /) -> str:
+         return str(self.escape(repr(self.obj)))

@@ -1,0 +1,76 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -162,45 +162,42 @@
+     return list(set(stub_imports).difference(set(source_imports)))
+ 
+ 
+-def apply_stub_using_libcst(
+-    stub: str,
+-    source: str,
++def apply_stub_using_libcst(stub: str, source: str,
+     overwrite_existing_annotations: bool,
+-    confine_new_imports_in_type_checking_block: bool = False,
+-) -> str:
++    confine_new_imports_in_type_checking_block: bool=False) ->str:
+     try:
+         stub_module = parse_module(stub)
+         source_module = parse_module(source)
+-        context = CodemodContext()
+-        ApplyTypeAnnotationsVisitor.store_stub_in_context(
+-            context,
+-            stub_module,
+-            overwrite_existing_annotations,
+-            use_future_annotations=confine_new_imports_in_type_checking_block,
+-        )
+-        transformer = ApplyTypeAnnotationsVisitor(context)
+-        transformed_source_module = transformer.transform_module(source_module)
+-
+-        if confine_new_imports_in_type_checking_block:
+-            newly_imported_items = get_newly_imported_items(stub_module, source_module)
+-
++    except Exception as e:
++        raise HandlerError(f"Failed to parse code: {e}")
++    
++    # Determine the strategy for existing annotations
++    if overwrite_existing_annotations:
++        existing_annotation_strategy = ExistingAnnotationStrategy.IGNORE
++    else:
++        existing_annotation_strategy = ExistingAnnotationStrategy.REPLICATE
++    
++    # Apply type annotations from stub to source
++    context = CodemodContext()
++    visitor = ApplyTypeAnnotationsVisitor(
++        context,
++        stub_module,
++        existing_annotation_strategy=existing_annotation_strategy,
++    )
++    modified_tree = source_module.visit(visitor)
++    
++    # If we need to confine new imports in TYPE_CHECKING block
++    if confine_new_imports_in_type_checking_block:
++        newly_imported_items = get_newly_imported_items(stub_module, source_module)
++        if newly_imported_items:
+             context = CodemodContext()
+-            MoveImportsToTypeCheckingBlockVisitor.store_imports_in_context(
++            visitor = MoveImportsToTypeCheckingBlockVisitor(
+                 context,
+                 newly_imported_items,
+             )
+-            type_checking_block_transformer = MoveImportsToTypeCheckingBlockVisitor(
+-                context
+-            )
+-            transformed_source_module = (
+-                type_checking_block_transformer.transform_module(
+-                    transformed_source_module
+-                )
+-            )
+-
+-    except Exception as exception:
+-        raise HandlerError(f"Failed applying stub with libcst:\n{exception}")
+-    return transformed_source_module.code
++            modified_tree = modified_tree.visit(visitor)
++    
++    return modified_tree.code
+ 
+ 
+ def apply_stub_handler(

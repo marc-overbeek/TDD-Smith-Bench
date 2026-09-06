@@ -1,0 +1,55 @@
+--- a/safety/auth/main.py
++++ b/safety/auth/main.py
+@@ -217,34 +217,30 @@
+     else:
+         raise ValueError(f"Cannot convert '{s}' to a boolean value.")
+ 
+-def get_proxy_config() -> Tuple[Optional[Dict[str, str]], Optional[int], bool]:
++def get_proxy_config() ->Tuple[Optional[Dict[str, str]], Optional[int], bool]:
+     """
+     Retrieve the proxy configuration.
+ 
+     Returns:
+-        Tuple[Optional[Dict[str, str]], Optional[int], bool]: The proxy configuration, timeout, and whether it is required.
+-    """
+-    config = configparser.ConfigParser()
+-    config.read(CONFIG)
+-
+-    proxy_dictionary =  None
+-    required = False
+-    timeout = None
+-    proxy = None
+-
+-    if config.has_section("proxy"):
+-        proxy = dict(config.items("proxy"))
+-
+-    if proxy:
++        Tuple[Optional[Dict[str, str]], Optional[int], bool]: A tuple containing the proxy dictionary,
++        proxy port, and a boolean indicating if proxy is configured.
++    """
++    proxy_dict = get_proxy_dict()
++    
++    if not proxy_dict:
++        return None, None, False
++    
++    proxy_port = None
++    if 'http' in proxy_dict:
++        # Extract port from proxy URL if present
+         try:
+-            proxy_dictionary = get_proxy_dict(proxy['protocol'], proxy['host'],
+-                                                proxy['port'])
+-            required = str_to_bool(proxy["required"])
+-            timeout = proxy["timeout"]
+-        except Exception as e:
++            from urllib.parse import urlparse
++            parsed = urlparse(proxy_dict['http'])
++            proxy_port = parsed.port
++        except Exception:
+             pass
+-
+-    return proxy_dictionary, timeout, required
++    
++    return proxy_dict, proxy_port, bool(proxy_dict)
+ 
+ def clean_session(client) -> bool:
+     """

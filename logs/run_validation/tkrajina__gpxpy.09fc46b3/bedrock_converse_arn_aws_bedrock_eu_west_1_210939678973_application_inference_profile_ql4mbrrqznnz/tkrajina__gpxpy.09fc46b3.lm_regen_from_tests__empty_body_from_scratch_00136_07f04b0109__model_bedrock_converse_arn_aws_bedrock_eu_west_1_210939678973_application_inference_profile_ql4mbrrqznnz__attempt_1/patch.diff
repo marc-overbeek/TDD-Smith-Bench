@@ -1,0 +1,17 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1221,9 +1221,11 @@
+         
+         return None
+ 
+-    def get_nearest_location(self, location: mod_geo.Location) -> Optional[NearestLocationData]:
+-        """ Return the (location, track_point_no) on this track segment """
+-        return min((NearestLocationData(pt, -1, -1, pt_no) for (pt, pt_no) in self.walk()) # type: ignore
++    def get_nearest_location(self, location: mod_geo.Location) ->Optional[
++        NearestLocationData]:
++        """ Returns (location, track_no, track_segment_no, track_point_no) for the
++        nearest location on map """
++        return min((NearestLocationData(pt, tr, seg, pt_no) for (pt, tr, seg, pt_no) in self.walk()) # type:ignore
+                    ,key=lambda x: x.location.distance_2d(location) if x is not None else mod_math.inf
+                    ,default=None)
+ 

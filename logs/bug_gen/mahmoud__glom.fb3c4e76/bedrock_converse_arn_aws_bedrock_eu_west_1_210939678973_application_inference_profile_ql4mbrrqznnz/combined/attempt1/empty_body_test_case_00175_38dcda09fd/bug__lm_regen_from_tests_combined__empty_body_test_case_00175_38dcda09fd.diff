@@ -1,0 +1,49 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -58,7 +58,6 @@
+     def __init__(self, subspec=T, **kwargs):
+         self.subspec = subspec
+         self._iter_stack = kwargs.pop('_iter_stack', [])
+-
+         self.sentinel = kwargs.pop('sentinel', STOP)
+         if kwargs:
+             raise TypeError('unexpected keyword arguments: %r' % sorted(kwargs))
+@@ -75,7 +74,6 @@
+             fb = FunctionBuilder.from_func(meth)
+             fb.args = fb.args[1:]  # drop self
+             arg_names = fb.get_arg_names()
+-            # TODO: something fancier with defaults:
+             kwargs = []
+             if len(args) > 1 and arg_names:
+                 args, kwargs = (), zip(arg_names, args)
+@@ -105,9 +103,6 @@
+             if yld is SKIP:
+                 continue
+             elif yld is self.sentinel or yld is STOP:
+-                # NB: sentinel defaults to STOP so I was torn whether
+-                # to also check for STOP, and landed on the side of
+-                # never letting STOP through.
+                 return
+             yield yld
+         return
+@@ -335,20 +330,6 @@
+         return Pipe(self, list)
+ 
+     def first(self, key=T, default=None):
+-        """A convenience method for lazily yielding a single truthy item from
+-        an iterable.
+-
+-        >>> target = [False, 1, 2, 3]
+-        >>> glom(target, Iter().first())
+-        1
+-
+-        This method takes a condition, *key*, which can also be a
+-        glomspec, as well as a *default*, in case nothing matches the
+-        condition.
+-
+-        As this spec yields at most one item, and not an iterable, the
+-        spec returned from this method is not an :class:`Iter()` instance.
+-        """
+         return (self, First(key=key, default=default))
+ 
+ 

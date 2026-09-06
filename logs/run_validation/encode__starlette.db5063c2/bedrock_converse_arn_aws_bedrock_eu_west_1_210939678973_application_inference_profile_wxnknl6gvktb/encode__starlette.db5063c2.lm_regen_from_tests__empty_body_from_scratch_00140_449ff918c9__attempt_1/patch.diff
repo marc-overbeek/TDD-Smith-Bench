@@ -1,0 +1,16 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -555,6 +555,13 @@
+     cmgr = contextlib.contextmanager(lifespan_context)
+ 
+     @functools.wraps(cmgr)
++    def wrapper(app: typing.Any) ->_AsyncLiftContextManager[typing.Any]:
++        pass
++
++    self.lifespan_context = _wrap_gen_lifespan_context(lifespan)
++
++    async with self.lifespan_context(app) as maybe_state:
++
+     def wrapper(app: typing.Any) -> _AsyncLiftContextManager[typing.Any]:
+         return _AsyncLiftContextManager(cmgr(app))
+ 

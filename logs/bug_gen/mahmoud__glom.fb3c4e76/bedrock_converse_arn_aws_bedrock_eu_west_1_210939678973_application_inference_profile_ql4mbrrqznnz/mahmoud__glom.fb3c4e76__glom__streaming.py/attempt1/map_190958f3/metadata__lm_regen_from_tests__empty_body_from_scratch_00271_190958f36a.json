@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef map(self, subspec):\n    \"\"\"Return a new :class:`Iter()` spec which will apply the provided\n    *subspec* to each element of the iterable.\n\n    >>> glom(range(5), Iter().map(lambda x: x * 2).all())\n    [0, 2, 4, 6, 8]\n\n    Because a spec can be a callable, :meth:`Iter.map()` does\n    everything the built-in :func:`map` does, but with the full\n    power of glom specs.\n\n    >>> glom(['a', 'B', 'C'], Iter().map(T.islower()).all())\n    [True, False, False]\n    \"\"\"\n    return self._add_op(\n        'map',\n        (subspec,),\n        lambda iterable, scope: imap(\n            lambda t: scope[glom](t, subspec, scope), iterable))\n```",
+  "rewrite": "def map(self, subspec):\n    \"\"\"Return a new :class:`Iter()` spec which will apply the provided\n    *subspec* to each element of the iterable.\n\n    >>> glom(range(5), Iter().map(lambda x: x * 2).all())\n    [0, 2, 4, 6, 8]\n\n    Because a spec can be a callable, :meth:`Iter.map()` does\n    everything the built-in :func:`map` does, but with the full\n    power of glom specs.\n\n    >>> glom(['a', 'B', 'C'], Iter().map(T.islower()).all())\n    [True, False, False]\n    \"\"\"\n    return self._add_op(\n        'map',\n        (subspec,),\n        lambda iterable, scope: imap(\n            lambda t: scope[glom](t, subspec, scope), iterable))",
+  "strategy": "lm_regen_from_tests"
+}

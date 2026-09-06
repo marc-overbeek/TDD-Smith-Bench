@@ -1,0 +1,70 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -613,22 +613,56 @@
+ 
+ 
+ def datetime_normalize(truncate_datetime, obj):
+-    if truncate_datetime:
+-        if truncate_datetime == 'second':
+-            obj = obj.replace(microsecond=0)
++    if obj is None or truncate_datetime is None:
++        return obj
++    
++    if isinstance(obj, datetime.datetime):
++        # Add UTC timezone if not present
++        if not has_timezone(obj):
++            obj = obj.replace(tzinfo=datetime.timezone.utc)
++        
++        # Truncate based on truncate_datetime parameter
++        if truncate_datetime == 'day':
++            obj = obj.replace(hour=0, minute=0, second=0, microsecond=0)
++        elif truncate_datetime == 'hour':
++            obj = obj.replace(minute=0, second=0, microsecond=0)
+         elif truncate_datetime == 'minute':
+             obj = obj.replace(second=0, microsecond=0)
++        elif truncate_datetime == 'second':
++            obj = obj.replace(microsecond=0)
++        
++        return obj
++    
++    elif isinstance(obj, datetime.date):
++        # For date objects, convert to datetime with UTC timezone
++        obj = datetime.datetime.combine(obj, datetime.time.min).replace(tzinfo=datetime.timezone.utc)
++        
++        if truncate_datetime == 'day':
++            obj = obj.replace(hour=0, minute=0, second=0, microsecond=0)
+         elif truncate_datetime == 'hour':
+             obj = obj.replace(minute=0, second=0, microsecond=0)
+-        elif truncate_datetime == 'day':
+-            obj = obj.replace(hour=0, minute=0, second=0, microsecond=0)
+-    if isinstance(obj, datetime.datetime):
+-        if has_timezone(obj):
+-            obj = obj.astimezone(datetime.timezone.utc)
+-        else:
+-            obj = obj.replace(tzinfo=datetime.timezone.utc)
++        elif truncate_datetime == 'minute':
++            obj = obj.replace(second=0, microsecond=0)
++        elif truncate_datetime == 'second':
++            obj = obj.replace(microsecond=0)
++        
++        return obj
++    
+     elif isinstance(obj, datetime.time):
+-        obj = time_to_seconds(obj)
++        # For time objects, convert to seconds
++        result = time_to_seconds(obj)
++        
++        if truncate_datetime == 'day':
++            result = (result // 86400) * 86400
++        elif truncate_datetime == 'hour':
++            result = (result // 3600) * 3600
++        elif truncate_datetime == 'minute':
++            result = (result // 60) * 60
++        elif truncate_datetime == 'second':
++            result = int(result)
++        
++        return result
++    
+     return obj
+ 
+ 

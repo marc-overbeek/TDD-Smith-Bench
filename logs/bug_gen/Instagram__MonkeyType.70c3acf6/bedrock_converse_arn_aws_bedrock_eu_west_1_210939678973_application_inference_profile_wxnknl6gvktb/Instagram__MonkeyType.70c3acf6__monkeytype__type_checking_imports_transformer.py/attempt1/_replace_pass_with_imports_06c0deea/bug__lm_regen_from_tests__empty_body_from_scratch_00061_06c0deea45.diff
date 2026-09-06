@@ -1,0 +1,38 @@
+--- a/monkeytype/type_checking_imports_transformer.py
++++ b/monkeytype/type_checking_imports_transformer.py
+@@ -68,12 +68,31 @@
+         return transformed_source_module
+ 
+     @staticmethod
+-    def _replace_pass_with_imports(
+-        placeholder_module: Module, import_module: Module
+-    ) -> Module:
++    return placeholder_module.with_deep_changes(
++        old_node=cast(BaseSuite, placeholder_module.body[0].body),
++        body=import_module.body,
++    )
++
++    def _replace_pass_with_imports(placeholder_module: Module, import_module: Module) -> Module:
+         return placeholder_module.with_deep_changes(
+             old_node=cast(BaseSuite, placeholder_module.body[0].body),
+-            body=import_module.body,
++            new_values={"body": import_module.body},
++        )
++
++    def _replace_pass_with_imports(placeholder_module: Module, import_module: Module) -> Module:
++        suite = cast(BaseSuite, placeholder_module.body[0].body)
++        new_suite = suite.with_changes(body=import_module.body)
++        return placeholder_module.with_deep_changes(
++            old_node=suite,
++            new_node=new_suite,
++        )
++
++    def _replace_pass_with_imports(placeholder_module: Module, import_module: Module) -> Module:
++        suite = cast(BaseSuite, placeholder_module.body[0].body)
++        new_suite = suite.with_changes(body=import_module.body)
++        return placeholder_module.with_deep_changes(
++            old_node=suite,
++            new_node=new_suite,
+         )
+ 
+     def _split_module(self, module: Module) -> Tuple[

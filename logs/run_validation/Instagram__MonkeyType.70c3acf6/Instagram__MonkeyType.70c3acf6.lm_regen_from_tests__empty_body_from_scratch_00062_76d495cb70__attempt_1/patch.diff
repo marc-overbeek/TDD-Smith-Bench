@@ -1,0 +1,50 @@
+--- a/monkeytype/type_checking_imports_transformer.py
++++ b/monkeytype/type_checking_imports_transformer.py
+@@ -81,21 +81,35 @@
+         List[Union[SimpleStatementLine, BaseCompoundStatement]],
+     ]:
+         type_checking_block_add_location = 0
+-        gatherer = GatherImportsVisitor(self.context)
+-        module.visit(gatherer)
+-        all_imports = gatherer.all_imports
+-
++    
++        # Find the position of the last import statement
+         for i, statement in enumerate(module.body):
+             if isinstance(statement, SimpleStatementLine):
+-                for possible_import in statement.body:
+-                    for last_import in all_imports:
+-                        if possible_import is last_import:
+-                            type_checking_block_add_location = i + 1
+-                            break
+-
++                # Check if this statement contains import-related nodes
++                has_import = False
++                for item in statement.body:
++                    if isinstance(item, (Import, ImportFrom)):
++                        has_import = True
++                        break
++                if has_import:
++                    type_checking_block_add_location = i + 1
++            elif isinstance(statement, BaseCompoundStatement):
++                # For compound statements like 'if TYPE_CHECKING:', check if they contain imports
++                # But we're looking for the last actual import, not imports in TYPE_CHECKING blocks
++                pass
++    
++        # Actually, let's be more careful - find the last import statement in the module
++        last_import_index = 0
++        for i, statement in enumerate(module.body):
++            if isinstance(statement, SimpleStatementLine):
++                for item in statement.body:
++                    if isinstance(item, (Import, ImportFrom)):
++                        last_import_index = i + 1
++                        break
++    
+         return (
+-            list(module.body[:type_checking_block_add_location]),
+-            list(module.body[type_checking_block_add_location:]),
++            list(module.body[:last_import_index]),
++            list(module.body[last_import_index:]),
+         )
+ 
+     def _add_if_type_checking_block(self, module: Module) -> Module:

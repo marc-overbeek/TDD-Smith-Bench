@@ -1,0 +1,63 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -498,17 +498,49 @@
+     A click option that is mutually exclusive with other options.
+     """
+ 
+-    def __init__(self, *args, **kwargs):
+-        self.mutually_exclusive = set(kwargs.pop('mutually_exclusive', []))
+-        self.with_values = kwargs.pop('with_values', {})
+-        help = kwargs.get('help', '')
+-        if self.mutually_exclusive:
+-            ex_str = ', '.join(["{0} with values {1}".format(item, self.with_values.get(item)) if item in self.with_values else item for item in self.mutually_exclusive])
+-            kwargs['help'] = help + (
+-                ' NOTE: This argument is mutually exclusive with '
+-                ' arguments: [' + ex_str + '].'
+-            )
+-        super(MutuallyExclusiveOption, self).__init__(*args, **kwargs)
++    class SafetyContext(metaclass=SingletonMeta):
++        packages = []
++        key = False
++        db_mirror = False
++        cached = None
++        ignore_vulns = None
++        ignore_severity_rules = None
++        proxy = None
++        include_ignored = False
++        telemetry = None
++        files = None
++        stdin = None
++        is_env_scan = None
++        command: Optional[str] = None
++        subcommand: Optional[str] = None
++        review = None
++        params = {}
++        safety_source = 'code'
++        local_announcements = []
++        scanned_full_path = []
++        account = None
++
++    def __init__(self):
++        self.packages = []
++        self.key = False
++        self.db_mirror = False
++        self.cached = None
++        self.ignore_vulns = None
++        self.ignore_severity_rules = None
++        self.proxy = None
++        self.include_ignored = False
++        self.telemetry = None
++        self.files = None
++        self.stdin = None
++        self.is_env_scan = None
++        self.command = None
++        self.subcommand = None
++        self.review = None
++        self.params = {}
++        self.safety_source = 'code'
++        self.local_announcements = []
++        self.scanned_full_path = []
++        self.account = None
+ 
+     def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+         """

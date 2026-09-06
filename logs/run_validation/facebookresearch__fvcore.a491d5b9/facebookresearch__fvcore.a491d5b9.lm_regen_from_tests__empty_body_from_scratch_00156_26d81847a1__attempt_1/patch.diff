@@ -1,0 +1,23 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -609,6 +609,20 @@
+         self._warn_uncalled_mods(uncalled_mods)
+         return stats
+ 
++    if isinstance(op_counts, Number):
++        op_counts = Counter({self._simplify_op_name(kind): op_counts})
++
++    def _simplify_op_name(self, full_op_name: str) -> str:
++        """
++        Get simplified name of the op without the preceding namespace, e.g.
++        aten::batch_norm -> batch_norm
++        """
++        p = full_op_name.find("::")
++        if p != -1:
++            return full_op_name[p + 2 :]
++        else:
++            return full_op_name
++
+     def _simplify_op_name(self, full_op_name: str) -> str:
+         """
+         Get simplified name of the op without the preceding namespace, e.g.

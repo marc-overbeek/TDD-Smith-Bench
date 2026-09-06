@@ -1,0 +1,23 @@
+--- a/oauthlib/oauth2/rfc6749/tokens.py
++++ b/oauthlib/oauth2/rfc6749/tokens.py
+@@ -200,8 +200,11 @@
+     return headers
+ 
+ 
++self.assertEqual(prepare_bearer_body(self.token), self.bearer_body)
++
+ def prepare_bearer_body(token, body=''):
+     """Add a `Bearer Token`_ to the request body.
++    Not recommended, use only if client can't use authorization header or URI.
+ 
+     access_token=h480djs93hd8
+ 
+@@ -210,7 +213,7 @@
+     :param token:
+     :param body:
+     """
+-    return add_params_to_qs(body, [(('access_token', token))])
++    return add_params_to_qs(body, [('access_token', token)])
+ 
+ 
+ def random_token_generator(request, refresh_token=False):

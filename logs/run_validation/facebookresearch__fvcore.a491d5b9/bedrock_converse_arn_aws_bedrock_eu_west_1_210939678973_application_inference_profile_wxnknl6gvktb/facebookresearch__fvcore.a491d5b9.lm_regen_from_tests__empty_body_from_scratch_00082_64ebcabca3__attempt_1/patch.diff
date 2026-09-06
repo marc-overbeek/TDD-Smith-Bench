@@ -1,0 +1,29 @@
+--- a/fvcore/nn/precise_bn.py
++++ b/fvcore/nn/precise_bn.py
+@@ -194,20 +194,9 @@
+         hook.remove()
+ 
+ 
+-def get_bn_modules(model: nn.Module) -> List[nn.Module]:
+-    """
+-    Find all BatchNorm (BN) modules that are in training mode. See
+-    fvcore.precise_bn.BN_MODULE_TYPES for a list of all modules that are
+-    included in this search.
+-
+-    Args:
+-        model (nn.Module): a model possibly containing BN modules.
+-
+-    Returns:
+-        list[nn.Module]: all BN modules in the model.
+-    """
+-    # Finds all the bn layers.
+-    bn_layers = [
+-        m for m in model.modules() if m.training and isinstance(m, BN_MODULE_TYPES)
+-    ]
+-    return bn_layers
++def get_bn_modules(model: nn.Module) ->List[nn.Module]:
++    bn_modules = []
++    for module in model.modules():
++        if isinstance(module, BN_MODULE_TYPES):
++            bn_modules.append(module)
++    return bn_modules

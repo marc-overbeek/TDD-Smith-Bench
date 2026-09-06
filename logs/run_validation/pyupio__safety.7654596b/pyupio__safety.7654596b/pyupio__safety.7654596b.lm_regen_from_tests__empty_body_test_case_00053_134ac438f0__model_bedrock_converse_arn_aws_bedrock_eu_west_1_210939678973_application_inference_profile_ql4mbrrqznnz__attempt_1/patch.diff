@@ -1,0 +1,259 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -188,57 +188,42 @@
+     return None
+ 
+ 
+-def get_flags_from_context() -> Dict[str, str]:
+-    """
+-    Get the flags from the current click context.
+-
+-    Returns:
+-        Dict[str, str]: A dictionary of flags and their corresponding option names.
+-    """
+-    flags = {}
+-    context = click.get_current_context(silent=True)
+-
+-    if context:
+-        for option in context.command.params:
+-            flags_per_opt = option.opts + option.secondary_opts
+-            for flag in flags_per_opt:
+-                flags[flag] = option.name
+-
+-    return flags
+-
+-
+-def get_used_options() -> Dict[str, Dict[str, int]]:
+-    """
+-    Get the used options from the command-line arguments.
+-
+-    Returns:
+-        Dict[str, Dict[str, int]]: A dictionary of used options and their counts.
+-    """
+-    flags = get_flags_from_context()
+-    used_options = {}
+-
+-    for arg in sys.argv:
+-        cleaned_arg = arg if '=' not in arg else arg.split('=')[0]
+-        if cleaned_arg in flags:
+-            option_used = flags.get(cleaned_arg)
+-
+-            if option_used in used_options:
+-                used_options[option_used][cleaned_arg] = used_options[option_used].get(cleaned_arg, 0) + 1
+-            else:
+-                used_options[option_used] = {cleaned_arg: 1}
+-
++def get_flags_from_context() ->Dict[str, str]:
++    try:
++        ctx = click.get_current_context()
++        flags = {}
++        for param in ctx.command.params:
++            for opt in param.opts:
++                flags[opt] = param.name
++        return flags
++    except Exception:
++        return {}
++
++
++def get_used_options() ->Dict[str, Dict[str, int]]:
++    try:
++        flags = get_flags_from_context()
++    except Exception:
++        flags = {}
++    
++    used_options: Dict[str, Dict[str, int]] = {}
++    argv = sys.argv[1:]
++    
++    for arg in argv:
++        if arg.startswith('-'):
++            flag = arg.split('=')[0]
++            if flag in flags:
++                option_name = flags[flag]
++                if option_name not in used_options:
++                    used_options[option_name] = {}
++                used_options[option_name][flag] = used_options[option_name].get(flag, 0) + 1
++    
+     return used_options
+ 
+ 
+-def get_safety_version() -> str:
+-    """
+-    Get the version of Safety.
+-
+-    Returns:
+-        str: The Safety version.
+-    """
+-    from safety import VERSION
+-    return VERSION
++def get_safety_version() ->str:
++    from importlib.metadata import version
++    return version('safety')
+ 
+ 
+ def get_primary_announcement(announcements: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+@@ -265,20 +250,21 @@
+     return None
+ 
+ 
+-def get_basic_announcements(announcements: List[Dict[str, Any]], include_local: bool = True) -> List[Dict[str, Any]]:
+-    """
+-    Get the basic announcements from a list of announcements.
+-
+-    Args:
+-        announcements (List[Dict[str, Any]]): The list of announcements.
+-        include_local (bool): Whether to include local announcements.
+-
+-    Returns:
+-        List[Dict[str, Any]]: The list of basic announcements.
+-    """
+-    return [announcement for announcement in announcements if
+-            announcement.get('type', '').lower() != 'primary_announcement' and not announcement.get('local', False)
+-            or (announcement.get('local', False) and include_local)]
++def get_basic_announcements(announcements: List[Dict[str, Any]],
++    include_local: bool=True) ->List[Dict[str, Any]]:
++    basic_types = {'notice', 'warning', 'error'}
++    result = []
++    for announcement in announcements:
++        ann_type = announcement.get('type', '').lower()
++        if ann_type in basic_types:
++            result.append(announcement)
++    
++    if include_local:
++        local = SafetyContext().local_announcements
++        if local:
++            result.extend(local)
++    
++    return result
+ 
+ 
+ def filter_announcements(announcements: List[Dict[str, Any]], by_type: str = 'error') -> List[Dict[str, Any]]:
+@@ -296,39 +282,26 @@
+             announcement.get('type', '').lower() == by_type]
+ 
+ 
+-def build_telemetry_data(telemetry: bool = True,
+-                         command: Optional[str] = None,
+-                         subcommand: Optional[str] = None) -> TelemetryModel:
+-    """Build telemetry data for the Safety context.
+-
+-    Args:
+-        telemetry (bool): Whether telemetry is enabled.
+-        command (Optional[str]): The command.
+-        subcommand (Optional[str]): The subcommand.
+-
+-    Returns:
+-        TelemetryModel: The telemetry data model.
+-    """
+-    context = SafetyContext()
+-
+-    body = {
+-        'os_type': os.environ.get("SAFETY_OS_TYPE", None) or platform.system(),
+-        'os_release': os.environ.get("SAFETY_OS_RELEASE", None) or platform.release(),
+-        'os_description': os.environ.get("SAFETY_OS_DESCRIPTION", None) or platform.platform(),
+-        'python_version': platform.python_version(),
+-        'safety_command': command if command else context.command,
+-        'safety_options': get_used_options()
+-    } if telemetry else {}
+-
+-    body['safety_version'] = get_safety_version()
+-    body['safety_source'] = os.environ.get("SAFETY_SOURCE", None) or context.safety_source
+-
+-    if not 'safety_options' in body:
+-        body['safety_options'] = {}
+-
+-    LOG.debug(f'Telemetry body built: {body}')
+-
+-    return TelemetryModel(**body)
++def build_telemetry_data(telemetry: bool=True, command: Optional[str]=None,
++    subcommand: Optional[str]=None) ->TelemetryModel:
++    ctx = SafetyContext()
++    
++    if not command:
++        command = ctx.command
++    if not subcommand:
++        subcommand = ctx.subcommand
++    
++    python_version = platform.python_version()
++    safety_command_line = ' '.join(sys.argv)
++    
++    return TelemetryModel(
++        telemetry=telemetry,
++        python_version=python_version,
++        safety_command_line=safety_command_line,
++        safety_version=get_safety_version(),
++        command=command,
++        subcommand=subcommand
++    )
+ 
+ 
+ def build_git_data() -> Dict[str, Any]:
+@@ -553,42 +526,39 @@
+     A click option that depends on other options.
+     """
+     def __init__(self, *args, **kwargs):
+-        self.required_options = set(kwargs.pop('required_options', []))
++        self.mutually_exclusive = set(kwargs.pop('mutually_exclusive', []))
++        self.with_values = kwargs.pop('with_values', {})
+         help = kwargs.get('help', '')
+-        if self.required_options:
+-            ex_str = ', '.join(self.required_options)
++        if self.mutually_exclusive:
++            ex_str = ', '.join(["{0} with values {1}".format(item, self.with_values.get(item)) if item in self.with_values else item for item in self.mutually_exclusive])
+             kwargs['help'] = help + (
+-                f" Requires: [ {ex_str} ]"
++                ' NOTE: This argument is mutually exclusive with '
++                ' arguments: [' + ex_str + '].'
+             )
+-        super(DependentOption, self).__init__(*args, **kwargs)
+-
+-    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+-        """
+-        Handle the parse result for dependent options.
+-
+-        Args:
+-            ctx (click.Context): The click context.
+-            opts (Dict[str, Any]): The options dictionary.
+-            args (List[str]): The arguments list.
+-
+-        Returns:
+-            Tuple[Any, List[str]]: The result and remaining arguments.
+-        """
+-        missing_required_arguments = None
+-
+-        if self.name in opts:
+-            missing_required_arguments = self.required_options.difference(opts)
+-
+-        if missing_required_arguments:
++        super(MutuallyExclusiveOption, self).__init__(*args, **kwargs)
++
++    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any],
++        args: List[str]) ->Tuple[Any, List[str]]:
++        m_exclusive_used = self.mutually_exclusive.intersection(opts)
++        option_used = m_exclusive_used and self.name in opts
++
++        exclusive_value_used = False
++        for used in m_exclusive_used:
++            value_used = opts.get(used, None)
++            if not isinstance(value_used, List):
++                value_used = [value_used]
++            if value_used and set(self.with_values.get(used, [])).intersection(value_used):
++                exclusive_value_used = True
++
++        if option_used and (not self.with_values or exclusive_value_used):
++            options = ', '.join(self.opts)
++            prohibited = ''.join(["\n * --{0} with {1}".format(item, self.with_values.get(
++                        item)) if item in self.with_values else f"\n * {item}" for item in self.mutually_exclusive])
+             raise click.UsageError(
+-                "Illegal usage: `{}` needs the "
+-                "arguments `{}`.".format(
+-                    self.name,
+-                    ', '.join(missing_required_arguments)
+-                )
++                f"Illegal usage: `{options}` is mutually exclusive with: {prohibited}"
+             )
+ 
+-        return super(DependentOption, self).handle_parse_result(
++        return super(MutuallyExclusiveOption, self).handle_parse_result(
+             ctx,
+             opts,
+             args

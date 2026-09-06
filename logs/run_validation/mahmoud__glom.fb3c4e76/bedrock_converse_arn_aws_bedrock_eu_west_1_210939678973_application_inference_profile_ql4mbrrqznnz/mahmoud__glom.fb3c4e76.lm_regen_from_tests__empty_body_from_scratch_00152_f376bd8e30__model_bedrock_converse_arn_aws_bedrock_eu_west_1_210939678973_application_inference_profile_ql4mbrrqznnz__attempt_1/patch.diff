@@ -1,0 +1,15 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -96,6 +96,12 @@
+         tree[self] = self.op(tree[self], target)
+         return tree[self]
+ 
++    def _agg(self, target, tree):
++        if self not in tree:
++            tree[self] = self.init()
++        tree[self] = self.op(tree[self], target)
++        return tree[self]
++
+     def __repr__(self):
+         cn = self.__class__.__name__
+         kwargs = {'init': self.init}

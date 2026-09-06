@@ -1,0 +1,35 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -931,26 +931,15 @@
+         return MovingData(moving_time, stopped_time, moving_distance, stopped_distance, max_speed or 0.0)
+ 
+     def get_time_bounds(self) -> TimeBounds:
+-        """
+-        Gets the time bound (start and end) of the segment.
+-
+-        returns
+-        ----------
+-        time_bounds : TimeBounds named tuple
+-            start_time : datetime
+-                Start time of the first segment in track
+-            end time : datetime
+-                End time of the last segment in track
+-        """
+         start_time = None
+         end_time = None
+ 
+-        for point in self.points:
+-            if point.time:
+-                if not start_time:
+-                    start_time = point.time
+-                if point.time:
+-                    end_time = point.time
++        for track in self.tracks:
++            track_start_time, track_end_time = track.get_time_bounds()
++            if not start_time and track_start_time:
++                start_time = track_start_time
++            if track_end_time:
++                end_time = track_end_time
+ 
+         return TimeBounds(start_time, end_time)
+ 

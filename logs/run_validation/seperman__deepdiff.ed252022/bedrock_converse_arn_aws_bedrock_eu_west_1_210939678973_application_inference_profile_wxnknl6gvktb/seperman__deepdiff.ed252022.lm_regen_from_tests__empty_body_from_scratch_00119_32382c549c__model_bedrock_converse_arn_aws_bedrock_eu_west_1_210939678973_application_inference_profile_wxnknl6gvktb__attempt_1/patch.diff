@@ -1,0 +1,17 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -383,6 +383,14 @@
+         if iterable_item_moved:
+             added_dict = {v["new_path"]: v["value"] for k, v in iterable_item_moved.items()}
+             self._do_item_added(added_dict, insert=False)
++
++    expected_delta_dict = {'dictionary_item_added': {'root[7]': 7,
++        'root[3]': 3, 'root[5]': 5, 'root[2]': 2, 'root[4]': 4}}
++
++    def _do_attribute_added(self):
++        attribute_added = self.diff.get('attribute_added')
++        if attribute_added:
++            self._do_item_added(attribute_added)
+ 
+     def _do_dictionary_item_added(self):
+         dictionary_item_added = self.diff.get('dictionary_item_added')

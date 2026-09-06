@@ -1,0 +1,39 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -1574,6 +1574,19 @@
+         level.report_type = 'type_changes'
+         self._report_result('type_changes', level, local_tree=local_tree)
+ 
++    if self._count_diff() is StopIteration:
++        return
++
++    def _count_diff(self):
++        self._stats[DIFF_COUNT] += 1
++        if self.max_diffs is not None and self._stats[DIFF_COUNT] > self.max_diffs:
++            if not self._stats[MAX_DIFF_LIMIT_REACHED]:
++                self._stats[MAX_DIFF_LIMIT_REACHED] = True
++                logger.warning(MAX_DIFFS_REACHED_MSG.format(self.max_diffs))
++            return StopIteration
++        if self.cache_size and self.cache_tuning_sample_size:
++            self._auto_tune_cache()
++
+     def _count_diff(self):
+         if (self.max_diffs is not None and self._stats[DIFF_COUNT] > self.max_diffs):
+             if not self._stats[MAX_DIFF_LIMIT_REACHED]:
+@@ -1581,6 +1594,16 @@
+                 logger.warning(MAX_DIFFS_REACHED_MSG.format(self.max_diffs))
+             return StopIteration
+         self._stats[DIFF_COUNT] += 1
++        if self.cache_size and self.cache_tuning_sample_size:
++            self._auto_tune_cache()
++
++    def _count_diff(self):
++        self._stats[DIFF_COUNT] += 1
++        if self.max_diffs is not None and self._stats[DIFF_COUNT] > self.max_diffs:
++            if not self._stats[MAX_DIFF_LIMIT_REACHED]:
++                self._stats[MAX_DIFF_LIMIT_REACHED] = True
++                logger.warning(MAX_DIFFS_REACHED_MSG.format(self.max_diffs))
++            return StopIteration
+         if self.cache_size and self.cache_tuning_sample_size:
+             self._auto_tune_cache()
+ 

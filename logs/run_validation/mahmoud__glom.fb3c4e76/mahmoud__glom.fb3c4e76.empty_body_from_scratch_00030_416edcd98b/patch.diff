@@ -1,0 +1,27 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -148,23 +148,7 @@
+         self.__wrapped = exc
+ 
+     def _finalize(self, scope):
+-        # careful when changing how this functionality works; pytest seems to mess with
+-        # the traceback module or sys.exc_info(). we saw different stacks when originally
+-        # developing this in June 2020.
+-        etype, evalue, _ = sys.exc_info()
+-        tb_lines = traceback.format_exc().strip().splitlines()
+-        limit = 0
+-        for line in reversed(tb_lines):
+-            if _PKG_DIR_PATH in line:
+-                limit -= 1
+-                break
+-            limit += 1
+-        self._tb_lines = tb_lines[-limit:]
+-        # if the first line is trying to put a caret at a byte-code location on a line that
+-        # isn't being displayed, skip it
+-        if set(self._tb_lines[0]) <= {' ', '^', '~'}:
+-            self._tb_lines = self._tb_lines[1:]
+-        self._scope = scope
++        pass
+ 
+     def __str__(self):
+         if getattr(self, '_finalized_str', None):

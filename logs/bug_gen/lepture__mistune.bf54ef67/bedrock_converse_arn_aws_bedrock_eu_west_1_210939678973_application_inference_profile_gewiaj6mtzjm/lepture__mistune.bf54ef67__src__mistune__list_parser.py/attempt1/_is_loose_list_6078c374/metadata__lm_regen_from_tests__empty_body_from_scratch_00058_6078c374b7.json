@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```python\ndef _is_loose_list(tokens: Iterable[Dict[str, Any]]) ->bool:\n    for token in tokens:\n        if token['type'] == 'list_item':\n            children = token.get('children', [])\n            if not children:\n                return True\n            last_child = children[-1]\n            if last_child['type'] == 'paragraph' and last_child.get('blank_lines', 0) > 0:\n                return True\n        elif token['type'] == 'paragraph' and token.get('blank_lines', 0) > 0:\n            return True\n    return False\n```",
+  "rewrite": "def _is_loose_list(tokens: Iterable[Dict[str, Any]]) ->bool:\n    for token in tokens:\n        if token['type'] == 'list_item':\n            children = token.get('children', [])\n            if not children:\n                return True\n            last_child = children[-1]\n            if last_child['type'] == 'paragraph' and last_child.get('blank_lines', 0) > 0:\n                return True\n        elif token['type'] == 'paragraph' and token.get('blank_lines', 0) > 0:\n            return True\n    return False",
+  "strategy": "lm_regen_from_tests"
+}

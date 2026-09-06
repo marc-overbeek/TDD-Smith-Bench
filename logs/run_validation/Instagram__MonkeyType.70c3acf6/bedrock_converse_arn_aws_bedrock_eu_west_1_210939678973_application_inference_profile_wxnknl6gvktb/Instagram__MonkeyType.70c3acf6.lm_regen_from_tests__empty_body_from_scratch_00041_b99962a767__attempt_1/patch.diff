@@ -1,0 +1,23 @@
+--- a/monkeytype/encoding.py
++++ b/monkeytype/encoding.py
+@@ -37,16 +37,14 @@
+ TypeDict = Dict[str, Any]
+ 
+ 
+-def typed_dict_to_dict(typ: type) -> TypeDict:
+-    elem_types: Dict[str, Any] = {}
+-    for k, v in typ.__annotations__.items():
+-        elem_types[k] = type_to_dict(v)
+-    return {
++def typed_dict_to_dict(typ: type) ->TypeDict:
++    d: TypeDict = {
+         "module": typ.__module__,
+         "qualname": typ.__qualname__,
+-        "elem_types": elem_types,
+         "is_typed_dict": True,
++        "elem_types": {k: type_to_dict(v) for k, v in typ.__annotations__.items()}
+     }
++    return d
+ 
+ 
+ def type_to_dict(typ: type) -> TypeDict:

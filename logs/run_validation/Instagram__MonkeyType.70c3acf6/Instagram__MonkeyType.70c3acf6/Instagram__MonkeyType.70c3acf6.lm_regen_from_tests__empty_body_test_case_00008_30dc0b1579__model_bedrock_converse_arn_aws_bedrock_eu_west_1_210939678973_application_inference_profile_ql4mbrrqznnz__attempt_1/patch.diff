@@ -1,0 +1,67 @@
+--- a/demo/inbox.py
++++ b/demo/inbox.py
+@@ -27,6 +27,20 @@
+     type = EventType.COMMENTED
+ 
+     def __init__(self, repo: RepoInterface) -> None:
++        self.repo = repo
++
++    def add(self, event):
++        self.events.append(event)
++        self.user_ids.add(event.commenter_id)
++
++    def aggregate(self):
++        return []
++
++
++class LikesAggregator(AggregatorInterface[LikedEvent]):
++    type = EventType.LIKED
++
++    def __init__(self, repo: RepoInterface) -> None:
+         self.events: List[CommentedEvent] = []
+         self.user_ids: Set[UserId] = set()
+         super().__init__(repo)
+@@ -47,43 +61,13 @@
+             for e in self.events
+         ]
+ 
+-
+-class LikesAggregator(AggregatorInterface[LikedEvent]):
+-    type = EventType.LIKED
+-
+-    def __init__(self, repo: RepoInterface) -> None:
+-        self.events_by_feedentry_id: Dict[FeedEntryId, List[LikedEvent]] = {}
+-        self.user_ids: Set[UserId] = set()
+-        super().__init__(repo)
+-
+-    def add(self, event):
+-        self.events_by_feedentry_id.setdefault(event.feedentry_id, []).append(event)
+-        self.user_ids.add(event.liker_id)
+-
+-    def aggregate(self):
+-        feedentries_by_id = self.repo.get_feed_entries_by_ids(
+-            self.events_by_feedentry_id.keys()
+-        )
+-        users_by_id = self.repo.get_users_by_ids(self.user_ids)
+-
+-        return [
+-            AggregatedItem(
+-                type=self.type,
+-                text=self._describe(events, feedentries_by_id[fid], users_by_id),
+-                published=max(e.published for e in events),
+-            )
+-            for fid, events in self.events_by_feedentry_id.items()
+-        ]
+-
+     def _describe(self, events, feedentry, users_by_id: Dict[UserId, User]):
+         users = [users_by_id[e.liker_id].name for e in events]
+         post_name = f'"{feedentry.caption}"'
+         if len(users) == 1:
+             return f"{users[0]} liked your post {post_name}."
+-
+         elif len(users) == 2:
+             return f"{users[0]} and {users[1]} liked your post {post_name}."
+-
+         else:
+             return (
+                 f"{users[0]}, {users[1]} and {len(users) - 2} others "

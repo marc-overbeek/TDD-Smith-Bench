@@ -1,0 +1,55 @@
+--- a/safety/scan/render.py
++++ b/safety/scan/render.py
+@@ -442,50 +442,8 @@
+     cls.__render__(console, detailed_output, rich_kwargs)
+ 
+ 
+-def get_render_console(entity_type: Any) -> Any:
+-    """
+-    Get the render function for a specific entity type.
+-
+-    Args:
+-        entity_type (Any): The entity type.
+-
+-    Returns:
+-        Any: The render function.
+-    """
+-
+-    if entity_type is Vulnerability:
+-        def __render__(self, console: Console, detailed_output: bool, rich_kwargs):
+-            if not rich_kwargs:
+-                rich_kwargs = {}
+-
+-            pre = " Ignored:" if self.ignored else ""
+-            severity_detail = None
+-
+-            if self.severity and self.severity.source:
+-                severity_detail = self.severity.source
+-
+-                if self.severity.cvssv3 and "base_severity" in self.severity.cvssv3:
+-                    severity_detail += f", CVSS Severity {self.severity.cvssv3['base_severity'].upper()}"
+-
+-            advisory_length = 200 if detailed_output else 110
+-
+-            console.print(
+-                Padding(
+-                    f"->{pre} Vuln ID [vuln_id]{self.vulnerability_id}[/vuln_id]: {severity_detail if severity_detail else ''}",
+-                    (0, 0, 0, 2)
+-                ), **rich_kwargs)
+-            console.print(
+-                Padding(
+-                    f"{self.advisory[:advisory_length]}{'...' if len(self.advisory) > advisory_length else ''}",
+-                    (0, 0, 0, 5)
+-                ), **rich_kwargs)
+-
+-            if detailed_output:
+-                console.print(
+-                    Padding(f"For more information: [link]{self.more_info_url}[/link]", (0, 0, 0, 5)),
+-                      **rich_kwargs)
+-
+-        return __render__
++def get_render_console(entity_type: Any) ->Any:
++    pass
+ 
+ 
+ def render_scan_html(report: ReportModel, obj: Any) -> str:

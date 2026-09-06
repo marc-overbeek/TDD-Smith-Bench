@@ -1,0 +1,32 @@
+--- a/safety/scan/finder/handlers.py
++++ b/safety/scan/finder/handlers.py
+@@ -76,27 +76,8 @@
+         super().__init__()
+         self.ecosystem = Ecosystem.PYTHON
+ 
+-    def download_required_assets(self, session) -> None:
+-        """
+-        Downloads the required assets for handling Python files, specifically the Safety database.
+-
+-        Args:
+-            session: The session object for making network requests.
+-        """
+-        from safety.safety import fetch_database
+-
+-        SAFETY_DB_DIR = os.getenv("SAFETY_DB_DIR")
+-
+-        db = False if SAFETY_DB_DIR is None else SAFETY_DB_DIR
+-
+-        # Fetch both the full and partial Safety databases
+-        fetch_database(session=session, full=False, db=db, cached=True,
+-                       telemetry=True, ecosystem=Ecosystem.PYTHON,
+-                       from_cache=False)
+-
+-        fetch_database(session=session, full=True, db=db, cached=True,
+-                                telemetry=True, ecosystem=Ecosystem.PYTHON,
+-                                from_cache=False)
++    def download_required_assets(self, session) ->None:
++        pass
+ 
+ 
+ class SafetyProjectFileHandler(FileHandler):

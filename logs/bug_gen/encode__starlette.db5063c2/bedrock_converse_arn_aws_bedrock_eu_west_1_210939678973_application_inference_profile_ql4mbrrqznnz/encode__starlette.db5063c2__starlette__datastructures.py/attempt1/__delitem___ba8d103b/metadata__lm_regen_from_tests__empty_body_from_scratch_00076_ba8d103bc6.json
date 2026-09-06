@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing test, I need to implement `__delitem__` for `MutableHeaders` that removes all header entries matching the given key.\n\nThe test does:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing test, I need to implement `__delitem__` for `MutableHeaders` that removes all header entries matching the given key.\n\nThe test does:\n```python\ndel h['a']\nassert dict(h) == {'b': '4'}\nassert h.raw == [(b'b', b'4')]\n```\n\nThe current implementation is just `pass`. I need to implement it to remove entries from `self._list` where the key matches.\n\n```python\ndef __delitem__(self, key: str) -> None:\n    \"\"\"\n    Remove the header `key`.\n    \"\"\"\n    del_key = key.lower().encode(\"latin-1\")\n\n    pop_indexes: list[int] = []\n    for idx, (item_key, item_value) in enumerate(self._list):\n        if item_key == del_key:\n            pop_indexes.append(idx)\n\n    for idx in reversed(pop_indexes):\n        del self._list[idx]\n```",
+  "rewrite": "del h['a']\nassert dict(h) == {'b': '4'}\nassert h.raw == [(b'b', b'4')]\n\ndef __delitem__(self, key: str) -> None:\n    \"\"\"\n    Remove the header `key`.\n    \"\"\"\n    del_key = key.lower().encode(\"latin-1\")\n\n    pop_indexes: list[int] = []\n    for idx, (item_key, item_value) in enumerate(self._list):\n        if item_key == del_key:\n            pop_indexes.append(idx)\n\n    for idx in reversed(pop_indexes):\n        del self._list[idx]",
+  "strategy": "lm_regen_from_tests"
+}

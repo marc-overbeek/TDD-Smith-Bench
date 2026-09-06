@@ -1,0 +1,19 @@
+--- a/glom/tutorial.py
++++ b/glom/tutorial.py
+@@ -482,6 +482,16 @@
+     # mentioned in the ContactManager docstring
+     objects = ContactManager()
+ 
++    def test_tutorial():
++        target = {'a': {'b': {'c': 'd'}}}
++        val = target['a']['b']['c']
++        res = glom(target, 'a.b.c')
++        assert res == val
++        contact = Contact('Julian', emails=[Email(
++            'julian@sunnyvaletrailerpark.info')])
++        contact.save()
++        assert Contact.objects.get(contact_id=contact.id) is contact
++
+     def save(self):
+         self.objects.save(self)
+ 

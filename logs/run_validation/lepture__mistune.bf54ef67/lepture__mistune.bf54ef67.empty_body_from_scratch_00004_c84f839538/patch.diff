@@ -1,0 +1,38 @@
+--- a/src/mistune/markdown.py
++++ b/src/mistune/markdown.py
+@@ -21,31 +21,10 @@
+     :param plugins: mistune plugins to use
+     """
+ 
+-    def __init__(
+-        self,
+-        renderer: Optional[BaseRenderer] = None,
+-        block: Optional[BlockParser] = None,
+-        inline: Optional[InlineParser] = None,
+-        plugins: Optional[Iterable[Plugin]] = None,
+-    ):
+-        if block is None:
+-            block = BlockParser()
+-
+-        if inline is None:
+-            inline = InlineParser()
+-
+-        self.renderer = renderer
+-        self.block: BlockParser = block
+-        self.inline: InlineParser = inline
+-        self.before_parse_hooks: List[Callable[["Markdown", BlockState], None]] = []
+-        self.before_render_hooks: List[Callable[["Markdown", BlockState], Any]] = []
+-        self.after_render_hooks: List[
+-            Callable[["Markdown", Union[str, List[Dict[str, Any]]], BlockState], str]
+-        ] = []
+-
+-        if plugins:
+-            for plugin in plugins:
+-                plugin(self)
++    def __init__(self, renderer: Optional[BaseRenderer]=None, block: Optional[
++        BlockParser]=None, inline: Optional[InlineParser]=None, plugins:
++        Optional[Iterable[Plugin]]=None):
++        pass
+ 
+     def use(self, plugin: Plugin) -> None:
+         plugin(self)

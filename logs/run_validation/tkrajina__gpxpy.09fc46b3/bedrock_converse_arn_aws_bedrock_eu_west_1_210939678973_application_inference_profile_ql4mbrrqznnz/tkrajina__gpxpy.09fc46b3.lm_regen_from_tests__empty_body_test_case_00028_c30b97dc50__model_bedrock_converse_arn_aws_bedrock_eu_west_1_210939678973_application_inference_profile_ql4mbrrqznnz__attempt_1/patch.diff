@@ -1,0 +1,64 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1117,18 +1117,9 @@
+                 for distance in distances]
+ 
+     def get_duration(self) -> Optional[float]:
+-        """
+-        Calculates duration or track segment
+-
+-        Returns
+-        -------
+-        duration: float
+-            Duration in seconds
+-        """
+         if not self.points or len(self.points) < 2:
+             return 0.0
+ 
+-        # Search for start:
+         first = self.points[0]
+         if not first.time:
+             first = self.points[1]
+@@ -1138,11 +1129,9 @@
+             last = self.points[-2]
+ 
+         if not last.time or not first.time:
+-            log.debug('Can\'t find time')
+-            return None
++            return 0.0
+ 
+         if last.time < first.time:
+-            log.debug('Not enough time data')
+             return None
+ 
+         return mod_utils.total_seconds(last.time - first.time)
+@@ -1752,14 +1741,6 @@
+             track_segment.move(location_delta)
+ 
+     def get_duration(self) -> Optional[float]:
+-        """
+-        Calculates duration or track
+-
+-        Returns
+-        -------
+-        duration: float
+-            Duration in seconds or None if any time data is missing
+-        """
+         if not self.segments:
+             return 0.0
+ 
+@@ -2339,14 +2320,6 @@
+         return result
+ 
+     def get_duration(self) -> Optional[float]:
+-        """
+-        Calculates duration of GPX file
+-
+-        Returns
+-        -------
+-        duration: float
+-            Duration in seconds or None if time data is not fully populated.
+-        """
+         if not self.tracks:
+             return 0.0
+ 

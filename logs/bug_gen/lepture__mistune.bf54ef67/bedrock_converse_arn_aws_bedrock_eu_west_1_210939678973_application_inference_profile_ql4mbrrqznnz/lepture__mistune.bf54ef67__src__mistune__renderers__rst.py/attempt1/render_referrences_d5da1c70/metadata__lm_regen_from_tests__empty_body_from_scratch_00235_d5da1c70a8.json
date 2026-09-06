@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef render_referrences(self, state: BlockState) -> Iterable[str]:\n    images = state.env['inline_images']\n    for index, token in enumerate(images):\n        attrs = token['attrs']\n        alt = self.render_children(token, state)\n        ident = self.INLINE_IMAGE_PREFIX + str(index)\n        yield '.. |' + ident + '| image:: ' + attrs['url'] + '\\n   :alt: ' + alt\n```",
+  "rewrite": "def render_referrences(self, state: BlockState) -> Iterable[str]:\n    images = state.env['inline_images']\n    for index, token in enumerate(images):\n        attrs = token['attrs']\n        alt = self.render_children(token, state)\n        ident = self.INLINE_IMAGE_PREFIX + str(index)\n        yield '.. |' + ident + '| image:: ' + attrs['url'] + '\\n   :alt: ' + alt\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

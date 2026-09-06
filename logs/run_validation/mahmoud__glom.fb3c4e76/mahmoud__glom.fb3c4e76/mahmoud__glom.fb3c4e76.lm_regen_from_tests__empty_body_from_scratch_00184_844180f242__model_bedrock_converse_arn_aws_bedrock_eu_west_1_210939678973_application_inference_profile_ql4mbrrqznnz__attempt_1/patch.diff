@@ -1,0 +1,29 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -227,9 +227,23 @@
+     """
+     __slots__ = ()
+ 
+-    def agg(self, target, tree):
+-        if self not in tree or target < tree[self]:
+-            tree[self] = target
++    assert glom(t, Group(Sum())) == sum(t)
++    assert repr(Sum()) == 'Sum()'
++    assert repr(Count()) == 'Count()'
++    assert glom(range(10), Group({(lambda t: t % 2): Count()})) == {(0): 5, (1): 5}
++
++    def agg(self, target, tree):
++        if self not in tree:
++            tree[self] = 0
++        tree[self] += target
++        return tree[self]
++
++    <full rewritten function code including the unchanged signature>
++
++    def agg(self, target, tree):
++        if self not in tree:
++            tree[self] = 0
++        tree[self] += target
+         return tree[self]
+ 
+     def __repr__(self):

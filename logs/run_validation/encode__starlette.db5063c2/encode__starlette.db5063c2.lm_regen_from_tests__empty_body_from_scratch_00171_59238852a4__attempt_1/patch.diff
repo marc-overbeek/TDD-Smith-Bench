@@ -1,0 +1,20 @@
+--- a/starlette/responses.py
++++ b/starlette/responses.py
+@@ -438,8 +438,17 @@
+                     }
+                 )
+ 
++    if http_range is None or (http_if_range is not None and not self._should_use_range(http_if_range)):
++        await self._handle_simple(send, send_header_only)
++
+     def _should_use_range(self, http_if_range: str) -> bool:
+         return http_if_range == self.headers["last-modified"] or http_if_range == self.headers["etag"]
++
++    def _should_use_range(self, http_if_range: str) -> bool:
++        return http_if_range == self.headers.get("last-modified") or http_if_range == self.headers.get("etag")
++
++    def _should_use_range(self, http_if_range: str) -> bool:
++        return http_if_range == self.headers.get("last-modified") or http_if_range == self.headers.get("etag")
+ 
+     @staticmethod
+     def _parse_range_header(http_range: str, file_size: int) -> list[tuple[int, int]]:

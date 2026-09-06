@@ -1,0 +1,35 @@
+--- a/starlette/responses.py
++++ b/starlette/responses.py
+@@ -287,18 +287,11 @@
+ class FileResponse(Response):
+     chunk_size = 64 * 1024
+ 
+-    def __init__(
+-        self,
+-        path: str | os.PathLike[str],
+-        status_code: int = 200,
+-        headers: typing.Mapping[str, str] | None = None,
+-        media_type: str | None = None,
+-        background: BackgroundTask | None = None,
+-        filename: str | None = None,
+-        stat_result: os.stat_result | None = None,
+-        method: str | None = None,
+-        content_disposition_type: str = "attachment",
+-    ) -> None:
++    def __init__(self, path: (str | os.PathLike[str]), status_code: int=200,
++        headers: (typing.Mapping[str, str] | None)=None, media_type: (str |
++        None)=None, background: (BackgroundTask | None)=None, filename: (str |
++        None)=None, stat_result: (os.stat_result | None)=None, method: (str |
++        None)=None, content_disposition_type: str='attachment') ->None:
+         self.path = path
+         self.status_code = status_code
+         self.filename = filename
+@@ -324,7 +317,7 @@
+         if stat_result is not None:
+             self.set_stat_headers(stat_result)
+ 
+-    def set_stat_headers(self, stat_result: os.stat_result) -> None:
++    def set_stat_headers(self, stat_result: os.stat_result) ->None:
+         content_length = str(stat_result.st_size)
+         last_modified = formatdate(stat_result.st_mtime, usegmt=True)
+         etag_base = str(stat_result.st_mtime) + "-" + str(stat_result.st_size)

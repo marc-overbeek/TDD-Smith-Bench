@@ -1,0 +1,89 @@
+--- a/safety/cli_util.py
++++ b/safety/cli_util.py
+@@ -282,83 +282,9 @@
+ 
+ 
+ 
+-def print_main_command_panels(*,
+-    name: str,
+-    commands: List[click.Command],
+-    markup_mode: MarkupMode,
+-    console) -> None:
+-    """
+-    Print the main command panels.
+-
+-    Args:
+-        name (str): The name of the panel.
+-        commands (List[click.Command]): List of commands to display.
+-        markup_mode (MarkupMode): The markup mode.
+-        console: The Rich console.
+-    """
+-    from rich import box
+-    from rich.table import Table
+-    from rich.text import Text
+-    from rich.panel import Panel
+-    from typer.rich_utils import STYLE_COMMANDS_TABLE_SHOW_LINES, STYLE_COMMANDS_TABLE_LEADING, \
+-        STYLE_COMMANDS_TABLE_BOX, STYLE_COMMANDS_TABLE_BORDER_STYLE, STYLE_COMMANDS_TABLE_ROW_STYLES, \
+-            STYLE_COMMANDS_TABLE_PAD_EDGE, STYLE_COMMANDS_TABLE_PADDING, STYLE_COMMANDS_PANEL_BORDER, \
+-                ALIGN_COMMANDS_PANEL
+-
+-    t_styles: Dict[str, Any] = {
+-        "show_lines": STYLE_COMMANDS_TABLE_SHOW_LINES,
+-        "leading": STYLE_COMMANDS_TABLE_LEADING,
+-        "box": STYLE_COMMANDS_TABLE_BOX,
+-        "border_style": STYLE_COMMANDS_TABLE_BORDER_STYLE,
+-        "row_styles": STYLE_COMMANDS_TABLE_ROW_STYLES,
+-        "pad_edge": STYLE_COMMANDS_TABLE_PAD_EDGE,
+-        "padding": STYLE_COMMANDS_TABLE_PADDING,
+-    }
+-    box_style = getattr(box, t_styles.pop("box"), None)
+-
+-    commands_table = Table(
+-        highlight=False,
+-        show_header=False,
+-        expand=True,
+-        box=box_style,
+-        **t_styles,
+-    )
+-
+-    console_width = 80
+-    column_width = 25
+-
+-    if console.size and console.size[0] > 80:
+-        console_width = console.size[0]
+-
+-    commands_table.add_column(style="bold cyan", no_wrap=True, width=column_width, max_width=column_width)
+-    commands_table.add_column(width=console_width - column_width)
+-
+-    rows = []
+-
+-    for command in commands:
+-        helptext = command.short_help or command.help or ""
+-        command_name = command.name or ""
+-        command_name_text = Text(command_name)
+-        rows.append(
+-            [
+-                command_name_text,
+-                custom_make_command_help(
+-                    help_text=helptext,
+-                ),
+-            ]
+-        )
+-        rows.append([])
+-    for row in rows:
+-        commands_table.add_row(*row)
+-    if commands_table.row_count:
+-        console.print(
+-            Panel(
+-                commands_table,
+-                border_style=STYLE_COMMANDS_PANEL_BORDER,
+-                title=name,
+-                title_align=ALIGN_COMMANDS_PANEL,
+-            )
+-        )
++def print_main_command_panels(*, name: str, commands: List[click.Command],
++    markup_mode: MarkupMode, console) ->None:
++    pass
+ 
+ # The help output for the main safety root command: `safety --help`
+ def format_main_help(obj: Union[click.Command, click.Group],

@@ -1,0 +1,71 @@
+--- a/fvcore/transforms/transform_util.py
++++ b/fvcore/transforms/transform_util.py
+@@ -5,43 +5,42 @@
+ 
+ 
+ # pyre-ignore-all-errors
+-def to_float_tensor(numpy_array: np.ndarray) -> torch.Tensor:
++converted_tensor = to_float_tensor(array)
++converted_array = to_numpy(converted_tensor, array.shape, array.dtype)
++self.assertTrue(np.allclose(array, converted_array))
++
++def to_float_tensor(numpy_array: np.ndarray) ->torch.Tensor:
+     """
+-    Convert the numpy array to torch float tensor with dimension of NxCxHxW.
+-    Pytorch is not fully supporting uint8, so convert tensor to float if the
+-    numpy_array is uint8.
++    Convert numpy array to float tensor with dimension of NxCxHxW.
+     Args:
+-        numpy_array (ndarray): of shape NxHxWxC, or HxWxC or HxW to
+-            represent an image. The array can be of type uint8 in range
+-            [0, 255], or floating point in range [0, 1] or [0, 255].
++        numpy_array (ndarray): a numpy array representing an image.
++            Can be of shape HxW, HxWxC, or NxHxWxC.
++            Can be of type uint8 in range [0, 255], or floating point.
+     Returns:
+-        float_tensor (tensor): converted float tensor.
++        (tensor): converted float pytorch tensor with shape NxCxHxW.
+     """
+-    assert isinstance(numpy_array, np.ndarray)
+-    assert len(numpy_array.shape) in (2, 3, 4)
+-
+-    # Some of the input numpy array has negative strides. Pytorch currently
+-    # does not support negative strides, perform ascontiguousarray to
+-    # resolve the issue.
+-    float_tensor = torch.from_numpy(np.ascontiguousarray(numpy_array))
+-    if numpy_array.dtype in (np.uint8, np.int32, np.int64):
+-        float_tensor = float_tensor.float()
+-
++    # Convert to float tensor
++    if numpy_array.dtype == np.uint8:
++        tensor = torch.from_numpy(numpy_array).float() / 255.0
++    else:
++        tensor = torch.from_numpy(numpy_array).float()
++    
++    # Reshape to NxCxHxW
+     if len(numpy_array.shape) == 2:
+-        # HxW -> 1x1xHxW.
+-        float_tensor = float_tensor[None, None, :, :]
++        # HxW -> 1x1xHxW
++        tensor = tensor.unsqueeze(0).unsqueeze(0)
+     elif len(numpy_array.shape) == 3:
+-        # HxWxC -> 1xCxHxW.
+-        float_tensor = float_tensor.permute(2, 0, 1)
+-        float_tensor = float_tensor[None, :, :, :]
++        # HxWxC -> 1xCxHxW
++        tensor = tensor.permute(2, 0, 1).unsqueeze(0)
+     elif len(numpy_array.shape) == 4:
+         # NxHxWxC -> NxCxHxW
+-        float_tensor = float_tensor.permute(0, 3, 1, 2)
++        tensor = tensor.permute(0, 3, 1, 2)
+     else:
+         raise NotImplementedError(
+-            "Unknow numpy_array dimension of {}".format(float_tensor.shape)
++            "Unknown input shape dimension of {}".format(numpy_array.shape)
+         )
+-    return float_tensor
++    
++    return tensor
+ 
+ 
+ def to_numpy(

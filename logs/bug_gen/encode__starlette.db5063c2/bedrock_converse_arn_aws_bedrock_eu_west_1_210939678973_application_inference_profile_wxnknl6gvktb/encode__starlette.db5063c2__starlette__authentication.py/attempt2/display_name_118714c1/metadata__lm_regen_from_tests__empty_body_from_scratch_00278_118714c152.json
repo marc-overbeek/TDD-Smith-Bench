@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the code, I can see that the target function `display_name` is in the `BaseUser` class. The current implementation has multiple conflicting definitions which is invalid Python syntax.\n\nLooking at the test file reference and the class hierarchy, `BaseUser.display_name` should be a property that raises `NotImplementedError`. The subclasses `SimpleUser` and `UnauthenticatedUser` properly implement it as properties.\n\nThe correct implementation for `BaseUser.display_name` should be a single property definition:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "Looking at the code, I can see that the target function `display_name` is in the `BaseUser` class. The current implementation has multiple conflicting definitions which is invalid Python syntax.\n\nLooking at the test file reference and the class hierarchy, `BaseUser.display_name` should be a property that raises `NotImplementedError`. The subclasses `SimpleUser` and `UnauthenticatedUser` properly implement it as properties.\n\nThe correct implementation for `BaseUser.display_name` should be a single property definition:\n\n```python\n@property\ndef display_name(self) -> str:\n    raise NotImplementedError()  # pragma: no cover\n```",
+  "rewrite": "@property\ndef display_name(self) -> str:\n    raise NotImplementedError()  # pragma: no cover",
+  "strategy": "lm_regen_from_tests"
+}

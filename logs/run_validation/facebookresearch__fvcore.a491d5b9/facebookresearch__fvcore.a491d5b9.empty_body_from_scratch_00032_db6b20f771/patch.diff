@@ -1,0 +1,29 @@
+--- a/fvcore/common/checkpoint.py
++++ b/fvcore/common/checkpoint.py
+@@ -354,24 +354,8 @@
+                 get_unexpected_parameters_message(incompatible.unexpected_keys)
+             )
+ 
+-    def _convert_ndarray_to_tensor(self, state_dict: Dict[str, Any]) -> None:
+-        """
+-        In-place convert all numpy arrays in the state_dict to torch tensor.
+-        Args:
+-            state_dict (dict): a state-dict to be loaded to the model.
+-                Will be modified.
+-        """
+-        # model could be an OrderedDict with _metadata attribute
+-        # (as returned by Pytorch's state_dict()). We should preserve these
+-        # properties.
+-        for k in list(state_dict.keys()):
+-            v = state_dict[k]
+-            if not isinstance(v, np.ndarray) and not isinstance(v, torch.Tensor):
+-                raise ValueError(
+-                    "Unsupported type found in checkpoint! {}: {}".format(k, type(v))
+-                )
+-            if not isinstance(v, torch.Tensor):
+-                state_dict[k] = torch.from_numpy(v)
++    def _convert_ndarray_to_tensor(self, state_dict: Dict[str, Any]) ->None:
++        pass
+ 
+ 
+ class PeriodicCheckpointer:

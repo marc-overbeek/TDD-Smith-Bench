@@ -1,0 +1,39 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -274,7 +274,7 @@
+         return And(self, other)
+ 
+     def __or__(self, other):
+-        return Or(self, other)
++        return Or(*(self.children + (other,)))
+ 
+     def __invert__(self):
+         return Not(self)
+@@ -314,8 +314,7 @@
+     __slots__ = ('children',)
+ 
+     def _glomit(self, target, scope):
+-        # all children must match without exception
+-        result = target  # so that And() == True, similar to all([]) == True
++        result = target
+         for child in self.children:
+             result = scope[glom](target, child, scope)
+         return result
+@@ -336,7 +335,7 @@
+ 
+     def _glomit(self, target, scope):
+         for child in self.children[:-1]:
+-            try:  # one child must match without exception
++            try:
+                 return scope[glom](target, child, scope)
+             except GlomError:
+                 pass
+@@ -428,7 +427,7 @@
+         self.lhs, self.op, self.rhs = lhs, op, rhs
+ 
+     def __and__(self, other):
+-        return And(self, other)
++        return And(*(self.children + (other,)))
+ 
+     __rand__ = __and__
+ 

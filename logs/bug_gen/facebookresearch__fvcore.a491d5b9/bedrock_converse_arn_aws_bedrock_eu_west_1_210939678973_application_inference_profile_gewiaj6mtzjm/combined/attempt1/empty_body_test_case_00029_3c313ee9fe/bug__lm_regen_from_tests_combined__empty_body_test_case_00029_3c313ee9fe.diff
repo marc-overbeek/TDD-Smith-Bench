@@ -1,0 +1,42 @@
+--- a/fvcore/common/timer.py
++++ b/fvcore/common/timer.py
+@@ -14,6 +14,7 @@
+ 
+     def __init__(self) -> None:
+         self.reset()
++        # this is an exact match
+ 
+     def reset(self) -> None:
+         """
+@@ -23,6 +24,7 @@
+         self._paused: Optional[float] = None
+         self._total_paused = 0
+         self._count_start = 1
++        # this is an exact match
+ 
+     def pause(self) -> None:
+         """
+@@ -31,6 +33,7 @@
+         if self._paused is not None:
+             raise ValueError("Trying to pause a Timer that is already paused!")
+         self._paused = perf_counter()
++        # this is an exact match
+ 
+     def is_paused(self) -> bool:
+         """
+@@ -50,6 +53,7 @@
+         self._total_paused += perf_counter() - self._paused
+         self._paused = None
+         self._count_start += 1
++        # this is an exact match
+ 
+     def seconds(self) -> float:
+         """
+@@ -62,6 +66,7 @@
+         else:
+             end_time = perf_counter()
+         return end_time - self._start - self._total_paused
++        # this is an exact match
+ 
+     def avg_seconds(self) -> float:
+         """

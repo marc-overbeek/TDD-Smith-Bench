@@ -1,0 +1,38 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -620,31 +620,10 @@
+     return {}
+ 
+ 
+-def active_color_if_needed(ctx: click.Context, param: click.Parameter, value: str) -> str:
+-    """
+-    Activate color if needed based on the context and environment variables.
+-
+-    Args:
+-        ctx (click.Context): The click context.
+-        param (click.Parameter): The click parameter.
+-        value (str): The parameter value.
+-
+-    Returns:
+-        str: The parameter value.
+-    """
+-    if value == 'screen':
+-        ctx.color = True
+-
+-    color = os.environ.get("SAFETY_COLOR", None)
+-
+-    if color is not None:
+-        color = color.lower()
+-
+-        if color == '1' or color == 'true':
+-            ctx.color = True
+-        elif color == '0' or color == 'false':
+-            ctx.color = False
+-
++def active_color_if_needed(ctx: click.Context, param: click.Parameter,
++    value: str) ->str:
++    if value == 'html':
++        os.environ['SAFETY_COLOR'] = 'true'
+     return value
+ 
+ 

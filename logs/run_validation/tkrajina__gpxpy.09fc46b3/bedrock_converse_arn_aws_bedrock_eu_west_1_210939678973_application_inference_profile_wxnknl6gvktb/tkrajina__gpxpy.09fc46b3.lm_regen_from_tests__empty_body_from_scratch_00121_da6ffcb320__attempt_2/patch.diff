@@ -1,0 +1,57 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -812,17 +812,47 @@
+                 yield point, point_no
+ 
+     def get_points_no(self) -> int:
+-        """
+-        Gets the number of points in segment.
++        result = 0
++        for track in self.tracks:
++            result += track.get_points_no()
++        return result
++
++    def walk(self, only_points: bool=False) -> Iterator[Any]:
++        for track_no, track in enumerate(self.tracks if self.tracks else [] ):
++            for segment_no, segment in enumerate(track.segments if track.segments else []):
++                for point_no, point in enumerate(segment.points if segment.points else []):
++                    if only_points:
++                        yield point
++                    else:
++                        yield point, track_no, segment_no, point_no
++
++    def get_points_no(self) -> int:
++        """
++        Get the number of points in all segments of all track.
+ 
+         Returns
+         ----------
+         num_points : integer
+-            Number of points in segment
+-        """
+-        if not self.points:
+-            return 0
+-        return len(self.points)
++            Number of points in GPX
++        """
++        result = 0
++        for track in self.tracks:
++            result += track.get_points_no()
++        return result
++
++    def get_points_no(self) -> int:
++        """
++        Get the number of points in all segments of all track.
++
++        Returns
++        ----------
++        num_points : integer
++            Number of points in GPX
++        """
++        result = 0
++        for track in self.tracks:
++            result += track.get_points_no()
++        return result
+ 
+     def split(self, point_no: int) -> Tuple["GPXTrackSegment", "GPXTrackSegment"]:
+         """

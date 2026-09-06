@@ -1,0 +1,87 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -811,18 +811,19 @@
+             else:
+                 yield point, point_no
+ 
+-    def get_points_no(self) -> int:
+-        """
+-        Gets the number of points in segment.
++    def get_points_no(self) ->int:
++        """
++        Get the number of points in all segments of all track.
+ 
+         Returns
+         ----------
+         num_points : integer
+-            Number of points in segment
+-        """
+-        if not self.points:
+-            return 0
+-        return len(self.points)
++            Number of points in GPX
++        """
++        result = 0
++        for track in self.tracks:
++            result += track.get_points_no()
++        return result
+ 
+     def split(self, point_no: int) -> Tuple["GPXTrackSegment", "GPXTrackSegment"]:
+         """
+@@ -930,11 +931,11 @@
+ 
+         return MovingData(moving_time, stopped_time, moving_distance, stopped_distance, max_speed or 0.0)
+ 
+-    def get_time_bounds(self) -> TimeBounds:
+-        """
+-        Gets the time bound (start and end) of the segment.
+-
+-        returns
++    def get_time_bounds(self) ->TimeBounds:
++        """
++        Gets the time bounds (start and end) of the GPX file.
++
++        Returns
+         ----------
+         time_bounds : TimeBounds named tuple
+             start_time : datetime
+@@ -945,12 +946,12 @@
+         start_time = None
+         end_time = None
+ 
+-        for point in self.points:
+-            if point.time:
+-                if not start_time:
+-                    start_time = point.time
+-                if point.time:
+-                    end_time = point.time
++        for track in self.tracks:
++            track_start_time, track_end_time = track.get_time_bounds()
++            if not start_time and track_start_time:
++                start_time = track_start_time
++            if track_end_time:
++                end_time = track_end_time
+ 
+         return TimeBounds(start_time, end_time)
+ 
+@@ -2298,7 +2299,7 @@
+                 result += length
+         return result
+ 
+-    def walk(self, only_points: bool=False) -> Iterator[Any]:
++    def walk(self, only_points: bool=False) ->Iterator[Any]:
+         """
+         Generator used to iterates through points in GPX file
+ 
+@@ -2604,7 +2605,10 @@
+         self.add_missing_data(get_data_function=lambda point: point.speed,
+                               add_missing_function=_add)
+ 
+-    def fill_time_data_with_regular_intervals(self, start_time: Optional[mod_datetime.datetime]=None, time_delta: Optional[mod_datetime.timedelta]=None, end_time: Optional[mod_datetime.datetime]=None, force: bool=True) -> None:
++    def fill_time_data_with_regular_intervals(self, start_time: Optional[
++        mod_datetime.datetime]=None, time_delta: Optional[mod_datetime.
++        timedelta]=None, end_time: Optional[mod_datetime.datetime]=None, force:
++        bool=True) ->None:
+         """
+         Fills the time data for all points in the GPX file. At least two of the parameters start_time, time_delta, and
+         end_time have to be provided. If the three are provided, time_delta will be ignored and will be recalculated

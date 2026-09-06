@@ -1,0 +1,107 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -67,26 +67,15 @@
+ 
+     __doc__ = doc
+ 
+-    def __init__(
+-        self,
+-        diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
+-        delta_path: Optional[str]=None,
+-        delta_file: Optional[IO]=None,
+-        delta_diff: Optional[dict]=None,
+-        flat_dict_list: Optional[List[Dict]]=None,
+-        flat_rows_list: Optional[List[FlatDeltaRow]]=None,
+-        deserializer: Callable=pickle_load,
+-        log_errors: bool=True,
+-        mutate: bool=False,
+-        raise_errors: bool=False,
+-        safe_to_import: Optional[Set[str]]=None,
+-        serializer: Callable=pickle_dump,
+-        verify_symmetry: Optional[bool]=None,
+-        bidirectional: bool=False,
+-        always_include_values: bool=False,
+-        iterable_compare_func_was_used: Optional[bool]=None,
+-        force: bool=False,
+-    ):
++    def __init__(self, diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
++        delta_path: Optional[str]=None, delta_file: Optional[IO]=None,
++        delta_diff: Optional[dict]=None, flat_dict_list: Optional[List[Dict]]=
++        None, flat_rows_list: Optional[List[FlatDeltaRow]]=None, deserializer:
++        Callable=pickle_load, log_errors: bool=True, mutate: bool=False,
++        raise_errors: bool=False, safe_to_import: Optional[Set[str]]=None,
++        serializer: Callable=pickle_dump, verify_symmetry: Optional[bool]=None,
++        bidirectional: bool=False, always_include_values: bool=False,
++        iterable_compare_func_was_used: Optional[bool]=None, force: bool=False):
+         # for pickle deserializer:
+         if hasattr(deserializer, '__code__') and 'safe_to_import' in set(deserializer.__code__.co_varnames):
+             _deserializer = deserializer
+@@ -225,16 +214,9 @@
+             self._raise_or_log(VERIFICATION_MSG.format(
+                 path_str, expected_old_value, current_old_value, VERIFY_BIDIRECTIONAL_MSG))
+ 
+-    def _get_elem_and_compare_to_old_value(
+-        self,
+-        obj,
+-        path_for_err_reporting,
+-        expected_old_value,
+-        elem=None,
+-        action=None,
+-        forced_old_value=None,
+-        next_element=None,
+-    ):
++    def _get_elem_and_compare_to_old_value(self, obj, path_for_err_reporting,
++        expected_old_value, elem=None, action=None, forced_old_value=None,
++        next_element=None):
+         # if forced_old_value is not None:
+         try:
+             if action == GET:
+@@ -525,7 +507,8 @@
+                 return None
+             return elements, parent, parent_to_obj_elem, parent_to_obj_action, obj, elem, action
+ 
+-    def _do_values_or_type_changed(self, changes, is_type_change=False, verify_changes=True):
++    def _do_values_or_type_changed(self, changes, is_type_change=False,
++        verify_changes=True):
+         for path, value in changes.items():
+             elem_and_details = self._get_elements_and_details(path)
+             if elem_and_details:
+@@ -905,7 +888,8 @@
+         return result
+ 
+     @staticmethod
+-    def _get_flat_row(action, info, _parse_path, keys_and_funcs, report_type_changes=True):
++    def _get_flat_row(action, info, _parse_path, keys_and_funcs,
++        report_type_changes=True):
+         for path, details in info.items():
+             row = {'path': _parse_path(path), 'action': action}
+             for key, new_key, func in keys_and_funcs:
+@@ -1035,7 +1019,8 @@
+ 
+         return result
+ 
+-    def to_flat_dicts(self, include_action_in_path=False, report_type_changes=True) -> List[FlatDeltaRow]:
++    def to_flat_dicts(self, include_action_in_path=False, report_type_changes=True
++        ) ->List[FlatDeltaRow]:
+         """
+         Returns a flat list of actions that is easily machine readable.
+ 
+@@ -1048,7 +1033,7 @@
+                 {'path': [2], 'value': 3, 'action': 'iterable_item_added'},
+             ]
+ 
+-        
++    
+         **Parameters**
+ 
+         include_action_in_path : Boolean, default=False
+@@ -1093,7 +1078,8 @@
+             i._asdict() for i in self.to_flat_rows(include_action_in_path=False, report_type_changes=True)
+         ]
+ 
+-    def to_flat_rows(self, include_action_in_path=False, report_type_changes=True) -> List[FlatDeltaRow]:
++    def to_flat_rows(self, include_action_in_path=False, report_type_changes=True
++        ) ->List[FlatDeltaRow]:
+         """
+         Just like to_flat_dicts but returns FlatDeltaRow Named Tuples
+         """

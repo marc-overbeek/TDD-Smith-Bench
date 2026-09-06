@@ -1,0 +1,120 @@
+--- a/src/mistune/renderers/_list.py
++++ b/src/mistune/renderers/_list.py
+@@ -6,71 +6,63 @@
+     from ..core import BaseRenderer, BlockState
+ 
+ 
+-def render_list(
+-    renderer: "BaseRenderer", token: Dict[str, Any], state: "BlockState"
+-) -> str:
+-    attrs = token["attrs"]
+-    if attrs["ordered"]:
++def render_list(renderer: 'BaseRenderer', token: Dict[str, Any], state:
++    'BlockState') ->str:
++    attrs = token['attrs']
++    if attrs.get('ordered'):
+         children = _render_ordered_list(renderer, token, state)
+     else:
+         children = _render_unordered_list(renderer, token, state)
+-
+     text = ''.join(children)
+     parent = token.get('parent')
+     if parent:
+         if parent['tight']:
+             return text
+-        return text + '\n'
+-    return strip_end(text) + '\n'
++    return text + '\n'
+ 
+ 
+-def _render_list_item(
+-    renderer: "BaseRenderer",
+-    parent: Dict[str, Any],
+-    item: Dict[str, Any],
+-    state: "BlockState",
+-) -> str:
+-    leading = cast(str, parent["leading"])
+-    text = ""
+-    for tok in item["children"]:
+-        if tok["type"] == "list":
+-            tok["parent"] = parent
+-        elif tok["type"] == "blank_line":
+-            continue
+-        text += renderer.render_token(tok, state)
+-
+-    lines = text.splitlines()
+-    text = (lines[0] if lines else '') + '\n'
+-    prefix = ' ' * len(leading)
+-    for line in lines[1:]:
+-        if line:
+-            text += prefix + line + '\n'
+-        else:
+-            text += '\n'
+-    return leading + text
++def _render_list_item(renderer: 'BaseRenderer', parent: Dict[str, Any],
++    item: Dict[str, Any], state: 'BlockState') ->str:
++    children = item.get('children', [])
++    if not children:
++        return ''
++    
++    tight = parent.get('tight', False)
++    if tight:
++        text = ''
++        for child in children:
++            child = cast(Dict[str, Any], child)
++            if child['type'] == 'list':
++                child['parent'] = parent
++            elif child['type'] == 'blank_line':
++                continue
++            text += renderer.render_token(child, state)
++        return text
++    else:
++        text = ''
++        for child in children:
++            child = cast(Dict[str, Any], child)
++            if child['type'] == 'list':
++                child['parent'] = parent
++            text += renderer.render_token(child, state)
++        return text
+ 
+ 
+-def _render_ordered_list(
+-    renderer: "BaseRenderer", token: Dict[str, Any], state: "BlockState"
+-) -> Iterable[str]:
+-    attrs = token["attrs"]
+-    start = attrs.get("start", 1)
+-    for item in token["children"]:
+-        leading = str(start) + token["bullet"] + " "
+-        parent = {
+-            'leading': leading,
+-            'tight': token['tight'],
+-        }
+-        yield _render_list_item(renderer, parent, item, state)
+-        start += 1
++def _render_ordered_list(renderer: 'BaseRenderer', token: Dict[str, Any],
++    state: 'BlockState') ->Iterable[str]:
++    attrs = token['attrs']
++    start = attrs.get('start', 1)
++    children = token.get('children', [])
++    for index, item in enumerate(children):
++        item = cast(Dict[str, Any], item)
++        body = _render_list_item(renderer, token['attrs'], item, state)
++        yield renderer.list_item(body, index + start)
+ 
+ 
+-def _render_unordered_list(
+-    renderer: "BaseRenderer", token: Dict[str, Any], state: "BlockState"
+-) -> Iterable[str]:
+-    parent = {
+-        'leading': token['bullet'] + ' ',
+-        'tight': token['tight'],
+-    }
+-    for item in token['children']:
+-        yield _render_list_item(renderer, parent, item, state)
++def _render_unordered_list(renderer: 'BaseRenderer', token: Dict[str, Any],
++    state: 'BlockState') ->Iterable[str]:
++    children = token.get('children', [])
++    for index, item in enumerate(children):
++        item = cast(Dict[str, Any], item)
++        body = _render_list_item(renderer, token['attrs'], item, state)
++        yield renderer.list_item(body, None)

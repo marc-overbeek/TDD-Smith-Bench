@@ -1,0 +1,14 @@
+--- a/src/mistune/renderers/rst.py
++++ b/src/mistune/renderers/rst.py
+@@ -61,6 +61,11 @@
+ 
+     def strong(self, token: Dict[str, Any], state: BlockState) -> str:
+         return '**' + self.render_children(token, state) + '**'
++
++    def link(self, token: Dict[str, Any], state: BlockState) -> str:
++        attrs = token['attrs']
++        text = self.render_children(token, state)
++        return "`" + text + " <" + cast(str, attrs["url"]) + ">`__"
+ 
+     def link(self, token: Dict[str, Any], state: BlockState) -> str:
+         attrs = token['attrs']

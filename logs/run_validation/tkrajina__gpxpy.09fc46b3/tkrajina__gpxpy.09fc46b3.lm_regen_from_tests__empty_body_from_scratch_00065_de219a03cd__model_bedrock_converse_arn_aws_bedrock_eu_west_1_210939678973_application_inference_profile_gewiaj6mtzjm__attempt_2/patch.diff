@@ -1,0 +1,58 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -288,33 +288,30 @@
+         email_domain = email_node.get('domain')
+         return f'{email_id}@{email_domain}'
+ 
+-    def to_xml(self, value: Any, version: str, nsmap: Optional[Dict[str, str]]=None, prettyprint: bool=True, indent: str='') -> str:
+-        """
+-        Write email address to XML
+-
++    def to_xml(self, value: Any, version: str, nsmap: Optional[Dict[str, str]]=
++        None, prettyprint: bool=True, indent: str='') ->str:
++        """
++        Serialize GPX object to XML string.
++    
+         Args:
+-            value: str representing an email address
+-            version: str of the gpx output version "1.0" or "1.1"
+-
++            value: The GPX object to serialize (ignored, uses self)
++            version: GPX version ("1.0" or "1.1")
++            nsmap: Namespace map for XML namespaces
++            prettyprint: Whether to format output with indentation
++            indent: Base indentation string
++    
+         Returns:
+-            None if value is empty or str of XML representation of the
+-            address. Representation starts with a \n.
+-        """
+-        if not value:
+-            return ''
+-
+-        if not prettyprint:
+-            indent = ''
+-
+-        if '@' in value:
+-            pos = value.find('@')
+-            email_id = value[:pos]
+-            email_domain = value[pos+1:]
+-        else:
+-            email_id = value
+-            email_domain = 'unknown'
+-
+-        return f'\n{indent}<{self.tag} id="{email_id}" domain="{email_domain}" />'
++            XML string representation of the GPX object
++        """
++        # Set default namespace map if none provided
++        if nsmap is None:
++            nsmap = {
++                'defaultns': 'http://www.topografix.com/GPX/1/1',
++                'gpxtpx': 'http://www.garmin.com/xmlschemas/TrackPointExtension/v1'
++            }
++    
++        # Use the existing gpx_fields_to_xml function to do the heavy lifting
++        return gpx_fields_to_xml(self, 'gpx', version, {}, nsmap, prettyprint, indent)
+ 
+ 
+ class GPXExtensionsField(AbstractGPXField):

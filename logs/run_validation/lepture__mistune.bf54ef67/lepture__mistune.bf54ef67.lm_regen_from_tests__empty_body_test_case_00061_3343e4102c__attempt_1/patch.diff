@@ -1,0 +1,182 @@
+--- a/src/mistune/plugins/table.py
++++ b/src/mistune/plugins/table.py
+@@ -40,10 +40,8 @@
+ ALIGN_RIGHT = re.compile(r'^ *-+: *$')
+ 
+ 
+-def parse_table(
+-    block: "BlockParser", m: Match[str], state: "BlockState"
+-) -> Optional[int]:
+-    pos = m.end()
++def parse_table(block: 'BlockParser', m: Match[str], state: 'BlockState'
++    ) ->Optional[int]:
+     header = m.group('table_head')
+     align = m.group('table_align')
+     thead, aligns = _process_thead(header, align)
+@@ -54,17 +52,14 @@
+     rows = []
+     body = m.group('table_body')
+     for text in body.splitlines():
+-        m2 = TABLE_CELL.match(text)
+-        if not m2:  # pragma: no cover
+-            return None
+-        row = _process_row(m2.group(1), aligns)
++        row = _process_row(text, aligns)
+         if not row:
+             return None
+         rows.append(row)
+ 
+     children = [thead, {'type': 'table_body', 'children': rows}]
+     state.append_token({'type': 'table', 'children': children})
+-    return pos
++    return m.end()
+ 
+ 
+ def parse_nptable(
+@@ -90,49 +85,65 @@
+     return m.end()
+ 
+ 
+-def _process_thead(
+-    header: str, align: str
+-) -> Union[Tuple[None, None], Tuple[Dict[str, Any], List[str]]]:
+-    headers = CELL_SPLIT.split(header)
+-    aligns = CELL_SPLIT.split(align)
+-    if len(headers) != len(aligns):
+-      return None, None
++def _process_thead(header: str, align: str) ->Union[Tuple[None, None],
++    Tuple[Dict[str, Any], List[str]]]:
++    cells = CELL_SPLIT.split(header)
++    if cells[0] == '' and cells[-1] == '':
++        cells = cells[1:-1]
+ 
+-    for i, v in enumerate(aligns):
+-        if ALIGN_CENTER.match(v):
+-            aligns[i] = 'center'
+-        elif ALIGN_LEFT.match(v):
+-            aligns[i] = 'left'
+-        elif ALIGN_RIGHT.match(v):
+-            aligns[i] = 'right'
++    aligns_list = CELL_SPLIT.split(align)
++    if aligns_list[0] == '' and aligns_list[-1] == '':
++        aligns_list = aligns_list[1:-1]
++
++    if len(cells) != len(aligns_list):
++        return None, None
++
++    aligns = []
++    for align_text in aligns_list:
++        if ALIGN_CENTER.match(align_text):
++            aligns.append('center')
++        elif ALIGN_LEFT.match(align_text):
++            aligns.append('left')
++        elif ALIGN_RIGHT.match(align_text):
++            aligns.append('right')
++        elif re.match(r'^ *-+ *$', align_text):
++            aligns.append(None)
+         else:
+-            aligns[i] = None
++            return None, None
+ 
+-    children = [
+-        {
++    children = []
++    for i, cell in enumerate(cells):
++        children.append({
+             'type': 'table_cell',
+-            'text': text.strip(),
+-            'attrs': {'align': aligns[i], 'head': True}
+-        }
+-        for i, text in enumerate(headers)
+-    ]
+-    thead = {'type': 'table_head', 'children': children}
+-    return thead, aligns
++            'children': [{'type': 'text', 'raw': cell.strip()}],
++            'align': aligns[i],
++            'head': True,
++        })
++
++    return {'type': 'table_head', 'children': [{'type': 'table_row', 'children': children}]}, aligns
+ 
+ 
+-def _process_row(text: str, aligns: List[str]) -> Optional[Dict[str, Any]]:
+-    cells = CELL_SPLIT.split(text)
++def _process_row(text: str, aligns: List[str]) ->Optional[Dict[str, Any]]:
++    m = TABLE_CELL.match(text)
++    if not m:
++        return None
++
++    cells = CELL_SPLIT.split(m.group(1))
++    if cells[0] == '' and cells[-1] == '':
++        cells = cells[1:-1]
++
+     if len(cells) != len(aligns):
+         return None
+ 
+-    children = [
+-        {
++    children = []
++    for i, cell in enumerate(cells):
++        children.append({
+             'type': 'table_cell',
+-            'text': text.strip(),
+-            'attrs': {'align': aligns[i], 'head': False}
+-        }
+-        for i, text in enumerate(cells)
+-    ]
++            'children': [{'type': 'text', 'raw': cell.strip()}],
++            'align': aligns[i],
++            'head': False,
++        })
++
+     return {'type': 'table_row', 'children': children}
+ 
+ 
+@@ -152,39 +163,17 @@
+     return "<tr>\n" + text + "</tr>\n"
+ 
+ 
+-def render_table_cell(
+-    renderer: "BaseRenderer", text: str, align: Optional[str] = None, head: bool = False
+-) -> str:
+-    if head:
+-        tag = 'th'
+-    else:
+-        tag = 'td'
+-
+-    html = '  <' + tag
++def render_table_cell(renderer: 'BaseRenderer', text: str, align: Optional[
++    str]=None, head: bool=False) ->str:
++    tag = 'th' if head else 'td'
+     if align:
+-        html += ' style="text-align:' + align + '"'
+-
+-    return html + '>' + text + '</' + tag + '>\n'
++        return f'<{tag} style="text-align:{align}">\n{text}</{tag}>\n'
++    return f'<{tag}>\n{text}</{tag}>\n'
+ 
+ 
+-def table(md: "Markdown") -> None:
+-    """A mistune plugin to support table, spec defined at
+-    https://michelf.ca/projects/php-markdown/extra/#table
+-
+-    Here is an example:
+-
+-    .. code-block:: text
+-
+-        First Header  | Second Header
+-        ------------- | -------------
+-        Content Cell  | Content Cell
+-        Content Cell  | Content Cell
+-
+-    :param md: Markdown instance
+-    """
+-    md.block.register('table', TABLE_PATTERN, parse_table, before='paragraph')
+-    md.block.register('nptable', NP_TABLE_PATTERN, parse_nptable, before='paragraph')
+-
++def table(md: 'Markdown') ->None:
++    md.block.register('table', TABLE_PATTERN, parse_table)
++    md.block.register('nptable', NP_TABLE_PATTERN, parse_nptable)
+     if md.renderer and md.renderer.NAME == 'html':
+         md.renderer.register('table', render_table)
+         md.renderer.register('table_head', render_table_head)

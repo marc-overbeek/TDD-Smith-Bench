@@ -1,0 +1,31 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1918,15 +1918,23 @@
+ # handlers are 3-arg callables, with args (spec, target, scope)
+ # spec is the first argument for convenience in the case
+ # that the handler is a method of the spec type
++val = scope[glom](key, subspec, scope)
++
++val = scope[glom](target, subspec, scope)
++
+ def _handle_dict(target, spec, scope):
+-    ret = type(spec)()  # TODO: works for dict + ordereddict, but sufficient for all?
+-    for field, subspec in spec.items():
++    ret = {}
++    base_path = scope[Path]
++    for key, subspec in spec.items():
++        scope[Path] = base_path + [key]
++        scope = chain_child(scope)
+         val = scope[glom](target, subspec, scope)
+         if val is SKIP:
+             continue
+-        if type(field) in (Spec, TType):
+-            field = scope[glom](target, field, scope)
+-        ret[field] = val
++        # Evaluate the key as a spec (it might be T['a'] or a string path)
++        ret_key = arg_val(target, key, scope)
++        ret[ret_key] = val
++    scope[Path] = base_path
+     return ret
+ 
+ 

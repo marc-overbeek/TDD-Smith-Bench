@@ -1,0 +1,177 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -98,58 +98,124 @@
+     return ver
+ 
+ 
+-def read_requirements(fh: Any, resolve: bool = True) -> Generator[Package, None, None]:
+-    """
+-    Reads requirements from a file-like object and (optionally) from referenced files.
+-
+-    Args:
+-        fh (Any): The file-like object to read from.
+-        resolve (bool): Resolves referenced files.
+-
+-    Returns:
+-        Generator: Yields Package objects.
+-    """
+-    is_temp_file = not hasattr(fh, 'name')
+-    path = None
+-    found = 'temp_file'
+-    file_type = filetypes.requirements_txt
+-    absolute_path: Optional[str] = None
+-
+-    if not is_temp_file and is_supported_by_parser(fh.name):
+-        LOG.debug('not temp and a compatible file')
+-        path = fh.name
+-        absolute_path = os.path.abspath(path)
+-        SafetyContext().scanned_full_path.append(absolute_path)
+-        found = path
+-        file_type = None
+-
+-    LOG.debug(f'Path: {path}')
+-    LOG.debug(f'File Type: {file_type}')
+-    LOG.debug('Trying to parse file using dparse...')
++def read_requirements(fh: Any, resolve: bool=True) ->Generator[Package,
++    None, None]:
++    """
++    Read requirements from a file handle and yield Package objects.
++    
++    Args:
++        fh (Any): File handle or file-like object containing requirements
++        resolve (bool): Whether to resolve recursive requirements
++        
++    Yields:
++        Package: Package objects parsed from the requirements
++    """
+     content = fh.read()
+-    LOG.debug(f'Content: {content}')
+-    dependency_file = parse(content, path=path, resolve=resolve,
+-                            file_type=file_type)
+-    LOG.debug(f'Dependency file: {dependency_file.serialize()}')
+-    LOG.debug(f'Parsed, dependencies: {[dep.serialize() for dep in dependency_file.resolved_dependencies]}')
+-
+-    reqs_pkg = defaultdict(list)
+-
+-    for req in dependency_file.resolved_dependencies:
+-        reqs_pkg[canonicalize_name(req.name)].append(req)
+-
+-    for pkg, reqs in reqs_pkg.items():
+-        requirements = list(map(lambda req: parse_requirement(req, absolute_path), reqs))
++    
++    # Determine file type
++    file_type = None
++    if hasattr(fh, 'name'):
++        filename = fh.name
++        if filename.endswith('.txt') or filename.endswith('.in'):
++            file_type = filetypes.requirements_txt
++        elif filename.endswith('.yml') or filename.endswith('.yaml'):
++            file_type = filetypes.yaml
++        elif filename == 'Pipfile':
++            file_type = filetypes.pipfile
++        elif filename == 'Pipfile.lock':
++            file_type = filetypes.pipfile_lock
++        elif filename.endswith('setup.cfg'):
++            file_type = filetypes.setup_py
++        elif filename.endswith('poetry.lock'):
++            file_type = filetypes.poetry_lock
++    
++    # Parse the file
++    try:
++        parsed = parse(content, file_type=file_type)
++    except Exception:
++        return
++    
++    # Track seen packages to avoid duplicates
++    seen = defaultdict(list)
++    
++    for dep in parsed.dependencies:
++        # Skip VCS dependencies
++        if dep.startswith('-e ') or dep.startswith('git+') or dep.startswith('hg+') or \
++           dep.startswith('svn+') or dep.startswith('bzr+'):
++            continue
++        
++        try:
++            req = parse_requirement(dep, found=getattr(fh, 'name', 'unknown'))
++            pkg_name = canonicalize_name(req.name)
++            
++            # Collect requirements by package name
++            seen[pkg_name].append(req)
++        except Exception:
++            continue
++    
++    # Yield packages
++    for pkg_name, requirements in seen.items():
+         version = find_version(requirements)
+-
+-        yield Package(name=pkg, version=version,
+-                      requirements=requirements,
+-                      found=found,
+-                      absolute_path=absolute_path,
+-                      insecure_versions=[],
+-                      secure_versions=[], latest_version=None,
+-                      latest_version_without_known_vulnerabilities=None,
+-                      more_info_url=None)
++        
++        pkg = Package(
++            name=pkg_name,
++            version=version,
++            requirements=requirements
++        )
++        
++        # Handle recursive requirements if resolve is True
++        if resolve:
++            for req in requirements:
++                if hasattr(req, 'requirements') and req.requirements:
++                    pkg.requirements = req.requirements
++        
++        yield pkg
++
++def read_requirements(fh: Any, resolve: bool=True) ->Generator[Package,
++    None, None]:
++    content = fh.read()
++    
++    file_type = None
++    if hasattr(fh, 'name'):
++        filename = fh.name
++        if filename.endswith('.txt') or filename.endswith('.in'):
++            file_type = filetypes.requirements_txt
++        elif filename.endswith('.yml') or filename.endswith('.yaml'):
++            file_type = filetypes.yaml
++        elif filename == 'Pipfile':
++            file_type = filetypes.pipfile
++        elif filename == 'Pipfile.lock':
++            file_type = filetypes.pipfile_lock
++        elif filename.endswith('setup.cfg'):
++            file_type = filetypes.setup_py
++        elif filename.endswith('poetry.lock'):
++            file_type = filetypes.poetry_lock
++    
++    try:
++        parsed = parse(content, file_type=file_type)
++    except Exception:
++        return
++    
++    seen = defaultdict(list)
++    
++    for dep in parsed.dependencies:
++        # Skip VCS and editable dependencies
++        if dep.startswith('-e ') or dep.startswith('git+') or dep.startswith('hg+') or \
++           dep.startswith('svn+') or dep.startswith('bzr+'):
++            continue
++        
++        try:
++            req = parse_requirement(dep, found=getattr(fh, 'name', 'unknown'))
++            pkg_name = canonicalize_name(req.name)
++            seen[pkg_name].append(req)
++        except Exception:
++            continue
++    
++    for pkg_name, requirements in seen.items():
++        version = find_version(requirements)
++        pkg = Package(name=pkg_name, version=version)
++        pkg.requirements = requirements
++        yield pkg
+ 
+ 
+ def get_proxy_dict(proxy_protocol: str, proxy_host: str, proxy_port: int) -> Optional[Dict[str, str]]:

@@ -1,0 +1,124 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -712,53 +712,85 @@
+ 
+ 
+ def _glom_match(target, spec, scope):
++    # Handle spec instances with glomit method first
++    if hasattr(spec, 'glomit'):
++        return spec.glomit(target, scope)
++    
++    # Handle type matching
+     if isinstance(spec, type):
+         if not isinstance(target, spec):
+             raise TypeMatchError(type(target), spec)
+-    elif isinstance(spec, dict):
++        return target
++    
++    # Handle dict matching
++    if isinstance(spec, dict):
+         return _handle_dict(target, spec, scope)
+-    elif isinstance(spec, (list, set, frozenset)):
+-        if not isinstance(target, type(spec)):
+-            raise TypeMatchError(type(target), type(spec))
++    
++    # Handle list matching
++    if isinstance(spec, list):
++        if not isinstance(target, list):
++            raise TypeMatchError(type(target), list)
++        if len(target) != len(spec):
++            raise MatchError("target list length {0} != spec list length {1}", len(target), len(spec))
+         result = []
+-        for item in target:
+-            for child in spec:
+-                try:
+-                    result.append(scope[glom](item, child, scope))
+-                    break
+-                except GlomError as e:
+-                    last_error = e
+-            else:  # did not break, something went wrong
+-                if target and not spec:
+-                    raise MatchError(
+-                        "{0!r} does not match empty {1}", target, type(spec).__name__)
+-                # NOTE: unless error happens above, break will skip else branch
+-                # so last_error will have been assigned
+-                raise last_error
+-        if type(spec) is not list:
+-            return type(spec)(result)
++        for target_item, spec_item in zip(target, spec):
++            result.append(scope[glom](target_item, spec_item, chain_child(scope)))
+         return result
+-    elif isinstance(spec, tuple):
++    
++    # Handle tuple matching
++    if isinstance(spec, tuple):
+         if not isinstance(target, tuple):
+             raise TypeMatchError(type(target), tuple)
+         if len(target) != len(spec):
+-            raise MatchError("{0!r} does not match {1!r}", target, spec)
++            raise MatchError("target tuple length {0} != spec tuple length {1}", len(target), len(spec))
+         result = []
+-        for sub_target, sub_spec in zip(target, spec):
+-            result.append(scope[glom](sub_target, sub_spec, scope))
++        for target_item, spec_item in zip(target, spec):
++            result.append(scope[glom](target_item, spec_item, chain_child(scope)))
+         return tuple(result)
+-    elif callable(spec):
+-        try:
+-            if spec(target):
+-                return target
+-        except Exception as e:
+-            raise MatchError(
+-                "{0}({1!r}) did not validate (got exception {2!r})", spec.__name__, target, e)
+-        raise MatchError(
+-            "{0}({1!r}) did not validate (non truthy return)", spec.__name__, target)
+-    elif target != spec:
+-        raise MatchError("{0!r} does not match {1!r}", target, spec)
+-    return target
++    
++    # Handle set matching
++    if isinstance(spec, set):
++        if not isinstance(target, set):
++            raise TypeMatchError(type(target), set)
++        if len(target) != len(spec):
++            raise MatchError("target set length {0} != spec set length {1}", len(target), len(spec))
++        result = set()
++        for target_item in target:
++            for spec_item in spec:
++                try:
++                    scope[glom](target_item, spec_item, scope)
++                    result.add(target_item)
++                    break
++                except GlomError:
++                    pass
++            else:
++                raise MatchError("target item {0} didn't match any spec items", target_item)
++        return result
++    
++    # Handle frozenset matching
++    if isinstance(spec, frozenset):
++        if not isinstance(target, frozenset):
++            raise TypeMatchError(type(target), frozenset)
++        if len(target) != len(spec):
++            raise MatchError("target frozenset length {0} != spec frozenset length {1}", len(target), len(spec))
++        result = set()
++        for target_item in target:
++            for spec_item in spec:
++                try:
++                    scope[glom](target_item, spec_item, scope)
++                    result.add(target_item)
++                    break
++                except GlomError:
++                    pass
++            else:
++                raise MatchError("target item {0} didn't match any spec items", target_item)
++        return frozenset(result)
++    
++    # Handle equality matching (for constants)
++    if target == spec:
++        return target
++    
++    raise MatchError("{0!r} does not match {1!r}", target, spec)
+ 
+ 
+ class Switch:

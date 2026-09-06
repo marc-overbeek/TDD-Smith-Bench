@@ -1,0 +1,46 @@
+--- a/oauthlib/oauth2/rfc6749/grant_types/refresh_token.py
++++ b/oauthlib/oauth2/rfc6749/grant_types/refresh_token.py
+@@ -59,17 +59,43 @@
+             headers.update(e.headers)
+             return headers, e.json, e.status_code
+ 
++        # Handle custom validators
++        for validator in self.custom_validators.pre_token:
++            validator(request)
++
++        # Create token
+         token = token_handler.create_token(request,
+                                            refresh_token=self.issue_new_refresh_tokens)
+ 
++        # Handle OpenID Connect id_token logic
++        if 'openid' in request.scopes:
++            if hasattr(self.request_validator, 'refresh_id_token'):
++                refresh_id_token = self.request_validator.refresh_id_token(request)
++                if not refresh_id_token:
++                    token.pop('id_token', None)
++            else:
++                # For backward compatibility, check if id_token should be included
++                if 'id_token' not in token and 'openid' in request.scopes:
++                    # This would normally be handled by the token handler
++                    pass
++
++        # Apply token modifiers
+         for modifier in self._token_modifiers:
+             token = modifier(token, token_handler, request)
+ 
++        # Save the token
+         self.request_validator.save_token(token, request)
+ 
+         log.debug('Issuing new token to client id %r (%r), %r.',
+                   request.client_id, request.client, token)
++    
++        # Add CORS headers if needed
+         headers.update(self._create_cors_headers(request))
++    
++        # Handle custom validators post-token
++        for validator in self.custom_validators.post_token:
++            validator(request)
++        
+         return headers, json.dumps(token), 200
+ 
+     def validate_token_request(self, request):

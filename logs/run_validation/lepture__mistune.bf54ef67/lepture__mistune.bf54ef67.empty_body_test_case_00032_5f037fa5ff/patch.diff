@@ -1,0 +1,98 @@
+--- a/src/mistune/directives/image.py
++++ b/src/mistune/directives/image.py
+@@ -17,84 +17,25 @@
+ _allowed_aligns = ["top", "middle", "bottom", "left", "center", "right"]
+ 
+ 
+-def _parse_attrs(options: Dict[str, Any]) -> Dict[str, Any]:
+-    attrs = {}
+-    if 'alt' in options:
+-        attrs['alt'] = options['alt']
+-
+-    # validate align
+-    align = options.get('align')
+-    if align and align in _allowed_aligns:
+-        attrs['align'] = align
+-
+-    height = options.get('height')
+-    width = options.get('width')
+-    if height and _num_re.match(height):
+-        attrs['height'] = height
+-    if width and _num_re.match(width):
+-        attrs['width'] = width
+-    if 'target' in options:
+-        attrs['target'] = escape_url(options['target'])
+-    return attrs
++def _parse_attrs(options: Dict[str, Any]) ->Dict[str, Any]:
++    pass
+ 
+ 
+ class Image(DirectivePlugin):
+     NAME = 'image'
+ 
+-    def parse(
+-        self, block: "BlockParser", m: Match[str], state: "BlockState"
+-    ) -> Dict[str, Any]:
+-        options = dict(self.parse_options(m))
+-        attrs = _parse_attrs(options)
+-        attrs['src'] = self.parse_title(m)
+-        return {'type': 'block_image', 'attrs': attrs}
++    def parse(self, block: 'BlockParser', m: Match[str], state: 'BlockState'
++        ) ->Dict[str, Any]:
++        pass
+ 
+-    def __call__(self, directive: "BaseDirective", md: "Markdown") -> None:
+-        directive.register(self.NAME, self.parse)
+-        assert md.renderer is not None
+-        if md.renderer.NAME == 'html':
+-            md.renderer.register('block_image', render_block_image)
++    def __call__(self, directive: 'BaseDirective', md: 'Markdown') ->None:
++        pass
+ 
+ 
+-def render_block_image(
+-    self: 'HTMLRenderer',
+-    src: str,
+-    alt: Optional[str] = None,
+-    width: Optional[str] = None,
+-    height: Optional[str] = None,
+-    **attrs: Any,
+-) -> str:
+-    img = '<img src="' + escape_text(src) + '"'
+-    style = ''
+-    if alt:
+-        img += ' alt="' + escape_text(alt) + '"'
+-    if width:
+-        if width.isdigit():
+-            img += ' width="' + width + '"'
+-        else:
+-            style += 'width:' + width + ';'
+-    if height:
+-        if height.isdigit():
+-            img += ' height="' + height + '"'
+-        else:
+-            style += 'height:' + height + ';'
+-    if style:
+-        img += ' style="' + escape_text(style) + '"'
+-
+-    img += ' />'
+-
+-    _cls = 'block-image'
+-    align = attrs.get('align')
+-    if align:
+-        _cls += ' align-' + align
+-
+-    target = attrs.get('target')
+-    if target:
+-        href = self.safe_url(target)
+-        outer = '<a class="' + _cls + '" href="' + href + '">'
+-        return outer + img + '</a>\n'
+-    else:
+-        return '<div class="' + _cls + '">' + img + '</div>\n'
++def render_block_image(self: 'HTMLRenderer', src: str, alt: Optional[str]=
++    None, width: Optional[str]=None, height: Optional[str]=None, **attrs: Any
++    ) ->str:
++    pass
+ 
+ 
+ class Figure(DirectivePlugin):

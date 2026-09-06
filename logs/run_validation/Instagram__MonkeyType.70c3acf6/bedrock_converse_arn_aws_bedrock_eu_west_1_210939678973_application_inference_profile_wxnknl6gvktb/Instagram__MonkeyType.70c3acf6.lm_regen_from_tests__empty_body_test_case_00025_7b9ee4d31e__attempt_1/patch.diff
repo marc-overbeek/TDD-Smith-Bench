@@ -1,0 +1,56 @@
+--- a/monkeytype/type_checking_imports_transformer.py
++++ b/monkeytype/type_checking_imports_transformer.py
+@@ -29,12 +29,8 @@
+ class MoveImportsToTypeCheckingBlockVisitor(ContextAwareTransformer):
+     CONTEXT_KEY = "MoveImportsToTypeCheckingBlockVisitor"
+ 
+-    def __init__(
+-        self,
+-        context: CodemodContext,
+-    ) -> None:
++    def __init__(self, context: CodemodContext) -> None:
+         super().__init__(context)
+-
+         self.import_items_to_be_moved: List[ImportItem] = []
+ 
+     @staticmethod
+@@ -110,12 +106,11 @@
+             import_module,
+         )
+ 
+-        # Find the point of insertion for the TYPE_CHECKING block
+         statements_before_imports, statements_after_imports = self._split_module(module)
+ 
+         updated_body_list = [
+             *statements_before_imports,
+-            type_checking_block_module,
++            type_checking_block_module.body[0],
+             *statements_after_imports,
+         ]
+ 
+@@ -133,7 +128,6 @@
+         self,
+         tree: Module,
+     ) -> Module:
+-        # Add from typing import TYPE_CHECKING
+         tree = self._add_type_checking_import(tree)
+ 
+         context_contents = self.context.scratch.get(
+@@ -144,17 +138,12 @@
+ 
+             self.import_items_to_be_moved = import_items_to_be_moved
+ 
+-            # Remove typing library since we do not want it
+-            # to be imported inside the if TYPE_CHECKING block
+             self.import_items_to_be_moved = self._remove_typing_module(
+                 self.import_items_to_be_moved
+             )
+ 
+-            # Remove the newer imports since those are to be
+-            # shifted inside the if TYPE_CHECKING block
+             tree = self._remove_imports(tree)
+ 
+-            # Add the new imports inside if TYPE_CHECKING block
+             tree = self._add_if_type_checking_block(tree)
+ 
+         return tree

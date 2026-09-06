@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef __eq__(self, other: object) -> bool:\n    if not isinstance(other, self.__class__):\n        return False\n    if (hasattr(self, 'distance') and not hasattr(other, 'distance')) \\\n            or (not hasattr(self, \"distance\") and hasattr(other, \"distance\")):\n        # self and other are both a different kind of LocationDelta (angle&distance vs. lat-&longitude_diff)\n        return False\n    if hasattr(self, 'distance'):\n        return self.distance == other.distance and self.angle_from_north == other.angle_from_north\n    return self.latitude_diff == other.latitude_diff and self.longitude_diff == other.longitude_diff\n```",
+  "rewrite": "def __eq__(self, other: object) -> bool:\n    if not isinstance(other, self.__class__):\n        return False\n    if (hasattr(self, 'distance') and not hasattr(other, 'distance')) \\\n            or (not hasattr(self, \"distance\") and hasattr(other, \"distance\")):\n        # self and other are both a different kind of LocationDelta (angle&distance vs. lat-&longitude_diff)\n        return False\n    if hasattr(self, 'distance'):\n        return self.distance == other.distance and self.angle_from_north == other.angle_from_north\n    return self.latitude_diff == other.latitude_diff and self.longitude_diff == other.longitude_diff\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

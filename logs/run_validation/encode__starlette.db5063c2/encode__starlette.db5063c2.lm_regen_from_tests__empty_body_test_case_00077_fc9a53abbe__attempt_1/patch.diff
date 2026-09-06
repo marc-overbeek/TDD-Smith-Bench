@@ -1,0 +1,86 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -101,18 +101,33 @@
+     return getattr(endpoint, "__name__", endpoint.__class__.__name__)
+ 
+ 
+-def replace_params(
+-    path: str,
+-    param_convertors: dict[str, Convertor[typing.Any]],
+-    path_params: dict[str, str],
+-) -> tuple[str, dict[str, str]]:
+-    for key, value in list(path_params.items()):
+-        if "{" + key + "}" in path:
+-            convertor = param_convertors[key]
+-            value = convertor.to_string(value)
+-            path = path.replace("{" + key + "}", value)
+-            path_params.pop(key)
+-    return path, path_params
++def replace_params(path: str, param_convertors: dict[str, Convertor[typing.
++    Any]], path_params: dict[str, str]) ->tuple[str, dict[str, str]]:
++    output = ""
++    idx = 0
++    param_started = False
++    param_name = ""
++    remaining_params = dict(path_params)
++    
++    for match in PARAM_REGEX.finditer(path):
++        param_name, convertor_type = match.groups("str")
++        convertor_type = convertor_type.lstrip(":")
++        assert convertor_type in CONVERTOR_TYPES, f"Unknown path convertor '{convertor_type}'"
++        convertor = CONVERTOR_TYPES[convertor_type]
++        
++        output += path[idx : match.start()]
++        
++        if param_name in remaining_params:
++            param_value = remaining_params.pop(param_name)
++            converted_value = convertor.to_string(param_value)
++            output += converted_value
++        else:
++            output += "{" + param_name + "}"
++            
++        idx = match.end()
++    
++    output += path[idx:]
++    return output, remaining_params
+ 
+ 
+ # Match parameters in URL paths, eg. '{param}', and '{param:int}'
+@@ -429,31 +444,12 @@
+                 return Match.FULL, child_scope
+         return Match.NONE, {}
+ 
+-    def url_path_for(self, name: str, /, **path_params: typing.Any) -> URLPath:
+-        if self.name is not None and name == self.name and "path" in path_params:
+-            # 'name' matches "<mount_name>".
+-            path_params["path"] = path_params["path"].lstrip("/")
+-            path, remaining_params = replace_params(self.path_format, self.param_convertors, path_params)
+-            if not remaining_params:
+-                return URLPath(path=path)
+-        elif self.name is None or name.startswith(self.name + ":"):
+-            if self.name is None:
+-                # No mount name.
+-                remaining_name = name
+-            else:
+-                # 'name' matches "<mount_name>:<child_name>".
+-                remaining_name = name[len(self.name) + 1 :]
+-            path_kwarg = path_params.get("path")
+-            path_params["path"] = ""
+-            path_prefix, remaining_params = replace_params(self.path_format, self.param_convertors, path_params)
+-            if path_kwarg is not None:
+-                remaining_params["path"] = path_kwarg
+-            for route in self.routes or []:
+-                try:
+-                    url = route.url_path_for(remaining_name, **remaining_params)
+-                    return URLPath(path=path_prefix.rstrip("/") + str(url), protocol=url.protocol)
+-                except NoMatchFound:
+-                    pass
++    def url_path_for(self, name: str, /, **path_params: typing.Any) ->URLPath:
++        for route in self.routes:
++            try:
++                return route.url_path_for(name, **path_params)
++            except NoMatchFound:
++                pass
+         raise NoMatchFound(name, path_params)
+ 
+     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef prepare_token_revocation_request(url, token, token_type_hint=\n    'access_token', callback=None, body='', **kwargs):\n    if not is_secure_transport(url):\n        raise InsecureTransportError()\n    \n    params = [('token', token), ('token_type_hint', token_type_hint)]\n    \n    if callback:\n        url = add_params_to_uri(url, [('callback', callback)])\n        body = ''\n    else:\n        body = add_params_to_qs(body, params)\n    \n    headers = {'Content-Type': 'application/x-www-form-urlencoded'}\n    \n    return url, headers, body\n```",
+  "rewrite": "def prepare_token_revocation_request(url, token, token_type_hint=\n    'access_token', callback=None, body='', **kwargs):\n    if not is_secure_transport(url):\n        raise InsecureTransportError()\n    \n    params = [('token', token), ('token_type_hint', token_type_hint)]\n    \n    if callback:\n        url = add_params_to_uri(url, [('callback', callback)])\n        body = ''\n    else:\n        body = add_params_to_qs(body, params)\n    \n    headers = {'Content-Type': 'application/x-www-form-urlencoded'}\n    \n    return url, headers, body",
+  "strategy": "lm_regen_from_tests"
+}

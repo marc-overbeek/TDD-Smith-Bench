@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the code, I can see that `print_statistics` is a nested function inside `_model_stats_str`. The current implementation has it as a standalone function with `pass` as the body, but it should be the nested function that formats statistics for a given module name.\n\nLooking at the context in `_model_stats_str`, the function `print_statistics` is called with a module name and should return a formatted string of statistics for that module. The `statistics` dictionary is available in the enclosing scope.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the code, I can see that `print_statistics` is a nested function inside `_model_stats_str`. The current implementation has it as a standalone function with `pass` as the body, but it should be the nested function that formats statistics for a given module name.\n\nLooking at the context in `_model_stats_str`, the function `print_statistics` is called with a module name and should return a formatted string of statistics for that module. The `statistics` dictionary is available in the enclosing scope.\n\n```\ndef print_statistics(name: str) -> str:\n    if name not in statistics:\n        return \"\"\n    printed_stats = [\"{}: {}\".format(k, v) for k, v in statistics[name].items()]\n    return \", \".join(printed_stats)\n```",
+  "rewrite": "def print_statistics(name: str) -> str:\n    if name not in statistics:\n        return \"\"\n    printed_stats = [\"{}: {}\".format(k, v) for k, v in statistics[name].items()]\n    return \", \".join(printed_stats)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

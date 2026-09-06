@@ -1,0 +1,26 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -317,21 +317,8 @@
+         module_name = self.canonical_module_name(module_name)
+         return self._stats.unsupported_ops[module_name]  # pyre-fixme
+ 
+-    def uncalled_modules(self) -> Set[str]:
+-        """
+-        Returns a set of submodules that were never called during the
+-        trace of the graph. This may be because they were unused, or
+-        because they were accessed via direct calls .forward() or with
+-        other python methods. In the latter case, statistics will not be
+-        attributed to the submodule, though the statistics will be included
+-        in the parent module.
+-
+-        Returns:
+-            set(str) : The set of submodule names that were never called
+-                during the trace of the model.
+-        """
+-        stats = self._analyze()
+-        return stats.uncalled_mods
++    def uncalled_modules(self) ->Set[str]:
++        pass
+ 
+     def set_op_handle(self, *args, **kwargs: Optional[Handle]) -> "JitModelAnalysis":
+         """

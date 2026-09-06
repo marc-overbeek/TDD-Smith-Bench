@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef calculate_uphill_downhill(elevations: List[Optional[float]]) ->Tuple[\n    float, float]:\n    uphill: float = 0\n    downhill: float = 0\n    \n    # Filter out None values but keep track of transitions\n    # We need to skip None elevations and compare consecutive non-None values\n    previous_elevation: Optional[float] = None\n    \n    for elevation in elevations:\n        if elevation is None:\n            continue\n        if previous_elevation is not None:\n            diff = elevation - previous_elevation\n            if diff > 0:\n                uphill += diff\n            elif diff < 0:\n                downhill += -diff\n        previous_elevation = elevation\n    \n    return uphill, downhill\n```",
+  "rewrite": "def calculate_uphill_downhill(elevations: List[Optional[float]]) ->Tuple[\n    float, float]:\n    uphill: float = 0\n    downhill: float = 0\n    \n    # Filter out None values but keep track of transitions\n    # We need to skip None elevations and compare consecutive non-None values\n    previous_elevation: Optional[float] = None\n    \n    for elevation in elevations:\n        if elevation is None:\n            continue\n        if previous_elevation is not None:\n            diff = elevation - previous_elevation\n            if diff > 0:\n                uphill += diff\n            elif diff < 0:\n                downhill += -diff\n        previous_elevation = elevation\n    \n    return uphill, downhill",
+  "strategy": "lm_regen_from_tests"
+}

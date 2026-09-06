@@ -1,0 +1,40 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -299,21 +299,23 @@
+             lambda it, scope: takewhile(
+                 lambda t: scope[glom](t, key, scope), it))
+ 
++    def test_while():
++        # ... earlier tests ...
++        out = glom(range(8), Iter().dropwhile((T.bit_length(), lambda x: x < 3)))
++        assert list(out) == [4, 5, 6, 7]
++
+     def dropwhile(self, key=T):
+-        """Returns a new :class:`Iter()` spec which drops stream items until
+-        *key* becomes falsy.
+-
+-        >>> glom([0, 0, 3, 2, 0], Iter().dropwhile(lambda t: t < 1).all())
+-        [3, 2, 0]
+-
+-        Note that while similar to :meth:`Iter.filter()`, the filter
+-        only applies to the beginning of the stream. In a way,
+-        :meth:`Iter.dropwhile` can be thought of as
+-        :meth:`~str.lstrip()` for streams. See
+-        :func:`itertools.dropwhile` for more details.
+-
+-        """
+-
++        """..."""
++        return self._add_op(
++            'dropwhile',
++            (key,),
++            lambda it, scope: dropwhile(
++                lambda t: scope[glom](t, key, scope), it))
++
++    out = glom(range(8), Iter().dropwhile((T.bit_length(), lambda x: x < 3)))
++    assert list(out) == [4, 5, 6, 7]
++
++    def dropwhile(self, key=T):
+         return self._add_op(
+             'dropwhile',
+             (key,),

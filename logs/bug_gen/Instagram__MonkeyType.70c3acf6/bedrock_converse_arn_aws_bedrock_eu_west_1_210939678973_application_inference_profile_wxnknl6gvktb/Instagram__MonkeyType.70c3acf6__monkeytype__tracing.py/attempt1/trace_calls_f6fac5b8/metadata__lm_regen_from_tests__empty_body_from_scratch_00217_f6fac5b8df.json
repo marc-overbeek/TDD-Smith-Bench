@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\n@contextmanager\ndef trace_calls(logger: CallTraceLogger, max_typed_dict_size: int,\n    code_filter: Optional[CodeFilter]=None, sample_rate: Optional[int]=None\n    ) ->Iterator[None]:\n    tracer = CallTracer(logger, max_typed_dict_size, code_filter, sample_rate)\n    old_profile = sys.getprofile()\n    sys.setprofile(tracer)\n    try:\n        yield\n    finally:\n        sys.setprofile(old_profile)\n        logger.flush()\n```",
+  "rewrite": "@contextmanager\ndef trace_calls(logger: CallTraceLogger, max_typed_dict_size: int,\n    code_filter: Optional[CodeFilter]=None, sample_rate: Optional[int]=None\n    ) ->Iterator[None]:\n    tracer = CallTracer(logger, max_typed_dict_size, code_filter, sample_rate)\n    old_profile = sys.getprofile()\n    sys.setprofile(tracer)\n    try:\n        yield\n    finally:\n        sys.setprofile(old_profile)\n        logger.flush()",
+  "strategy": "lm_regen_from_tests"
+}

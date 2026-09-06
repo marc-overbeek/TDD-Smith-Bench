@@ -1,0 +1,35 @@
+--- a/safety/scan/validators.py
++++ b/safety/scan/validators.py
+@@ -24,22 +24,17 @@
+         raise typer.BadParameter(MISSING_SPDX_EXTENSION_MSG)
+ 
+ 
+-def save_as_callback(save_as: Optional[Tuple[ScanExport, Path]]) -> Tuple[Optional[str], Optional[Path]]:
+-    """
+-    Callback function to handle save_as parameter and validate if spdx extension is installed.
+-
+-    Args:
+-        save_as (Optional[Tuple[ScanExport, Path]]): The export type and path.
+-
+-    Returns:
+-        Tuple[Optional[str], Optional[Path]]: The validated export type and path.
+-    """
+-    export_type, export_path = save_as if save_as else (None, None)
+-
+-    if ScanExport.is_format(export_type, ScanExport.SPDX):
++def save_as_callback(save_as: Optional[Tuple[ScanExport, Path]]) ->Tuple[
++    Optional[str], Optional[Path]]:
++    if not save_as:
++        return None, None
++    
++    export_format, path = save_as
++    
++    if ScanExport.is_format(export_format, ScanExport.SPDX):
+         raise_if_not_spdx_extension_installed()
+-
+-    return (export_type.value, export_path) if export_type and export_path else (export_type, export_path)
++    
++    return export_format.value, path
+ 
+ def output_callback(output: ScanOutput) -> str:
+     """

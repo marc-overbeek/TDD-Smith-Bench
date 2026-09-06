@@ -1,0 +1,16 @@
+--- a/monkeytype/tracing.py
++++ b/monkeytype/tracing.py
+@@ -136,9 +136,10 @@
+         frame = frame.f_back
+ 
+ 
+-def get_locals_from_previous_frames(frame: FrameType) -> Iterator[Any]:
+-    for previous_frame in get_previous_frames(frame):
+-        yield from previous_frame.f_locals.values()
++def get_locals_from_previous_frames(frame: FrameType) ->Iterator[Any]:
++    for prev_frame in get_previous_frames(frame.f_back):
++        for local_var in prev_frame.f_locals.values():
++            yield local_var
+ 
+ 
+ def get_func(frame: FrameType) -> Optional[Callable[..., Any]]:

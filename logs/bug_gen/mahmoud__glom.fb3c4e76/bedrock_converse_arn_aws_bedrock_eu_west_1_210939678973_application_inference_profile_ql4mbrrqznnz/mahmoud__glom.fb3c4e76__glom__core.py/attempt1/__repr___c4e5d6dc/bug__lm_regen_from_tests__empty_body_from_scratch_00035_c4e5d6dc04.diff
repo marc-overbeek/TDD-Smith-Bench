@@ -1,0 +1,15 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -348,6 +348,12 @@
+         path_part = Path(self.path).values()[self.part_idx]
+         return ('could not access %r, part %r of %r, got error: %r'
+                 % (path_part, self.part_idx, self.path, self.exc))
++
++    repr(exc_info.value) == 'PathAccessError(' + ke + ", Path('a', 'b'), 0)"
++
++    def __repr__(self):
++        cn = self.__class__.__name__
++        return f'{cn}({self.exc!r}, {self.path!r}, {self.part_idx!r})'
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

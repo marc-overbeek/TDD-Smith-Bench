@@ -1,0 +1,105 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -326,24 +326,23 @@
+         self.name = name
+         self.tag = tag or 'extensions'
+ 
+-    def from_xml(self, node: Any, version: str) -> Any:
+-        """
+-        Build a list of extension Elements.
+-
+-        Args:
+-            node: Element at the root of the extensions
+-            version: unused, only 1.1 supports extensions
+-
+-        Returns:
+-            a list of Element objects
+-        """
+-        result: Any = []
+-        extensions_node = node.find(self.tag)
+-        if extensions_node is None:
+-            return result
+-        for child in extensions_node:
+-            result.append(mod_copy.deepcopy(child))
+-        return result
++    def from_xml(self, node: Any, version: str) ->Any:
++        fields = self.gpx_10_fields
++        if version == '1.1':
++            fields = self.gpx_11_fields
++    
++        for field in fields:
++            if isinstance(field, str):
++                # This is a container tag, skip it
++                continue
++            try:
++                value = field.from_xml(node, version)
++                setattr(self, field.name, value)
++            except Exception:
++                # If field parsing fails, continue with other fields
++                pass
++    
++        return self
+ 
+     def _resolve_prefix(self, qname: str, nsmap: Dict[str, str]) -> str:
+         """
+@@ -556,38 +555,30 @@
+     return ''.join(body)
+ 
+ 
+-def gpx_fields_from_xml(class_or_instance: Any, node: str, version: str) -> Any:
+-    if mod_inspect.isclass(class_or_instance):
+-        result = class_or_instance()
++def gpx_fields_from_xml(class_or_instance: Any, node: str, version: str) ->Any:
++    if not hasattr(class_or_instance, 'gpx_10_fields') and not hasattr(class_or_instance, 'gpx_11_fields'):
++        # It's a class, not an instance
++        instance = class_or_instance()
+     else:
+-        result = class_or_instance
+-
+-    fields = result.gpx_10_fields
++        # It's an instance
++        instance = class_or_instance
++    
++    fields = instance.gpx_10_fields
+     if version == '1.1':
+-        fields = result.gpx_11_fields
+-
+-    node_path: List[Union[str, int]] = [node]
+-
+-    for gpx_field in fields:
+-        current_node = node_path[-1]
+-        if isinstance(gpx_field, str):
+-            gpx_field = gpx_field.partition(':')[0]
+-            if gpx_field.startswith('/'):
+-                node_path.pop()
+-            else:
+-                if current_node is None:
+-                    node_path.append(None)
+-                else:
+-                    node_path.append(cast(str, current_node).find(gpx_field))
+-        else:
+-            if current_node is not None:
+-                value = gpx_field.from_xml(current_node, version)
+-                setattr(result, gpx_field.name, value)
+-            elif gpx_field.attribute:
+-                value = gpx_field.from_xml(node, version)
+-                setattr(result, gpx_field.name, value)
+-
+-    return result
++        fields = instance.gpx_11_fields
++    
++    for field in fields:
++        if isinstance(field, str):
++            # This is a container tag, skip it
++            continue
++        try:
++            value = field.from_xml(node, version)
++            setattr(instance, field.name, value)
++        except Exception:
++            # If field parsing fails, continue with other fields
++            pass
++    
++    return instance
+ 
+ def gpx_check_slots_and_default_values(classs: Callable[[], Any]) -> None:
+     """

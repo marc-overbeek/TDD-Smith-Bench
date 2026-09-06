@@ -1,0 +1,21 @@
+--- a/safety/models.py
++++ b/safety/models.py
+@@ -153,6 +153,18 @@
+     latest_version_without_known_vulnerabilities: Optional[str] = None
+     latest_version: Optional[str] = None
+     more_info_url: Optional[str] = None
++
++    def has_unpinned_req(self) -> bool:
++        """
++        Check if the package has unpinned requirements.
++
++        Returns:
++            bool: True if there are unpinned requirements, False otherwise.
++        """
++        for req in self.requirements:
++            if not is_pinned_requirement(req.specifier):
++                return True
++        return False
+ 
+     def has_unpinned_req(self) -> bool:
+         """

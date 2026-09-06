@@ -1,0 +1,46 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -288,33 +288,19 @@
+         email_domain = email_node.get('domain')
+         return f'{email_id}@{email_domain}'
+ 
+-    def to_xml(self, value: Any, version: str, nsmap: Optional[Dict[str, str]]=None, prettyprint: bool=True, indent: str='') -> str:
+-        """
+-        Write email address to XML
+-
+-        Args:
+-            value: str representing an email address
+-            version: str of the gpx output version "1.0" or "1.1"
+-
+-        Returns:
+-            None if value is empty or str of XML representation of the
+-            address. Representation starts with a \n.
+-        """
+-        if not value:
++    def to_xml(self, value: Any, version: str, nsmap: Optional[Dict[str, str]]=None, prettyprint: bool=True, indent: str='') -> Optional[str]:
++        if value is None:
+             return ''
+-
+         if not prettyprint:
+             indent = ''
+-
+-        if '@' in value:
+-            pos = value.find('@')
+-            email_id = value[:pos]
+-            email_domain = value[pos+1:]
+-        else:
+-            email_id = value
+-            email_domain = 'unknown'
+-
+-        return f'\n{indent}<{self.tag} id="{email_id}" domain="{email_domain}" />'
++        if self.attribute:
++            return f'{self.attribute}="{mod_utils.make_str(value)}"'
++        elif self.type_converter:
++            value = self.type_converter.to_string(value)
++        if self.tag:
++            return mod_utils.to_xml(self.tag, content=value, escape=True,
++                                    prettyprint=prettyprint, indent=indent)
++        return ''
+ 
+ 
+ class GPXExtensionsField(AbstractGPXField):

@@ -1,0 +1,68 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -947,31 +947,40 @@
+     return 'patch'
+ 
+ 
+-def process_fixes(
+-    files: List[str],
+-    remediations: Dict[str, Dict[str, Any]],
+-    auto_remediation_limit: List[str],
+-    output: str,
+-    no_output: bool = True,
+-    prompt: bool = False
+-) -> List[Fix]:
+-    """
+-    Processes the fixes for the given files and remediations.
+-
+-    Args:
+-        files (List[str]): The list of files.
+-        remediations (Dict[str, Dict[str, Any]]): The remediations dictionary.
+-        auto_remediation_limit (List[str]): The automatic remediation limits.
+-        output (str): The output format.
+-        no_output (bool): Whether to suppress output.
+-        prompt (bool): Whether to prompt for confirmation.
+-
+-    Returns:
+-        List[Fix]: The list of applied fixes.
+-    """
+-    req_remediations = itertools.chain.from_iterable(rem.values() for pkg_name, rem in remediations.items())
+-    requirements = compute_fixes_per_requirements(files, req_remediations, auto_remediation_limit, prompt=prompt)
+-    fixes = apply_fixes(requirements, output, no_output, prompt)
++def process_fixes(files: List[str], remediations: Dict[str, Dict[str, Any]],
++    auto_remediation_limit: List[str], output: str, no_output: bool=True,
++    prompt: bool=False) ->List[Fix]:
++    req_remediations = []
++    
++    for pkg_name, pkg_remediations in remediations.items():
++        for spec_str, remediation in pkg_remediations.items():
++            closest_secure = remediation.get('closest_secure_version', {})
++            
++            # Convert closest_secure_version keys from minor/major to upper/lower if needed
++            upper = closest_secure.get('upper', closest_secure.get('minor', None))
++            lower = closest_secure.get('lower', closest_secure.get('major', None))
++            
++            # If upper is None but major exists, use major as upper
++            if upper is None:
++                upper = closest_secure.get('major', None)
++            
++            req_remediations.append({
++                'vulnerabilities_found': remediation.get('vulnerabilities_found', 0),
++                'version': remediation.get('version', None),
++                'requirement': remediation.get('requirement'),
++                'more_info_url': remediation.get('more_info_url', ''),
++                'closest_secure_version': {
++                    'upper': upper,
++                    'lower': lower,
++                },
++                'recommended_version': remediation.get('recommended_version', None),
++                'other_recommended_versions': remediation.get('other_recommended_versions', 
++                                                               remediation.get('secure_versions', [])),
++            })
++    
++    requirements = compute_fixes_per_requirements(files, iter(req_remediations), auto_remediation_limit, prompt=prompt)
++    fixes = apply_fixes(requirements, output, no_output, prompt, auto_remediation_limit=auto_remediation_limit)
++    
+     return fixes
+ 
+ 

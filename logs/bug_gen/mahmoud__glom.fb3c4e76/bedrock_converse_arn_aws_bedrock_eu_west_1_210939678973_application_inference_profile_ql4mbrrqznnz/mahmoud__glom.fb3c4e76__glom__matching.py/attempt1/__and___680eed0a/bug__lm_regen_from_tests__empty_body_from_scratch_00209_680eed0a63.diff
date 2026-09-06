@@ -1,0 +1,19 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -269,6 +269,16 @@
+         self.default = kw.pop('default', _MISSING)
+         if kw:
+             raise TypeError('got unexpected kwargs: %r' % list(kw.keys()))
++
++    assert repr(And(M == 1, float)) == '(M == 1) & float'
++    assert repr(eval(repr(And(M == 1, float)))) == '(M == 1) & float'
++
++    def __and__(self, other):
++        # reduce number of layers of spec
++        return And(*(self.children + (other,)))
++
++    def __and__(self, other):
++        pass
+ 
+     def __and__(self, other):
+         return And(self, other)

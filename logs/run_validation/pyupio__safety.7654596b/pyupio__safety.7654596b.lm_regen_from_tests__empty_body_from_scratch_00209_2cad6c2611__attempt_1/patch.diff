@@ -1,0 +1,123 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1564,49 +1564,79 @@
+ 
+ 
+ 
+-def get_packages(files: Optional[List[str]] = None, stdin: bool = False) -> List[Package]:
+-    """
+-    Retrieves the packages from the given files or standard input.
+-
+-    Args:
+-        files (Optional[List[str]]): The list of files.
+-        stdin (bool): Whether to read from standard input.
+-
+-    Returns:
+-        List[Package]: The list of packages.
+-    """
+-    if files:
+-        return list(itertools.chain.from_iterable(read_requirements(f, resolve=True) for f in files))
+-
++def get_packages(files: Optional[List[str]]=None, stdin: bool=False) ->List[
++    Package]:
++    packages = []
++    
+     if stdin:
+-        return list(read_requirements(sys.stdin))
+-
+-    import pkg_resources
+-
+-    def allowed_version(pkg: str, version: str) -> bool:
++        files = ['-']
++    elif not files:
++        files = []
++    
++    requirements_content = get_requirements_content(files)
++    
++    for filename, content in requirements_content.items():
++        from dparse.parser import parse, filetypes
++        
+         try:
+-            parse_version(version)
+-        except Exception:
+-            SafetyContext.local_announcements.append(
+-                {'message': f'Version {version} for {pkg} is invalid and is ignored by Safety. Please See PEP 440.',
+-                 'type': 'warning', 'local': True})
+-            return False
+-
+-        return True
+-
+-    w_set = pkg_resources.working_set
+-
+-    SafetyContext().scanned_full_path.extend(w_set.entry_keys.keys())
+-
+-    return [
+-        Package(name=d.key, version=d.version,
+-                requirements=[SafetyRequirement(f'{d.key}=={d.version}', found=d.location)],
+-                found=d.location, insecure_versions=[],
+-                secure_versions=[], latest_version=None, latest_version_without_known_vulnerabilities=None,
+-                more_info_url=None) for d in
+-        w_set
+-        if d.key not in {"python", "wsgiref", "argparse"} and allowed_version(d.key, d.version)
+-    ]
++            dependency_file = parse(content, path=filename, file_type=filetypes.requirements_txt, resolve=True)
++            
++            # Process the main file and any resolved files
++            dependency_files = dependency_file.resolved_files + [dependency_file]
++            
++            for resolved_file in dependency_files:
++                if not resolved_file or isinstance(resolved_file, str):
++                    continue
++                
++                requirements = [SafetyRequirement(dep.name, dep.specs) for dep in resolved_file.dependencies]
++                
++                if requirements:
++                    pkg = Package(
++                        name=resolved_file.path or filename,
++                        requirements=requirements
++                    )
++                    packages.append(pkg)
++        except Exception as e:
++            LOG.debug(f'Error parsing {filename}: {e}')
++            continue
++    
++    return packages
++
++def get_packages(files: Optional[List[str]]=None, stdin: bool=False) ->List[
++    Package]:
++    packages = []
++    
++    if stdin:
++        files = ['-']
++    elif not files:
++        files = []
++    
++    requirements_content = get_requirements_content(files)
++    
++    from dparse.parser import parse, filetypes
++    
++    for filename, content in requirements_content.items():
++        try:
++            dependency_file = parse(content, path=filename, file_type=filetypes.requirements_txt, resolve=True)
++            dependency_files = dependency_file.resolved_files + [dependency_file]
++            
++            for resolved_file in dependency_files:
++                if not resolved_file or isinstance(resolved_file, str):
++                    continue
++                
++                requirements = [SafetyRequirement(dep.name, dep.specs) for dep in resolved_file.dependencies]
++                
++                if requirements or resolved_file.dependencies:
++                    pkg = Package(
++                        name=resolved_file.path or filename,
++                        requirements=requirements
++                    )
++                    packages.append(pkg)
++        except Exception as e:
++            LOG.debug(f'Error parsing requirements file {filename}: {e}')
++            continue
++    
++    return packages
+ 
+ 
+ def read_vulnerabilities(fh: Any) -> Dict[str, Any]:

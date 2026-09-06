@@ -1,0 +1,14 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -175,6 +175,11 @@
+             return itertools.chain.from_iterable(iterator)
+         return super()._fold(iterator)
+ 
++    def _fold(self, iterator):
++        if self.lazy:
++            return itertools.chain.from_iterable(iterator)
++        return super()._fold(iterator)
++
+     def __repr__(self):
+         cn = self.__class__.__name__
+         args = () if self.subspec is T else (self.subspec,)

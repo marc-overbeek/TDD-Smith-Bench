@@ -1,0 +1,24 @@
+--- a/src/mistune/plugins/__init__.py
++++ b/src/mistune/plugins/__init__.py
+@@ -31,19 +31,5 @@
+ PluginRef = Union[str, Plugin]  # reference to register a plugin
+ 
+ 
+-def import_plugin(name: PluginRef) -> Plugin:
+-    if callable(name):
+-        return name
+-
+-    if name in _cached_modules:
+-        return _cached_modules[name]
+-
+-    if name in _plugins:
+-        module_path, func_name = _plugins[name].rsplit(".", 1)
+-    else:
+-        module_path, func_name = name.rsplit(".", 1)
+-
+-    module = import_module(module_path)
+-    plugin = cast(Plugin, getattr(module, func_name))
+-    _cached_modules[name] = plugin
+-    return plugin
++def import_plugin(name: PluginRef) ->Plugin:
++    pass

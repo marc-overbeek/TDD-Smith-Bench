@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef params_from_uri(uri):\n    params = {}\n    parsed = urlparse(uri)\n    pairs = urldecode(parsed.query)\n    for k, v in pairs:\n        if k in params:\n            if isinstance(params[k], list):\n                params[k].append(v)\n            else:\n                params[k] = [params[k], v]\n        else:\n            params[k] = v\n    # Handle scope specially - split by space\n    if 'scope' in params:\n        scope = params['scope']\n        if isinstance(scope, str):\n            params['scope'] = scope_to_list(scope)\n    return params\n```",
+  "rewrite": "def params_from_uri(uri):\n    params = {}\n    parsed = urlparse(uri)\n    pairs = urldecode(parsed.query)\n    for k, v in pairs:\n        if k in params:\n            if isinstance(params[k], list):\n                params[k].append(v)\n            else:\n                params[k] = [params[k], v]\n        else:\n            params[k] = v\n    # Handle scope specially - split by space\n    if 'scope' in params:\n        scope = params['scope']\n        if isinstance(scope, str):\n            params['scope'] = scope_to_list(scope)\n    return params",
+  "strategy": "lm_regen_from_tests"
+}

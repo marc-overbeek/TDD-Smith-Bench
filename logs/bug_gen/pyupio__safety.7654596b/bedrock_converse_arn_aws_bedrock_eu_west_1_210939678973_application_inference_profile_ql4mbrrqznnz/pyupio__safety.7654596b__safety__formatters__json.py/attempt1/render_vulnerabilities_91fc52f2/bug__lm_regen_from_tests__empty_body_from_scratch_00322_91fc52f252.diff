@@ -1,0 +1,37 @@
+--- a/safety/formatters/json.py
++++ b/safety/formatters/json.py
+@@ -75,22 +75,21 @@
+         super().__init__(**kwargs)
+         self.version: str = version if version in self.VERSIONS else "1.1"
+ 
+-    def render_vulnerabilities(self, announcements: List[Dict], vulnerabilities: List[Dict],
+-                               remediations: Dict[str, Any], full: bool, packages: List[Any], fixes: Iterable = ()) -> str:
++    def render_vulnerabilities(self, announcements: List[Dict], vulnerabilities: List[Dict], remediations: Dict[str, Any], full: bool, packages: List[Any], fixes: Iterable=()) ->str:
+         """
+-        Render vulnerabilities in JSON format.
++            Render vulnerabilities in JSON format.
+ 
+-        Args:
+-            announcements (List[Dict]): List of announcements.
+-            vulnerabilities (List[Dict]): List of vulnerabilities.
+-            remediations (Dict[str, Any]): Remediation data.
+-            full (bool): Flag indicating full output.
+-            packages (List[Any]): List of packages.
+-            fixes (Iterable, optional): Iterable of fixes.
++            Args:
++                announcements (List[Dict]): List of announcements.
++                vulnerabilities (List[Dict]): List of vulnerabilities.
++                remediations (Dict[str, Any]): Remediation data.
++                full (bool): Flag indicating full output.
++                packages (List[Any]): List of packages.
++                fixes (Iterable, optional): Iterable of fixes.
+ 
+-        Returns:
+-            str: Rendered JSON vulnerabilities report.
+-        """
++            Returns:
++                str: Rendered JSON vulnerabilities report.
++            """
+         if self.version == '0.5':
+             return json_parser.dumps(VulnerabilitySchemaV05().dump(obj=vulnerabilities, many=True), indent=4)
+ 

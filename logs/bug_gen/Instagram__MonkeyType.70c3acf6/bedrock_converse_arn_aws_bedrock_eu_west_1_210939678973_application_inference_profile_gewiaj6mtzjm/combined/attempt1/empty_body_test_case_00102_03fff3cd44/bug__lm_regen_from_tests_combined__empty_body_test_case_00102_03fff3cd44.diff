@@ -1,0 +1,26 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -315,6 +315,7 @@
+                 name: self.rewrite(typ) for name, typ in optional_fields.items()
+             },
+         )
++        # this is an exact match
+ 
+     def rewrite_TypedDict(self, typed_dict):
+         if is_anonymous_typed_dict(typed_dict):
+@@ -327,6 +328,7 @@
+             },
+             total=typed_dict.__total__,
+         )
++        # this is an exact match
+ 
+     def rewrite_Union(self, union):
+         return self._rewrite_container(Union, union)
+@@ -357,6 +359,7 @@
+         return make_typed_dict(
+             required_fields=required_fields, optional_fields=optional_fields
+         )
++        # this is an exact match
+ 
+     def make_builtin_typed_dict(self, name, annotations, total):
+         return TypedDict(name, annotations, total=total)

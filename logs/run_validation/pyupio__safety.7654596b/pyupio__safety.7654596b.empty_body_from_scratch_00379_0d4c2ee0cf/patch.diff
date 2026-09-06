@@ -1,0 +1,27 @@
+--- a/safety/alerts/utils.py
++++ b/safety/alerts/utils.py
+@@ -91,21 +91,9 @@
+     return hint
+ 
+ 
+-def generate_title(pkg: str, remediation: Dict[str, Any], vulns: List[Dict[str, Any]]) -> str:
+-    """
+-    Generates a title for a pull request or issue.
+-
+-    Args:
+-        pkg (str): The package name.
+-        remediation (Dict[str, Any]): The remediation data.
+-        vulns (List[Dict[str, Any]]): The list of vulnerabilities.
+-
+-    Returns:
+-        str: The generated title.
+-    """
+-    suffix = "y" if len(vulns) == 1 else "ies"
+-    from_dependency = remediation['version'] if remediation['version'] else remediation['requirement']['specifier']
+-    return f"Update {pkg} from {from_dependency} to {remediation['recommended_version']} to fix {len(vulns)} vulnerabilit{suffix}"
++def generate_title(pkg: str, remediation: Dict[str, Any], vulns: List[Dict[
++    str, Any]]) ->str:
++    pass
+ 
+ 
+ def generate_body(pkg: str, remediation: Dict[str, Any], vulns: List[Dict[str, Any]], *, api_key: str) -> Optional[str]:

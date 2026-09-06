@@ -1,0 +1,42 @@
+--- a/oauthlib/common.py
++++ b/oauthlib/common.py
+@@ -199,20 +199,26 @@
+ 
+ def generate_signed_token(private_pem, request):
+     import jwt
+-
+-    now = datetime.datetime.utcnow()
+-
+-    claims = {
+-        'scope': request.scope,
+-        'exp': now + datetime.timedelta(seconds=request.expires_in)
++    from datetime import datetime, timedelta
++    
++    # Extract scope from request parameters
++    scope = None
++    if request.decoded_body:
++        for key, value in request.decoded_body:
++            if key == 'scope':
++                scope = value
++                break
++    
++    # Create token payload with required claims
++    payload = {
++        'scope': scope or '',
++        'user_id': 123,
++        'exp': datetime.utcnow() + timedelta(hours=1),
++        'iat': datetime.utcnow()
+     }
+-
+-    claims.update(request.claims)
+-
+-    token = jwt.encode(claims, private_pem, 'RS256')
+-    token = to_unicode(token, "UTF-8")
+-
+-    return token
++    
++    # Generate and return signed token
++    return jwt.encode(payload, private_pem, algorithm='RS256')
+ 
+ 
+ def verify_signed_token(public_pem, token):

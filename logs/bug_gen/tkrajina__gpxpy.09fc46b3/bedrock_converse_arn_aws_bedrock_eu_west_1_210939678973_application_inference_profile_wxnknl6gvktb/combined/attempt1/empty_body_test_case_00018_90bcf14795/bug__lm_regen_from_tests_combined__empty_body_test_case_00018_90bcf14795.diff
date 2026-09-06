@@ -1,0 +1,127 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -753,28 +753,10 @@
+             track_point.remove_elevation()
+ 
+     def length_2d(self) -> Optional[float]:
+-        """
+-        Computes 2-dimensional length (meters) of segment (only latitude and
+-        longitude, no elevation).
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
+-        return mod_geo.length_2d(self.points) # type: ignore
++        return mod_geo.length_2d(self.points)
+ 
+     def length_3d(self) -> float:
+-        """
+-        Computes 3-dimensional length of segment (latitude, longitude, and
+-        elevation).
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
+-        return mod_geo.length_3d(self.points) # type: ignore
++        return mod_geo.length_3d(self.points)
+ 
+     def move(self, location_delta: mod_geo.LocationDelta) -> None:
+         """
+@@ -1484,16 +1466,6 @@
+         self.segments = result
+ 
+     def length_2d(self) -> float:
+-        """
+-        Computes 2-dimensional length (meters) of track (only latitude and
+-        longitude, no elevation). This is the sum of the 2D length of all
+-        segments.
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
+         length: float = 0
+         for track_segment in self.segments:
+             d = track_segment.length_2d()
+@@ -1594,15 +1566,6 @@
+         return result
+ 
+     def length_3d(self) -> float:
+-        """
+-        Computes 3-dimensional length of track (latitude, longitude, and
+-        elevation). This is the sum of the 3D length of all segments.
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
+         length: float = 0
+         for track_segment in self.segments:
+             d = track_segment.length_3d()
+@@ -2264,16 +2227,6 @@
+         track.split(track_segment_no=track_segment_no, track_point_no=track_point_no)
+ 
+     def length_2d(self) -> float:
+-        """
+-        Computes 2-dimensional length of the GPX file (only latitude and
+-        longitude, no elevation). This is the sum of 2D length of all segments
+-        in all tracks.
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
+         result: float = 0
+         for track in self.tracks:
+             length = track.length_2d()
+@@ -2282,15 +2235,6 @@
+         return result
+ 
+     def length_3d(self) -> float:
+-        """
+-        Computes 3-dimensional length of the GPX file (latitude, longitude, and
+-        elevation). This is the sum of 3D length of all segments in all tracks.
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
+         result: float = 0
+         for track in self.tracks:
+             length = track.length_3d()
+@@ -2299,27 +2243,6 @@
+         return result
+ 
+     def walk(self, only_points: bool=False) -> Iterator[Any]:
+-        """
+-        Generator used to iterates through points in GPX file
+-
+-        Parameters
+-        ----------
+-        only_point s: boolean
+-            Only yield points while walking
+-
+-        Yields
+-        ----------
+-        point : GPXTrackPoint
+-            Point in the track
+-        track_no : integer
+-            Index of track containing point. This is suppressed if only_points
+-            is True.
+-        segment_no : integer
+-            Index of segment containing point. This is suppressed if only_points
+-            is True.
+-        point_no : integer
+-            Index of point. This is suppressed if only_points is True.
+-        """
+         for track_no, track in enumerate(self.tracks if self.tracks else [] ):
+             for segment_no, segment in enumerate(track.segments if track.segments else []):
+                 for point_no, point in enumerate(segment.points if segment.points else []):

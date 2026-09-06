@@ -1,0 +1,29 @@
+--- a/safety/cli_util.py
++++ b/safety/cli_util.py
+@@ -128,13 +128,19 @@
+     Decorator to ensure the SafetyCLI object exists for a command.
+     """
+     @wraps(func)
+-    def inner(ctx, *args, **kwargs):
+-
+-        if not ctx.obj:
+-            from .models import SafetyCLI
+-            ctx.obj = SafetyCLI()
+-
+-        return func(ctx, *args, **kwargs)
++    def pass_safety_cli_obj(func):
++        """
++        Decorator to ensure the SafetyCLI object exists for a command.
++        """
++        @wraps(func)
++        def inner(ctx, *args, **kwargs):
++            if not ctx.obj:
++                from .models import SafetyCLI
++                ctx.obj = SafetyCLI()
++
++            return func(ctx, *args, **kwargs)
++
++        return inner
+ 
+     return inner
+ 

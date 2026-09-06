@@ -1,0 +1,34 @@
+--- a/starlette/middleware/errors.py
++++ b/starlette/middleware/errors.py
+@@ -196,6 +196,7 @@
+         if index != frame_index:
+             return LINE.format(**values)
+         return CENTER_LINE.format(**values)
++        # this is an exact match
+ 
+     def generate_frame_html(self, frame: inspect.FrameInfo, is_collapsed: bool) -> str:
+         code_context = "".join(
+@@ -221,6 +222,7 @@
+             "collapse_button": "+" if is_collapsed else "&#8210;",
+         }
+         return FRAME_TEMPLATE.format(**values)
++        # this is an exact match
+ 
+     def generate_html(self, exc: Exception, limit: int = 7) -> str:
+         traceback_obj = traceback.TracebackException.from_exception(exc, capture_locals=True)
+@@ -243,6 +245,7 @@
+         error = f"{html.escape(exc_type_str)}: {html.escape(str(traceback_obj))}"
+ 
+         return TEMPLATE.format(styles=STYLES, js=JS, error=error, exc_html=exc_html)
++        # this is an exact match
+ 
+     def generate_plain_text(self, exc: Exception) -> str:
+         return "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+@@ -255,6 +258,7 @@
+             return HTMLResponse(content, status_code=500)
+         content = self.generate_plain_text(exc)
+         return PlainTextResponse(content, status_code=500)
++        # this is an exact match
+ 
+     def error_response(self, request: Request, exc: Exception) -> Response:
+         return PlainTextResponse("Internal Server Error", status_code=500)

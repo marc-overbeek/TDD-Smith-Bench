@@ -1,0 +1,42 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -288,26 +288,19 @@
+     return click.unstyle(content) if only_text else content
+ 
+ 
+-def get_fix_hint_for_unpinned(remediation: Dict[str, Any]) -> str:
+-    """
+-    Get the fix hint for unpinned dependencies.
+-
+-    Args:
+-        remediation (Dict[str, Any]): The remediation details.
+-
+-    Returns:
+-        str: The fix hint.
+-    """
+-    secure_options: List[str] = [str(fix) for fix in remediation.get('other_recommended_versions', [])]
+-    fixes_hint = f'Version {remediation.get("recommended_version")} has no known vulnerabilities and falls' \
+-                 f' within your current specifier range.'
+-
+-    if len(secure_options) > 0:
+-        other_options_msg = build_other_options_msg(fix_version=remediation.get("recommended_version"), is_spec=True,
+-                                                    secure_options=secure_options)
+-        fixes_hint += f' {other_options_msg}'
+-
+-    return fixes_hint
++def get_fix_hint_for_unpinned(remediation: Dict[str, Any]) ->str:
++    recommended_version = remediation.get('recommended_version')
++    other_recommended_versions = remediation.get('other_recommended_versions', [])
++
++    result = f'Version {recommended_version} has no known vulnerabilities and falls within your current specifier range.'
++
++    if other_recommended_versions:
++        if len(other_recommended_versions) == 1:
++            result += f' Other version without known vulnerabilities is {other_recommended_versions[0]}'
++        else:
++            result += f' Other versions without known vulnerabilities are: {", ".join(other_recommended_versions)}'
++
++    return result
+ 
+ 
+ def get_unpinned_hint(pkg: str) -> str:

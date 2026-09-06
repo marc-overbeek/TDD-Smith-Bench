@@ -1,0 +1,77 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -156,36 +156,44 @@
+     return imports
+ 
+ 
+-def update_signature_args(
+-    sig: inspect.Signature,
+-    arg_types: Dict[str, type],
+-    has_self: bool,
+-    existing_annotation_strategy: ExistingAnnotationStrategy = ExistingAnnotationStrategy.REPLICATE,
+-) -> inspect.Signature:
+-    """Update argument annotations with the supplied types"""
+-    params = []
+-    for arg_idx, name in enumerate(sig.parameters):
+-        param = sig.parameters[name]
+-        typ = arg_types.get(name)
+-        typ = inspect.Parameter.empty if typ is None else typ
+-        is_self = has_self and arg_idx == 0
+-        annotated = param.annotation is not inspect.Parameter.empty
+-        if (
+-            annotated
+-            and existing_annotation_strategy == ExistingAnnotationStrategy.OMIT
+-        ):
+-            # generate no annotation for already-annotated args when generating
+-            # a stub to apply, avoiding the possibility of "incompatible
+-            # annotation" errors
+-            param = param.replace(annotation=inspect.Parameter.empty)
+-        # Don't touch existing annotations unless asked to ignore them
+-        if not is_self and (
+-            (existing_annotation_strategy == ExistingAnnotationStrategy.IGNORE)
+-            or not annotated
+-        ):
+-            param = param.replace(annotation=typ)
+-        params.append(param)
+-    return sig.replace(parameters=params)
++def update_signature_args(sig: inspect.Signature, arg_types: Dict[str, type
++    ], has_self: bool, existing_annotation_strategy:
++    ExistingAnnotationStrategy=ExistingAnnotationStrategy.REPLICATE
++    ) ->inspect.Signature:
++    new_parameters = []
++    for i, (param_name, param) in enumerate(sig.parameters.items()):
++        # Skip self/cls parameter if it's a method/class method
++        if i == 0 and has_self:
++            new_parameters.append(param)
++            continue
++        
++        # For regular parameters
++        if param_name in arg_types:
++            new_type = arg_types[param_name]
++            # Check existing annotation strategy
++            if existing_annotation_strategy == ExistingAnnotationStrategy.IGNORE:
++                # Always override with new type
++                new_param = param.replace(annotation=new_type)
++                new_parameters.append(new_param)
++            elif existing_annotation_strategy == ExistingAnnotationStrategy.OMIT:
++                # Only set annotation if there wasn't one before
++                if param.annotation is inspect.Parameter.empty:
++                    new_param = param.replace(annotation=new_type)
++                    new_parameters.append(new_param)
++                else:
++                    new_parameters.append(param)
++            else:
++                # REPLICATE strategy - keep existing annotation if present
++                if param.annotation is inspect.Parameter.empty:
++                    new_param = param.replace(annotation=new_type)
++                    new_parameters.append(new_param)
++                else:
++                    new_parameters.append(param)
++        else:
++            # Parameter not in arg_types, keep as is
++            new_parameters.append(param)
++    
++    return sig.replace(parameters=new_parameters)
+ 
+ 
+ def update_signature_return(

@@ -1,0 +1,113 @@
+--- a/glom/cli.py
++++ b/glom/cli.py
+@@ -165,50 +165,70 @@
+ 
+ 
+ @face_middleware(provides=['spec', 'target'])
+-def mw_get_target(next_, posargs_, target_file, target_format, spec_file, spec_format):
+-    spec_text, target_text = None, None
+-    if len(posargs_) == 2:
+-        spec_text, target_text = posargs_
+-    elif len(posargs_) == 1:
+-        spec_text, target_text = posargs_[0], None
+-
+-    if spec_text and spec_file:
+-        raise UsageError('expected spec file or spec argument, not both')
+-    elif spec_file:
++@face_middleware(provides=['spec', 'target'])
++def mw_get_target(next_, posargs_, target_file, target_format, spec_file,
++    spec_format):
++    posargs = list(posargs_)
++    
++    # Handle spec
++    spec_text = None
++    if spec_file:
++        if len(posargs) > 0:
++            raise UsageError('expected spec from --spec-file or positional argument, not both')
+         try:
+-            with open(spec_file) as f:
++            with open(spec_file, 'r') as f:
+                 spec_text = f.read()
+-        except OSError as ose:
+-            raise UsageError(f'could not read spec file {spec_file!r}, got: {ose}')
+-
+-    if not spec_text:
++        except (IOError, OSError) as e:
++            raise UsageError('could not read spec file %r: %s' % (spec_file, e))
++    elif len(posargs) > 0:
++        spec_text = posargs.pop(0)
++    
++    # Handle target
++    target_text = None
++    if target_file:
++        if len(posargs) > 0 and posargs[0] != '-':
++            raise UsageError('expected target from --target-file or positional argument, not both')
++        if target_file == '-':
++            target_text = sys.stdin.read()
++        else:
++            try:
++                with open(target_file, 'r') as f:
++                    target_text = f.read()
++            except (IOError, OSError) as e:
++                raise UsageError('could not read target file %r: %s' % (target_file, e))
++    elif len(posargs) > 0:
++        if posargs[0] == '-':
++            target_text = sys.stdin.read()
++        else:
++            target_text = posargs.pop(0)
++    else:
++        # Try reading from stdin if not a tty
++        if not isatty(sys.stdin):
++            target_text = sys.stdin.read()
++    
++    # Check for conflicts: target_file + positional target
++    if target_file and len(posargs) > 0 and posargs[0] != '-':
++        raise UsageError('expected target from --target-file or positional argument, not both')
++    
++    # Parse spec
++    if spec_text is None:
+         spec = Path()
+-    elif spec_format == 'python':
+-        if spec_text[0] not in ('"', "'", "[", "{", "("):
+-            # intention: handle trivial path access, assume string
+-            spec_text = repr(spec_text)
+-        spec = ast.literal_eval(spec_text)
+-    elif spec_format == 'json':
+-        spec = json.loads(spec_text)
+-    elif spec_format == 'python-full':
+-        spec = _eval_python_full_spec(spec_text)
+-    else:
+-        raise UsageError('expected spec-format to be one of json, python, or python-full')
+-
+-    if target_text and target_file:
+-        raise UsageError('expected target file or target argument, not both')
+-    elif target_text == '-' or target_file == '-':
+-        target_text = sys.stdin.read()
+-    elif target_file:
+-        try:
+-            target_text = open(target_file).read()
+-        except OSError as ose:
+-            raise UsageError(f'could not read target file {target_file!r}, got: {ose}')
+-    elif not target_text and not isatty(sys.stdin):
+-        target_text = sys.stdin.read()
+-
++    else:
++        if spec_format == 'python':
++            spec = spec_text  # glom handles string specs as paths
++        elif spec_format == 'json':
++            try:
++                spec = json.loads(spec_text)
++            except Exception as e:
++                raise UsageError('could not load spec, got: %s: %s' % (e.__class__.__name__, e))
++        elif spec_format == 'python-full':
++            spec = _eval_python_full_spec(spec_text)
++        else:
++            raise UsageError('expected spec-format to be one of python, json, python-full')
++    
++    # Parse target
+     target = mw_handle_target(target_text, target_format)
+-
++    
+     return next_(spec=spec, target=target)
+ 
+ 

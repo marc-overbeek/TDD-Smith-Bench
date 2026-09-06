@@ -1,0 +1,19 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -375,6 +375,16 @@
+         spec_glom = Spec(Call(partial, args=(Spec(self._spec).glom,), kwargs={'scope': S}))
+         self._first = Call(first, args=(T,), kwargs={'default': default, 'key': spec_glom})
+ 
++    def test_first():
++        spec = Iter().first(T.imag)
++        target = iter([1, 2, 3.0j, 4])
++        out = glom(target, spec)
++        assert out == 3.0j
++        assert next(target) == 4
++
++    def glomit(self, target, scope):
++        return self._first.glomit(target, scope)
++
+     def glomit(self, target, scope):
+         return self._first.glomit(target, scope)
+ 

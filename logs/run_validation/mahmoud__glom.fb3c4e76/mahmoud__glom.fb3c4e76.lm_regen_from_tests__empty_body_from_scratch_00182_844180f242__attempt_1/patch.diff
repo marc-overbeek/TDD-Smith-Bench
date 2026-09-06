@@ -1,0 +1,40 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -209,9 +209,34 @@
+     __slots__ = ()
+ 
+     def agg(self, target, tree):
+-        if self not in tree or target > tree[self]:
+-            tree[self] = target
+-        return tree[self]
++        if self not in tree:
++            tree[self] = [0, {}]
++        tree[self][0] += 1
++        if tree[self][0] > self.n:
++            return STOP
++        # Need to set up the accumulator tree for the subspec
++        scope_acc_tree = tree[self][1]
++        # This is tricky - we need to call the subspec's agg if it has one
++        # Otherwise we need to handle it through GROUP mode
++        # But we don't have access to scope here...
++        # Looking at the pattern, we should return the target and let GROUP handle it
++        return target
++
++    def agg(self, target, tree):
++        if self not in tree:
++            tree[self] = 0
++        tree[self] += 1
++        if tree[self] > self.n:
++            return STOP
++        return target
++
++    def agg(self, target, tree):
++        if self not in tree:
++            tree[self] = [0, {}]
++        tree[self][0] += 1
++        if tree[self][0] > self.n:
++            return STOP
++        return target
+ 
+     def __repr__(self):
+         return '%s()' % self.__class__.__name__

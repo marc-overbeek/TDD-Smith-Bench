@@ -1,0 +1,22 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -242,6 +242,19 @@
+             (),
+             lambda it, scope: chain.from_iterable(it))
+ 
++    def flatten(self):
++        """Returns a new :class:`Iter()` instance which combines iterables into a
++        single iterable.
++
++        >>> target = [[1, 2], [3, 4], [5]]
++        >>> list(glom(target, Iter().flatten()))
++        [1, 2, 3, 4, 5]
++        """
++        return self._add_op(
++            'flatten',
++            (),
++            lambda it, scope: chain.from_iterable(it))
++
+     def unique(self, key=T):
+         """Return a new :class:`Iter()` spec which lazily filters out duplicate
+         values, i.e., only the first appearance of a value in a stream will

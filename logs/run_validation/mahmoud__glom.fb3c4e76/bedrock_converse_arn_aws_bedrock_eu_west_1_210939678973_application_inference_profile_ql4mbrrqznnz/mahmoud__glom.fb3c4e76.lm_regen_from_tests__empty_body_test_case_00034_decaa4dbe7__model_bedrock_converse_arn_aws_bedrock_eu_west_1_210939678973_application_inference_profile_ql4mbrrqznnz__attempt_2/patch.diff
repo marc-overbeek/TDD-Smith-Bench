@@ -1,0 +1,155 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -30,14 +30,11 @@
+ 
+ 
+ def target_iter(target, scope):
+-    iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
+-
+     try:
+-        iterator = iterate(target)
+-    except Exception as e:
+-        raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+-                        % (target.__class__.__name__, Path(*scope[Path]), e))
+-    return iterator
++        iterate = scope[TargetRegistry].get_handler('iterate', target, path=[], inspector=None)
++    except Exception:
++        iterate = iter
++    return iterate(target)
+ 
+ 
+ class Group:
+@@ -73,22 +70,16 @@
+         self.spec = spec
+ 
+     def glomit(self, target, scope):
+-        scope[MODE] = GROUP
+-        scope[CUR_AGG] = None  # reset aggregation tripwire for sub-specs
+-        scope[ACC_TREE] = {}
+-
+-        # handle the basecase where the spec stops immediately
+-        # TODO: something smarter
+-        if type(self.spec) in (dict, list):
+-            ret = type(self.spec)()
+-        else:
+-            ret = None
+-
+-        for t in target_iter(target, scope):
+-            last, ret = ret, scope[glom](t, self.spec, scope)
+-            if ret is STOP:
+-                return last
+-        return ret
++        if scope[MODE] is not GROUP:
++            raise BadSpec("Limit() only valid in Group mode")
++        tree = scope[ACC_TREE]
++        if self not in tree:
++            tree[self] = [0, {}]
++        scope[ACC_TREE] = tree[self][1]
++        tree[self][0] += 1
++        if tree[self][0] > self.n:
++            return STOP
++        return scope[glom](target, self.subspec, scope)
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__
+@@ -96,63 +87,44 @@
+ 
+ 
+ def GROUP(target, spec, scope):
+-    """
+-    Group mode dispatcher; also sentinel for current mode = group
+-    """
+-    recurse = lambda spec: scope[glom](target, spec, scope)
+-    tree = scope[ACC_TREE]  # current accumulator support structure
+-    if callable(getattr(spec, "agg", None)):
++    if type(spec) is dict:
++        ret = {}
++        for k_spec, v_spec in spec.items():
++            k = scope[glom](target, k_spec, scope)
++            if k is SKIP:
++                continue
++            if k is STOP:
++                return STOP
++            if k not in ret:
++                ret[k] = None
++            cur_scope = dict(scope)
++            cur_scope[ACC_TREE] = scope[ACC_TREE].setdefault(k, {})
++            v = scope[glom](target, v_spec, cur_scope)
++            if v is STOP:
++                return ret
++            if v is not SKIP:
++                ret[k] = v
++        return ret
++    elif type(spec) is list:
++        if len(spec) != 1:
++            raise BadSpec('expected list of length 1, got %r' % spec)
++        v_spec = spec[0]
++        if type(v_spec) is dict:
++            raise BadSpec('expected leaf spec in list, got dict %r' % v_spec)
++        ret = scope[ACC_TREE].setdefault('list', [])
++        v = scope[glom](target, v_spec, scope)
++        if v is STOP:
++            return STOP
++        if v is not SKIP:
++            ret.append(v)
++        return ret
++    elif hasattr(spec, 'agg'):
++        tree = scope[ACC_TREE]
+         return spec.agg(target, tree)
+-    elif callable(spec):
+-        return spec(target)
+-    _spec_type = type(spec)
+-    if _spec_type not in (dict, list):
+-        raise BadSpec("Group mode expected dict, list, callable, or"
+-                      " aggregator, not: %r" % (spec,))
+-    _spec_id = id(spec)
+-    try:
+-        acc = tree[_spec_id]  # current accumulator
+-    except KeyError:
+-        acc = tree[_spec_id] = _spec_type()
+-    if _spec_type is dict:
+-        done = True
+-        for keyspec, valspec in spec.items():
+-            if tree.get(keyspec, None) is STOP:
+-                continue
+-            key = recurse(keyspec)
+-            if key is SKIP:
+-                done = False  # SKIP means we still want more vals
+-                continue
+-            if key is STOP:
+-                tree[keyspec] = STOP
+-                continue
+-            if key not in acc:
+-                # TODO: guard against key == id(spec)
+-                tree[key] = {}
+-            scope[ACC_TREE] = tree[key]
+-            result = recurse(valspec)
+-            if result is STOP:
+-                tree[keyspec] = STOP
+-                continue
+-            done = False  # SKIP or returning a value means we still want more vals
+-            if result is not SKIP:
+-                acc[key] = result
+-        if done:
+-            return STOP
+-        return acc
+-    elif _spec_type is list:
+-        for valspec in spec:
+-            if type(valspec) is dict:
+-                # doesn't make sense due to arity mismatch. did you mean [Auto({...})] ?
+-                raise BadSpec('dicts within lists are not'
+-                              ' allowed while in Group mode: %r' % spec)
+-            result = recurse(valspec)
+-            if result is STOP:
+-                return STOP
+-            if result is not SKIP:
+-                acc.append(result)
+-        return acc
+-    raise ValueError(f"{_spec_type} not a valid spec type for Group mode")  # pragma: no cover
++    elif hasattr(spec, 'glomit'):
++        return spec.glomit(target, scope)
++    else:
++        return scope[glom](target, spec, scope)
+ 
+ 
+ class First:

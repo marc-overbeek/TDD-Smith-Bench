@@ -1,0 +1,50 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -81,23 +81,31 @@
+ 
+ 
+ def get_monkeytype_config(path: str) -> Config:
+-    """Imports the config instance specified by path.
+-
+-    Path should be in the form module:qualname. Optionally, path may end with (),
+-    in which case we will call/instantiate the given class/function.
+-    """
+-    should_call = False
+-    if path.endswith("()"):
+-        should_call = True
+-        path = path[:-2]
+-    module, qualname = module_path_with_qualname(path)
++    """Import and return the config object specified by path."""
++    module_name, qualname = path.split(":", 1)
+     try:
+-        config = get_name_in_module(module, qualname)
+-    except MonkeyTypeError as mte:
+-        raise argparse.ArgumentTypeError(f"cannot import {path}: {mte}")
+-    if should_call:
+-        config = config()
+-    return config  # type: ignore[no-any-return]
++        module = importlib.import_module(module_name)
++    except ImportError as e:
++        raise MonkeyTypeError(f"Failed to import config module '{module_name}': {e}")
++    try:
++        config = get_name_in_module(module_name, qualname)
++    except MonkeyTypeError:
++        raise
++    return config
++
++def get_monkeytype_config(path: str) -> Config:
++    """Import and return the config object specified by path of the form <module>:<qualname>."""
++    parts = path.split(":", 1)
++    if len(parts) != 2:
++        raise MonkeyTypeError(
++            f"Invalid config path '{path}'; must be of the form <module>:<qualname>"
++        )
++    module_name, qualname = parts
++    try:
++        config = get_name_in_module(module_name, qualname)
++    except MonkeyTypeError as e:
++        raise MonkeyTypeError(f"Failed to get config '{qualname}' from module '{module_name}': {e}")
++    return config
+ 
+ 
+ def display_sample_count(traces: List[CallTrace], stderr: IO[str]) -> None:

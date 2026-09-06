@@ -1,0 +1,44 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -2092,40 +2092,7 @@
+         return _type_tree
+ 
+     def register(self, target_type, **kwargs):
+-        if not isinstance(target_type, type):
+-            raise TypeError(f'register expected a type, not an instance: {target_type!r}')
+-        exact = kwargs.pop('exact', None)
+-        new_op_map = dict(kwargs)
+-
+-        for op_name in sorted(set(self._op_auto_map.keys()) | set(new_op_map.keys())):
+-            cur_type_map = self._op_type_map.setdefault(op_name, OrderedDict())
+-
+-            if op_name in new_op_map:
+-                handler = new_op_map[op_name]
+-            elif target_type in cur_type_map:
+-                handler = cur_type_map[target_type]
+-            else:
+-                try:
+-                    handler = self._op_auto_map[op_name](target_type)
+-                except Exception as e:
+-                    raise TypeError('error while determining support for operation'
+-                                    ' "%s" on target type: %s (got %r)'
+-                                    % (op_name, target_type.__name__, e))
+-            if handler is not False and not callable(handler):
+-                raise TypeError('expected handler for op "%s" to be'
+-                                ' callable or False, not: %r' % (op_name, handler))
+-            new_op_map[op_name] = handler
+-
+-        for op_name, handler in new_op_map.items():
+-            self._op_type_map[op_name][target_type] = handler
+-
+-        if not exact:
+-            for op_name in new_op_map:
+-                self._register_fuzzy_type(op_name, target_type)
+-
+-        self._type_cache = {}  # reset type cache
+-
+-        return
++        pass
+ 
+     def register_op(self, op_name, auto_func=None, exact=False):
+         """add operations beyond the builtins ('get' and 'iterate' at the time

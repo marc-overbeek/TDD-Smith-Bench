@@ -1,0 +1,177 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -31,23 +31,16 @@
+ ONE_DEGREE = (2*mod_math.pi*EARTH_RADIUS) / 360  # ==> 111.319 km
+ 
+ 
+-def haversine_distance(latitude_1: float, longitude_1: float, latitude_2: float, longitude_2: float) -> float:
+-    """
+-    Haversine distance between two points, expressed in meters.
+-
+-    Implemented from http://www.movable-type.co.uk/scripts/latlong.html
+-    """
+-    d_lon = mod_math.radians(longitude_1 - longitude_2)
++def haversine_distance(latitude_1: float, longitude_1: float, latitude_2:
++    float, longitude_2: float) ->float:
++    d_lat = mod_math.radians(latitude_2 - latitude_1)
++    d_lon = mod_math.radians(longitude_2 - longitude_1)
+     lat1 = mod_math.radians(latitude_1)
+     lat2 = mod_math.radians(latitude_2)
+-    d_lat = lat1 - lat2
+-
+-    a = mod_math.pow(mod_math.sin(d_lat/2),2) + \
+-        mod_math.pow(mod_math.sin(d_lon/2),2) * mod_math.cos(lat1) * mod_math.cos(lat2)
+-    c = 2 * mod_math.asin(mod_math.sqrt(a))
+-    d = EARTH_RADIUS * c
+-
+-    return d
++    a = (mod_math.sin(d_lat / 2) * mod_math.sin(d_lat / 2) + mod_math.cos(lat1) *
++         mod_math.cos(lat2) * mod_math.sin(d_lon / 2) * mod_math.sin(d_lon / 2))
++    c = 2 * mod_math.atan2(mod_math.sqrt(a), mod_math.sqrt(1 - a))
++    return EARTH_RADIUS * c
+ 
+ 
+ def get_course(latitude_1: float, longitude_1: float, latitude_2: float, longitude_2: float,
+@@ -132,52 +125,28 @@
+     return length(locations, True)
+ 
+ 
+-def calculate_max_speed(speeds_and_distances: List[Tuple[float, float]], extreemes_percentile: float, ignore_nonstandard_distances: bool) -> Optional[float]:
+-    """
+-    Compute average distance and standard deviation for distance. Extremes
+-    in distances are usually extremes in speeds, so we will ignore them,
+-    here.
+-
+-    speeds_and_distances must be a list containing pairs of (speed, distance)
+-    for every point in a track segment.
+-
+-    In many cases the top speeds are measurement errors. For that reason extreme speeds can be removed
+-    with the extreemes_percentile (for example, a value of 0.05 will remove top 5%).
+-    """
+-    assert speeds_and_distances
+-    if len(speeds_and_distances) > 0:
+-        assert len(speeds_and_distances[0]) == 2
+-        # ...
+-        assert len(speeds_and_distances[-1]) == 2
+-
+-    if not ignore_nonstandard_distances:
+-        return max(x[0] or 0 for x in speeds_and_distances)
+-
+-    size = len(speeds_and_distances)
+-
+-    if size < 2:
+-        # log.debug('Segment too small to compute speed, size=%s', size)
++def calculate_max_speed(speeds_and_distances: List[Tuple[float, float]],
++    extreemes_percentile: float, ignore_nonstandard_distances: bool
++    ) ->Optional[float]:
++    if not speeds_and_distances:
+         return None
+-
+-    distances = [x[1] for x in speeds_and_distances]
+-    average_distance = sum(distances) / size
+-    standard_distance_deviation = mod_math.sqrt(sum((distance - average_distance) ** 2 for distance in distances) / size)
+-
+-    # Ignore items where the distance is too big:
+-    filtered_speeds_and_distances = [x for x in speeds_and_distances if abs(x[1] - average_distance) <= standard_distance_deviation * 1.5]
+-
+-    # sort by speed:
+-    speeds = [x[0] for x in filtered_speeds_and_distances]
++    distances = [d for _, d in speeds_and_distances]
++    if ignore_nonstandard_distances:
++        median_distance = mod_utils.median(distances)
++        if median_distance:
++            speeds_and_distances = [(s, d) for s, d in speeds_and_distances if abs(d - median_distance) < 2 * median_distance]
++    if not speeds_and_distances:
++        return None
++    speeds = [s for s, _ in speeds_and_distances]
+     if not speeds:
+         return None
+-    speeds.sort()
+-
+-    # Even here there may be some extremes => ignore the last 5%:
+-    index = int(len(speeds) * (1-extreemes_percentile))
+-    if index >= len(speeds):
+-        index = -1
+-
+-    return speeds[index]
++    if extreemes_percentile:
++        import numpy as np
++        threshold = np.percentile(speeds, extreemes_percentile)
++        speeds = [s for s in speeds if s <= threshold]
++    if not speeds:
++        return None
++    return max(speeds)
+ 
+ 
+ def calculate_uphill_downhill(elevations: List[Optional[float]]) -> Tuple[float, float]:
+@@ -226,34 +195,16 @@
+     return uphill, downhill
+ 
+ 
+-def distance(latitude_1: float, longitude_1: float, elevation_1: Optional[float],
+-            latitude_2: float, longitude_2: float, elevation_2: Optional[float],
+-            haversine: bool=False) -> float:
+-    """
+-    Distance between two points. If elevation is None compute a 2d distance
+-
+-    if haversine==True -- haversine will be used for every computations,
+-    otherwise...
+-
+-    Haversine distance will be used for distant points where elevation makes a
+-    small difference, so it is ignored. That's because haversine is 5-6 times
+-    slower than the dummy distance algorithm (which is OK for most GPS tracks).
+-    """
+-
+-    # If points too distant -- compute haversine distance:
+-    if haversine or (abs(latitude_1 - latitude_2) > .2 or abs(longitude_1 - longitude_2) > .2):
+-        return haversine_distance(latitude_1, longitude_1, latitude_2, longitude_2)
+-
+-    coef = mod_math.cos(mod_math.radians(latitude_1))
+-    x = latitude_1 - latitude_2
+-    y = (longitude_1 - longitude_2) * coef
+-
+-    distance_2d = mod_math.sqrt(x * x + y * y) * ONE_DEGREE
+-
+-    if elevation_1 is None or elevation_2 is None or elevation_1 == elevation_2:
+-        return distance_2d
+-
+-    return mod_math.sqrt(distance_2d ** 2 + (elevation_1 - elevation_2) ** 2)
++def distance(latitude_1: float, longitude_1: float, elevation_1: Optional[
++    float], latitude_2: float, longitude_2: float, elevation_2: Optional[
++    float], haversine: bool=False) ->float:
++    if haversine:
++        d = haversine_distance(latitude_1, longitude_1, latitude_2, longitude_2)
++    else:
++        d = ONE_DEGREE * mod_math.sqrt((latitude_2 - latitude_1) ** 2 + (longitude_2 - longitude_1) ** 2)
++    if elevation_1 is not None and elevation_2 is not None:
++        d = mod_math.sqrt(d ** 2 + (elevation_2 - elevation_1) ** 2)
++    return d
+ 
+ 
+ def elevation_angle(location1: "Location", location2: "Location", radians: float=False) -> Optional[float]:
+@@ -370,24 +321,9 @@
+         """ Remove the elevation data from this location."""
+         self.elevation = None
+ 
+-    def distance_2d(self, location: "Location") -> Optional[float]:
+-        """
+-        Calculate the distance between self and location in meters.
+-        Does not take elevation in account.
+-
+-        Parameters
+-        ----------
+-        location: Location
+-            Location to calculate the distance to.
+-
+-        Returns
+-        ----------
+-        distance : float
+-            Distance returned in meters.
+-        """
++    def distance_2d(self, location: 'Location') ->Optional[float]:
+         if not location:
+             return None
+-
+         return distance(self.latitude, self.longitude, None, location.latitude, location.longitude, None)
+ 
+     def distance_3d(self, location: "Location") -> Optional[float]:

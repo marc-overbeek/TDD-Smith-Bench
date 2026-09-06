@@ -1,0 +1,43 @@
+--- a/src/mistune/block_parser.py
++++ b/src/mistune/block_parser.py
+@@ -137,26 +137,12 @@
+         return m.end()
+ 
+     def parse_fenced_code(self, m: Match[str], state: BlockState) -> Optional[int]:
+-        """Parse token for fenced code block. A fenced code block is started with
+-        3 or more backtick(`) or tilde(~).
+-
+-        An example of a fenced code block:
+-
+-        .. code-block:: markdown
+-
+-            ```python
+-            def markdown(text):
+-                return mistune.html(text)
+-            ```
+-        """
+         spaces = m.group('fenced_1')
+         marker = m.group('fenced_2')
+         info = m.group('fenced_3')
+ 
+         c = marker[0]
+         if info and c == '`':
+-            # CommonMark Example 145
+-            # Info strings for backtick code blocks cannot contain backticks
+             if info.find(c) != -1:
+                 return None
+ 
+@@ -198,13 +184,6 @@
+         return m.end() + 1
+ 
+     def parse_setex_heading(self, m: Match[str], state: BlockState) -> Optional[int]:
+-        """Parse token for setex style heading. A setex heading syntax looks like:
+-
+-        .. code-block:: markdown
+-
+-            H1 title
+-            ========
+-        """
+         last_token = state.last_token()
+         if last_token and last_token['type'] == 'paragraph':
+             level = 1 if m.group('setext_1') == '=' else 2

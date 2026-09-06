@@ -1,0 +1,91 @@
+--- a/src/mistune/plugins/abbr.py
++++ b/src/mistune/plugins/abbr.py
+@@ -33,46 +33,54 @@
+     return m.end() + 1
+ 
+ 
+-def process_text(inline: "InlineParser", text: str, state: "InlineState") -> None:
+-    ref = state.env.get("ref_abbrs")
+-    if not ref:
+-        return state.append_token({'type': 'text', 'raw': text})
++def process_text(inline: 'InlineParser', text: str, state: 'InlineState'
++    ) ->None:
++    ref_abbrs = state.env.get('ref_abbrs')
++    if not ref_abbrs:
++        inline.tokens.append({'type': 'text', 'raw': text, 'children': None})
++        return
+ 
+-    if state.tokens:
+-        last = state.tokens[-1]
+-        if last['type'] == 'text':
+-            state.tokens.pop()
+-            text = last['raw'] + text
+-
+-    abbrs_re = state.env.get('abbrs_re')
+-    if not abbrs_re:
+-        abbrs_re = re.compile(r'|'.join(re.escape(k) for k in ref.keys()))
+-        state.env['abbrs_re'] = abbrs_re
++    # Build a pattern that matches any of the abbreviation keys
++    # Sort by length (longest first) to handle overlapping abbreviations
++    keys = sorted(ref_abbrs.keys(), key=len, reverse=True)
++    pattern = r'(?<!\w)(' + '|'.join(re.escape(key) for key in keys) + r')(?!\w)'
+ 
+     pos = 0
+-    while pos < len(text):
+-        m = abbrs_re.search(text, pos)
+-        if not m:
+-            break
++    for m in re.finditer(pattern, text):
++        start, end = m.start(), m.end()
++        if start > pos:
++            inline.tokens.append({'type': 'text', 'raw': text[pos:start], 'children': None})
++        key = m.group(1)
++        title = ref_abbrs.get(key, '')
++        inline.tokens.append({'type': 'abbr', 'children': key, 'attrs': {'title': title}})
++        pos = end
+ 
+-        end_pos = m.start()
+-        if end_pos > pos:
+-            hole = text[pos:end_pos]
+-            state.append_token({'type': 'text', 'raw': hole})
++    if pos < len(text):
++        inline.tokens.append({'type': 'text', 'raw': text[pos:], 'children': None})
+ 
+-        label = m.group(0)
+-        state.append_token({
+-            'type': 'abbr',
+-            'children': [{'type': 'text', 'raw': label}],
+-            'attrs': {'title': ref[label]}
+-        })
+-        pos = m.end()
++def process_text(inline: 'InlineParser', text: str, state: 'InlineState'
++    ) ->None:
++    ref_abbrs = state.env.get('ref_abbrs')
++    if not ref_abbrs:
++        inline.tokens.append({'type': 'text', 'raw': text, 'children': None})
++        return
+ 
+-    if pos == 0:
+-        # special case, just pure text
+-        state.append_token({'type': 'text', 'raw': text})
+-    elif pos < len(text):
+-        state.append_token({'type': 'text', 'raw': text[pos:]})
++    # Sort by length (longest first) to handle overlapping abbreviations
++    keys = sorted(ref_abbrs.keys(), key=len, reverse=True)
++    pattern = r'(?<!\w)(' + '|'.join(re.escape(key) for key in keys) + r')(?!\w)'
++
++    pos = 0
++    for m in re.finditer(pattern, text):
++        start, end = m.start(), m.end()
++        if start > pos:
++            inline.tokens.append({'type': 'text', 'raw': text[pos:start], 'children': None})
++        key = m.group(1)
++        title = ref_abbrs.get(key, '')
++        inline.tokens.append({'type': 'abbr', 'children': key, 'attrs': {'title': title}})
++        pos = end
++
++    if pos < len(text):
++        inline.tokens.append({'type': 'text', 'raw': text[pos:], 'children': None})
+ 
+ 
+ def render_abbr(renderer: "BaseRenderer", text: str, title: str) -> str:

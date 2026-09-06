@@ -1,0 +1,44 @@
+--- a/src/mistune/inline_parser.py
++++ b/src/mistune/inline_parser.py
+@@ -297,7 +297,6 @@
+     def parse_codespan(self, m: Match[str], state: InlineState) -> int:
+         marker = m.group(0)
+         # require same marker with same length at end
+-
+         pattern = re.compile(r'(.*?[^`])' + marker + r'(?!`)', re.S)
+ 
+         pos = m.end()
+@@ -313,6 +312,33 @@
+             state.append_token({'type': 'codespan', 'raw': code})
+             return end_pos
+         else:
++            # try to match with marker at the very start
++            pattern2 = re.compile(marker + r'(?!`)', re.S)
++            m3 = pattern2.match(state.src, pos)
++            if m3:
++                state.append_token({'type': 'codespan', 'raw': ''})
++                return m3.end()
++            state.append_token({'type': 'text', 'raw': marker})
++            return pos
++
++    def parse_codespan(self, m: Match[str], state: InlineState) -> int:
++        marker = m.group(0)
++        # require same marker with same length at end
++        pattern = re.compile(r'(.*?[^`])' + marker + r'(?!`)', re.S)
++
++        pos = m.end()
++        m2 = pattern.match(state.src, pos)
++        if m2:
++            end_pos = m2.end()
++            code = m2.group(1)
++            # Line endings are treated like spaces
++            code = code.replace('\n', ' ')
++            if len(code.strip()):
++                if code.startswith(' ') and code.endswith(' '):
++                    code = code[1:-1]
++            state.append_token({'type': 'codespan', 'raw': code})
++            return end_pos
++        else:
+             state.append_token({'type': 'text', 'raw': marker})
+             return pos
+ 

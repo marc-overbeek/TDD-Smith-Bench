@@ -1,0 +1,18 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1906,6 +1906,15 @@
+     __metaclass__ = _ObjStyleKeysMeta
+ 
+     @staticmethod
++    class A:
++        def __init__(self):
++            self.a = 1
++            self.b = {'c': 2}
++    val = A()
++    assert glom(val, '*') == [1, {'c': 2}]
++    assert glom(val, '**') == [val, 1, {'c': 2}, 2]
++
++    @staticmethod
+     def get_keys(obj):
+         ret = obj.__dict__.keys()
+         return ret

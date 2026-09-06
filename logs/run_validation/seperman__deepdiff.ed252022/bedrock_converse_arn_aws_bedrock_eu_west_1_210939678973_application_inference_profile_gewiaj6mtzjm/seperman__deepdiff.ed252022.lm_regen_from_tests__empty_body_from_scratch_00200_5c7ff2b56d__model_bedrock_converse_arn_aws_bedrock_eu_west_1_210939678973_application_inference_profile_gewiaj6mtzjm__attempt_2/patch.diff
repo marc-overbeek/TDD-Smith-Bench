@@ -1,0 +1,166 @@
+--- a/deepdiff/commands.py
++++ b/deepdiff/commands.py
+@@ -55,69 +55,103 @@
+ @click.option('--truncate-datetime', required=False, type=click.Choice(['second', 'minute', 'hour', 'day'], case_sensitive=True), show_default=True, default=None)
+ @click.option('--verbose-level', required=False, default=1, type=click.IntRange(0, 2), show_default=True)
+ @click.option('--debug', is_flag=True, show_default=False)
+-def diff(
+-    *args, **kwargs
+-):
+-    """
+-    Deep Diff Commandline
+-
+-    Deep Difference of content in files.
+-    It can read csv, tsv, json, yaml, and toml files.
+-
+-    T1 and T2 are the path to the files to be compared with each other.
+-    """
+-    debug = kwargs.pop('debug')
+-    kwargs['ignore_private_variables'] = not kwargs.pop('include_private_variables')
+-    kwargs['progress_logger'] = logger.info if kwargs['progress_logger'] == 'info' else logger.error
+-    create_patch = kwargs.pop('create_patch')
+-    t1_path = kwargs.pop("t1")
+-    t2_path = kwargs.pop("t2")
+-    t1_extension = t1_path.split('.')[-1]
+-    t2_extension = t2_path.split('.')[-1]
+-
+-    for name, t_path, t_extension in [('t1', t1_path, t1_extension), ('t2', t2_path, t2_extension)]:
+-        try:
+-            kwargs[name] = load_path_content(t_path, file_type=t_extension)
+-        except Exception as e:  # pragma: no cover.
+-            if debug:  # pragma: no cover.
+-                raise  # pragma: no cover.
+-            else:  # pragma: no cover.
+-                sys.exit(str(f"Error when loading {name}: {e}"))  # pragma: no cover.
+-
+-    # if (t1_extension != t2_extension):
+-    if t1_extension in {'csv', 'tsv'}:
+-        kwargs['t1'] = [dict(i) for i in kwargs['t1']]
+-    if t2_extension in {'csv', 'tsv'}:
+-        kwargs['t2'] = [dict(i) for i in kwargs['t2']]
+-
+-    if create_patch:
+-        # Disabling logging progress since it will leak into stdout
+-        kwargs['log_frequency_in_sec'] = 0
+-
+-    try:
+-        diff = DeepDiff(**kwargs)
+-    except Exception as e:  # pragma: no cover.  No need to test this.
+-        sys.exit(str(e))  # pragma: no cover.  No need to test this.
+-
++def diff(*args, **kwargs):
++    t1 = args[0]
++    t2 = args[1]
++    
++    # Extract all the options from kwargs
++    cutoff_distance_for_pairs = kwargs.get('cutoff_distance_for_pairs')
++    cutoff_intersection_for_pairs = kwargs.get('cutoff_intersection_for_pairs')
++    cache_size = kwargs.get('cache_size')
++    cache_tuning_sample_size = kwargs.get('cache_tuning_sample_size')
++    cache_purge_level = kwargs.get('cache_purge_level')
++    create_patch = kwargs.get('create_patch')
++    exclude_paths = kwargs.get('exclude_paths')
++    exclude_regex_paths = kwargs.get('exclude_regex_paths')
++    math_epsilon = kwargs.get('math_epsilon')
++    get_deep_distance = kwargs.get('get_deep_distance')
++    group_by = kwargs.get('group_by')
++    ignore_order = kwargs.get('ignore_order')
++    ignore_string_type_changes = kwargs.get('ignore_string_type_changes')
++    ignore_numeric_type_changes = kwargs.get('ignore_numeric_type_changes')
++    ignore_type_subclasses = kwargs.get('ignore_type_subclasses')
++    ignore_string_case = kwargs.get('ignore_string_case')
++    ignore_nan_inequality = kwargs.get('ignore_nan_inequality')
++    include_private_variables = kwargs.get('include_private_variables')
++    log_frequency_in_sec = kwargs.get('log_frequency_in_sec')
++    max_passes = kwargs.get('max_passes')
++    max_diffs = kwargs.get('max_diffs')
++    threshold_to_diff_deeper = kwargs.get('threshold_to_diff_deeper')
++    number_format_notation = kwargs.get('number_format_notation')
++    progress_logger = kwargs.get('progress_logger')
++    report_repetition = kwargs.get('report_repetition')
++    significant_digits = kwargs.get('significant_digits')
++    truncate_datetime = kwargs.get('truncate_datetime')
++    verbose_level = kwargs.get('verbose_level')
++    debug = kwargs.get('debug')
++    
++    # Load content from files
++    try:
++        content1 = load_path_content(t1)
++        content2 = load_path_content(t2)
++    except Exception as e:
++        sys.exit(str(f"Error when loading files: {e}"))
++    
++    # Create DeepDiff instance with all the options
++    try:
++        diff_instance = DeepDiff(
++            content1,
++            content2,
++            cutoff_distance_for_pairs=cutoff_distance_for_pairs,
++            cutoff_intersection_for_pairs=cutoff_intersection_for_pairs,
++            cache_size=cache_size,
++            cache_tuning_sample_size=cache_tuning_sample_size,
++            cache_purge_level=cache_purge_level,
++            exclude_paths=exclude_paths,
++            exclude_regex_paths=exclude_regex_paths,
++            math_epsilon=math_epsilon,
++            get_deep_distance=get_deep_distance,
++            group_by=group_by,
++            ignore_order=ignore_order,
++            ignore_string_type_changes=ignore_string_type_changes,
++            ignore_numeric_type_changes=ignore_numeric_type_changes,
++            ignore_type_subclasses=ignore_type_subclasses,
++            ignore_string_case=ignore_string_case,
++            ignore_nan_inequality=ignore_nan_inequality,
++            include_private_variables=include_private_variables,
++            log_frequency_in_sec=log_frequency_in_sec,
++            max_passes=max_passes,
++            max_diffs=max_diffs,
++            threshold_to_diff_deeper=threshold_to_diff_deeper,
++            number_format_notation=number_format_notation,
++            progress_logger=progress_logger,
++            report_repetition=report_repetition,
++            significant_digits=significant_digits,
++            truncate_datetime=truncate_datetime,
++            verbose_level=verbose_level
++        )
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when running deep diff: {e}"))
++    
++    # If create_patch flag is set, output the patch
+     if create_patch:
+         try:
+-            delta = Delta(diff)
+-        except Exception as e:  # pragma: no cover.
+-            if debug:  # pragma: no cover.
+-                raise  # pragma: no cover.
+-            else:  # pragma: no cover.
+-                sys.exit(f"Error when loading the patch (aka delta): {e}")  # pragma: no cover.
+-
+-        # printing into stdout
+-        sys.stdout.buffer.write(delta.dumps())
++            patch_result = diff_instance.patch
++            print(patch_result)
++        except Exception as e:
++            if debug:
++                raise
++            else:
++                sys.exit(str(f"Error when creating patch: {e}"))
+     else:
+-        try:
+-            if orjson:
+-                print(diff.to_json(option=orjson.OPT_INDENT_2))
+-            else:
+-                print(diff.to_json(indent=2))
+-        except Exception:
+-            pprint(diff, indent=2)
++        # Output the diff result
++        if diff_instance:
++            print(diff_instance)
++        else:
++            print("{}")
+ 
+ 
+ @cli.command()

@@ -1,0 +1,34 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -612,28 +612,9 @@
+         # Value of type "type" is not indexable.
+         return cls[elems]  # type: ignore[no-any-return,index]
+ 
+-    def _add_typed_dict_class_stub(
+-        self,
+-        fields: Dict[str, type],
+-        class_name: str,
+-        base_class_name: str = "TypedDict",
+-        total: bool = True,
+-    ) -> None:
+-        attribute_stubs = []
+-        for name, typ in fields.items():
+-            rewritten_type, stubs = self.rewrite_and_get_stubs(
+-                typ, class_name_hint=name
+-            )
+-            attribute_stubs.append(AttributeStub(name, rewritten_type))
+-            self.stubs.extend(stubs)
+-        total_flag = "" if total else ", total=False"
+-        self.stubs.append(
+-            ClassStub(
+-                name=f"{class_name}({base_class_name}{total_flag})",
+-                function_stubs=[],
+-                attribute_stubs=attribute_stubs,
+-            )
+-        )
++    def _add_typed_dict_class_stub(self, fields: Dict[str, type], class_name:
++        str, base_class_name: str='TypedDict', total: bool=True) ->None:
++        pass
+ 
+     def rewrite_anonymous_TypedDict(self, typed_dict: type) -> ForwardRef:  # type: ignore[override]
+         class_name = get_typed_dict_class_name(self._class_name_hint)

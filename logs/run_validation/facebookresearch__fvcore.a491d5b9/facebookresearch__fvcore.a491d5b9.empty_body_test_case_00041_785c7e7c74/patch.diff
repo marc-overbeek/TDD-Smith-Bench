@@ -1,0 +1,53 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -22,20 +22,8 @@
+ Handle = Callable[[List[Any], List[Any]], Union[typing.Counter[str], Number]]
+ 
+ 
+-def get_shape(val: Any) -> Optional[List[int]]:
+-    """
+-    Get the shapes from a jit value object.
+-
+-    Args:
+-        val (torch._C.Value): jit value object.
+-
+-    Returns:
+-        list(int): return a list of ints.
+-    """
+-    if val.isCompleteTensor():
+-        return val.type().sizes()
+-    else:
+-        return None
++def get_shape(val: Any) ->Optional[List[int]]:
++    pass
+ 
+ 
+ """
+@@ -260,24 +248,6 @@
+     return input_shape * (2 if has_affine else 1)
+ 
+ 
+-def elementwise_flop_counter(input_scale: float = 1, output_scale: float = 0) -> Handle:
+-    """
+-    Count flops by
+-        input_tensor.numel() * input_scale + output_tensor.numel() * output_scale
+-
+-    Args:
+-        input_scale: scale of the input tensor (first argument)
+-        output_scale: scale of the output tensor (first element in outputs)
+-    """
+-
+-    def elementwise_flop(inputs: List[Any], outputs: List[Any]) -> Number:
+-        ret = 0
+-        if input_scale != 0:
+-            shape = get_shape(inputs[0])
+-            ret += input_scale * prod(shape)
+-        if output_scale != 0:
+-            shape = get_shape(outputs[0])
+-            ret += output_scale * prod(shape)
+-        return ret
+-
+-    return elementwise_flop
++def elementwise_flop_counter(input_scale: float=1, output_scale: float=0
++    ) ->Handle:
++    pass

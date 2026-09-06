@@ -1,0 +1,73 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -23,19 +23,14 @@
+ 
+ 
+ def get_shape(val: Any) -> Optional[List[int]]:
+-    """
+-    Get the shapes from a jit value object.
+-
+-    Args:
+-        val (torch._C.Value): jit value object.
+-
+-    Returns:
+-        list(int): return a list of ints.
+-    """
+-    if val.isCompleteTensor():
+-        return val.type().sizes()
+-    else:
+-        return None
++    if hasattr(val, "type") and callable(val.type):
++        val_type = val.type()
++        if hasattr(val_type, "sizes") and callable(val_type.sizes):
++            try:
++                return val_type.sizes()
++            except Exception:
++                return None
++    return None
+ 
+ 
+ """
+@@ -217,15 +212,35 @@
+ 
+ 
+ def matmul_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-    """
+-    Count flops for matmul.
+-    """
+-    # Inputs should be a list of length 2.
+-    # Inputs contains the shapes of two matrices.
+     input_shapes = [get_shape(v) for v in inputs]
+     assert len(input_shapes) == 2, input_shapes
+-    assert input_shapes[0][-1] == input_shapes[1][-2], input_shapes
+-    flop = prod(input_shapes[0]) * input_shapes[-1][-1]
++    a_shape = input_shapes[0]
++    b_shape = input_shapes[1]
++
++    if len(a_shape) == 1:
++        a_shape = [1] + list(a_shape)
++    if len(b_shape) == 1:
++        b_shape = list(b_shape) + [1]
++
++    a_shape = list(a_shape)
++    b_shape = list(b_shape)
++
++    batch_dims_a = a_shape[:-2]
++    batch_dims_b = b_shape[:-2]
++
++    batch_size = 1
++    max_len = max(len(batch_dims_a), len(batch_dims_b))
++    batch_dims_a = [1] * (max_len - len(batch_dims_a)) + batch_dims_a
++    batch_dims_b = [1] * (max_len - len(batch_dims_b)) + batch_dims_b
++
++    for da, db in zip(batch_dims_a, batch_dims_b):
++        batch_size *= max(da, db)
++
++    m = a_shape[-2]
++    k = a_shape[-1]
++    n = b_shape[-1]
++
++    flop = batch_size * m * k * n
+     return flop
+ 
+ 

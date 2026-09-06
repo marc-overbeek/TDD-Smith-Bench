@@ -1,0 +1,113 @@
+--- a/starlette/applications.py
++++ b/starlette/applications.py
+@@ -111,8 +111,8 @@
+             self.middleware_stack = self.build_middleware_stack()
+         await self.middleware_stack(scope, receive, send)
+ 
+-    def on_event(self, event_type: str) -> typing.Callable:  # type: ignore[type-arg]
+-        return self.router.on_event(event_type)  # pragma: no cover
++    def on_event(self, event_type: str) ->typing.Callable:
++        pass
+ 
+     def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:
+         self.router.mount(path, app=app, name=name)  # pragma: no cover
+@@ -162,88 +162,17 @@
+     ) -> None:  # pragma: no cover
+         self.router.add_websocket_route(path, route, name=name)
+ 
+-    def exception_handler(self, exc_class_or_status_code: int | type[Exception]) -> typing.Callable:  # type: ignore[type-arg]
+-        warnings.warn(
+-            "The `exception_handler` decorator is deprecated, and will be removed in version 1.0.0. "
+-            "Refer to https://www.starlette.io/exceptions/ for the recommended approach.",
+-            DeprecationWarning,
+-        )
++    def exception_handler(self, exc_class_or_status_code: (int | type[Exception])
++        ) ->typing.Callable:
++        pass
+ 
+-        def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
+-            self.add_exception_handler(exc_class_or_status_code, func)
+-            return func
++    def route(self, path: str, methods: (list[str] | None)=None, name: (str |
++        None)=None, include_in_schema: bool=True) ->typing.Callable:
++        pass
+ 
+-        return decorator
++    def websocket_route(self, path: str, name: (str | None)=None
++        ) ->typing.Callable:
++        pass
+ 
+-    def route(
+-        self,
+-        path: str,
+-        methods: list[str] | None = None,
+-        name: str | None = None,
+-        include_in_schema: bool = True,
+-    ) -> typing.Callable:  # type: ignore[type-arg]
+-        """
+-        We no longer document this decorator style API, and its usage is discouraged.
+-        Instead you should use the following approach:
+-
+-        >>> routes = [Route(path, endpoint=...), ...]
+-        >>> app = Starlette(routes=routes)
+-        """
+-        warnings.warn(
+-            "The `route` decorator is deprecated, and will be removed in version 1.0.0. "
+-            "Refer to https://www.starlette.io/routing/ for the recommended approach.",
+-            DeprecationWarning,
+-        )
+-
+-        def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
+-            self.router.add_route(
+-                path,
+-                func,
+-                methods=methods,
+-                name=name,
+-                include_in_schema=include_in_schema,
+-            )
+-            return func
+-
+-        return decorator
+-
+-    def websocket_route(self, path: str, name: str | None = None) -> typing.Callable:  # type: ignore[type-arg]
+-        """
+-        We no longer document this decorator style API, and its usage is discouraged.
+-        Instead you should use the following approach:
+-
+-        >>> routes = [WebSocketRoute(path, endpoint=...), ...]
+-        >>> app = Starlette(routes=routes)
+-        """
+-        warnings.warn(
+-            "The `websocket_route` decorator is deprecated, and will be removed in version 1.0.0. "
+-            "Refer to https://www.starlette.io/routing/#websocket-routing for the recommended approach.",
+-            DeprecationWarning,
+-        )
+-
+-        def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
+-            self.router.add_websocket_route(path, func, name=name)
+-            return func
+-
+-        return decorator
+-
+-    def middleware(self, middleware_type: str) -> typing.Callable:  # type: ignore[type-arg]
+-        """
+-        We no longer document this decorator style API, and its usage is discouraged.
+-        Instead you should use the following approach:
+-
+-        >>> middleware = [Middleware(...), ...]
+-        >>> app = Starlette(middleware=middleware)
+-        """
+-        warnings.warn(
+-            "The `middleware` decorator is deprecated, and will be removed in version 1.0.0. "
+-            "Refer to https://www.starlette.io/middleware/#using-middleware for recommended approach.",
+-            DeprecationWarning,
+-        )
+-        assert middleware_type == "http", 'Currently only middleware("http") is supported.'
+-
+-        def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
+-            self.add_middleware(BaseHTTPMiddleware, dispatch=func)
+-            return func
+-
+-        return decorator
++    def middleware(self, middleware_type: str) ->typing.Callable:
++        pass

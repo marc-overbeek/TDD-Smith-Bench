@@ -1,0 +1,21 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -317,6 +317,18 @@
+ class MultiDict(ImmutableMultiDict[typing.Any, typing.Any]):
+     def __setitem__(self, key: typing.Any, value: typing.Any) -> None:
+         self.setlist(key, [value])
++
++    q = MultiDict([('a', '123'), ('a', '456')])
++    del q['a']
++    assert q.get('a') is None
++    assert repr(q) == 'MultiDict([])'
++
++    def __delitem__(self, key: typing.Any) -> None:
++        pass
++
++    def pop(self, key: typing.Any, default: typing.Any = None) -> typing.Any:
++        self._list = [(k, v) for k, v in self._list if k != key]
++        return self._dict.pop(key, default)
+ 
+     def __delitem__(self, key: typing.Any) -> None:
+         self._list = [(k, v) for k, v in self._list if k != key]

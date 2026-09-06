@@ -1,0 +1,39 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -477,8 +477,35 @@
+         self.host_regex, self.host_format, self.param_convertors = compile_path(host)
+ 
+     @property
++    self.routes = [] if routes is None else list(routes)
++
++    @property
+     def routes(self) -> list[BaseRoute]:
+-        return getattr(self.app, "routes", [])
++        return self._routes
++
++    @property
++    def routes(self) -> list[BaseRoute]:
++        return self._routes
++
++    @property
++    def routes(self) -> list[BaseRoute]:
++        return self._routes
++
++    @property
++    def routes(self) -> list[BaseRoute]:
++        return self._routes if hasattr(self, '_routes') else []
++
++    @property  
++    def routes(self) -> list[BaseRoute]:
++        return self._routes
++
++    @property
++    def routes(self) -> list[BaseRoute]:
++        return self._routes
++
++    @property
++    def routes(self) -> list[BaseRoute]:
++        return getattr(self, '_routes', [])
+ 
+     def matches(self, scope: Scope) -> tuple[Match, Scope]:
+         if scope["type"] in ("http", "websocket"):

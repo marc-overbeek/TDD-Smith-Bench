@@ -1,0 +1,32 @@
+--- a/src/mistune/plugins/table.py
++++ b/src/mistune/plugins/table.py
+@@ -152,19 +152,17 @@
+     return "<tr>\n" + text + "</tr>\n"
+ 
+ 
+-def render_table_cell(
+-    renderer: "BaseRenderer", text: str, align: Optional[str] = None, head: bool = False
+-) -> str:
+-    if head:
+-        tag = 'th'
+-    else:
+-        tag = 'td'
+-
+-    html = '  <' + tag
++def render_table_cell(renderer: 'BaseRenderer', text: str, align: Optional[str]=None, head: bool=False) ->str:
++
++'attrs': {'align': aligns[i], 'head': True}
++
++def render_table_cell(renderer: 'BaseRenderer', text: str, head: bool=False, align: Optional[str]=None) ->str:
++    tag = 'th' if head else 'td'
++    style = ''
+     if align:
+-        html += ' style="text-align:' + align + '"'
+-
+-    return html + '>' + text + '</' + tag + '>\n'
++        style = f' style="text-align:{align}"'
++    text = renderer.render_children(renderer.inline(text))
++    return f'<{tag}{style}>{text}</{tag}>\n'
+ 
+ 
+ def table(md: "Markdown") -> None:

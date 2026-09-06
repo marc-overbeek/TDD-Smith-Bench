@@ -1,0 +1,77 @@
+--- a/src/mistune/block_parser.py
++++ b/src/mistune/block_parser.py
+@@ -137,26 +137,12 @@
+         return m.end()
+ 
+     def parse_fenced_code(self, m: Match[str], state: BlockState) -> Optional[int]:
+-        """Parse token for fenced code block. A fenced code block is started with
+-        3 or more backtick(`) or tilde(~).
+-
+-        An example of a fenced code block:
+-
+-        .. code-block:: markdown
+-
+-            ```python
+-            def markdown(text):
+-                return mistune.html(text)
+-            ```
+-        """
+         spaces = m.group('fenced_1')
+         marker = m.group('fenced_2')
+         info = m.group('fenced_3')
+ 
+         c = marker[0]
+         if info and c == '`':
+-            # CommonMark Example 145
+-            # Info strings for backtick code blocks cannot contain backticks
+             if info.find(c) != -1:
+                 return None
+ 
+@@ -291,9 +277,6 @@
+     def extract_block_quote(
+         self, m: Match[str], state: BlockState
+     ) -> Tuple[str, Optional[int]]:
+-        """Extract text and cursor end position of a block quote."""
+-
+-        # cleanup at first to detect if it is code block
+         text = m.group('quote_1') + '\n'
+         text = expand_leading_tab(text, 3)
+         text = _BLOCK_QUOTE_TRIM.sub('', text)
+@@ -335,9 +318,6 @@
+                     continue
+ 
+                 if prev_blank_line:
+-                    # CommonMark Example 249
+-                    # because of laziness, a blank line is needed between
+-                    # a block quote and a following paragraph
+                     break
+ 
+                 m4 = break_sc.match(state.src, state.cursor)
+@@ -346,27 +326,16 @@
+                     if end_pos:
+                         break
+ 
+-                # lazy continuation line
+                 pos = state.find_line_end()
+                 line = state.get_text(pos)
+                 line = expand_leading_tab(line, 3)
+                 text += line
+                 state.cursor = pos
+ 
+-        # according to CommonMark Example 6, the second tab should be
+-        # treated as 4 spaces
+         return expand_tab(text), end_pos
+ 
+     def parse_block_quote(self, m: Match[str], state: BlockState) -> int:
+-        """Parse token for block quote. Here is an example of the syntax:
+-
+-        .. code-block:: markdown
+-
+-            > a block quote starts
+-            > with right arrows
+-        """
+         text, end_pos = self.extract_block_quote(m, state)
+-        # scan children state
+         child = state.child_state(text)
+         if state.depth() >= self.max_nested_level - 1:
+             rules = list(self.block_quote_rules)

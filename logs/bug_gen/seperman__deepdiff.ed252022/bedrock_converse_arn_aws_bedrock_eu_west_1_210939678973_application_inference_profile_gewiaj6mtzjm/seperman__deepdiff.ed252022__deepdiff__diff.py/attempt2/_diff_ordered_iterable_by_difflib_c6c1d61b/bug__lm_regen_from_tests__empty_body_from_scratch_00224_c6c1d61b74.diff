@@ -1,0 +1,144 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -952,60 +952,90 @@
+                 self._diff(next_level, parents_ids_added, local_tree=local_tree)
+ 
+     def _diff_ordered_iterable_by_difflib(
+-        self, level, local_tree, parents_ids=frozenset(), _original_type=None, child_relationship_class=None,
+-    ):
+-
+-        seq = difflib.SequenceMatcher(isjunk=None, a=level.t1, b=level.t2, autojunk=False)
+-
+-        opcodes = seq.get_opcodes()
+-        opcodes_with_values = []
+-
+-        # TODO: this logic should be revisted so we detect reverse operations
+-        # like when a replacement happens at index X and a reverse replacement happens at index Y
+-        # in those cases we have a "iterable_item_moved" operation.
+-        for tag, t1_from_index, t1_to_index, t2_from_index, t2_to_index in opcodes:
+-            if tag == 'equal':
++            self, level, local_tree, parents_ids=frozenset(), _original_type=None, child_relationship_class=None,
++        ):
++
++            seq = difflib.SequenceMatcher(isjunk=None, a=level.t1, b=level.t2, autojunk=False)
++
++            opcodes = seq.get_opcodes()
++            opcodes_with_values = []
++
++            # TODO: this logic should be revisted so we detect reverse operations
++            # like when a replacement happens at index X and a reverse replacement happens at index Y
++            # in those cases we have a "iterable_item_moved" operation.
++            for tag, t1_from_index, t1_to_index, t2_from_index, t2_to_index in opcodes:
++                if tag == 'equal':
++                    opcodes_with_values.append(Opcode(
++                        tag, t1_from_index, t1_to_index, t2_from_index, t2_to_index,
++                    ))
++                    continue
++                # print('{:7}   t1[{}:{}] --> t2[{}:{}] {!r:>8} --> {!r}'.format(
++                #     tag, t1_from_index, t1_to_index, t2_from_index, t2_to_index, level.t1[t1_from_index:t1_to_index], level.t2[t2_from_index:t2_to_index]))
++
+                 opcodes_with_values.append(Opcode(
+                     tag, t1_from_index, t1_to_index, t2_from_index, t2_to_index,
++                    old_values = level.t1[t1_from_index: t1_to_index],
++                    new_values = level.t2[t2_from_index: t2_to_index],
+                 ))
+-                continue
+-            # print('{:7}   t1[{}:{}] --> t2[{}:{}] {!r:>8} --> {!r}'.format(
+-            #     tag, t1_from_index, t1_to_index, t2_from_index, t2_to_index, level.t1[t1_from_index:t1_to_index], level.t2[t2_from_index:t2_to_index]))
+-
+-            opcodes_with_values.append(Opcode(
+-                tag, t1_from_index, t1_to_index, t2_from_index, t2_to_index,
+-                old_values = level.t1[t1_from_index: t1_to_index],
+-                new_values = level.t2[t2_from_index: t2_to_index],
+-            ))
+-
+-            if tag == 'replace':
+-                self._diff_by_forming_pairs_and_comparing_one_by_one(
+-                    level, local_tree=local_tree, parents_ids=parents_ids,
+-                    _original_type=_original_type, child_relationship_class=child_relationship_class,
+-                    t1_from_index=t1_from_index, t1_to_index=t1_to_index,
+-                    t2_from_index=t2_from_index, t2_to_index=t2_to_index,
+-                )
+-            elif tag == 'delete':
+-                for index, x in enumerate(level.t1[t1_from_index:t1_to_index]):
+-                    change_level = level.branch_deeper(
+-                        x,
+-                        notpresent,
+-                        child_relationship_class=child_relationship_class,
+-                        child_relationship_param=index + t1_from_index,
+-                        child_relationship_param2=index + t1_from_index,
+-                    )
+-                    self._report_result('iterable_item_removed', change_level, local_tree=local_tree)
+-            elif tag == 'insert':
+-                for index, y in enumerate(level.t2[t2_from_index:t2_to_index]):
+-                    change_level = level.branch_deeper(
+-                        notpresent,
+-                        y,
+-                        child_relationship_class=child_relationship_class,
+-                        child_relationship_param=index + t2_from_index,
+-                        child_relationship_param2=index + t2_from_index,
+-                    )
+-                    self._report_result('iterable_item_added', change_level, local_tree=local_tree)
+-        return opcodes_with_values
++
++                if tag == 'replace':
++                    # For replacements, we need to compare each element individually
++                    t1_slice = level.t1[t1_from_index:t1_to_index]
++                    t2_slice = level.t2[t2_from_index:t2_to_index]
++                
++                    # Compare element by element
++                    for i, (x, y) in enumerate(zip_longest(t1_slice, t2_slice, fillvalue=ListItemRemovedOrAdded)):
++                        if x is ListItemRemovedOrAdded:  # item added
++                            change_level = level.branch_deeper(
++                                notpresent,
++                                y,
++                                child_relationship_class=child_relationship_class,
++                                child_relationship_param=t2_from_index + i,
++                                child_relationship_param2=t2_from_index + i,
++                            )
++                            self._report_result('iterable_item_added', change_level, local_tree=local_tree)
++                        elif y is ListItemRemovedOrAdded:  # item removed
++                            change_level = level.branch_deeper(
++                                x,
++                                notpresent,
++                                child_relationship_class=child_relationship_class,
++                                child_relationship_param=t1_from_index + i,
++                                child_relationship_param2=t1_from_index + i,
++                            )
++                            self._report_result('iterable_item_removed', change_level, local_tree=local_tree)
++                        else:  # values changed
++                            # Check if items are actually different
++                            if x != y:
++                                change_level = level.branch_deeper(
++                                    x,
++                                    y,
++                                    child_relationship_class=child_relationship_class,
++                                    child_relationship_param=t1_from_index + i,
++                                    child_relationship_param2=t2_from_index + i,
++                                )
++                                self._report_result('values_changed', change_level, local_tree=local_tree)
++                        
++                elif tag == 'delete':
++                    for index, x in enumerate(level.t1[t1_from_index:t1_to_index]):
++                        change_level = level.branch_deeper(
++                            x,
++                            notpresent,
++                            child_relationship_class=child_relationship_class,
++                            child_relationship_param=index + t1_from_index,
++                            child_relationship_param2=index + t1_from_index,
++                        )
++                        self._report_result('iterable_item_removed', change_level, local_tree=local_tree)
++                elif tag == 'insert':
++                    for index, y in enumerate(level.t2[t2_from_index:t2_to_index]):
++                        change_level = level.branch_deeper(
++                            notpresent,
++                            y,
++                            child_relationship_class=child_relationship_class,
++                            child_relationship_param=index + t2_from_index,
++                            child_relationship_param2=index + t2_from_index,
++                        )
++                        self._report_result('iterable_item_added', change_level, local_tree=local_tree)
++            return opcodes_with_values
+ 
+ 
+     def _diff_str(self, level, local_tree=None):

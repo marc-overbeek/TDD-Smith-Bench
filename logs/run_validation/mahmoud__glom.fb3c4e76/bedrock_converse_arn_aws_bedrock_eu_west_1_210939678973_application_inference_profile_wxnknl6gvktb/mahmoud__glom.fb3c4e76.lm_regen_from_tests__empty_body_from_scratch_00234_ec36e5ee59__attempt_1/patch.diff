@@ -1,0 +1,21 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -431,6 +431,18 @@
+         return And(self, other)
+ 
+     __rand__ = __and__
++
++    glom(1.0, (M > 0) | float)
++    glom(1.0, (M > 100) | float)
++
++    assert glom(range(10), [(M < 7) | Val(7)]) == [0, 1, 2, 3, 4, 5, 6, 7, 7, 7]
++    assert glom(range(10), [(M < 7) | Val(SKIP)]) == [0, 1, 2, 3, 4, 5, 6]
++
++    def __and__(self, other):
++        return And(self, other)
++
++    def __or__(self, other):
++        return Or(self, other)
+ 
+     def __or__(self, other):
+         return Or(self, other)

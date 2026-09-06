@@ -1,0 +1,35 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -307,14 +307,10 @@
+     def rewrite_anonymous_TypedDict(self, typed_dict):
+         assert is_anonymous_typed_dict(typed_dict)
+         required_fields, optional_fields = field_annotations(typed_dict)
+-        return self.make_anonymous_typed_dict(
+-            required_fields={
+-                name: self.rewrite(typ) for name, typ in required_fields.items()
+-            },
+-            optional_fields={
+-                name: self.rewrite(typ) for name, typ in optional_fields.items()
+-            },
+-        )
++        all_value_types = [*required_fields.values(), *optional_fields.values()]
++        if not all_value_types:
++            return Dict[Any, Any]
++        return Dict[str, Union[tuple(self.rewrite(typ) for typ in all_value_types)]]
+ 
+     def rewrite_TypedDict(self, typed_dict):
+         if is_anonymous_typed_dict(typed_dict):
+@@ -354,9 +350,10 @@
+     """TypeRewriter provides a visitor for rewriting parts of types"""
+ 
+     def make_anonymous_typed_dict(self, required_fields, optional_fields):
+-        return make_typed_dict(
+-            required_fields=required_fields, optional_fields=optional_fields
+-        )
++        all_value_types = [*required_fields.values(), *optional_fields.values()]
++        if not all_value_types:
++            return Dict[Any, Any]
++        return Dict[str, Union[tuple(all_value_types)]]
+ 
+     def make_builtin_typed_dict(self, name, annotations, total):
+         return TypedDict(name, annotations, total=total)

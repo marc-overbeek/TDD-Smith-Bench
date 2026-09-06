@@ -1,0 +1,77 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -107,52 +107,35 @@
+     return qualname.split(".")[0]
+ 
+ 
+-def get_imports_for_annotation(anno: Any) -> ImportMap:
+-    """Return the imports (module, name) needed for the type in the annotation"""
++def get_imports_for_annotation(anno: Any) ->ImportMap:
+     imports = ImportMap()
+-    if (
+-        anno is inspect.Parameter.empty
+-        or anno is inspect.Signature.empty
+-        or not (
+-            isinstance(anno, type) or is_any(anno) or is_union(anno) or is_generic(anno)
+-        )
+-        or anno.__module__ == "builtins"
+-    ):
++    if is_forward_ref(anno):
+         return imports
+-    if is_any(anno):
+-        imports["typing"].add("Any")
+-    elif _is_optional(anno):
+-        imports["typing"].add("Optional")
+-        elem_type = _get_optional_elem(anno)
+-        elem_imports = get_imports_for_annotation(elem_type)
+-        imports.merge(elem_imports)
+-    elif is_generic(anno):
+-        if is_union(anno):
+-            imports["typing"].add("Union")
+-        else:
+-            imports[anno.__module__].add(
+-                _get_import_for_qualname(qualname_of_generic(anno))
+-            )
+-        elem_types = getattr(anno, "__args__", None) or []
+-        for et in elem_types:
+-            elem_imports = get_imports_for_annotation(et)
+-            imports.merge(elem_imports)
+-    else:
+-        name = _get_import_for_qualname(anno.__qualname__)
+-        imports[anno.__module__].add(name)
++    if hasattr(anno, "__module__") and anno.__module__ is not None:
++        if anno.__module__ == "typing":
++            imports["typing"].add(anno.__name__)
++        elif anno.__module__ != "builtins":
++            imports[anno.__module__].add(anno.__name__)
++    if is_generic(anno):
++        for arg in getattr(anno, "__args__", []):
++            if arg is not None:
++                imports.merge(get_imports_for_annotation(arg))
++    if is_union(anno):
++        for arg in anno.__args__:
++            if arg is not None:
++                imports.merge(get_imports_for_annotation(arg))
++    if hasattr(anno, "__origin__"):
++        imports.merge(get_imports_for_annotation(anno.__origin__))
+     return imports
+ 
+ 
+-def get_imports_for_signature(sig: inspect.Signature) -> ImportMap:
+-    """Return the imports (module, name) needed for all types in annotations"""
++def get_imports_for_signature(sig: inspect.Signature) ->ImportMap:
+     imports = ImportMap()
+     for param in sig.parameters.values():
+-        param_imports = get_imports_for_annotation(param.annotation)
+-        if not _is_optional(param.annotation) and param.default is None:
+-            imports["typing"].add("Optional")
+-        imports.merge(param_imports)
+-    return_imports = get_imports_for_annotation(sig.return_annotation)
+-    imports.merge(return_imports)
++        if param.annotation is not inspect.Parameter.empty:
++            imports.merge(get_imports_for_annotation(param.annotation))
++    if sig.return_annotation is not inspect.Signature.empty:
++        imports.merge(get_imports_for_annotation(sig.return_annotation))
+     return imports
+ 
+ 

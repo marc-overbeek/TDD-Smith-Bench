@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef host_from_uri(uri):\n    \"\"\"Extract host and port from URI.\n    \n    Returns a tuple of (host, port) where port is a string.\n    Default ports are provided when none is present in the URI.\n    \"\"\"\n    default_ports = {\n        'http': '80',\n        'https': '443',\n    }\n    \n    parsed = urlparse(uri)\n    host = parsed.hostname\n    port = parsed.port\n    \n    if port:\n        return (host, str(port))\n    else:\n        scheme = parsed.scheme.lower()\n        return (host, default_ports.get(scheme, '80'))\n```",
+  "rewrite": "def host_from_uri(uri):\n    \"\"\"Extract host and port from URI.\n    \n    Returns a tuple of (host, port) where port is a string.\n    Default ports are provided when none is present in the URI.\n    \"\"\"\n    default_ports = {\n        'http': '80',\n        'https': '443',\n    }\n    \n    parsed = urlparse(uri)\n    host = parsed.hostname\n    port = parsed.port\n    \n    if port:\n        return (host, str(port))\n    else:\n        scheme = parsed.scheme.lower()\n        return (host, default_ports.get(scheme, '80'))",
+  "strategy": "lm_regen_from_tests"
+}

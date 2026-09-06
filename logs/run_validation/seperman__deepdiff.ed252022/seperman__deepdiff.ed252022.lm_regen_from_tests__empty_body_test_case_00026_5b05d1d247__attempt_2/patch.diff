@@ -1,0 +1,225 @@
+--- a/deepdiff/commands.py
++++ b/deepdiff/commands.py
+@@ -55,69 +55,83 @@
+ @click.option('--truncate-datetime', required=False, type=click.Choice(['second', 'minute', 'hour', 'day'], case_sensitive=True), show_default=True, default=None)
+ @click.option('--verbose-level', required=False, default=1, type=click.IntRange(0, 2), show_default=True)
+ @click.option('--debug', is_flag=True, show_default=False)
+-def diff(
+-    *args, **kwargs
+-):
+-    """
+-    Deep Diff Commandline
+-
+-    Deep Difference of content in files.
+-    It can read csv, tsv, json, yaml, and toml files.
+-
+-    T1 and T2 are the path to the files to be compared with each other.
+-    """
++def diff(*args, **kwargs):
++    t1 = kwargs.pop('t1')
++    t2 = kwargs.pop('t2')
+     debug = kwargs.pop('debug')
+-    kwargs['ignore_private_variables'] = not kwargs.pop('include_private_variables')
+-    kwargs['progress_logger'] = logger.info if kwargs['progress_logger'] == 'info' else logger.error
++    
+     create_patch = kwargs.pop('create_patch')
+-    t1_path = kwargs.pop("t1")
+-    t2_path = kwargs.pop("t2")
+-    t1_extension = t1_path.split('.')[-1]
+-    t2_extension = t2_path.split('.')[-1]
+-
+-    for name, t_path, t_extension in [('t1', t1_path, t1_extension), ('t2', t2_path, t2_extension)]:
+-        try:
+-            kwargs[name] = load_path_content(t_path, file_type=t_extension)
+-        except Exception as e:  # pragma: no cover.
+-            if debug:  # pragma: no cover.
+-                raise  # pragma: no cover.
+-            else:  # pragma: no cover.
+-                sys.exit(str(f"Error when loading {name}: {e}"))  # pragma: no cover.
+-
+-    # if (t1_extension != t2_extension):
+-    if t1_extension in {'csv', 'tsv'}:
+-        kwargs['t1'] = [dict(i) for i in kwargs['t1']]
+-    if t2_extension in {'csv', 'tsv'}:
+-        kwargs['t2'] = [dict(i) for i in kwargs['t2']]
+-
+-    if create_patch:
+-        # Disabling logging progress since it will leak into stdout
+-        kwargs['log_frequency_in_sec'] = 0
+-
+-    try:
+-        diff = DeepDiff(**kwargs)
+-    except Exception as e:  # pragma: no cover.  No need to test this.
+-        sys.exit(str(e))  # pragma: no cover.  No need to test this.
+-
++    
++    kwargs['cutoff_distance_for_pairs'] = kwargs.pop('cutoff_distance_for_pairs')
++    kwargs['cutoff_intersection_for_pairs'] = kwargs.pop('cutoff_intersection_for_pairs')
++    kwargs['cache_size'] = kwargs.pop('cache_size')
++    kwargs['cache_tuning_sample_size'] = kwargs.pop('cache_tuning_sample_size')
++    kwargs['cache_purge_level'] = kwargs.pop('cache_purge_level')
++    kwargs['exclude_paths'] = kwargs.pop('exclude_paths')
++    kwargs['exclude_regex_paths'] = kwargs.pop('exclude_regex_paths')
++    kwargs['math_epsilon'] = kwargs.pop('math_epsilon')
++    kwargs['get_deep_distance'] = kwargs.pop('get_deep_distance')
++    kwargs['group_by'] = kwargs.pop('group_by')
++    kwargs['ignore_order'] = kwargs.pop('ignore_order')
++    kwargs['ignore_string_type_changes'] = kwargs.pop('ignore_string_type_changes')
++    kwargs['ignore_numeric_type_changes'] = kwargs.pop('ignore_numeric_type_changes')
++    kwargs['ignore_type_subclasses'] = kwargs.pop('ignore_type_subclasses')
++    kwargs['ignore_string_case'] = kwargs.pop('ignore_string_case')
++    kwargs['ignore_nan_inequality'] = kwargs.pop('ignore_nan_inequality')
++    kwargs['include_private_variables'] = kwargs.pop('include_private_variables')
++    kwargs['log_frequency_in_sec'] = kwargs.pop('log_frequency_in_sec')
++    kwargs['max_passes'] = kwargs.pop('max_passes')
++    kwargs['max_diffs'] = kwargs.pop('max_diffs')
++    kwargs['threshold_to_diff_deeper'] = kwargs.pop('threshold_to_diff_deeper')
++    kwargs['number_format_notation'] = kwargs.pop('number_format_notation')
++    kwargs['progress_logger'] = kwargs.pop('progress_logger')
++    kwargs['report_repetition'] = kwargs.pop('report_repetition')
++    kwargs['significant_digits'] = kwargs.pop('significant_digits')
++    kwargs['truncate_datetime'] = kwargs.pop('truncate_datetime')
++    kwargs['verbose_level'] = kwargs.pop('verbose_level')
++    
++    kwargs = {k: v for k, v in kwargs.items() if v is not None}
++    
++    try:
++        t1_content = load_path_content(t1)
++        t2_content = load_path_content(t2)
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when loading files: {e}"))
++    
++    try:
++        result = DeepDiff(t1_content, t2_content, **kwargs)
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when running deep diff: {e}"))
++    
+     if create_patch:
+         try:
+-            delta = Delta(diff)
+-        except Exception as e:  # pragma: no cover.
+-            if debug:  # pragma: no cover.
+-                raise  # pragma: no cover.
+-            else:  # pragma: no cover.
+-                sys.exit(f"Error when loading the patch (aka delta): {e}")  # pragma: no cover.
+-
+-        # printing into stdout
+-        sys.stdout.buffer.write(delta.dumps())
++            delta = Delta(result)
++            output = delta.to_json()
++        except Exception as e:
++            if debug:
++                raise
++            else:
++                sys.exit(str(f"Error when creating patch: {e}"))
+     else:
+         try:
+             if orjson:
+-                print(diff.to_json(option=orjson.OPT_INDENT_2))
+-            else:
+-                print(diff.to_json(indent=2))
+-        except Exception:
+-            pprint(diff, indent=2)
++                output = orjson.dumps(result.to_dict(), option=orjson.OPT_INDENT_2).decode('utf-8')
++            else:
++                import json
++                output = json.dumps(result.to_dict(), indent=2)
++        except Exception as e:
++            if debug:
++                raise
++            else:
++                sys.exit(str(f"Error when serializing result: {e}"))
++    
++    click.echo(output)
+ 
+ 
+ @cli.command()
+@@ -126,45 +140,43 @@
+ @click.option('--backup', '-b', is_flag=True, show_default=True)
+ @click.option('--raise-errors', is_flag=True, show_default=True)
+ @click.option('--debug', is_flag=True, show_default=False)
+-def patch(
+-    path, delta_path, backup, raise_errors, debug
+-):
+-    """
+-    Deep Patch Commandline
+-
+-    Patches a file based on the information in a delta file.
+-    The delta file can be created by the deep diff command and
+-    passing the --create-patch argument.
+-
+-    Deep Patch is similar to Linux's patch command.
+-    The difference is that it is made for patching data.
+-    It can read csv, tsv, json, yaml, and toml files.
+-
+-    """
+-    try:
+-        delta = Delta(delta_path=delta_path, raise_errors=raise_errors)
+-    except Exception as e:  # pragma: no cover.
+-        if debug:  # pragma: no cover.
+-            raise  # pragma: no cover.
+-        else:  # pragma: no cover.
+-            sys.exit(str(f"Error when loading the patch (aka delta) {delta_path}: {e}"))  # pragma: no cover.
+-
+-    extension = path.split('.')[-1]
+-
+-    try:
+-        content = load_path_content(path, file_type=extension)
+-    except Exception as e:  # pragma: no cover.
+-        sys.exit(str(f"Error when loading {path}: {e}"))  # pragma: no cover.
+-
+-    result = delta + content
+-
+-    try:
+-        save_content_to_path(result, path, file_type=extension, keep_backup=backup)
+-    except Exception as e:  # pragma: no cover.
+-        if debug:  # pragma: no cover.
+-            raise  # pragma: no cover.
+-        else:  # pragma: no cover.
+-            sys.exit(str(f"Error when saving {path}: {e}"))  # pragma: no cover.
++def patch(path, delta_path, backup, raise_errors, debug):
++    try:
++        content = load_path_content(path)
++        delta_content = load_path_content(delta_path)
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when loading files: {e}"))
++    
++    try:
++        delta = Delta(delta_content, raise_errors=raise_errors)
++        patched = delta + content
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when applying patch: {e}"))
++    
++    if backup:
++        try:
++            save_content_to_path(content, path + '.backup')
++        except Exception as e:
++            if debug:
++                raise
++            else:
++                sys.exit(str(f"Error when creating backup: {e}"))
++    
++    try:
++        save_content_to_path(patched, path)
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when saving patched file: {e}"))
++    
++    click.echo(f"Patched {path} successfully")
+ 
+ 
+ @cli.command()

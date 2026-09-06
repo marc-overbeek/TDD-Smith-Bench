@@ -1,0 +1,18 @@
+--- a/starlette/middleware/wsgi.py
++++ b/starlette/middleware/wsgi.py
+@@ -93,6 +93,15 @@
+         self.response_started = False
+         self.exc_info: typing.Any = None
+ 
++    def __init__(self, app: typing.Callable[..., typing.Any], scope: Scope) -> None:
++        self.app = app
++        self.scope = scope
++        self.status = None
++        self.response_headers = None
++        self.stream_send, self.stream_receive = anyio.create_memory_object_stream(math.inf)
++        self.response_started = False
++        self.exc_info: typing.Any = None
++
+     async def __call__(self, receive: Receive, send: Send) -> None:
+         body = b""
+         more_body = True

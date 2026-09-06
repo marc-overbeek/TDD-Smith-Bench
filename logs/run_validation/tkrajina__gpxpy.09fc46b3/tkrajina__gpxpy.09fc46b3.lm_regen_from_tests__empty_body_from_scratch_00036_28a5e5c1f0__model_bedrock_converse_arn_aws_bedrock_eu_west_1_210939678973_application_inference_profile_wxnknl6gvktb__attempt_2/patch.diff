@@ -1,0 +1,84 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -96,8 +96,79 @@
+     raise mod_gpx.GPXException(f'Invalid time: {string}')
+ 
+ 
+-def format_time(time: mod_datetime.datetime) -> str:
+-    return time.isoformat().replace('+00:00', 'Z')
++def format_time(time: mod_datetime.datetime) ->str:
++    if time is None:
++        return ''
++    
++    # Format the base datetime
++    result = time.strftime('%Y-%m-%dT%H:%M:%S')
++    
++    # Add microseconds if present
++    if time.microsecond:
++        # Format microseconds, removing trailing zeros
++        microsecond_str = f'{time.microsecond:06d}'.rstrip('0')
++        result += f'.{microsecond_str}'
++    
++    # Add timezone information
++    if time.tzinfo is not None:
++        tz_name = time.tzinfo.tzname(time)
++        if tz_name == 'Z':
++            result += 'Z'
++        else:
++            # tz_name is in format 'HH:MM', need to add sign
++            if isinstance(time.tzinfo, SimpleTZ):
++                offset = time.tzinfo.offset
++                if offset >= 0:
++                    result += f'+{tz_name}'
++                else:
++                    result += f'-{tz_name}'
++            else:
++                # For other tzinfo types, use the standard approach
++                offset = time.tzinfo.utcoffset(time)
++                if offset:
++                    total_seconds = int(offset.total_seconds())
++                    hours, remainder = divmod(abs(total_seconds), 3600)
++                    minutes = remainder // 60
++                    sign = '+' if total_seconds >= 0 else '-'
++                    result += f'{sign}{hours:02d}:{minutes:02d}'
++    
++    return result
++
++def format_time(time: mod_datetime.datetime) ->str:
++    if time is None:
++        return ''
++    
++    # Format the base datetime
++    result = time.strftime('%Y-%m-%dT%H:%M:%S')
++    
++    # Add microseconds if present
++    if time.microsecond:
++        # Format microseconds, removing trailing zeros
++        microsecond_str = f'{time.microsecond:06d}'.rstrip('0')
++        result += f'.{microsecond_str}'
++    
++    # Add timezone information
++    if time.tzinfo is not None:
++        tz_name = time.tzinfo.tzname(time)
++        if tz_name == 'Z':
++            result += 'Z'
++        else:
++            # For SimpleTZ or other tzinfo, format with sign
++            if isinstance(time.tzinfo, SimpleTZ):
++                offset_minutes = time.tzinfo.offset
++                sign = '+' if offset_minutes >= 0 else '-'
++                result += f'{sign}{tz_name}'
++            else:
++                # Fallback for other timezone types
++                offset = time.tzinfo.utcoffset(time)
++                if offset:
++                    total_seconds = int(offset.total_seconds())
++                    hours, remainder = divmod(abs(total_seconds), 3600)
++                    minutes = remainder // 60
++                    sign = '+' if total_seconds >= 0 else '-'
++                    result += f'{sign}{hours:02d}:{minutes:02d}'
++    
++    return result
+ 
+ 
+ 

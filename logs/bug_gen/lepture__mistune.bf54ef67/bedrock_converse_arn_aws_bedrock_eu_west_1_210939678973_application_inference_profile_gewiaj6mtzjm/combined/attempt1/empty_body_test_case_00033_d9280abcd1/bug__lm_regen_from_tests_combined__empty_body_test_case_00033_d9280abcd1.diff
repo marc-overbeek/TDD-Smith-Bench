@@ -1,0 +1,149 @@
+--- a/src/mistune/directives/toc.py
++++ b/src/mistune/directives/toc.py
+@@ -32,56 +32,55 @@
+     def generate_heading_id(self, token: Dict[str, Any], index: int) -> str:
+         return 'toc_' + str(index + 1)
+ 
+-    def parse(
+-        self, block: "BlockParser", m: Match[str], state: "BlockState"
+-    ) -> Dict[str, Any]:
+-        title = self.parse_title(m)
+-        options = self.parse_options(m)
+-        if options:
+-            d_options = dict(options)
+-            collapse = 'collapse' in d_options
+-            min_level = _normalize_level(d_options, 'min-level', self.min_level)
+-            max_level = _normalize_level(d_options, 'max-level', self.max_level)
+-            if min_level < self.min_level:
+-                raise ValueError(f'"min-level" option MUST be >= {self.min_level}')
+-            if max_level > self.max_level:
+-                raise ValueError(f'"max-level" option MUST be <= {self.max_level}')
+-            if min_level > max_level:
+-                raise ValueError('"min-level" option MUST be less than "max-level" option')
+-        else:
+-            collapse = False
+-            min_level = self.min_level
+-            max_level = self.max_level
++    def parse(self, block: 'BlockParser', m: Match[str], state: 'BlockState'
++        ) ->Dict[str, Any]:
++            title = self.parse_title(m)
++            options = self.parse_options(m)
++            if options:
++                d_options = dict(options)
++                collapse = 'collapse' in d_options
++                min_level = _normalize_level(d_options, 'min-level', self.min_level)
++                max_level = _normalize_level(d_options, 'max-level', self.max_level)
++                if min_level < self.min_level:
++                    raise ValueError(f'"min-level" option MUST be >= {self.min_level}')
++                if max_level > self.max_level:
++                    raise ValueError(f'"max-level" option MUST be <= {self.max_level}')
++                if min_level > max_level:
++                    raise ValueError('"min-level" option MUST be less than "max-level" option')
++            else:
++                collapse = False
++                min_level = self.min_level
++                max_level = self.max_level
+ 
+-        attrs = {
+-            'min_level': min_level,
+-            'max_level': max_level,
+-            'collapse': collapse,
+-        }
+-        return {'type': 'toc', 'text': title or '', 'attrs': attrs}
++            attrs = {
++                'min_level': min_level,
++                'max_level': max_level,
++                'collapse': collapse,
++            }
++            return {'type': 'toc', 'text': title or '', 'attrs': attrs}
+ 
+-    def toc_hook(self, md: "Markdown", state: "BlockState") -> None:
+-        sections = []
+-        headings = []
++    def toc_hook(self, md: 'Markdown', state: 'BlockState') ->None:
++            sections = []
++            headings = []
+ 
+-        for tok in state.tokens:
+-            if tok['type'] == 'toc':
+-                sections.append(tok)
+-            elif tok['type'] == 'heading':
+-                headings.append(tok)
++            for tok in state.tokens:
++                if tok['type'] == 'toc':
++                    sections.append(tok)
++                elif tok['type'] == 'heading':
++                    headings.append(tok)
+ 
+-        if sections:
+-            toc_items = []
+-            # adding ID for each heading
+-            for i, tok in enumerate(headings):
+-                tok['attrs']['id'] = self.generate_heading_id(tok, i)
+-                toc_items.append(normalize_toc_item(md, tok))
++            if sections:
++                toc_items = []
++                # adding ID for each heading
++                for i, tok in enumerate(headings):
++                    tok['attrs']['id'] = self.generate_heading_id(tok, i)
++                    toc_items.append(normalize_toc_item(md, tok))
+ 
+-            for sec in sections:
+-                _min = sec['attrs']['min_level']
+-                _max = sec['attrs']['max_level']
+-                toc = [item for item in toc_items if _min <= item[0] <= _max]
+-                sec['attrs']['toc'] = toc
++                for sec in sections:
++                    _min = sec['attrs']['min_level']
++                    _max = sec['attrs']['max_level']
++                    toc = [item for item in toc_items if _min <= item[0] <= _max]
++                    sec['attrs']['toc'] = toc
+ 
+     def __call__(self, directive: BaseDirective, md: "Markdown") -> None:
+         if md.renderer and md.renderer.NAME == "html":
+@@ -91,25 +90,25 @@
+             md.renderer.register('toc', render_html_toc)
+ 
+ 
+-def render_html_toc(
+-    renderer: "BaseRenderer", title: str, collapse: bool = False, **attrs: Any
+-) -> str:
+-    if not title:
+-        title = 'Table of Contents'
+-    content = render_toc_ul(attrs['toc'])
+-
+-    html = '<details class="toc"'
+-    if not collapse:
+-        html += ' open'
+-    html += '>\n<summary>' + title + '</summary>\n'
+-    return html + content + '</details>\n'
++def render_html_toc(renderer: 'BaseRenderer', title: str, collapse: bool=
++    False, **attrs: Any) ->str:
++    if not attrs.get('toc'):
++        return ''
++    if title:
++        title = f'<h2>{title}</h2>'
++    ul = render_toc_ul(attrs['toc'], attrs.get('min_level', 1))
++    if collapse:
++        return f'{title}<details><summary>Contents</summary>{ul}</details>'
++    return f'{title}{ul}'
+ 
+ 
+-def _normalize_level(options: Dict[str, Any], name: str, default: Any) -> Any:
+-    level = options.get(name)
+-    if not level:
+-        return default
+-    try:
+-        return int(level)
+-    except (ValueError, TypeError):
+-        raise ValueError(f'"{name}" option MUST be integer')
++def _normalize_level(options: Dict[str, Any], name: str, default: Any) ->Any:
++    value = options.get(name, default)
++    if isinstance(value, str):
++        try:
++            value = int(value)
++        except ValueError:
++            raise ValueError(f'Invalid "{name}" option: {value}')
++    if not isinstance(value, int) or value < 1 or value > 6:
++        raise ValueError(f'"{name}" option must be an integer between 1 and 6')
++    return value

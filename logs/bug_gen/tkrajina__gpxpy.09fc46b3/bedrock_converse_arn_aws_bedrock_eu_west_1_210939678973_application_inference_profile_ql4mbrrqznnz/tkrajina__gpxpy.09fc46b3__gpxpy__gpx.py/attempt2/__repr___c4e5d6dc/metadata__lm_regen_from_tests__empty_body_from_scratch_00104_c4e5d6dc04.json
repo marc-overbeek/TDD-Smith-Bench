@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the issue, the current code has a duplicate `__repr__` method definition for `GPXTrackSegment`, which is a syntax error / the second one overwrites the first. But more importantly, looking at the failing tests, they involve `get_nearest_location` and `get_nearest_locations` methods.\n\nThe tests call `print(gpx_part, nearest_loc_info)` which would invoke `__repr__` on the segment. The current `__repr__` is duplicated in the source, which is the bug introduced.\n\nThe correct implementation should just be a single, proper `__repr__` for `GPXTrackSegment`:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the issue, the current code has a duplicate `__repr__` method definition for `GPXTrackSegment`, which is a syntax error / the second one overwrites the first. But more importantly, looking at the failing tests, they involve `get_nearest_location` and `get_nearest_locations` methods.\n\nThe tests call `print(gpx_part, nearest_loc_info)` which would invoke `__repr__` on the segment. The current `__repr__` is duplicated in the source, which is the bug introduced.\n\nThe correct implementation should just be a single, proper `__repr__` for `GPXTrackSegment`:\n\n```\ndef __repr__(self) -> str:\n    return f'GPXTrackSegment(points=[{\"...\" if self.points else \"\"}])'\n```",
+  "rewrite": "def __repr__(self) -> str:\n    return f'GPXTrackSegment(points=[{\"...\" if self.points else \"\"}])'",
+  "strategy": "lm_regen_from_tests"
+}

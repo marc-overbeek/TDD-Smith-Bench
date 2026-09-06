@@ -1,0 +1,24 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -185,14 +185,13 @@
+     __slots__ = ()
+ 
+     def agg(self, target, tree):
+-        try:
+-            avg_acc = tree[self]
+-        except KeyError:
+-            # format is [sum, count]
+-            avg_acc = tree[self] = [0.0, 0]
+-        avg_acc[0] += target
+-        avg_acc[1] += 1
+-        return avg_acc[0] / avg_acc[1]
++        # This is a simplified version - in reality, Group's agg would be handled
++        # by the GROUP mode dispatcher which processes the spec inside the group
++        # For now, we'll make it work with the existing infrastructure
++        if self not in tree:
++            tree[self] = []
++        tree[self].append(target)
++        return tree[self]
+ 
+     def __repr__(self):
+         return '%s()' % self.__class__.__name__

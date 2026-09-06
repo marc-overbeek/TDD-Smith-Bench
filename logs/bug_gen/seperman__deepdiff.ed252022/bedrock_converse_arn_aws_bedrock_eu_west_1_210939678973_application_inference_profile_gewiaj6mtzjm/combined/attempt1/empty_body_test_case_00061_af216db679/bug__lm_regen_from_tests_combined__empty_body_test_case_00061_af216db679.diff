@@ -1,0 +1,142 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -67,26 +67,16 @@
+ 
+     __doc__ = doc
+ 
+-    def __init__(
+-        self,
+-        diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
+-        delta_path: Optional[str]=None,
+-        delta_file: Optional[IO]=None,
+-        delta_diff: Optional[dict]=None,
+-        flat_dict_list: Optional[List[Dict]]=None,
+-        flat_rows_list: Optional[List[FlatDeltaRow]]=None,
+-        deserializer: Callable=pickle_load,
+-        log_errors: bool=True,
+-        mutate: bool=False,
+-        raise_errors: bool=False,
+-        safe_to_import: Optional[Set[str]]=None,
+-        serializer: Callable=pickle_dump,
+-        verify_symmetry: Optional[bool]=None,
+-        bidirectional: bool=False,
+-        always_include_values: bool=False,
+-        iterable_compare_func_was_used: Optional[bool]=None,
+-        force: bool=False,
+-    ):
++    def __init__(self, diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
++        delta_path: Optional[str]=None, delta_file: Optional[IO]=None,
++        delta_diff: Optional[dict]=None, flat_dict_list: Optional[List[Dict]]=
++        None, flat_rows_list: Optional[List[FlatDeltaRow]]=None, deserializer:
++        Callable=pickle_load, log_errors: bool=True, mutate: bool=False,
++        raise_errors: bool=False, safe_to_import: Optional[Set[str]]=None,
++        serializer: Callable=pickle_dump, verify_symmetry: Optional[bool]=None,
++        bidirectional: bool=False, always_include_values: bool=False,
++        iterable_compare_func_was_used: Optional[bool]=None, force: bool=False):
++    
+         # for pickle deserializer:
+         if hasattr(deserializer, '__code__') and 'safe_to_import' in set(deserializer.__code__.co_varnames):
+             _deserializer = deserializer
+@@ -106,7 +96,6 @@
+                     result['_iterable_opcodes'] = _iterable_opcodes
+                 return result
+ 
+-
+         self._reversed_diff = None
+ 
+         if verify_symmetry is not None:
+@@ -128,6 +117,8 @@
+                 self.diff = diff
+             elif isinstance(diff, strings):
+                 self.diff = _deserializer(diff, safe_to_import=safe_to_import)
++            else:
++                raise ValueError("Invalid diff type")
+         elif delta_path:
+             with open(delta_path, 'rb') as the_file:
+                 content = the_file.read()
+@@ -151,7 +142,7 @@
+         self.mutate = mutate
+         self.raise_errors = raise_errors
+         self.log_errors = log_errors
+-        self._numpy_paths = self.diff.get('_numpy_paths', False)
++        self._numpy_paths = self.diff.get('_numpy_paths', {})
+         # When we create the delta from a list of flat dictionaries, details such as iterable_compare_func_was_used get lost.
+         # That's why we allow iterable_compare_func_was_used to be explicitly set.
+         self._iterable_compare_func_was_used = self.diff.get('_iterable_compare_func_was_used', iterable_compare_func_was_used)
+@@ -801,7 +792,9 @@
+             'attribute_added': 'attribute_removed',
+             'set_item_added': 'set_item_removed',
+             'dictionary_item_added': 'dictionary_item_removed',
++            'iterable_item_moved': 'iterable_item_moved',
+         }
++    
+         # Adding the reverse of the dictionary
+         for key in list(SIMPLE_ACTION_TO_REVERSE.keys()):
+             SIMPLE_ACTION_TO_REVERSE[SIMPLE_ACTION_TO_REVERSE[key]] = key
+@@ -810,18 +803,27 @@
+         for action, info in self.diff.items():
+             reverse_action = SIMPLE_ACTION_TO_REVERSE.get(action)
+             if reverse_action:
+-                r_diff[reverse_action] = info
++                if action == 'iterable_item_moved':
++                    # Special handling for iterable_item_moved
++                    r_diff[action] = {}
++                    for path, path_info in info.items():
++                        old_path = path_info['new_path']
++                        r_diff[action][old_path] = {
++                            'new_path': path, 'value': path_info['value'],
++                        }
++                else:
++                    r_diff[reverse_action] = info
+             elif action == 'values_changed':
+                 r_diff[action] = {}
+                 for path, path_info in info.items():
+-                    reverse_path = path_info['new_path'] if path_info.get('new_path') else path
++                    reverse_path = path_info.get('new_path', path)
+                     r_diff[action][reverse_path] = {
+                         'new_value': path_info['old_value'], 'old_value': path_info['new_value']
+                     } 
+             elif action == 'type_changes':
+                 r_diff[action] = {}
+                 for path, path_info in info.items():
+-                    reverse_path = path_info['new_path'] if path_info.get('new_path') else path
++                    reverse_path = path_info.get('new_path', path)
+                     r_diff[action][reverse_path] = {
+                         'old_type': path_info['new_type'], 'new_type': path_info['old_type'],
+                     }
+@@ -829,13 +831,6 @@
+                         r_diff[action][reverse_path]['old_value'] = path_info['new_value']
+                     if 'old_value' in path_info:
+                         r_diff[action][reverse_path]['new_value'] = path_info['old_value']
+-            elif action == 'iterable_item_moved':
+-                r_diff[action] = {}
+-                for path, path_info in info.items():
+-                    old_path = path_info['new_path']
+-                    r_diff[action][old_path] = {
+-                        'new_path': path, 'value': path_info['value'],
+-                    }
+             elif action == '_iterable_opcodes':
+                 r_diff[action] = {}
+                 for path, op_codes in info.items():
+@@ -853,6 +848,21 @@
+                             old_values=op_code.new_values,
+                         )
+                         r_diff[action][path].append(new_op_code)
++            elif action == 'iterable_items_added_at_indexes':
++                # Handle special case for added indexes
++                r_diff['iterable_items_removed_at_indexes'] = {}
++                for path, indexes in info.items():
++                    r_diff['iterable_items_removed_at_indexes'][path] = {}
++                    for index, value in indexes.items():
++                        r_diff['iterable_items_removed_at_indexes'][path][index] = value
++            elif action == 'iterable_items_removed_at_indexes':
++                # Handle special case for removed indexes
++                r_diff['iterable_items_added_at_indexes'] = {}
++                for path, indexes in info.items():
++                    r_diff['iterable_items_added_at_indexes'][path] = {}
++                    for index, value in indexes.items():
++                        r_diff['iterable_items_added_at_indexes'][path][index] = value
++    
+         return r_diff
+ 
+     def dump(self, file):

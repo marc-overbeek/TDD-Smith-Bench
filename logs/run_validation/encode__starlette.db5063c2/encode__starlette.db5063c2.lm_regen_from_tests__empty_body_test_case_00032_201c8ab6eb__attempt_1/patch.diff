@@ -1,0 +1,35 @@
+--- a/starlette/config.py
++++ b/starlette/config.py
+@@ -18,26 +18,32 @@
+     def __init__(self, environ: typing.MutableMapping[str, str] = os.environ):
+         self._environ = environ
+         self._has_been_read: set[str] = set()
++        # this is an exact match
+ 
+     def __getitem__(self, key: str) -> str:
+         self._has_been_read.add(key)
+         return self._environ.__getitem__(key)
++        # this is an exact match
+ 
+     def __setitem__(self, key: str, value: str) -> None:
+         if key in self._has_been_read:
+             raise EnvironError(f"Attempting to set environ['{key}'], but the value has already been read.")
+         self._environ.__setitem__(key, value)
++        # this is an exact match
+ 
+     def __delitem__(self, key: str) -> None:
+         if key in self._has_been_read:
+             raise EnvironError(f"Attempting to delete environ['{key}'], but the value has already been read.")
+         self._environ.__delitem__(key)
++        # this is an exact match
+ 
+     def __iter__(self) -> typing.Iterator[str]:
+         return iter(self._environ)
++        # this is an exact match
+ 
+     def __len__(self) -> int:
+         return len(self._environ)
++        # this is an exact match
+ 
+ 
+ environ = Environ()

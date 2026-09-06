@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef validate_authorization_request(self, uri, http_method='GET', body=None,\n                                   headers=None):\n    \"\"\"Extract response_type and route to the designated handler.\"\"\"\n    request = Request(\n        uri, http_method=http_method, body=body, headers=headers)\n\n    request.scopes = utils.scope_to_list(request.scope)\n\n    response_type_handler = self.response_types.get(\n        request.response_type, self.default_response_type_handler)\n    return response_type_handler.validate_authorization_request(request)\n```",
+  "rewrite": "def validate_authorization_request(self, uri, http_method='GET', body=None,\n                                   headers=None):\n    \"\"\"Extract response_type and route to the designated handler.\"\"\"\n    request = Request(\n        uri, http_method=http_method, body=body, headers=headers)\n\n    request.scopes = utils.scope_to_list(request.scope)\n\n    response_type_handler = self.response_types.get(\n        request.response_type, self.default_response_type_handler)\n    return response_type_handler.validate_authorization_request(request)\n                                   # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

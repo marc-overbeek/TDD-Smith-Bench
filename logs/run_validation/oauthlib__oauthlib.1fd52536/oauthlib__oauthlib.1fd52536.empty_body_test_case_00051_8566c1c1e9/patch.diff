@@ -1,0 +1,149 @@
+--- a/oauthlib/oauth2/rfc6749/clients/base.py
++++ b/oauthlib/oauth2/rfc6749/clients/base.py
+@@ -52,89 +52,12 @@
+     """
+     refresh_token_key = 'refresh_token'
+ 
+-    def __init__(self, client_id,
+-                 default_token_placement=AUTH_HEADER,
+-                 token_type='Bearer',
+-                 access_token=None,
+-                 refresh_token=None,
+-                 mac_key=None,
+-                 mac_algorithm=None,
+-                 token=None,
+-                 scope=None,
+-                 state=None,
+-                 redirect_url=None,
+-                 state_generator=generate_token,
+-                 code_verifier=None,
+-                 code_challenge=None,
+-                 code_challenge_method=None,
+-                 **kwargs):
+-        """Initialize a client with commonly used attributes.
+-
+-        :param client_id: Client identifier given by the OAuth provider upon
+-        registration.
+-
+-        :param default_token_placement: Tokens can be supplied in the Authorization
+-        header (default), the URL query component (``query``) or the request
+-        body (``body``).
+-
+-        :param token_type: OAuth 2 token type. Defaults to Bearer. Change this
+-        if you specify the ``access_token`` parameter and know it is of a
+-        different token type, such as a MAC, JWT or SAML token. Can
+-        also be supplied as ``token_type`` inside the ``token`` dict parameter.
+-
+-        :param access_token: An access token (string) used to authenticate
+-        requests to protected resources. Can also be supplied inside the
+-        ``token`` dict parameter.
+-
+-        :param refresh_token: A refresh token (string) used to refresh expired
+-        tokens. Can also be supplied inside the ``token`` dict parameter.
+-
+-        :param mac_key: Encryption key used with MAC tokens.
+-
+-        :param mac_algorithm:  Hashing algorithm for MAC tokens.
+-
+-        :param token: A dict of token attributes such as ``access_token``,
+-        ``token_type`` and ``expires_at``.
+-
+-        :param scope: A list of default scopes to request authorization for.
+-
+-        :param state: A CSRF protection string used during authorization.
+-
+-        :param redirect_url: The redirection endpoint on the client side to which
+-        the user returns after authorization.
+-
+-        :param state_generator: A no argument state generation callable. Defaults
+-        to :py:meth:`oauthlib.common.generate_token`.
+-
+-        :param code_verifier: PKCE parameter. A cryptographically random string that is used to correlate the
+-        authorization request to the token request.
+-
+-        :param code_challenge: PKCE parameter. A challenge derived from the code verifier that is sent in the
+-        authorization request, to be verified against later.
+-
+-        :param code_challenge_method: PKCE parameter. A method that was used to derive code challenge.
+-        Defaults to "plain" if not present in the request.
+-        """
+-
+-        self.client_id = client_id
+-        self.default_token_placement = default_token_placement
+-        self.token_type = token_type
+-        self.access_token = access_token
+-        self.refresh_token = refresh_token
+-        self.mac_key = mac_key
+-        self.mac_algorithm = mac_algorithm
+-        self.token = token or {}
+-        self.scope = scope
+-        self.state_generator = state_generator
+-        self.state = state
+-        self.redirect_url = redirect_url
+-        self.code_verifier = code_verifier
+-        self.code_challenge = code_challenge
+-        self.code_challenge_method = code_challenge_method
+-        self.code = None
+-        self.expires_in = None
+-        self._expires_at = None
+-        self.populate_token_attributes(self.token)
++    def __init__(self, client_id, default_token_placement=AUTH_HEADER,
++        token_type='Bearer', access_token=None, refresh_token=None, mac_key=
++        None, mac_algorithm=None, token=None, scope=None, state=None,
++        redirect_url=None, state_generator=generate_token, code_verifier=None,
++        code_challenge=None, code_challenge_method=None, **kwargs):
++        pass
+ 
+     @property
+     def token_types(self):
+@@ -157,8 +80,7 @@
+         raise NotImplementedError("Must be implemented by inheriting classes.")
+ 
+     def prepare_request_body(self, *args, **kwargs):
+-        """Abstract method used to create request bodies."""
+-        raise NotImplementedError("Must be implemented by inheriting classes.")
++        pass
+ 
+     def parse_request_uri_response(self, *args, **kwargs):
+         """Abstract method used to parse redirection responses."""
+@@ -257,38 +179,8 @@
+         return auth_url, FORM_ENC_HEADERS, ''
+ 
+     def prepare_token_request(self, token_url, authorization_response=None,
+-                              redirect_url=None, state=None, body='', **kwargs):
+-        """Prepare a token creation request.
+-
+-        Note that these requests usually require client authentication, either
+-        by including client_id or a set of provider specific authentication
+-        credentials.
+-
+-        :param token_url: Provider token creation endpoint URL.
+-        :param authorization_response: The full redirection URL string, i.e.
+-            the location to which the user was redirected after successful
+-            authorization. Used to mine credentials needed to obtain a token
+-            in this step, such as authorization code.
+-        :param redirect_url: The redirect_url supplied with the authorization
+-            request (if there was one).
+-        :param state:
+-        :param body: Existing request body (URL encoded string) to embed parameters
+-                     into. This may contain extra parameters. Default ''.
+-        :param kwargs: Additional parameters to included in the request.
+-        :returns: The prepared request tuple with (url, headers, body).
+-        """
+-        if not is_secure_transport(token_url):
+-            raise InsecureTransportError()
+-
+-        state = state or self.state
+-        if authorization_response:
+-            self.parse_request_uri_response(
+-                authorization_response, state=state)
+-        self.redirect_url = redirect_url or self.redirect_url
+-        body = self.prepare_request_body(body=body,
+-                                         redirect_uri=self.redirect_url, **kwargs)
+-
+-        return token_url, FORM_ENC_HEADERS, body
++        redirect_url=None, state=None, body='', **kwargs):
++        pass
+ 
+     def prepare_refresh_token_request(self, token_url, refresh_token=None,
+                                       body='', scope=None, **kwargs):

@@ -1,0 +1,35 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -312,5 +312,32 @@
+             return STOP
+         return scope[glom](target, self.subspec, scope)
+ 
++    def test_limit():
++        t = list(range(10))
++        assert glom(t, Group(Limit(1, T))) == 0
++        assert glom(t, Group(Limit(3, Max()))) == 2
++        assert glom(t, Group(Limit(3, [T]))) == [0, 1, 2]
++        assert repr(Group(Limit(3, Max()))) == 'Group(Limit(3, Max()))'
++        with raises(BadSpec):
++            assert glom(t, Limit(1))
++        return
++
++    def __repr__(self):
++        cn = self.__class__.__name__
++        return f'{cn}({self.spec!r})'
++
+     def __repr__(self):
+         return f'{self.__class__.__name__}({self.n!r}, {self.subspec!r})'
++
++    def __repr__(self):
++        return f'{self.__class__.__name__}({self.n!r}, {self.subspec!r})'
++
++    def __repr__(self):
++        if self.subspec == [T]:
++            return f'{self.__class__.__name__}({self.n!r})'
++        return f'{self.__class__.__name__}({self.n!r}, {self.subspec!r})'
++
++    def __repr__(self):
++        if self.subspec == [T]:
++            return f'{self.__class__.__name__}({self.n!r})'
++        return f'{self.__class__.__name__}({self.n!r}, {self.subspec!r})'

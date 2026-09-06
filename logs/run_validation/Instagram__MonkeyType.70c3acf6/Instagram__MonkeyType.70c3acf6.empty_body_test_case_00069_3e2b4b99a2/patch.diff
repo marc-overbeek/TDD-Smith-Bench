@@ -1,0 +1,82 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -52,21 +52,8 @@
+     return is_generic(typ) and name_of_generic(typ) == "List"
+ 
+ 
+-def make_typed_dict(*, required_fields=None, optional_fields=None) -> type:
+-    required_fields = required_fields or {}
+-    optional_fields = optional_fields or {}
+-    assert required_fields.keys().isdisjoint(optional_fields.keys())
+-    return TypedDict(
+-        DUMMY_TYPED_DICT_NAME,
+-        {
+-            "required_fields": TypedDict(
+-                DUMMY_REQUIRED_TYPED_DICT_NAME, required_fields
+-            ),
+-            "optional_fields": TypedDict(
+-                DUMMY_OPTIONAL_TYPED_DICT_NAME, optional_fields
+-            ),
+-        },
+-    )
++def make_typed_dict(*, required_fields=None, optional_fields=None) ->type:
++    pass
+ 
+ 
+ def field_annotations(typed_dict) -> Tuple[Dict[str, type], Dict[str, type]]:
+@@ -168,7 +155,7 @@
+ 
+ 
+ def make_generator(yield_typ, send_typ, return_typ):
+-    return Generator[yield_typ, send_typ, return_typ]
++    pass
+ 
+ 
+ _BUILTIN_CALLABLE_TYPES = (
+@@ -276,18 +263,7 @@
+     def rewrite_type_variable(self, type_variable): ...
+ 
+     def _rewrite_container(self, cls, container):
+-        if container.__module__ != "typing":
+-            return self.rewrite_malformed_container(container)
+-        args = getattr(container, "__args__", None)
+-        if args is None:
+-            return self.rewrite_malformed_container(container)
+-        elif args == ((),):  # special case of empty tuple `Tuple[()]`
+-            elems = self.make_builtin_tuple(())
+-        else:
+-            elems = self.make_builtin_tuple(
+-                self.rewrite(elem) for elem in container.__args__
+-            )
+-        return self.make_container_type(self.rewrite_container_type(cls), elems)
++        pass
+ 
+     def rewrite_Dict(self, dct):
+         return self._rewrite_container(Dict, dct)
+@@ -302,7 +278,7 @@
+         return self._rewrite_container(Tuple, tup)
+ 
+     def rewrite_Generator(self, generator):
+-        return self._rewrite_container(Generator, generator)
++        pass
+ 
+     def rewrite_anonymous_TypedDict(self, typed_dict):
+         assert is_anonymous_typed_dict(typed_dict)
+@@ -317,16 +293,7 @@
+         )
+ 
+     def rewrite_TypedDict(self, typed_dict):
+-        if is_anonymous_typed_dict(typed_dict):
+-            return self.rewrite_anonymous_TypedDict(typed_dict)
+-        return self.make_builtin_typed_dict(
+-            typed_dict.__name__,
+-            {
+-                name: self.rewrite(typ)
+-                for name, typ in typed_dict.__annotations__.items()
+-            },
+-            total=typed_dict.__total__,
+-        )
++        pass
+ 
+     def rewrite_Union(self, union):
+         return self._rewrite_container(Union, union)

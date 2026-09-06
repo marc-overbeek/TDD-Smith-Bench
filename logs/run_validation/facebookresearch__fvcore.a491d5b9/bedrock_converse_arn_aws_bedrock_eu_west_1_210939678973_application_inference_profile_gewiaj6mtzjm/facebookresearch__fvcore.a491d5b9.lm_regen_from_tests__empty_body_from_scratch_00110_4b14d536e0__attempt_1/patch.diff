@@ -1,0 +1,54 @@
+--- a/fvcore/nn/parameter_count.py
++++ b/fvcore/nn/parameter_count.py
+@@ -9,27 +9,30 @@
+ from torch import nn
+ 
+ 
+-def parameter_count(model: nn.Module) -> typing.DefaultDict[str, int]:
+-    """
+-    Count parameters of a model and its submodules.
+-
+-    Args:
+-        model: a torch module
+-
+-    Returns:
+-        dict (str-> int): the key is either a parameter name or a module name.
+-        The value is the number of elements in the parameter, or in all
+-        parameters of the module. The key "" corresponds to the total
+-        number of parameters of the model.
+-    """
+-    r = defaultdict(int)
+-    for name, prm in model.named_parameters():
+-        size = prm.numel()
+-        name = name.split(".")
+-        for k in range(0, len(name) + 1):
+-            prefix = ".".join(name[:k])
+-            r[prefix] += size
+-    return r
++def parameter_count(model: nn.Module) ->typing.DefaultDict[str, int]:
++    count: typing.DefaultDict[str, int] = defaultdict(int)
++    
++    def _get_name(module: nn.Module) -> str:
++        # Get the name of the module by traversing the module tree
++        for name, mod in model.named_modules():
++            if mod is module:
++                return name
++        return ""
++    
++    for name, param in model.named_parameters():
++        # Get the module name for this parameter
++        module_name = ""
++        for module_name, module in model.named_modules():
++            if param in module.parameters():
++                break
++        
++        # If module_name is empty, it's a top-level parameter
++        if not module_name:
++            count[""] += param.numel()
++        else:
++            count[module_name] += param.numel()
++            
++    return count
+ 
+ 
+ def parameter_count_table(model: nn.Module, max_depth: int = 3) -> str:

@@ -1,0 +1,31 @@
+--- a/fvcore/nn/precise_bn.py
++++ b/fvcore/nn/precise_bn.py
+@@ -155,6 +155,28 @@
+         batch_size_per_bn_layer[module] = batch_size
+         return (x,)
+ 
++    def get_bn_batch_size_hook(module: nn.Module, input: Tuple[torch.Tensor]
++        ) ->Tuple[torch.Tensor]:
++        x = input[0]
++        assert isinstance(
++            x, torch.Tensor
++        ), f"BN layer should take tensor as input. Got {input}"
++        # consider spatial dimensions as batch as well
++        batch_size = x.numel() // x.shape[1]
++        if not hasattr(module, '_batch_size_per_bn_layer'):
++            module._batch_size_per_bn_layer = {}
++        module._batch_size_per_bn_layer[module] = batch_size
++        return (x,)
++
++    def get_bn_batch_size_hook(module: nn.Module, input: Tuple[torch.Tensor]
++        ) ->Tuple[torch.Tensor]:
++        x = input[0]
++        assert isinstance(
++            x, torch.Tensor
++        ), f"BN layer should take tensor as input. Got {input}"
++        batch_size = x.numel() // x.shape[1]
++        return (x,)
++
+     hooks_to_remove = [
+         bn.register_forward_pre_hook(get_bn_batch_size_hook) for bn in bn_layers
+     ]

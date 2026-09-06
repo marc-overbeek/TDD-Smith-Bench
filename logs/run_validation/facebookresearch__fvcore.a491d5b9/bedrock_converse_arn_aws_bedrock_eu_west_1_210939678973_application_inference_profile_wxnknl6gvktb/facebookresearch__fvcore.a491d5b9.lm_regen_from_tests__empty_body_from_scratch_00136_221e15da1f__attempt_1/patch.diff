@@ -1,0 +1,26 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -236,6 +236,23 @@
+         self.tracer_warnings("no_tracer_warning")
+         self.ancestor_mode("owner")
+ 
++    def __init__(self, model: nn.Module, inputs: Union[Tensor, Tuple[Tensor, ...]]
++        ) ->None:
++        self._model = model
++        self._inputs = inputs
++        self._op_handles: Dict[str, Handle] = {}
++        # Mapping from names to submodules
++        self._named_modules: Dict[str, nn.Module] = dict(_named_modules_with_dup(model))
++        # Mapping from submodules and their aliases to the canonical name of each submodule
++        self._aliases: Dict[Union[nn.Module, str], str] = self._get_aliases(model)
++        self._stats: Optional[Statistics] = None
++
++        self._ignored_ops: Set[str] = copy(_IGNORED_OPS)
++        self.unsupported_ops_warnings(True)
++        self.uncalled_modules_warnings(True)
++        self.tracer_warnings("no_tracer_warning")
++        self.ancestor_mode("owner")
++
+     def total(self, module_name: str = "") -> int:
+         """
+         Returns the total aggregated statistic across all operators

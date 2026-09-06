@@ -1,0 +1,95 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -67,27 +67,15 @@
+ 
+     __doc__ = doc
+ 
+-    def __init__(
+-        self,
+-        diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
+-        delta_path: Optional[str]=None,
+-        delta_file: Optional[IO]=None,
+-        delta_diff: Optional[dict]=None,
+-        flat_dict_list: Optional[List[Dict]]=None,
+-        flat_rows_list: Optional[List[FlatDeltaRow]]=None,
+-        deserializer: Callable=pickle_load,
+-        log_errors: bool=True,
+-        mutate: bool=False,
+-        raise_errors: bool=False,
+-        safe_to_import: Optional[Set[str]]=None,
+-        serializer: Callable=pickle_dump,
+-        verify_symmetry: Optional[bool]=None,
+-        bidirectional: bool=False,
+-        always_include_values: bool=False,
+-        iterable_compare_func_was_used: Optional[bool]=None,
+-        force: bool=False,
+-    ):
+-        # for pickle deserializer:
++    def __init__(self, diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
++        delta_path: Optional[str]=None, delta_file: Optional[IO]=None,
++        delta_diff: Optional[dict]=None, flat_dict_list: Optional[List[Dict]]=
++        None, flat_rows_list: Optional[List[FlatDeltaRow]]=None, deserializer:
++        Callable=pickle_load, log_errors: bool=True, mutate: bool=False,
++        raise_errors: bool=False, safe_to_import: Optional[Set[str]]=None,
++        serializer: Callable=pickle_dump, verify_symmetry: Optional[bool]=None,
++        bidirectional: bool=False, always_include_values: bool=False,
++        iterable_compare_func_was_used: Optional[bool]=None, force: bool=False):
+         if hasattr(deserializer, '__code__') and 'safe_to_import' in set(deserializer.__code__.co_varnames):
+             _deserializer = deserializer
+         else:
+@@ -106,7 +94,6 @@
+                     result['_iterable_opcodes'] = _iterable_opcodes
+                 return result
+ 
+-
+         self._reversed_diff = None
+ 
+         if verify_symmetry is not None:
+@@ -117,7 +104,7 @@
+ 
+         self.bidirectional = bidirectional
+         if bidirectional:
+-            self.always_include_values = True  # We need to include the values in bidirectional deltas
++            self.always_include_values = True
+         else:
+             self.always_include_values = always_include_values
+ 
+@@ -127,6 +114,8 @@
+             elif isinstance(diff, Mapping):
+                 self.diff = diff
+             elif isinstance(diff, strings):
++                self.diff = _deserializer(diff, safe_to_import=safe_to_import)
++            elif isinstance(diff, bytes):
+                 self.diff = _deserializer(diff, safe_to_import=safe_to_import)
+         elif delta_path:
+             with open(delta_path, 'rb') as the_file:
+@@ -141,7 +130,6 @@
+                 raise ValueError(BINIARY_MODE_NEEDED_MSG.format(e)) from None
+             self.diff = _deserializer(content, safe_to_import=safe_to_import)
+         elif flat_dict_list:
+-            # Use copy to preserve original value of flat_dict_list in calling module
+             self.diff = self._from_flat_dicts(copy.deepcopy(flat_dict_list))
+         elif flat_rows_list:
+             self.diff = self._from_flat_rows(copy.deepcopy(flat_rows_list))
+@@ -152,8 +140,6 @@
+         self.raise_errors = raise_errors
+         self.log_errors = log_errors
+         self._numpy_paths = self.diff.get('_numpy_paths', False)
+-        # When we create the delta from a list of flat dictionaries, details such as iterable_compare_func_was_used get lost.
+-        # That's why we allow iterable_compare_func_was_used to be explicitly set.
+         self._iterable_compare_func_was_used = self.diff.get('_iterable_compare_func_was_used', iterable_compare_func_was_used)
+         self.serializer = serializer
+         self.deserializer = deserializer
+@@ -334,10 +320,8 @@
+         self._simple_set_elem_value(obj=obj, path_for_err_reporting=path, elem=elem,
+                                     value=new_value, action=action)
+ 
+-    def _simple_delete_elem(self, obj, path_for_err_reporting, elem=None, action=None):
+-        """
+-        Delete the element directly on an object
+-        """
++    def _simple_delete_elem(self, obj, path_for_err_reporting, elem=None,
++        action=None):
+         try:
+             if action == GET:
+                 del obj[elem]

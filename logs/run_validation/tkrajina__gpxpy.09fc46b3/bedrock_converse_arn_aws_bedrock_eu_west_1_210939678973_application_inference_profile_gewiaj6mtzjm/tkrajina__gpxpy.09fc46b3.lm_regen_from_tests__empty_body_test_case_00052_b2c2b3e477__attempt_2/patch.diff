@@ -1,0 +1,73 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1670,7 +1670,10 @@
+                 new_segments.append(segment)
+         self.segments = new_segments
+ 
+-    def get_moving_data(self, stopped_speed_threshold: Optional[float]=None, raw: bool=False, speed_extreemes_percentiles: float=IGNORE_TOP_SPEED_PERCENTILES, ignore_nonstandard_distances: bool = True) -> MovingData:
++    def get_moving_data(self, stopped_speed_threshold: Optional[float]=None,
++        raw: bool=False, speed_extreemes_percentiles: float=
++        IGNORE_TOP_SPEED_PERCENTILES, ignore_nonstandard_distances: bool=True
++        ) ->MovingData:
+         """
+         Return a tuple of (moving_time, stopped_time, moving_distance,
+         stopped_distance, max_speed) that may be used for detecting the time
+@@ -1700,24 +1703,46 @@
+             max_speed : float
+                 Maximum speed (m/s) during the track.
+         """
++        if not stopped_speed_threshold:
++            stopped_speed_threshold = DEFAULT_STOPPED_SPEED_THRESHOLD
++
++        if raw:
++            speed_extreemes_percentiles=0
++            ignore_nonstandard_distances=False
++
+         moving_time = 0.
+         stopped_time = 0.
+ 
+         moving_distance = 0.
+         stopped_distance = 0.
+ 
+-        max_speed = 0.
+-
+-        for segment in self.segments:
+-            moving_data = segment.get_moving_data(stopped_speed_threshold, raw, speed_extreemes_percentiles, ignore_nonstandard_distances)
+-            if moving_data:
+-                moving_time += moving_data.moving_time
+-                stopped_time += moving_data.stopped_time
+-                moving_distance += moving_data.moving_distance
+-                stopped_distance += moving_data.stopped_distance
+-                if moving_data.max_speed is not None and moving_data.max_speed > max_speed:
+-                    max_speed = moving_data.max_speed
+-
++        speeds_and_distances = []
++
++        for track in self.tracks:
++            track_moving_data = track.get_moving_data(stopped_speed_threshold, raw, speed_extreemes_percentiles, ignore_nonstandard_distances)
++            if track_moving_data:
++                moving_time += track_moving_data.moving_time
++                stopped_time += track_moving_data.stopped_time
++                moving_distance += track_moving_data.moving_distance
++                stopped_distance += track_moving_data.stopped_distance
++                if track_moving_data.max_speed is not None and track_moving_data.max_speed > 0:
++                    speeds_and_distances.append((track_moving_data.max_speed, 0))
++
++        max_speed = 0.0
++        if speeds_and_distances:
++            # Extract just the speeds for max calculation
++            speeds = [speed for speed, _ in speeds_and_distances]
++            if speeds:
++                # Sort speeds to calculate percentile
++                sorted_speeds = sorted(speeds)
++                if speed_extreemes_percentiles > 0:
++                    # Remove top percentiles
++                    remove_count = int(len(sorted_speeds) * speed_extreemes_percentiles)
++                    if remove_count > 0:
++                        sorted_speeds = sorted_speeds[:-remove_count]
++                if sorted_speeds:
++                    max_speed = max(sorted_speeds)
++    
+         return MovingData(moving_time, stopped_time, moving_distance, stopped_distance, max_speed)
+ 
+     def add_elevation(self, delta: float) -> None:

@@ -1,0 +1,35 @@
+--- a/deepdiff/model.py
++++ b/deepdiff/model.py
+@@ -231,21 +231,7 @@
+                     force=FORCE_DEFAULT), change.t1, change.t2))
+ 
+     def _from_tree_set_item_added_or_removed(self, tree, key):
+-        if key in tree:
+-            set_item_info = self[key]
+-            is_dict = isinstance(set_item_info, Mapping)
+-            for change in tree[key]:
+-                path = change.up.path(
+-                )  # we want't the set's path, the added item is not directly accessible
+-                item = change.t2 if key == 'set_item_added' else change.t1
+-                if self.ADD_QUOTES_TO_STRINGS and isinstance(item, strings):
+-                    item = "'%s'" % item
+-                if is_dict:
+-                    if path not in set_item_info:
+-                        set_item_info[path] = set()
+-                    set_item_info[path].add(item)
+-                else:
+-                    set_item_info.add("{}[{}]".format(path, str(item)))
++        pass
+                     # this syntax is rather peculiar, but it's DeepDiff 2.x compatible)
+ 
+     def _from_tree_set_item_added(self, tree):
+@@ -264,8 +250,7 @@
+                 self['repetition_change'][path]['value'] = change.t1
+ 
+     def _from_tree_deep_distance(self, tree):
+-        if 'deep_distance' in tree:
+-            self['deep_distance'] = tree['deep_distance']
++        pass
+ 
+     def _from_tree_custom_results(self, tree):
+         for k, _level_list in tree.items():

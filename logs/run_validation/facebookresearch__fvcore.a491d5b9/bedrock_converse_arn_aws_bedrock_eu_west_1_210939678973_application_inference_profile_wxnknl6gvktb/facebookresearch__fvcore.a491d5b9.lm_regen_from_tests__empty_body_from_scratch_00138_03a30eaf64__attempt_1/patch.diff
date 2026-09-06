@@ -1,0 +1,21 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -252,6 +252,18 @@
+         total_count = sum(stats.counts[module_name].values())
+         return total_count
+ 
++    analyzer = FlopCountAnalysis(model=model, inputs=inputs)
++    for name in model.flops:
++        self.assertEqual(analyzer.by_operator(name), model.flops[name])
++
++    fc1_per_operator = Counter({self.lin_op: fc1_count})
++    self.assertEqual(analyzer.by_operator('fc1'), fc1_per_operator)
++
++    def by_operator(self, module_name: str = "") -> typing.Counter[str]:
++        stats = self._analyze()
++        module_name = self.canonical_module_name(module_name)
++        return stats.counts[module_name]
++
+     def by_operator(self, module_name: str = "") -> typing.Counter[str]:
+         """
+         Returns the statistics for a requested module, grouped by operator

@@ -1,0 +1,293 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1722,41 +1722,267 @@
+ 
+ 
+ def _format_t(path, root=T):
+-    prepr = [{T: 'T', S: 'S', A: 'A'}[root]]
++    if root is T:
++        buf = 'T'
++    elif root is S:
++        buf = 'S'
++    elif root is A:
++        buf = 'A'
++    else:
++        buf = repr(root)
++    
++    op_map = {
++        '+': '+', '-': '-', '*': '*', '/': '/', '%': '%',
++        ':': '**', '&': '&', '|': '|', '^': '^', '#': '//'
++    }
++    unary_map = {'~': '~', '_': '-'}
++    
+     i = 0
+     while i < len(path):
+-        op, arg = path[i], path[i + 1]
++        op = path[i]
++        arg = path[i + 1]
++        i += 2
+         if op == '.':
+-            prepr.append('.' + arg)
++            buf += '.' + arg
+         elif op == '[':
+             if type(arg) is tuple:
+-                index = ", ".join([_format_slice(x) for x in arg])
++                buf += '[' + ', '.join(_format_slice(x) for x in arg) + ']'
+             else:
+-                index = _format_slice(arg)
+-            prepr.append(f"[{index}]")
++                buf += '[' + _format_slice(arg) + ']'
++        elif op == 'P':
++            buf += '.' + repr(arg)
+         elif op == '(':
+             args, kwargs = arg
+-            prepr.append(format_invocation(args=args, kwargs=kwargs, repr=bbrepr))
++            parts = [bbrepr(a) for a in args]
++            parts += [f'{k}={bbrepr(v)}' for k, v in kwargs.items()]
++            buf += '(' + ', '.join(parts) + ')'
++        elif op == 'x':
++            buf += '.__star__()'
++        elif op == 'X':
++            buf += '.__starstar__()'
++        elif op in op_map:
++            sym = op_map[op]
++            right = bbrepr(arg)
++            # handle precedence with parens
++            buf = buf + ' ' + sym + ' ' + right
++        elif op in unary_map:
++            sym = unary_map[op]
++            buf = sym + '(' + buf + ')'
++    
++    return buf
++
++def _format_t(path, root=T):
++    if root is T:
++        buf = 'T'
++    elif root is S:
++        buf = 'S'
++    elif root is A:
++        buf = 'A'
++    else:
++        buf = repr(root)
++    
++    op_map = {'+': '+', '-': '-', '*': '*', '/': '/', '%': '%', ':': '**', '&': '&', '|': '|', '^': '^', '#': '//'}
++    unary_map = {'~': '~', '_': '-'}
++    precedence = {'+': 1, '-': 1, '*': 2, '/': 2, '%': 2, '#': 2, ':': 3, '&': 4, '^': 5, '|': 6}
++    
++    prev_op = None
++    i = 0
++    while i < len(path):
++        op = path[i]
++        arg = path[i + 1]
++        i += 2
++        if op == '.':
++            buf += '.' + arg
++        elif op == '[':
++            if type(arg) is tuple:
++                buf += '[' + ', '.join(_format_slice(x) for x in arg) + ']'
++            else:
++                buf += '[' + _format_slice(arg) + ']'
+         elif op == 'P':
+-            return _format_path(path)
++            buf += '.' + repr(arg)
++        elif op == '(':
++            args, kwargs = arg
++            parts = [bbrepr(a) for a in args]
++            parts += [f'{k}={bbrepr(v)}' for k, v in kwargs.items()]
++            buf += '(' + ', '.join(parts) + ')'
+         elif op == 'x':
+-            prepr.append(".__star__()")
++            buf += '.__star__()'
+         elif op == 'X':
+-            prepr.append(".__starstar__()")
+-        elif op in ('_', '~'):  # unary arithmetic operators
+-            if any([o in path[:i] for o in '+-/%:&|^~_']):
+-                prepr = ['('] + prepr + [')']
+-            prepr = ['-' if op == '_' else op] + prepr
+-        else:  # binary arithmetic operators
+-            formatted_arg = bbrepr(arg)
+-            if type(arg) is TType:
+-                arg_path = arg.__ops__
+-                if any([o in arg_path for o in '+-/%:&|^~_']):
+-                    formatted_arg = '(' + formatted_arg + ')'
+-            prepr.append(' ' + ('**' if op == ':' else op) + ' ')
+-            prepr.append(formatted_arg)
++            buf += '.__starstar__()'
++        elif op in op_map:
++            sym = op_map[op]
++            right = bbrepr(arg)
++            if prev_op in precedence and precedence[prev_op] < precedence.get(op, 0):
++                buf = '(' + buf + ')'
++            buf = buf + ' ' + sym + ' ' + right
++        elif op in unary_map:
++            sym = unary_map[op]
++            buf = sym + '(' + buf + ')'
++        prev_op = op
++    
++    return buf
++
++assert repr(T & 7 | T ^ 6) == 'T & 7 | (T ^ 6)'
++
++def _format_t(path, root=T):
++    if root is T:
++        buf = 'T'
++    elif root is S:
++        buf = 'S'
++    elif root is A:
++        buf = 'A'
++    else:
++        buf = repr(root)
++    
++    op_symbols = {
++        '+': '+', '-': '-', '*': '*', '/': '/', '%': '%',
++        ':': '**', '&': '&', '|': '|', '^': '^', '#': '//'
++    }
++    
++    i = 0
++    while i < len(path):
++        op = path[i]
++        arg = path[i + 1]
+         i += 2
+-    return "".join(prepr)
++        
++        if op == '.':
++            buf += '.' + arg
++        elif op == '[':
++            if type(arg) is tuple:
++                buf += '[' + ', '.join(_format_slice(x) for x in arg) + ']'
++            else:
++                buf += '[' + _format_slice(arg) + ']'
++        elif op == 'P':
++            buf += '.' + repr(arg)
++        elif op == '(':
++            args, kwargs = arg
++            parts = [bbrepr(a) for a in args]
++            parts += [f'{k}={bbrepr(v)}' for k, v in kwargs.items()]
++            buf += '(' + ', '.join(parts) + ')'
++        elif op == 'x':
++            buf += '.__star__()'
++        elif op == 'X':
++            buf += '.__starstar__()'
++        elif op in op_symbols:
++            sym = op_symbols[op]
++            # wrap TType args that have their own ops in parens
++            if isinstance(arg, TType) and len(arg.__ops__) > 1:
++                right = '(' + bbrepr(arg) + ')'
++            else:
++                right = bbrepr(arg)
++            buf = buf + ' ' + sym + ' ' + right
++        elif op == '~':
++            buf = '~' + buf
++        elif op == '_':
++            buf = '-(' + buf + ')'
++    
++    return buf
++
++def _format_t(path, root=T):
++    if root is T:
++        buf = 'T'
++    elif root is S:
++        buf = 'S'
++    elif root is A:
++        buf = 'A'
++    else:
++        buf = repr(root)
++    
++    op_symbols = {
++        '+': '+', '-': '-', '*': '*', '/': '/', '%': '%',
++        ':': '**', '&': '&', '|': '|', '^': '^', '#': '//'
++    }
++    
++    i = 0
++    while i < len(path):
++        op = path[i]
++        arg = path[i + 1]
++        i += 2
++        
++        if op == '.':
++            buf += '.' + arg
++        elif op == '[':
++            if type(arg) is tuple:
++                buf += '[' + ', '.join(_format_slice(x) for x in arg) + ']'
++            else:
++                buf += '[' + _format_slice(arg) + ']'
++        elif op == 'P':
++            buf += '.' + repr(arg)
++        elif op == '(':
++            args, kwargs = arg
++            parts = [bbrepr(a) for a in args]
++            parts += [f'{k}={bbrepr(v)}' for k, v in kwargs.items()]
++            buf += '(' + ', '.join(parts) + ')'
++        elif op == 'x':
++            buf += '.__star__()'
++        elif op == 'X':
++            buf += '.__starstar__()'
++        elif op in op_symbols:
++            sym = op_symbols[op]
++            if isinstance(arg, TType) and len(arg.__ops__) > 1:
++                right = '(' + bbrepr(arg) + ')'
++            else:
++                right = bbrepr(arg)
++            buf = buf + ' ' + sym + ' ' + right
++        elif op == '~':
++            buf = '~' + buf
++        elif op == '_':
++            buf = '-(' + buf + ')'
++    
++    return buf
++
++def _format_t(path, root=T):
++    if root is T:
++        buf = 'T'
++    elif root is S:
++        buf = 'S'
++    elif root is A:
++        buf = 'A'
++    else:
++        buf = repr(root)
++    
++    op_symbols = {
++        '+': '+', '-': '-', '*': '*', '/': '/', '%': '%',
++        ':': '**', '&': '&', '|': '|', '^': '^', '#': '//'
++    }
++    
++    i = 0
++    while i < len(path):
++        op = path[i]
++        arg = path[i + 1]
++        i += 2
++        
++        if op == '.':
++            buf += '.' + arg
++        elif op == '[':
++            if type(arg) is tuple:
++                buf += '[' + ', '.join(_format_slice(x) for x in arg) + ']'
++            else:
++                buf += '[' + _format_slice(arg) + ']'
++        elif op == 'P':
++            buf += '.' + repr(arg)
++        elif op == '(':
++            args, kwargs = arg
++            parts = [bbrepr(a) for a in args]
++            parts += [f'{k}={bbrepr(v)}' for k, v in kwargs.items()]
++            buf += '(' + ', '.join(parts) + ')'
++        elif op == 'x':
++            buf += '.__star__()'
++        elif op == 'X':
++            buf += '.__starstar__()'
++        elif op in op_symbols:
++            sym = op_symbols[op]
++            if isinstance(arg, TType) and len(arg.__ops__) > 1:
++                right = '(' + bbrepr(arg) + ')'
++            else:
++                right = bbrepr(arg)
++            buf = buf + ' ' + sym + ' ' + right
++        elif op == '~':
++            buf = '~' + buf
++        elif op == '_':
++            buf = '-(' + buf + ')'
++    
++    return buf
+ 
+ 
+ class Val:

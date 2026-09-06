@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, I need to understand what they expect. The tests are `test_all_options_001` and `test_legend_001` for `TestDirective_fenced_figure`.\n\nThe current implementation returns `'<div class=\"legend\">' + text + '</div>\\n'`, but the tests likely expect a `<legend>` HTML element instead of a `<div>` with class \"legend\".",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing tests, I need to understand what they expect. The tests are `test_all_options_001` and `test_legend_001` for `TestDirective_fenced_figure`.\n\nThe current implementation returns `'<div class=\"legend\">' + text + '</div>\\n'`, but the tests likely expect a `<legend>` HTML element instead of a `<div>` with class \"legend\".\n\n```\ndef render_legend(self: Any, text: str) -> str:\n    return '<legend>' + text + '</legend>\\n'\n```",
+  "rewrite": "def render_legend(self: Any, text: str) -> str:\n    return '<legend>' + text + '</legend>\\n'",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,55 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/metadata.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/metadata.py
+@@ -60,29 +60,29 @@
+         return headers, json.dumps(self.claims), 200
+ 
+     def validate_metadata(self, array, key, is_required=False, is_list=False, is_url=False, is_issuer=False):
+-        if not self.raise_errors:
+-            return
+-
+-        if key not in array:
+-            if is_required:
+-                raise ValueError("key {} is a mandatory metadata.".format(key))
+-
+-        elif is_issuer:
+-            if not utils.is_secure_transport(array[key]):
+-                raise ValueError("key {}: {} must be an HTTPS URL".format(key, array[key]))
+-            if "?" in array[key] or "&" in array[key] or "#" in array[key]:
+-                raise ValueError("key {}: {} must not contain query or fragment components".format(key, array[key]))
+-
+-        elif is_url:
+-            if not array[key].startswith("http"):
+-                raise ValueError("key {}: {} must be an URL".format(key, array[key]))
+-
+-        elif is_list:
+-            if not isinstance(array[key], list):
+-                raise ValueError("key {}: {} must be an Array".format(key, array[key]))
+-            for elem in array[key]:
+-                if not isinstance(elem, str):
+-                    raise ValueError("array {}: {} must contains only string (not {})".format(key, array[key], elem))
++            if not self.raise_errors:
++                return
++
++            if key not in array:
++                if is_required:
++                    raise ValueError("key {} is a mandatory metadata.".format(key))
++
++            elif is_issuer:
++                if not utils.is_secure_transport(array[key]):
++                    raise ValueError("key {}: {} must be an HTTPS URL".format(key, array[key]))
++                if "?" in array[key] or "&" in array[key] or "#" in array[key]:
++                    raise ValueError("key {}: {} must not contain query or fragment components".format(key, array[key]))
++
++            elif is_url:
++                if not array[key].startswith("http"):
++                    raise ValueError("key {}: {} must be an URL".format(key, array[key]))
++
++            elif is_list:
++                if not isinstance(array[key], list):
++                    raise ValueError("key {}: {} must be an Array".format(key, array[key]))
++                for elem in array[key]:
++                    if not isinstance(elem, str):
++                        raise ValueError("array {}: {} must contains only string (not {})".format(key, array[key], elem))
+ 
+     def validate_metadata_token(self, claims, endpoint):
+         """

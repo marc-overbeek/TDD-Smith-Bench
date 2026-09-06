@@ -1,0 +1,34 @@
+--- a/src/mistune/toc.py
++++ b/src/mistune/toc.py
+@@ -56,14 +56,23 @@
+     md.before_render_hooks.append(toc_hook)
+ 
+ 
+-def normalize_toc_item(md: "Markdown", token: Dict[str, Any]) -> Tuple[int, str, str]:
+-    text = token["text"]
+-    tokens = md.inline(text, {})
+-    assert md.renderer is not None
+-    html = md.renderer(tokens, BlockState())
+-    text = striptags(html)
+-    attrs = token['attrs']
+-    return attrs['level'], attrs['id'], text
++def normalize_toc_item(md: 'Markdown', token: Dict[str, Any]) ->Tuple[int,
++    str, str]:
++    try:
++        level = token['attrs']['level']
++        tid = token['attrs']['id']
++        children = token.get('children', [])
++        if isinstance(children, list):
++            text = striptags(md.render_inline(children))
++        else:
++            text = striptags(str(children))
++        return (level, tid, text)
++    except (KeyError, AttributeError, TypeError):
++        # Fallback for malformed tokens
++        level = token.get('attrs', {}).get('level', 1)
++        tid = token.get('attrs', {}).get('id', '')
++        text = ''
++        return (level, tid, text)
+ 
+ 
+ def render_toc_ul(toc: Iterable[Tuple[int, str, str]]) -> str:

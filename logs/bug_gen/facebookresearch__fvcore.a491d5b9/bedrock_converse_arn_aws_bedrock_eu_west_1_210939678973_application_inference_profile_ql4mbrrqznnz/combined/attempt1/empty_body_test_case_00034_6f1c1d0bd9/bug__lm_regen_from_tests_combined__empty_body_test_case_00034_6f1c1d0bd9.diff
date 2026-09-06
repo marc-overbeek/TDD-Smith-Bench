@@ -1,0 +1,57 @@
+--- a/fvcore/nn/jit_handles.py
++++ b/fvcore/nn/jit_handles.py
+@@ -22,20 +22,13 @@
+ Handle = Callable[[List[Any], List[Any]], Union[typing.Counter[str], Number]]
+ 
+ 
+-def get_shape(val: Any) -> Optional[List[int]]:
+-    """
+-    Get the shapes from a jit value object.
+-
+-    Args:
+-        val (torch._C.Value): jit value object.
+-
+-    Returns:
+-        list(int): return a list of ints.
+-    """
+-    if val.isCompleteTensor():
+-        return val.type().sizes()
+-    else:
+-        return None
++def get_shape(val: Any) ->Optional[List[int]]:
++    if hasattr(val, 'type') and callable(val.type):
++        try:
++            return val.type().sizes()
++        except Exception:
++            return None
++    return None
+ 
+ 
+ """
+@@ -98,17 +91,15 @@
+     return flops
+ 
+ 
+-def linear_flop_jit(inputs: List[Any], outputs: List[Any]) -> Number:
+-    """
+-    Count flops for the aten::linear operator.
+-    """
+-    # Inputs is a list of length 3; unlike aten::addmm, it is the first
+-    # two elements that are relevant.
+-    input_shapes = [get_shape(v) for v in inputs[0:2]]
+-    # input_shapes[0]: [dim0, dim1, ..., input_feature_dim]
+-    # input_shapes[1]: [output_feature_dim, input_feature_dim]
+-    assert input_shapes[0][-1] == input_shapes[1][-1]
+-    flops = prod(input_shapes[0]) * input_shapes[1][0]
++def linear_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:
++    output_size = get_shape(outputs[0])
++    assert output_size is not None
++    output_dim = output_size[-1]
++    input_size = get_shape(inputs[0])
++    assert input_size is not None
++    input_dim = input_size[-1]
++    batch_size = prod(output_size[:-1])
++    flops = batch_size * input_dim * output_dim
+     return flops
+ 
+ 

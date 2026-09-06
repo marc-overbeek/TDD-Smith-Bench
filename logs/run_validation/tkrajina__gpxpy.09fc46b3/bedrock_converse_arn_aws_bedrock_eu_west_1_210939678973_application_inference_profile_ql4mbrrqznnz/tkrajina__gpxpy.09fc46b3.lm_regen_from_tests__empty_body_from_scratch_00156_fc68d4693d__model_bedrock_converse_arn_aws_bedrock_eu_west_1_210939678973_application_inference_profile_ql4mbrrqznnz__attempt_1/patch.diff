@@ -1,0 +1,73 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1637,38 +1637,38 @@
+         self.segments = new_segments
+ 
+     def join(self, track_segment_no: int, track_segment_no_2: Optional[int]=None) -> None:
+-        """
+-        Joins two segments of this track. The segments will be split in place.
+-
+-        Parameters
+-        ----------
+-        track_segment_no : integer
+-            The index of the first segment to join
+-        track_segment_no_2 : integer
+-            The index of second segment to join. If track_segment_no_2 is not
+-            provided,the join will be with the next segment after
+-            track_segment_no.
+-        """
+-        if not track_segment_no_2:
+-            track_segment_no_2 = track_segment_no + 1
+-
+-        if track_segment_no_2 >= len(self.segments):
+-            return
+-
+-        new_segments = []
+-        for i in range(len(self.segments)):
+-            segment = self.segments[i]
+-            if i == track_segment_no:
+-                second_segment = self.segments[track_segment_no_2]
+-                segment.join(second_segment)
+-
+-                new_segments.append(segment)
+-            elif i == track_segment_no_2:
+-                # Nothing, it is already joined
+-                pass
+-            else:
+-                new_segments.append(segment)
+-        self.segments = new_segments
++            """
++            Joins two segments of this track. The segments will be split in place.
++
++            Parameters
++            ----------
++            track_segment_no : integer
++                The index of the first segment to join
++            track_segment_no_2 : integer
++                The index of second segment to join. If track_segment_no_2 is not
++                provided,the join will be with the next segment after
++                track_segment_no.
++            """
++            if track_segment_no_2 is None:
++                track_segment_no_2 = track_segment_no + 1
++
++            if track_segment_no_2 >= len(self.segments):
++                return
++
++            new_segments = []
++            for i in range(len(self.segments)):
++                segment = self.segments[i]
++                if i == track_segment_no:
++                    second_segment = self.segments[track_segment_no_2]
++                    segment.join(second_segment)
++
++                    new_segments.append(segment)
++                elif i == track_segment_no_2:
++                    # Nothing, it is already joined
++                    pass
++                else:
++                    new_segments.append(segment)
++            self.segments = new_segments
+ 
+     def get_moving_data(self, stopped_speed_threshold: Optional[float]=None, raw: bool=False, speed_extreemes_percentiles: float=IGNORE_TOP_SPEED_PERCENTILES, ignore_nonstandard_distances: bool = True) -> MovingData:
+         """

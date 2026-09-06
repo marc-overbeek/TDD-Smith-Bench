@@ -1,0 +1,60 @@
+--- a/src/mistune/plugins/spoiler.py
++++ b/src/mistune/plugins/spoiler.py
+@@ -15,37 +15,30 @@
+ INLINE_SPOILER_PATTERN = r'>!\s*(?P<spoiler_text>.+?)\s*!<'
+ 
+ 
+-def parse_block_spoiler(
+-    block: "BlockParser", m: Match[str], state: "BlockState"
+-) -> int:
+-    text, end_pos = block.extract_block_quote(m, state)
+-    if not text.endswith('\n'):
+-        # ensure it endswith \n to make sure
+-        # _BLOCK_SPOILER_MATCH.match works
+-        text += '\n'
++def parse_block_spoiler(block: 'BlockParser', m: Match[str], state: 'BlockState') -> int:
++    text = m.group(0)
++    # Remove the spoiler prefix from each line
++    text = _BLOCK_SPOILER_START.sub('', text)
++    # Parse the inner content
++    children = block.parse(text, state.env)
++    token = {'type': 'block_spoiler', 'children': children, 'raw': None}
++    state.append_token(token)
++    return m.end()
+ 
+-    depth = state.depth()
+-    if not depth and _BLOCK_SPOILER_MATCH.match(text):
+-        text = _BLOCK_SPOILER_START.sub('', text)
+-        tok_type = 'block_spoiler'
+-    else:
+-        tok_type = 'block_quote'
++<full rewritten function code including the unchanged signature>
+ 
+-    # scan children state
++def parse_block_spoiler(block: 'BlockParser', m: Match[str], state:
++    'BlockState') ->int:
++    text = m.group(0)
++    # Remove the spoiler prefix (! or >!) from each line
++    text = _BLOCK_SPOILER_START.sub('', text)
++    # Create a child state for parsing inner content
+     child = state.child_state(text)
+-    if state.depth() >= block.max_nested_level - 1:
+-        rules = list(block.block_quote_rules)
+-        rules.remove('block_quote')
+-    else:
+-        rules = block.block_quote_rules
+-
+-    block.parse(child, rules)
+-    token = {'type': tok_type, 'children': child.tokens}
+-    if end_pos:
+-        state.prepend_token(token)
+-        return end_pos
++    # Parse the inner content
++    block.parse(child)
++    token = {'type': 'block_spoiler', 'children': child.tokens, 'raw': None}
+     state.append_token(token)
+-    return state.cursor
++    return m.end()
+ 
+ 
+ def parse_inline_spoiler(

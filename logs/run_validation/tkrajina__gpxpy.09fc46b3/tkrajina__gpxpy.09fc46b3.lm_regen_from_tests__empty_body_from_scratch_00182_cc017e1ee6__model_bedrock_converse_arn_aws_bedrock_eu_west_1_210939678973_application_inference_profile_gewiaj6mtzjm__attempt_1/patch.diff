@@ -1,0 +1,122 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2186,9 +2186,116 @@
+         self.bounds = self.get_bounds()
+ 
+     def smooth(self, vertical: bool=True, horizontal: bool=False, remove_extremes: bool=False) -> None:
+-        """ See GPXTrackSegment.smooth(...) """
+-        for track in self.tracks:
+-            track.smooth(vertical=vertical, horizontal=horizontal, remove_extremes=remove_extremes)
++        """ "Smooths" the elevation graph. Can be called multiple times. """
++        if len(self.points) <= 3:
++            return
++
++        elevations: List[float] = []
++        latitudes: List[float] = []
++        longitudes: List[float] = []
++
++        for point in self.points:
++            elevations.append(point.elevation or 0)
++            latitudes.append(point.latitude or 0)
++            longitudes.append(point.longitude or 0)
++
++        avg_distance: float = 0
++        avg_elevation_delta: float = 1
++        if remove_extremes:
++            # compute the average distance between two points:
++            distances: List[float] = []
++            elevations_delta = []
++            for prev, cur in zip(self.points, self.points[1:]):
++                dist = prev.distance_2d(cur)
++                if dist:
++                    distances.append(dist)
++                if cur.elevation is not None and prev.elevation is not None:
++                    elevations_delta.append(abs(cur.elevation - prev.elevation))
++            if distances:
++                avg_distance = 1.0 * sum(distances) / len(distances)
++            if elevations_delta:
++                avg_elevation_delta = 1.0 * sum(elevations_delta) / len(elevations_delta)
++
++        # If The point moved more than this number * the average distance between two
++        # points -- then is a candidate for deletion:
++        # TODO: Make this a method parameter
++        remove_2d_extremes_threshold = 1.75 * avg_distance
++        remove_elevation_extremes_threshold = avg_elevation_delta * 5  # TODO: Param
++
++        new_track_points = [self.points[0]]
++
++        for i in range(len(self.points))[1:-1]:
++            new_point = None
++            point_removed = False
++            if vertical and elevations[i - 1] and elevations[i] and elevations[i + 1]:
++                old_elevation = self.points[i].elevation
++                new_elevation = SMOOTHING_RATIO[0] * elevations[i - 1] + \
++                    SMOOTHING_RATIO[1] * elevations[i] + \
++                    SMOOTHING_RATIO[2] * elevations[i + 1]
++
++                if not remove_extremes:
++                    self.points[i].elevation = new_elevation
++
++                if remove_extremes:
++                    # The point must be enough distant to *both* neighbours:
++                    d1 = abs((old_elevation or 0) - elevations[i - 1])
++                    d2 = abs((old_elevation or 0) - elevations[i + 1])
++                    #print d1, d2, remove_2d_extremes_threshold
++
++                    # TODO: Remove extremes threshold is meant only for 2D, elevation must be
++                    # computed in different way!
++                    if min(d1, d2) < remove_elevation_extremes_threshold and abs((old_elevation or 0) - (new_elevation or 0)) < remove_2d_extremes_threshold:
++                        new_point = self.points[i]
++                    else:
++                        #print 'removed elevation'
++                        point_removed = True
++                else:
++                    new_point = self.points[i]
++            else:
++                new_point = self.points[i]
++
++            if horizontal:
++                old_latitude = self.points[i].latitude
++                new_latitude = SMOOTHING_RATIO[0] * latitudes[i - 1] + \
++                    SMOOTHING_RATIO[1] * latitudes[i] + \
++                    SMOOTHING_RATIO[2] * latitudes[i + 1]
++                old_longitude = self.points[i].longitude
++                new_longitude = SMOOTHING_RATIO[0] * longitudes[i - 1] + \
++                    SMOOTHING_RATIO[1] * longitudes[i] + \
++                    SMOOTHING_RATIO[2] * longitudes[i + 1]
++
++                if not remove_extremes:
++                    self.points[i].latitude = new_latitude
++                    self.points[i].longitude = new_longitude
++
++                # TODO: This is not ideal.. Because if there are points A, B and C on the same
++                # line but B is very close to C... This would remove B (and possibly) A even though
++                # it is not an extreme. This is the reason for this algorithm:
++                d1 = mod_geo.distance(latitudes[i - 1], longitudes[i - 1], None, latitudes[i], longitudes[i], None)
++                d2 = mod_geo.distance(latitudes[i + 1], longitudes[i + 1], None, latitudes[i], longitudes[i], None)
++                dist = mod_geo.distance(latitudes[i - 1], longitudes[i - 1], None, latitudes[i + 1], longitudes[i + 1], None)
++
++                #print d1, d2, d, remove_extremes
++
++                if d1 + d2 > dist * 1.5 and remove_extremes:
++                    dist = mod_geo.distance(old_latitude, old_longitude, None, new_latitude, new_longitude, None)
++                    #print "d, threshold = ", d, remove_2d_extremes_threshold
++                    if dist < remove_2d_extremes_threshold:
++                        new_point = self.points[i]
++                    else:
++                        #print 'removed 2d'
++                        point_removed = True
++                else:
++                    new_point = self.points[i]
++
++            if new_point and not point_removed:
++                new_track_points.append(new_point)
++
++        new_track_points.append(self.points[- 1])
++
++        #print 'len=', len(new_track_points)
++
++        self.points = new_track_points
+ 
+     def remove_empty(self) -> None:
+         """ Removes segments, routes """

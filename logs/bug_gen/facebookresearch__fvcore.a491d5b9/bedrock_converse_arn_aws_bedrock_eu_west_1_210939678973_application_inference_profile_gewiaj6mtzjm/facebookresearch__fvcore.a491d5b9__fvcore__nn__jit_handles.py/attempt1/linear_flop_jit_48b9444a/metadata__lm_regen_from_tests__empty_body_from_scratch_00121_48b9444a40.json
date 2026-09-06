@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef linear_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:\n    \"\"\"\n    Count flops for fully connected layers.\n    \"\"\"\n    # Count flop for nn.Linear\n    # inputs is a list of length 3.\n    input_shapes = [get_shape(v) for v in inputs[1:3]]\n    # input_shapes[0]: [batch size, input feature dimension]\n    # input_shapes[1]: [batch size, output feature dimension]\n    assert len(input_shapes[0]) == 2, input_shapes[0]\n    assert len(input_shapes[1]) == 2, input_shapes[1]\n    batch_size, input_dim = input_shapes[0]\n    output_dim = input_shapes[1][1]\n    flops = batch_size * input_dim * output_dim\n    return flops\n```",
+  "rewrite": "def linear_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:\n    \"\"\"\n    Count flops for fully connected layers.\n    \"\"\"\n    # Count flop for nn.Linear\n    # inputs is a list of length 3.\n    input_shapes = [get_shape(v) for v in inputs[1:3]]\n    # input_shapes[0]: [batch size, input feature dimension]\n    # input_shapes[1]: [batch size, output feature dimension]\n    assert len(input_shapes[0]) == 2, input_shapes[0]\n    assert len(input_shapes[1]) == 2, input_shapes[1]\n    batch_size, input_dim = input_shapes[0]\n    output_dim = input_shapes[1][1]\n    flops = batch_size * input_dim * output_dim\n    return flops",
+  "strategy": "lm_regen_from_tests"
+}

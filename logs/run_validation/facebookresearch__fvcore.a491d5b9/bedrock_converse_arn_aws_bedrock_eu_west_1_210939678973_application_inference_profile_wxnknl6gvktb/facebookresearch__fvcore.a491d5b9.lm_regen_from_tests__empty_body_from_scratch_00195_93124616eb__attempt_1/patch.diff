@@ -1,0 +1,17 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -328,6 +328,14 @@
+         others = other.transforms if isinstance(other, TransformList) else [other]
+         return TransformList(others + self.transforms)
+ 
++    transforms = T.TransformList([T.ScaleTransform(0, 0, 0, 0, 0), T.
++        CropTransform(0, 0, 0, 0), T.HFlipTransform(3)])
++    self.assertEqual(transforms.apply_int(3), 2)
++    transforms = transforms + transforms
++    transforms += transforms
++    transforms = T.NoOpTransform() + transforms
++    self.assertEqual(len(transforms), 13)
++
+     def __len__(self) -> int:
+         """
+         Returns:

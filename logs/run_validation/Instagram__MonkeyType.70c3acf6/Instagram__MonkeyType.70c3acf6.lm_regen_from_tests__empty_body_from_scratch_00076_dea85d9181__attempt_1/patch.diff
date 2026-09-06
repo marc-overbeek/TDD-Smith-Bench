@@ -1,0 +1,51 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -80,24 +80,30 @@
+         print(f"No traces found for module {module}", file=stderr)
+ 
+ 
+-def get_monkeytype_config(path: str) -> Config:
+-    """Imports the config instance specified by path.
+-
+-    Path should be in the form module:qualname. Optionally, path may end with (),
+-    in which case we will call/instantiate the given class/function.
+-    """
+-    should_call = False
+-    if path.endswith("()"):
+-        should_call = True
+-        path = path[:-2]
+-    module, qualname = module_path_with_qualname(path)
+-    try:
+-        config = get_name_in_module(module, qualname)
+-    except MonkeyTypeError as mte:
+-        raise argparse.ArgumentTypeError(f"cannot import {path}: {mte}")
+-    if should_call:
+-        config = config()
+-    return config  # type: ignore[no-any-return]
++def get_monkeytype_config(path: str) ->Config:
++    pass  # type: ignore[no-any-return]
++
++def get_monkeytype_config(path: str) ->Config:
++    if ":" in path:
++        module_name, qualname = path.split(":", 1)
++        module = importlib.import_module(module_name)
++        config = getattr(module, qualname)
++        if callable(config):
++            return config()
++        return config
++    else:
++        # Default case - try to import the module and get CONFIG or DefaultConfig
++        try:
++            module = importlib.import_module(path)
++            if hasattr(module, "CONFIG"):
++                return module.CONFIG
++            elif hasattr(module, "DefaultConfig"):
++                return module.DefaultConfig()
++        except ImportError:
++            pass
++        # Fallback to default config
++        from monkeytype.config import DefaultConfig
++        return DefaultConfig()
+ 
+ 
+ def display_sample_count(traces: List[CallTrace], stderr: IO[str]) -> None:

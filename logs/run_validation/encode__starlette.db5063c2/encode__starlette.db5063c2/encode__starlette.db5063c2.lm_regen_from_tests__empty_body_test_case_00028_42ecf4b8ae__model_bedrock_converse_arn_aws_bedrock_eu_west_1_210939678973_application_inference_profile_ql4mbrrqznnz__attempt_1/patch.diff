@@ -1,0 +1,80 @@
+--- a/starlette/config.py
++++ b/starlette/config.py
+@@ -15,11 +15,11 @@
+ 
+ 
+ class Environ(typing.MutableMapping[str, str]):
+-    def __init__(self, environ: typing.MutableMapping[str, str] = os.environ):
++    def __init__(self, environ: typing.MutableMapping[str, str]=os.environ):
+         self._environ = environ
+         self._has_been_read: set[str] = set()
+ 
+-    def __getitem__(self, key: str) -> str:
++    def __getitem__(self, key: str) ->str:
+         self._has_been_read.add(key)
+         return self._environ.__getitem__(key)
+ 
+@@ -46,12 +46,8 @@
+ 
+ 
+ class Config:
+-    def __init__(
+-        self,
+-        env_file: str | Path | None = None,
+-        environ: typing.Mapping[str, str] = environ,
+-        env_prefix: str = "",
+-    ) -> None:
++    def __init__(self, env_file: (str | Path | None)=None, environ: typing.
++        Mapping[str, str]=environ, env_prefix: str='') ->None:
+         self.environ = environ
+         self.env_prefix = env_prefix
+         self.file_values: dict[str, str] = {}
+@@ -81,20 +77,12 @@
+     @typing.overload
+     def __call__(self, key: str, cast: type[str] = ..., default: T = ...) -> T | str: ...
+ 
+-    def __call__(
+-        self,
+-        key: str,
+-        cast: typing.Callable[[typing.Any], typing.Any] | None = None,
+-        default: typing.Any = undefined,
+-    ) -> typing.Any:
++    def __call__(self, key: str, cast: (typing.Callable[[typing.Any], typing.
++        Any] | None)=None, default: typing.Any=undefined) ->typing.Any:
+         return self.get(key, cast, default)
+ 
+-    def get(
+-        self,
+-        key: str,
+-        cast: typing.Callable[[typing.Any], typing.Any] | None = None,
+-        default: typing.Any = undefined,
+-    ) -> typing.Any:
++    def get(self, key: str, cast: (typing.Callable[[typing.Any], typing.Any] |
++        None)=None, default: typing.Any=undefined) ->typing.Any:
+         key = self.env_prefix + key
+         if key in self.environ:
+             value = self.environ[key]
+@@ -106,7 +94,7 @@
+             return self._perform_cast(key, default, cast)
+         raise KeyError(f"Config '{key}' is missing, and has no default.")
+ 
+-    def _read_file(self, file_name: str | Path) -> dict[str, str]:
++    def _read_file(self, file_name: (str | Path)) ->dict[str, str]:
+         file_values: dict[str, str] = {}
+         with open(file_name) as input_file:
+             for line in input_file.readlines():
+@@ -118,12 +106,8 @@
+                     file_values[key] = value
+         return file_values
+ 
+-    def _perform_cast(
+-        self,
+-        key: str,
+-        value: typing.Any,
+-        cast: typing.Callable[[typing.Any], typing.Any] | None = None,
+-    ) -> typing.Any:
++    def _perform_cast(self, key: str, value: typing.Any, cast: (typing.Callable
++        [[typing.Any], typing.Any] | None)=None) ->typing.Any:
+         if cast is None or value is None:
+             return value
+         elif cast is bool and isinstance(value, str):

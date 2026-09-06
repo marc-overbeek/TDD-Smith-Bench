@@ -1,0 +1,95 @@
+--- a/oauthlib/oauth2/rfc6749/grant_types/resource_owner_password_credentials.py
++++ b/oauthlib/oauth2/rfc6749/grant_types/resource_owner_password_credentials.py
+@@ -67,22 +67,6 @@
+     """
+ 
+     def create_token_response(self, request, token_handler):
+-        """Return token or error in json format.
+-
+-        :param request: OAuthlib request.
+-        :type request: oauthlib.common.Request
+-        :param token_handler: A token handler instance, for example of type
+-                              oauthlib.oauth2.BearerToken.
+-
+-        If the access token request is valid and authorized, the
+-        authorization server issues an access token and optional refresh
+-        token as described in `Section 5.1`_.  If the request failed client
+-        authentication or is invalid, the authorization server returns an
+-        error response as described in `Section 5.2`_.
+-
+-        .. _`Section 5.1`: https://tools.ietf.org/html/rfc6749#section-5.1
+-        .. _`Section 5.2`: https://tools.ietf.org/html/rfc6749#section-5.2
+-        """
+         headers = self._get_default_headers()
+         try:
+             if self.request_validator.client_authentication_required(request):
+@@ -112,52 +96,6 @@
+         return headers, json.dumps(token), 200
+ 
+     def validate_token_request(self, request):
+-        """
+-        :param request: OAuthlib request.
+-        :type request: oauthlib.common.Request
+-
+-        The client makes a request to the token endpoint by adding the
+-        following parameters using the "application/x-www-form-urlencoded"
+-        format per Appendix B with a character encoding of UTF-8 in the HTTP
+-        request entity-body:
+-
+-        grant_type
+-                REQUIRED.  Value MUST be set to "password".
+-
+-        username
+-                REQUIRED.  The resource owner username.
+-
+-        password
+-                REQUIRED.  The resource owner password.
+-
+-        scope
+-                OPTIONAL.  The scope of the access request as described by
+-                `Section 3.3`_.
+-
+-        If the client type is confidential or the client was issued client
+-        credentials (or assigned other authentication requirements), the
+-        client MUST authenticate with the authorization server as described
+-        in `Section 3.2.1`_.
+-
+-        The authorization server MUST:
+-
+-        o  require client authentication for confidential clients or for any
+-            client that was issued client credentials (or with other
+-            authentication requirements),
+-
+-        o  authenticate the client if client authentication is included, and
+-
+-        o  validate the resource owner password credentials using its
+-            existing password validation algorithm.
+-
+-        Since this access token request utilizes the resource owner's
+-        password, the authorization server MUST protect the endpoint against
+-        brute force attacks (e.g., using rate-limitation or generating
+-        alerts).
+-
+-        .. _`Section 3.3`: https://tools.ietf.org/html/rfc6749#section-3.3
+-        .. _`Section 3.2.1`: https://tools.ietf.org/html/rfc6749#section-3.2.1
+-        """
+         for validator in self.custom_validators.pre_token:
+             validator(request)
+ 
+@@ -170,8 +108,6 @@
+             if param in request.duplicate_params:
+                 raise errors.InvalidRequestError(description='Duplicate %s parameter.' % param, request=request)
+ 
+-        # This error should rarely (if ever) occur if requests are routed to
+-        # grant type handlers based on the grant_type parameter.
+         if not request.grant_type == 'password':
+             raise errors.UnsupportedGrantTypeError(request=request)
+ 
+@@ -187,7 +123,6 @@
+                 'in authenticate_client.')
+         log.debug('Authorizing access to user %r.', request.user)
+ 
+-        # Ensure client is authorized use of this grant type
+         self.validate_grant_type(request)
+ 
+         if request.client:

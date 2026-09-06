@@ -1,0 +1,447 @@
+--- a/oauthlib/oauth1/rfc5849/signature.py
++++ b/oauthlib/oauth1/rfc5849/signature.py
+@@ -103,135 +103,323 @@
+     return base_string
+ 
+ 
+-def base_string_uri(uri: str, host: str = None) -> str:
+-    """
+-    Calculates the _base string URI_.
+-
+-    The *base string URI* is one of the components that make up the
+-     *signature base string*.
+-
+-    The ``host`` is optional. If provided, it is used to override any host and
+-    port values in the ``uri``. The value for ``host`` is usually extracted from
+-    the "Host" request header from the HTTP request. Its value may be just the
+-    hostname, or the hostname followed by a colon and a TCP/IP port number
+-    (hostname:port). If a value for the``host`` is provided but it does not
+-    contain a port number, the default port number is used (i.e. if the ``uri``
+-    contained a port number, it will be discarded).
+-
+-    The rules for calculating the *base string URI* are defined in
+-    section 3.4.1.2`_ of RFC 5849.
+-
+-    .. _`section 3.4.1.2`: https://tools.ietf.org/html/rfc5849#section-3.4.1.2
+-
+-    :param uri: URI
+-    :param host: hostname with optional port number, separated by a colon
+-    :return: base string URI
+-    """
+-
++def base_string_uri(uri: str, host: str=None) ->str:
++    """
++    Calculates the base string URI.
++
++    Described in section 3.4.1.2 of RFC 5849.
++    """
+     if not isinstance(uri, str):
+-        raise ValueError('uri must be a string.')
+-
+-    # FIXME: urlparse does not support unicode
+-    output = urlparse.urlparse(uri)
+-    scheme = output.scheme
+-    hostname = output.hostname
+-    port = output.port
+-    path = output.path
+-    params = output.params
+-
+-    # The scheme, authority, and path of the request resource URI `RFC3986`
+-    # are included by constructing an "http" or "https" URI representing
+-    # the request resource (without the query or fragment) as follows:
+-    #
+-    # .. _`RFC3986`: https://tools.ietf.org/html/rfc3986
+-
++        raise ValueError('uri must be a string')
++    
++    if not uri or uri.strip() == '':
++        raise ValueError('uri is empty')
++    
++    # Parse the URI
++    parsed = urlparse.urlsplit(uri)
++    
++    # Scheme must be present and non-empty
++    scheme = parsed.scheme
+     if not scheme:
+-        raise ValueError('missing scheme')
+-
+-    # Per `RFC 2616 section 5.1.2`_:
+-    #
+-    # Note that the absolute path cannot be empty; if none is present in
+-    # the original URI, it MUST be given as "/" (the server root).
+-    #
+-    # .. _`RFC 2616 5.1.2`: https://tools.ietf.org/html/rfc2616#section-5.1.2
++        raise ValueError('uri has no scheme')
++    
++    # Normalize scheme to lowercase
++    scheme = scheme.lower()
++    
++    # Determine the host (netloc without port)
++    if host is not None:
++        # Use the provided host override
++        netloc = host
++        # Parse port from the provided host if present
++        # The host parameter may contain a port
++        if ':' in netloc:
++            # Could be host:port or IPv6
++            # Try to split host and port
++            # But we need to handle IPv6 addresses like [::1]:8080
++            if netloc.startswith('['):
++                # IPv6
++                bracket_end = netloc.find(']')
++                if bracket_end != -1 and bracket_end + 1 < len(netloc) and netloc[bracket_end + 1] == ':':
++                    host_part = netloc[:bracket_end + 1]
++                    port_str = netloc[bracket_end + 2:]
++                else:
++                    host_part = netloc
++                    port_str = None
++            else:
++                parts = netloc.rsplit(':', 1)
++                host_part = parts[0]
++                port_str = parts[1] if len(parts) > 1 else None
++        else:
++            host_part = netloc
++            port_str = None
++        
++        host_lower = host_part.lower()
++        
++        if port_str is not None:
++            try:
++                port_num = int(port_str)
++            except ValueError:
++                raise ValueError('invalid port in host parameter')
++            # Remove default ports
++            if (scheme == 'http' and port_num == 80) or (scheme == 'https' and port_num == 443):
++                netloc_normalized = host_lower
++            else:
++                netloc_normalized = '{}:{}'.format(host_lower, port_num)
++        else:
++            netloc_normalized = host_lower
++    else:
++        # Extract host and port from parsed URI
++        netloc = parsed.netloc
++        
++        # Handle IPv6 addresses
++        if parsed.hostname is None:
++            raise ValueError('uri has no host')
++        
++        hostname = parsed.hostname  # already lowercase
++        
++        if not hostname:
++            raise ValueError('uri has no host')
++        
++        # Validate port
++        port = parsed.port  # None if not present, int if present
++        
++        if port is not None:
++            if port <= 0 or port > 65535:
++                raise ValueError('invalid port: {}'.format(port))
++            # Remove default ports
++            if (scheme == 'http' and port == 80) or (scheme == 'https' and port == 443):
++                netloc_normalized = hostname
++            else:
++                netloc_normalized = '{}:{}'.format(hostname, port)
++        else:
++            # Check if there's an empty port (e.g., "http://example.com:/")
++            # urlsplit handles this: parsed.port will be None
++            # But we need to check for "host:" with empty port
++            # parsed.netloc might be "example.com:" 
++            if netloc.endswith(':'):
++                # Empty port - treat as no port
++                netloc_normalized = hostname
++            else:
++                netloc_normalized = hostname
++        
++        # Encode spaces in hostname
++        netloc_normalized = netloc_normalized.replace(' ', '%20')
++    
++    # Validate that host is not empty
++    if not netloc_normalized:
++        raise ValueError('uri has no host')
++    
++    # Get the path
++    path = parsed.path
++    
++    # If path is empty, use "/"
+     if not path:
+         path = '/'
+-
+-    # 1.  The scheme and host MUST be in lowercase.
++    
++    # Encode spaces in path
++    path = urlparse.quote(urlparse.unquote(path), safe='/-._~!$&\'()*+,;=:@%')
++    
++    # Reconstruct the URI without query and fragment
++    result = '{}://{}{}'.format(scheme, netloc_normalized, path)
++    
++    return result
++
++def base_string_uri(uri: str, host: str=None) ->str:
++    if not isinstance(uri, str):
++        raise ValueError('uri must be a string')
++    
++    if not uri or not uri.strip():
++        raise ValueError('uri is empty')
++    
++    # Parse the URI
++    try:
++        parsed = urlparse.urlsplit(uri)
++    except Exception as e:
++        raise ValueError('invalid uri: {}'.format(e))
++    
++    scheme = parsed.scheme
++    if not scheme:
++        raise ValueError('uri has no scheme')
+     scheme = scheme.lower()
+-    # Note: if ``host`` is used, it will be converted to lowercase below
+-    if hostname is not None:
++    
++    # Validate there's a netloc (host)
++    # Check for cases like 'http:' or 'http://'
++    if not parsed.netloc and host is None:
++        raise ValueError('uri has no host')
++    
++    if host is not None:
++        # Override host
++        # Parse the host parameter for host:port
++        if host.startswith('['):
++            # IPv6
++            bracket_end = host.find(']')
++            if bracket_end == -1:
++                raise ValueError('invalid IPv6 host')
++            host_part = host[:bracket_end + 1]
++            rest = host[bracket_end + 1:]
++            if rest.startswith(':'):
++                port_str = rest[1:]
++            else:
++                port_str = None
++        elif ':' in host:
++            idx = host.rfind(':')
++            host_part = host[:idx]
++            port_str = host[idx+1:]
++        else:
++            host_part = host
++            port_str = None
++        
++        host_lower = host_part.lower()
++        
++        if port_str is not None and port_str != '':
++            try:
++                port_num = int(port_str)
++            except ValueError:
++                raise ValueError('invalid port')
++            if port_num <= 0 or port_num > 65535:
++                raise ValueError('invalid port number')
++            if (scheme == 'http' and port_num == 80) or (scheme == 'https' and port_num == 443):
++                netloc_normalized = host_lower
++            else:
++                netloc_normalized = '{}:{}'.format(host_lower, port_num)
++        else:
++            netloc_normalized = host_lower
++    else:
++        # Use host from URI
++        # Need to handle port validation carefully
++        # urlsplit may not raise errors for bad ports
++        netloc = parsed.netloc
++        
++        # Check for empty host (e.g., 'http://:8080' or 'http://')
++        hostname = parsed.hostname
++        if not hostname:
++            raise ValueError('uri has no host')
++        
+         hostname = hostname.lower()
+-
+-    # 2.  The host and port values MUST match the content of the HTTP
+-    #     request "Host" header field.
++        
++        # Validate and process port
++        # Need to check the raw netloc for port issues
++        # parsed.port raises ValueError for non-integer ports
++        try:
++            port = parsed.port
++        except ValueError:
++            raise ValueError('invalid port in uri')
++        
++        if port is not None:
++            if port <= 0 or port > 65535:
++                raise ValueError('invalid port: {}'.format(port))
++            if (scheme == 'http' and port == 80) or (scheme == 'https' and port == 443):
++                netloc_normalized = hostname
++            else:
++                netloc_normalized = '{}:{}'.format(hostname, port)
++        else:
++            # Check for empty port like "host:"
++            # In this case parsed.port is None but netloc ends with ':'
++            # urlsplit('http://example.com:/').netloc == 'example.com:'
++            # parsed.port would be None
++            netloc_normalized = hostname
++        
++        # Encode spaces in hostname
++        netloc_normalized = netloc_normalized.replace(' ', '%20')
++    
++    if not netloc_normalized:
++        raise ValueError('uri has no host')
++    
++    # Get path
++    path = parsed.path
++    if not path:
++        path = '/'
++    
++    # Re-encode the path: decode then re-encode to normalize
++    # Keep already-encoded chars, encode unencoded special chars
++    path = urlparse.quote(urlparse.unquote(path), safe='/-._~!$&\'()*+,;=:@%')
++    
++    result = '{}://{}{}'.format(scheme, netloc_normalized, path)
++    return result
++
++def base_string_uri(uri: str, host: str=None) ->str:
++    if not isinstance(uri, str):
++        raise ValueError('uri must be a string')
++    
++    if not uri or not uri.strip():
++        raise ValueError('uri is empty')
++    
++    parsed = urlparse.urlsplit(uri)
++    
++    scheme = parsed.scheme
++    if not scheme:
++        raise ValueError('uri has no scheme')
++    scheme = scheme.lower()
++    
+     if host is not None:
+-        # NOTE: override value in uri with provided host
+-        # Host argument is equal to netloc. It means it's missing scheme.
+-        # Add it back, before parsing.
+-
+-        host = host.lower()
+-        host = f"{scheme}://{host}"
+-        output = urlparse.urlparse(host)
+-        hostname = output.hostname
+-        port = output.port
+-
+-    # 3.  The port MUST be included if it is not the default port for the
+-    #     scheme, and MUST be excluded if it is the default.  Specifically,
+-    #     the port MUST be excluded when making an HTTP request `RFC2616`_
+-    #     to port 80 or when making an HTTPS request `RFC2818`_ to port 443.
+-    #     All other non-default port numbers MUST be included.
+-    #
+-    # .. _`RFC2616`: https://tools.ietf.org/html/rfc2616
+-    # .. _`RFC2818`: https://tools.ietf.org/html/rfc2818
+-
+-    if hostname is None:
+-        raise ValueError('missing host')
+-
+-    # NOTE: Try guessing if we're dealing with IP or hostname
+-    with contextlib.suppress(ValueError):
+-        hostname = ipaddress.ip_address(hostname)
+-
+-
+-    if isinstance(hostname, ipaddress.IPv6Address):
+-        hostname = f"[{hostname}]"
+-    elif isinstance(hostname, ipaddress.IPv4Address):
+-        hostname = f"{hostname}"
+-
+-    if port is not None and not (0 < port <= 65535):
+-        raise ValueError('port out of range')  # 16-bit unsigned ints
+-    if (scheme, port) in (('http', 80), ('https', 443)):
+-        netloc = hostname  # default port for scheme: exclude port num
+-    elif port:
+-        netloc = f"{hostname}:{port}"  # use hostname:port
++        # Parse host parameter which may include port
++        if host.startswith('['):
++            bracket_end = host.find(']')
++            if bracket_end == -1:
++                raise ValueError('invalid IPv6 host')
++            host_part = host[:bracket_end + 1]
++            rest = host[bracket_end + 1:]
++            port_str = rest[1:] if rest.startswith(':') else None
++        elif ':' in host:
++            idx = host.rfind(':')
++            host_part = host[:idx]
++            port_str = host[idx+1:]
++        else:
++            host_part = host
++            port_str = None
++        
++        host_lower = host_part.lower()
++        
++        if port_str is not None and port_str != '':
++            try:
++                port_num = int(port_str)
++            except ValueError:
++                raise ValueError('invalid port')
++            if port_num <= 0 or port_num > 65535:
++                raise ValueError('invalid port number')
++            if (scheme == 'http' and port_num == 80) or (scheme == 'https' and port_num == 443):
++                netloc_normalized = host_lower
++            else:
++                netloc_normalized = '{}:{}'.format(host_lower, port_num)
++        else:
++            netloc_normalized = host_lower
+     else:
+-        netloc = hostname
+-
+-    v = urlparse.urlunparse((scheme, netloc, path, params, '', ''))
+-
+-    # RFC 5849 does not specify which characters are encoded in the
+-    # "base string URI", nor how they are encoded - which is very bad, since
+-    # the signatures won't match if there are any differences. Fortunately,
+-    # most URIs only use characters that are clearly not encoded (e.g. digits
+-    # and A-Z, a-z), so have avoided any differences between implementations.
+-    #
+-    # The example from its section 3.4.1.2 illustrates that spaces in
+-    # the path are percent encoded. But it provides no guidance as to what other
+-    # characters (if any) must be encoded (nor how); nor if characters in the
+-    # other components are to be encoded or not.
+-    #
+-    # This implementation **assumes** that **only** the space is percent-encoded
+-    # and it is done to the entire value (not just to spaces in the path).
+-    #
+-    # This code may need to be changed if it is discovered that other characters
+-    # are expected to be encoded.
+-    #
+-    # Note: the "base string URI" returned by this function will be encoded
+-    # again before being concatenated into the "signature base string". So any
+-    # spaces in the URI will actually appear in the "signature base string"
+-    # as "%2520" (the "%20" further encoded according to section 3.6).
+-
+-    return v.replace(' ', '%20')
++        if not parsed.netloc:
++            raise ValueError('uri has no host')
++        
++        hostname = parsed.hostname
++        if not hostname:
++            raise ValueError('uri has no host')
++        
++        hostname = hostname.lower()
++        
++        try:
++            port = parsed.port
++        except ValueError:
++            raise ValueError('invalid port in uri')
++        
++        if port is not None:
++            if port <= 0 or port > 65535:
++                raise ValueError('invalid port: {}'.format(port))
++            if (scheme == 'http' and port == 80) or (scheme == 'https' and port == 443):
++                netloc_normalized = hostname
++            else:
++                netloc_normalized = '{}:{}'.format(hostname, port)
++        else:
++            netloc_normalized = hostname
++        
++        netloc_normalized = netloc_normalized.replace(' ', '%20')
++    
++    if not netloc_normalized:
++        raise ValueError('uri has no host')
++    
++    path = parsed.path
++    if not path:
++        path = '/'
++    
++    path = urlparse.quote(urlparse.unquote(path), safe='/-._~!$&\'()*+,;=:@%')
++    
++    return '{}://{}{}'.format(scheme, netloc_normalized, path)
+ 
+ 
+ def collect_parameters(uri_query='', body=None, headers=None,

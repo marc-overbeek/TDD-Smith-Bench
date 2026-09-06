@@ -1,0 +1,30 @@
+--- a/monkeytype/tracing.py
++++ b/monkeytype/tracing.py
+@@ -243,25 +243,8 @@
+                 )
+         self.traces[frame] = CallTrace(func, arg_types)
+ 
+-    def handle_return(self, frame: FrameType, arg: Any) -> None:
+-        # In the case of a 'return' event, arg contains the return value, or
+-        # None, if the block returned because of an unhandled exception. We
+-        # need to distinguish the exceptional case (not a valid return type)
+-        # from a function returning (or yielding) None. In the latter case, the
+-        # the last instruction that was executed should always be a return or a
+-        # yield.
+-        typ = get_type(arg, max_typed_dict_size=self.max_typed_dict_size)
+-        last_opcode = frame.f_code.co_code[frame.f_lasti]
+-        trace = self.traces.get(frame)
+-        if trace is None:
+-            return
+-        elif last_opcode == YIELD_VALUE_OPCODE:
+-            trace.add_yield_type(typ)
+-        else:
+-            if last_opcode == RETURN_VALUE_OPCODE:
+-                trace.return_type = typ
+-            del self.traces[frame]
+-            self.logger.log(trace)
++    def handle_return(self, frame: FrameType, arg: Any) ->None:
++        pass
+ 
+     def __call__(self, frame: FrameType, event: str, arg: Any) -> "CallTracer":
+         code = frame.f_code

@@ -1,0 +1,39 @@
+--- a/src/mistune/renderers/_list.py
++++ b/src/mistune/renderers/_list.py
+@@ -24,30 +24,12 @@
+     return strip_end(text) + '\n'
+ 
+ 
+-def _render_list_item(
+-    renderer: "BaseRenderer",
+-    parent: Dict[str, Any],
+-    item: Dict[str, Any],
+-    state: "BlockState",
+-) -> str:
+-    leading = cast(str, parent["leading"])
+-    text = ""
+-    for tok in item["children"]:
+-        if tok["type"] == "list":
+-            tok["parent"] = parent
+-        elif tok["type"] == "blank_line":
+-            continue
+-        text += renderer.render_token(tok, state)
+-
+-    lines = text.splitlines()
+-    text = (lines[0] if lines else '') + '\n'
+-    prefix = ' ' * len(leading)
+-    for line in lines[1:]:
+-        if line:
+-            text += prefix + line + '\n'
+-        else:
+-            text += '\n'
+-    return leading + text
++def _render_list_item(renderer: 'BaseRenderer', parent: Dict[str, Any],
++    item: Dict[str, Any], state: 'BlockState') ->str:
++    children = renderer.render_children(item, state)
++    if parent.get('tight'):
++        return parent['leading'] + children
++    return parent['leading'] + children + '\n'
+ 
+ 
+ def _render_ordered_list(

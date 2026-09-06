@@ -1,0 +1,28 @@
+--- a/safety/scan/ecosystems/target.py
++++ b/safety/scan/ecosystems/target.py
+@@ -28,23 +28,8 @@
+         self.inspectable_file = None
+         self.file_type = file_type
+ 
+-    def __enter__(self): # TODO: Handle permission issue /Applications/...
+-        """
+-        Enters the runtime context related to this object.
+-
+-        Opens the file and creates the appropriate inspectable file object based on the file type.
+-
+-        Returns:
+-            The inspectable file object.
+-        """
+-        try:
+-            file: FileTextWrite = open(self.file_path, mode='r+') # type: ignore
+-            self.inspectable_file = TargetFile.create(file_type=self.file_type, file=file)
+-        except Exception as e:
+-            # TODO: Report this
+-            pass
+-
+-        return self.inspectable_file
++    def __enter__(self):
++        pass
+ 
+     def __exit__(self, exc_type, exc_value, traceback):
+         """

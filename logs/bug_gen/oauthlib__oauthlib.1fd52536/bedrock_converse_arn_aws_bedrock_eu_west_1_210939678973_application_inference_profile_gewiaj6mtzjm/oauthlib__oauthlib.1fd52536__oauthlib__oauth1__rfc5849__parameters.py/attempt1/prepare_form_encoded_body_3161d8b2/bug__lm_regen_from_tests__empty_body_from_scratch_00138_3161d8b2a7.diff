@@ -1,0 +1,30 @@
+--- a/oauthlib/oauth1/rfc5849/parameters.py
++++ b/oauthlib/oauth1/rfc5849/parameters.py
+@@ -107,15 +107,18 @@
+ 
+ 
+ def prepare_form_encoded_body(oauth_params, body):
+-    """Prepare the Form-Encoded Body.
+-
+-    Per `section 3.5.2`_ of the spec.
+-
+-    .. _`section 3.5.2`: https://tools.ietf.org/html/rfc5849#section-3.5.2
+-
+-    """
+-    # append OAuth params to the existing body
+-    return _append_params(oauth_params, body)
++    # Extract existing parameters from the body
++    existing_params = extract_params(body) if body else []
++    
++    # Merge existing parameters with OAuth parameters
++    merged_params = list(existing_params)
++    merged_params.extend(oauth_params)
++    
++    # Sort parameters so OAuth parameters come after non-OAuth ones
++    merged_params.sort(key=lambda i: i[0].startswith('oauth_'))
++    
++    # URL encode the merged parameters
++    return urlencode(merged_params)
+ 
+ 
+ def prepare_request_uri_query(oauth_params, uri):

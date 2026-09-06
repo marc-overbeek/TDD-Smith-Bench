@@ -1,0 +1,152 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -752,29 +752,11 @@
+         for track_point in self.points:
+             track_point.remove_elevation()
+ 
+-    def length_2d(self) -> Optional[float]:
+-        """
+-        Computes 2-dimensional length (meters) of segment (only latitude and
+-        longitude, no elevation).
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
+-        return mod_geo.length_2d(self.points) # type: ignore
+-
+-    def length_3d(self) -> float:
+-        """
+-        Computes 3-dimensional length of segment (latitude, longitude, and
+-        elevation).
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
+-        return mod_geo.length_3d(self.points) # type: ignore
++    def length_2d(self) ->Optional[float]:
++        return mod_geo.length_2d(self.points)
++
++    def length_3d(self) ->float:
++        return mod_geo.length_3d(self.points)
+ 
+     def move(self, location_delta: mod_geo.LocationDelta) -> None:
+         """
+@@ -1483,17 +1465,7 @@
+ 
+         self.segments = result
+ 
+-    def length_2d(self) -> float:
+-        """
+-        Computes 2-dimensional length (meters) of track (only latitude and
+-        longitude, no elevation). This is the sum of the 2D length of all
+-        segments.
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
++    def length_2d(self) ->float:
+         length: float = 0
+         for track_segment in self.segments:
+             d = track_segment.length_2d()
+@@ -1593,16 +1565,7 @@
+ 
+         return result
+ 
+-    def length_3d(self) -> float:
+-        """
+-        Computes 3-dimensional length of track (latitude, longitude, and
+-        elevation). This is the sum of the 3D length of all segments.
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
++    def length_3d(self) ->float:
+         length: float = 0
+         for track_segment in self.segments:
+             d = track_segment.length_3d()
+@@ -2263,17 +2226,7 @@
+ 
+         track.split(track_segment_no=track_segment_no, track_point_no=track_point_no)
+ 
+-    def length_2d(self) -> float:
+-        """
+-        Computes 2-dimensional length of the GPX file (only latitude and
+-        longitude, no elevation). This is the sum of 2D length of all segments
+-        in all tracks.
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
++    def length_2d(self) ->float:
+         result: float = 0
+         for track in self.tracks:
+             length = track.length_2d()
+@@ -2281,16 +2234,7 @@
+                 result += length
+         return result
+ 
+-    def length_3d(self) -> float:
+-        """
+-        Computes 3-dimensional length of the GPX file (latitude, longitude, and
+-        elevation). This is the sum of 3D length of all segments in all tracks.
+-
+-        Returns
+-        ----------
+-        length : float
+-            Length returned in meters
+-        """
++    def length_3d(self) ->float:
+         result: float = 0
+         for track in self.tracks:
+             length = track.length_3d()
+@@ -2298,29 +2242,8 @@
+                 result += length
+         return result
+ 
+-    def walk(self, only_points: bool=False) -> Iterator[Any]:
+-        """
+-        Generator used to iterates through points in GPX file
+-
+-        Parameters
+-        ----------
+-        only_point s: boolean
+-            Only yield points while walking
+-
+-        Yields
+-        ----------
+-        point : GPXTrackPoint
+-            Point in the track
+-        track_no : integer
+-            Index of track containing point. This is suppressed if only_points
+-            is True.
+-        segment_no : integer
+-            Index of segment containing point. This is suppressed if only_points
+-            is True.
+-        point_no : integer
+-            Index of point. This is suppressed if only_points is True.
+-        """
+-        for track_no, track in enumerate(self.tracks if self.tracks else [] ):
++    def walk(self, only_points: bool=False) ->Iterator[Any]:
++        for track_no, track in enumerate(self.tracks if self.tracks else []):
+             for segment_no, segment in enumerate(track.segments if track.segments else []):
+                 for point_no, point in enumerate(segment.points if segment.points else []):
+                     if only_points:
+@@ -2741,7 +2664,7 @@
+                 parts.append(f'{attribute}={value!r}')
+         return f'GPX({", ".join(parts)})'
+ 
+-    def clone(self) -> "GPX":
++    def clone(self) ->'GPX':
+         return mod_copy.deepcopy(self)
+ 
+ # Add attributes and fill default values (lists or None) for all GPX elements:

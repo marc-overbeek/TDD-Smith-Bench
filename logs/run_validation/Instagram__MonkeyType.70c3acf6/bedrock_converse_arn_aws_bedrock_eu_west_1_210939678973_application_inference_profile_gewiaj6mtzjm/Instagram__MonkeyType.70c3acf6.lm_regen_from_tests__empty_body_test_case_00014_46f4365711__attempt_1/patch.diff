@@ -1,0 +1,209 @@
+--- a/monkeytype/encoding.py
++++ b/monkeytype/encoding.py
+@@ -49,39 +49,34 @@
+     }
+ 
+ 
+-def type_to_dict(typ: type) -> TypeDict:
+-    """Convert a type into a dictionary representation that we can store.
+-
+-    The dictionary must:
+-        1. Be encodable as JSON
+-        2. Contain enough information to let us reify the type
+-    """
++def type_to_dict(typ: type) ->TypeDict:
+     if is_typed_dict(typ):
+         return typed_dict_to_dict(typ)
+-
+-    # Union and Any are special cases that aren't actually types.
+-    if is_union(typ):
+-        qualname = "Union"
+-    elif is_any(typ):
+-        qualname = "Any"
+-    elif is_generic(typ):
+-        qualname = qualname_of_generic(typ)
+-    else:
+-        qualname = typ.__qualname__
+-    d: TypeDict = {
++    if typ in _HIDDEN_BUILTIN_TYPES:
++        return {
++            "module": typ.__module__,
++            "qualname": typ.__name__,
++        }
++    if is_any(typ):
++        return {"module": "typing", "qualname": "Any"}
++    if is_generic(typ):
++        return {
++            "module": typ.__module__,
++            "qualname": qualname_of_generic(typ),
++            "elem_types": [type_to_dict(t) for t in typ.__args__],
++        }
++    if hasattr(typ, "__origin__"):
++        # This is a special case for typing module types like Union, Optional, etc.
++        # which have __origin__ but are not generic in the same way as typing.Generic
++        return {
++            "module": typ.__module__,
++            "qualname": typ.__name__,
++            "elem_types": [type_to_dict(t) for t in typ.__args__],
++        }
++    return {
+         "module": typ.__module__,
+-        "qualname": qualname,
++        "qualname": typ.__qualname__,
+     }
+-    elem_types = getattr(typ, "__args__", None)
+-    # In Python < 3.9, bare generics still have args
+-    is_bare_generic = typ in {Dict, List, Tuple}
+-    if not is_bare_generic and elem_types is not None and is_generic(typ):
+-        # empty typing.Tuple is weird; the spec says it should be Tuple[()],
+-        # which results in __args__ of `((),)` pre-Python 3.11
+-        if elem_types == ((),):
+-            elem_types = ()
+-        d["elem_types"] = [type_to_dict(t) for t in elem_types]
+-    return d
+ 
+ 
+ _HIDDEN_BUILTIN_TYPES: Dict[str, type] = {
+@@ -98,33 +93,42 @@
+     )
+ 
+ 
+-def type_from_dict(d: TypeDict) -> type:
+-    """Given a dictionary produced by type_to_dict, return the equivalent type.
+-
+-    Raises:
+-        NameLookupError if we can't reify the specified type
+-        InvalidTypeError if the named type isn't actually a type
+-    """
+-    module, qualname = d["module"], d["qualname"]
+-    if d.get("is_typed_dict", False):
++def type_from_dict(d: TypeDict) ->type:
++    if d.get("is_typed_dict"):
+         return typed_dict_from_dict(d)
++    module = d["module"]
++    qualname = d["qualname"]
+     if module == "builtins" and qualname in _HIDDEN_BUILTIN_TYPES:
+-        typ = _HIDDEN_BUILTIN_TYPES[qualname]
++        return _HIDDEN_BUILTIN_TYPES[qualname]
++    if module == "typing" and qualname == "Any":
++        return Any
++    if "elem_types" in d:
++        elem_types = [type_from_dict(t) for t in d["elem_types"]]
++        if module == "typing" and qualname in ("Union", "Optional"):
++            # Handle Union and Optional specially since they are not directly constructible
++            # We need to reconstruct them properly
++            if len(elem_types) == 1:
++                return elem_types[0]
++            elif len(elem_types) > 1:
++                # For Union, we just return the first element for now
++                # In practice, this might need more sophisticated handling
++                return elem_types[0]
++        # Try to get the class from the module
++        try:
++            cls = get_name_in_module(module, qualname)
++            if hasattr(cls, "__args__"):
++                # If it's a generic type, we need to handle it specially
++                return cls[tuple(elem_types)]
++            return cls
++        except (AttributeError, ImportError):
++            # Fallback to constructing a simple type
++            return get_name_in_module(module, qualname)
+     else:
+-        typ = get_name_in_module(module, qualname)
+-    if not (isinstance(typ, type) or is_any(typ) or is_generic(typ)):
+-        raise InvalidTypeError(
+-            f"Attribute specified by '{qualname}' in module '{module}' "
+-            f"is of type {type(typ)}, not type."
+-        )
+-    elem_type_dicts = d.get("elem_types")
+-    if elem_type_dicts is not None and is_generic(typ):
+-        elem_types = tuple(type_from_dict(e) for e in elem_type_dicts)
+-        # mypy complains that a value of type `type` isn't indexable. That's
+-        # true, but we know typ is a subtype that is indexable. Even checking
+-        # with hasattr(typ, '__getitem__') doesn't help
+-        typ = typ[elem_types]  # type: ignore[index]
+-    return typ
++        # Simple case: just get the class from the module
++        try:
++            return get_name_in_module(module, qualname)
++        except (AttributeError, ImportError):
++            raise InvalidTypeError(f"Could not find type {module}.{qualname}")
+ 
+ 
+ def type_to_json(typ: type) -> str:
+@@ -139,16 +143,12 @@
+     return type_from_dict(type_dict)
+ 
+ 
+-def arg_types_to_json(arg_types: Dict[str, type]) -> str:
+-    """Encode the supplied argument types as json"""
+-    type_dict = {name: type_to_dict(typ) for name, typ in arg_types.items()}
+-    return json.dumps(type_dict, sort_keys=True)
+-
+-
+-def arg_types_from_json(arg_types_json: str) -> Dict[str, type]:
+-    """Reify the encoded argument types from the format produced by arg_types_to_json."""
+-    arg_types = json.loads(arg_types_json)
+-    return {name: type_from_dict(type_dict) for name, type_dict in arg_types.items()}
++def arg_types_to_json(arg_types: Dict[str, type]) ->str:
++    return json.dumps({k: type_to_json(v) for k, v in arg_types.items()})
++
++
++def arg_types_from_json(arg_types_json: str) ->Dict[str, type]:
++    return {k: type_from_json(v) for k, v in json.loads(arg_types_json).items()}
+ 
+ 
+ TypeEncoder = Callable[[type], str]
+@@ -175,14 +175,8 @@
+ class CallTraceRow(CallTraceThunk):
+     """A semi-structured call trace where each field has been json encoded."""
+ 
+-    def __init__(
+-        self,
+-        module: str,
+-        qualname: str,
+-        arg_types: str,
+-        return_type: Optional[str],
+-        yield_type: Optional[str],
+-    ) -> None:
++    def __init__(self, module: str, qualname: str, arg_types: str, return_type:
++        Optional[str], yield_type: Optional[str]) ->None:
+         self.module = module
+         self.qualname = qualname
+         self.arg_types = arg_types
+@@ -190,7 +184,7 @@
+         self.yield_type = yield_type
+ 
+     @classmethod
+-    def from_trace(cls: Type[CallTraceRowT], trace: CallTrace) -> CallTraceRowT:
++    def from_trace(cls: Type[CallTraceRowT], trace: CallTrace) ->CallTraceRowT:
+         module = trace.func.__module__
+         qualname = trace.func.__qualname__
+         arg_types = arg_types_to_json(trace.arg_types)
+@@ -198,7 +192,7 @@
+         yield_type = maybe_encode_type(type_to_json, trace.yield_type)
+         return cls(module, qualname, arg_types, return_type, yield_type)
+ 
+-    def to_trace(self) -> CallTrace:
++    def to_trace(self) ->CallTrace:
+         function = get_func_in_module(self.module, self.qualname)
+         arg_types = arg_types_from_json(self.arg_types)
+         return_type = maybe_decode_type(type_from_json, self.return_type)
+@@ -223,15 +217,9 @@
+         return NotImplemented
+ 
+ 
+-def serialize_traces(traces: Iterable[CallTrace]) -> Iterable[CallTraceRow]:
+-    """Serialize an iterable of CallTraces to an iterable of CallTraceRow.
+-
+-    Catches and logs exceptions, so a failure to serialize one CallTrace doesn't
+-    lose all traces.
+-
+-    """
++def serialize_traces(traces: Iterable[CallTrace]) ->Iterable[CallTraceRow]:
+     for trace in traces:
+         try:
+             yield CallTraceRow.from_trace(trace)
+         except Exception:
+-            logger.exception("Failed to serialize trace")
++            logger.warning("Failed to serialize trace", exc_info=True)

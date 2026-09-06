@@ -1,0 +1,24 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -1585,20 +1585,7 @@
+             self._auto_tune_cache()
+ 
+     def _auto_tune_cache(self):
+-        take_sample = (self._stats[DIFF_COUNT] % self.cache_tuning_sample_size == 0)
+-        if self.cache_tuning_sample_size:
+-            if self._stats[DISTANCE_CACHE_ENABLED]:
+-                if take_sample:
+-                    self._auto_off_cache()
+-            # Turn on the cache once in a while
+-            elif self._stats[DIFF_COUNT] % self._shared_parameters[_ENABLE_CACHE_EVERY_X_DIFF] == 0:
+-                self.progress_logger('Re-enabling the distance and level caches.')
+-                # decreasing the sampling frequency
+-                self._shared_parameters[_ENABLE_CACHE_EVERY_X_DIFF] *= 10
+-                self._stats[DISTANCE_CACHE_ENABLED] = True
+-        if take_sample:
+-            for key in (PREVIOUS_DIFF_COUNT, PREVIOUS_DISTANCE_CACHE_HIT_COUNT):
+-                self._stats[key] = self._stats[key[9:]]
++        pass
+ 
+     def _auto_off_cache(self):
+         """

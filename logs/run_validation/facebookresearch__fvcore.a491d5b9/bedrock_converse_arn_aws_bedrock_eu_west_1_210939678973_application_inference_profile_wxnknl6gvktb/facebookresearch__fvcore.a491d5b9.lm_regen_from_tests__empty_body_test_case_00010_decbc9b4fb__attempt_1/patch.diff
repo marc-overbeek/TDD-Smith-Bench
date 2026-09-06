@@ -1,0 +1,17 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -297,10 +297,13 @@
+             raise ValueError(
+                 "Step scheduler requires a list of at least one param value"
+             )
++        self._num_updates = num_updates
+         self._param_schedule = values
+ 
+     def __call__(self, where: float) -> float:
+-        ind = int((where + self.WHERE_EPSILON) * len(self._param_schedule))
++        epoch_num = int((where + self.WHERE_EPSILON) * self._num_updates)
++        step_size = self._num_updates / len(self._param_schedule)
++        ind = min(int(epoch_num / step_size), len(self._param_schedule) - 1)
+         return self._param_schedule[ind]
+ 
+ 

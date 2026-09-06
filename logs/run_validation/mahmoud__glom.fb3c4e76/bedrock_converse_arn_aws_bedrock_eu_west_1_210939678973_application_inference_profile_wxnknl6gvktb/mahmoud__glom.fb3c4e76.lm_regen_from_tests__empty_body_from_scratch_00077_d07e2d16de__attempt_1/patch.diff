@@ -1,0 +1,12 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1204,6 +1204,9 @@
+         ret._cur_kwargs = dict(self._cur_kwargs)
+         ret._cur_kwargs.update({k: kw for k, _ in kw.items()})
+         return ret
++
++    assert glom('a', Invoke(len).specs(T)) == 1
++    spec = Invoke(test).star(args='args').constants(3, b='b').specs(c='c').star(args='args2', kwargs='kwargs')
+ 
+     def specs(self, *a, **kw):
+         """Returns a new :class:`Invoke` spec, with the provided positional

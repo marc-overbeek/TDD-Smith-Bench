@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing test and the function signatures, I need to implement `save_as_callback` and `output_callback` functions that return appropriate values based on their inputs.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing test and the function signatures, I need to implement `save_as_callback` and `output_callback` functions that return appropriate values based on their inputs.\n\n```python\ndef save_as_callback(save_as: Optional[Tuple[ScanExport, Path]]) ->Tuple[\n    Optional[str], Optional[Path]]:\n    if save_as is None:\n        return None, None\n    \n    export_type, path = save_as\n    \n    if export_type is ScanExport.spdx:\n        raise_if_not_spdx_extension_installed()\n    \n    return export_type.value, path\n\ndef output_callback(output: ScanOutput) ->str:\n    return output.value\n```",
+  "rewrite": "def save_as_callback(save_as: Optional[Tuple[ScanExport, Path]]) ->Tuple[\n    Optional[str], Optional[Path]]:\n    if save_as is None:\n        return None, None\n    \n    export_type, path = save_as\n    \n    if export_type is ScanExport.spdx:\n        raise_if_not_spdx_extension_installed()\n    \n    return export_type.value, path\n\ndef output_callback(output: ScanOutput) ->str:\n    return output.value",
+  "strategy": "lm_regen_from_tests_combined"
+}

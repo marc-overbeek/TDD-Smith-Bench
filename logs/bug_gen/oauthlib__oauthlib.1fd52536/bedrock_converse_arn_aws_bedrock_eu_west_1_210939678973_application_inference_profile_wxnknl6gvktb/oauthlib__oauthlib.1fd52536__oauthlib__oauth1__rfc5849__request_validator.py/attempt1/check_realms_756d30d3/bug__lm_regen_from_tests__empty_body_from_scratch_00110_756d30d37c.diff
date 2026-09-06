@@ -1,0 +1,20 @@
+--- a/oauthlib/oauth1/rfc5849/request_validator.py
++++ b/oauthlib/oauth1/rfc5849/request_validator.py
+@@ -190,6 +190,17 @@
+         return (set(verifier) <= self.safe_characters and
+                 lower <= len(verifier) <= upper)
+ 
++    def test_check_realms(self):
++        v = RequestValidator()
++        self.assertFalse(v.check_realms(['foo']))  # Base class has empty realms, so 'foo' is not in it
++
++        class FooRealmValidator(RequestValidator):
++            @property
++            def realms(self):
++                return ['foo']
++        v = FooRealmValidator()
++        self.assertTrue(v.check_realms(['foo']))  # Subclass has 'foo' in realms, so it should return True
++
+     def check_realms(self, realms):
+         """Check that the realm is one of a set allowed realms."""
+         return all(r in self.realms for r in realms)

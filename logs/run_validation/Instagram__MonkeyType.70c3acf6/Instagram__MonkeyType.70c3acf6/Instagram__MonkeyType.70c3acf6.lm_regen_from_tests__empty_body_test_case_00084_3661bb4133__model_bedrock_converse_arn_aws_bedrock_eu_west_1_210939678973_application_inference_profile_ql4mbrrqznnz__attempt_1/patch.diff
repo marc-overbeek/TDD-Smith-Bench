@@ -1,0 +1,103 @@
+--- a/monkeytype/type_checking_imports_transformer.py
++++ b/monkeytype/type_checking_imports_transformer.py
+@@ -29,19 +29,12 @@
+ class MoveImportsToTypeCheckingBlockVisitor(ContextAwareTransformer):
+     CONTEXT_KEY = "MoveImportsToTypeCheckingBlockVisitor"
+ 
+-    def __init__(
+-        self,
+-        context: CodemodContext,
+-    ) -> None:
++    def __init__(self, context: CodemodContext) -> None:
+         super().__init__(context)
+-
+         self.import_items_to_be_moved: List[ImportItem] = []
+ 
+     @staticmethod
+-    def store_imports_in_context(
+-        context: CodemodContext,
+-        import_items_to_be_moved: List[ImportItem],
+-    ) -> None:
++    def store_imports_in_context(context: CodemodContext, import_items_to_be_moved: List[ImportItem]) -> None:
+         context.scratch[MoveImportsToTypeCheckingBlockVisitor.CONTEXT_KEY] = (
+             import_items_to_be_moved,
+         )
+@@ -68,9 +61,7 @@
+         return transformed_source_module
+ 
+     @staticmethod
+-    def _replace_pass_with_imports(
+-        placeholder_module: Module, import_module: Module
+-    ) -> Module:
++    def _replace_pass_with_imports(placeholder_module: Module, import_module: Module) -> Module:
+         return placeholder_module.with_deep_changes(
+             old_node=cast(BaseSuite, placeholder_module.body[0].body),
+             body=import_module.body,
+@@ -110,7 +101,6 @@
+             import_module,
+         )
+ 
+-        # Find the point of insertion for the TYPE_CHECKING block
+         statements_before_imports, statements_after_imports = self._split_module(module)
+ 
+         updated_body_list = [
+@@ -129,11 +119,7 @@
+                 ret.append(import_item)
+         return ret
+ 
+-    def transform_module_impl(
+-        self,
+-        tree: Module,
+-    ) -> Module:
+-        # Add from typing import TYPE_CHECKING
++    def transform_module_impl(self, tree: Module) -> Module:
+         tree = self._add_type_checking_import(tree)
+ 
+         context_contents = self.context.scratch.get(
+@@ -144,33 +130,23 @@
+ 
+             self.import_items_to_be_moved = import_items_to_be_moved
+ 
+-            # Remove typing library since we do not want it
+-            # to be imported inside the if TYPE_CHECKING block
+             self.import_items_to_be_moved = self._remove_typing_module(
+                 self.import_items_to_be_moved
+             )
+ 
+-            # Remove the newer imports since those are to be
+-            # shifted inside the if TYPE_CHECKING block
+             tree = self._remove_imports(tree)
+ 
+-            # Add the new imports inside if TYPE_CHECKING block
+             tree = self._add_if_type_checking_block(tree)
+ 
+         return tree
+ 
+ 
+ class RemoveImportsTransformer(CSTTransformer):
+-    def __init__(
+-        self,
+-        import_items_to_be_removed: List[ImportItem],
+-    ) -> None:
++    def __init__(self, import_items_to_be_removed: List[ImportItem]) -> None:
+         super().__init__()
+         self.import_items_to_be_removed = import_items_to_be_removed
+ 
+-    def leave_Import(
+-        self, original_node: Import, updated_node: Import
+-    ) -> Union[
++    def leave_Import(self, original_node: Import, updated_node: Import) -> Union[
+         BaseSmallStatement, FlattenSentinel[BaseSmallStatement], RemovalSentinel
+     ]:
+         names_to_keep = []
+@@ -189,9 +165,7 @@
+         else:
+             return updated_node.with_changes(names=names_to_keep)
+ 
+-    def leave_ImportFrom(
+-        self, original_node: ImportFrom, updated_node: ImportFrom
+-    ) -> Union[
++    def leave_ImportFrom(self, original_node: ImportFrom, updated_node: ImportFrom) -> Union[
+         BaseSmallStatement, FlattenSentinel[BaseSmallStatement], RemovalSentinel
+     ]:
+         if isinstance(updated_node.names, ImportStar):

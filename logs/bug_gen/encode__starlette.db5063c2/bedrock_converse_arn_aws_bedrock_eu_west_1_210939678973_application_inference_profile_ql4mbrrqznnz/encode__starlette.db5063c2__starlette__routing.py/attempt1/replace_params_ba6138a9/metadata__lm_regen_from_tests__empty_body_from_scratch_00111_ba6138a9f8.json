@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef replace_params(path: str, param_convertors: dict[str, Convertor[typing.\n    Any]], path_params: dict[str, str]) ->tuple[str, dict[str, str]]:\n    for key, convertor in list(param_convertors.items()):\n        value = path_params.get(key)\n        if value is not None:\n            assert convertor.regex.fullmatch(convertor.to_string(value)), \\\n                f\"Path parameter '{key}' with value '{value}' did not match the expected format.\"\n            path = path.replace(\"{\" + key + \"}\", convertor.to_string(value))\n            path_params.pop(key)\n    return path, dict(path_params)\n```",
+  "rewrite": "def replace_params(path: str, param_convertors: dict[str, Convertor[typing.\n    Any]], path_params: dict[str, str]) ->tuple[str, dict[str, str]]:\n    for key, convertor in list(param_convertors.items()):\n        value = path_params.get(key)\n        if value is not None:\n            assert convertor.regex.fullmatch(convertor.to_string(value)), \\\n                f\"Path parameter '{key}' with value '{value}' did not match the expected format.\"\n            path = path.replace(\"{\" + key + \"}\", convertor.to_string(value))\n            path_params.pop(key)\n    return path, dict(path_params)",
+  "strategy": "lm_regen_from_tests"
+}

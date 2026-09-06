@@ -1,0 +1,60 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -612,51 +612,12 @@
+         # Value of type "type" is not indexable.
+         return cls[elems]  # type: ignore[no-any-return,index]
+ 
+-    def _add_typed_dict_class_stub(
+-        self,
+-        fields: Dict[str, type],
+-        class_name: str,
+-        base_class_name: str = "TypedDict",
+-        total: bool = True,
+-    ) -> None:
+-        attribute_stubs = []
+-        for name, typ in fields.items():
+-            rewritten_type, stubs = self.rewrite_and_get_stubs(
+-                typ, class_name_hint=name
+-            )
+-            attribute_stubs.append(AttributeStub(name, rewritten_type))
+-            self.stubs.extend(stubs)
+-        total_flag = "" if total else ", total=False"
+-        self.stubs.append(
+-            ClassStub(
+-                name=f"{class_name}({base_class_name}{total_flag})",
+-                function_stubs=[],
+-                attribute_stubs=attribute_stubs,
+-            )
+-        )
+-
+-    def rewrite_anonymous_TypedDict(self, typed_dict: type) -> ForwardRef:  # type: ignore[override]
+-        class_name = get_typed_dict_class_name(self._class_name_hint)
+-        required_fields, optional_fields = field_annotations(typed_dict)
+-        has_required_fields = len(required_fields) != 0
+-        has_optional_fields = len(optional_fields) != 0
+-        if not has_required_fields and not has_optional_fields:
+-            raise Exception(
+-                "Expected empty TypedDicts to be shrunk as Dict[Any, Any]"
+-                " but got an empty TypedDict anyway"
+-            )
+-        elif has_required_fields and not has_optional_fields:
+-            self._add_typed_dict_class_stub(required_fields, class_name)
+-        elif not has_required_fields and has_optional_fields:
+-            self._add_typed_dict_class_stub(optional_fields, class_name, total=False)
+-        else:
+-            self._add_typed_dict_class_stub(required_fields, class_name)
+-            base_class_name = class_name
+-            class_name = get_typed_dict_class_name(self._class_name_hint) + "NonTotal"
+-            self._add_typed_dict_class_stub(
+-                optional_fields, class_name, base_class_name, total=False
+-            )
+-        return make_forward_ref(class_name)
++    def _add_typed_dict_class_stub(self, fields: Dict[str, type], class_name:
++        str, base_class_name: str='TypedDict', total: bool=True) ->None:
++        pass
++
++    def rewrite_anonymous_TypedDict(self, typed_dict: type) ->ForwardRef:
++        pass
+ 
+     @staticmethod
+     def rewrite_and_get_stubs(

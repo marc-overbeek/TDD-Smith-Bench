@@ -1,0 +1,31 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -858,10 +858,28 @@
+ 
+     def apply_segmentation(self, segmentation: np.ndarray) -> np.ndarray:
+         """
++        Apply the transform on a full-image segmentation.
++        By default will just perform "apply_image".
++        """
++        return self.apply_image(segmentation)
++
++    def apply_segmentation(self, segmentation: np.ndarray) -> np.ndarray:
++        """
+         Apply no transform on the full-image segmentation.
+         """
+         return segmentation
+ 
++    def apply_segmentation(self, segmentation: np.ndarray) -> np.ndarray:
++        """
++        Apply the blend transform on a full-image segmentation.
++        """
++        if segmentation.dtype == np.uint8:
++            segmentation = segmentation.astype(np.float32)
++            blended = self.src_weight * self.src_image + self.dst_weight * segmentation
++            return np.clip(blended, 0, 255).astype(np.uint8)
++        else:
++            return self.src_weight * self.src_image + self.dst_weight * segmentation
++
+     def inverse(self) -> Transform:
+         """
+         The inverse is a no-op.

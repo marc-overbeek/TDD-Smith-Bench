@@ -1,0 +1,73 @@
+--- a/src/mistune/plugins/def_list.py
++++ b/src/mistune/plugins/def_list.py
+@@ -44,42 +44,36 @@
+     return pos
+ 
+ 
+-def _parse_def_item(block: "BlockParser", m: Match[str]) -> Iterable[Dict[str, Any]]:
+-    head = m.group("def_list_head")
+-    for line in head.splitlines():
++def _parse_def_item(block: 'BlockParser', m: Match[str]) ->Iterable[Dict[
++    str, Any]]:
++    text = m.group(0)
++    head_text = m.group('def_list_head')
++    
++    # Parse the head
++    head_tokens = _process_text(block, head_text, False)
++    for token in head_tokens:
+         yield {
+-          'type': 'def_list_head',
+-          'text': line,
++            'type': 'def_list_head',
++            'children': [token] if token['type'] != 'paragraph' else token.get('children', []),
+         }
+-
+-    src = m.group(0)
+-    end = len(head)
+-
+-    m2 = DD_START_RE.search(src, end)
+-    assert m2 is not None
+-    start = m2.start()
+-    prev_blank_line = src[end:start] == '\n'
+-    while m2:
+-        m2 = DD_START_RE.search(src, start + 1)
+-        if not m2:
+-            break
+-
+-        end = m2.start()
+-        text = src[start:end].replace(':', ' ', 1)
+-        children = _process_text(block, text, prev_blank_line)
+-        prev_blank_line = bool(HAS_BLANK_LINE_RE.search(text))
+-        yield {
+-          'type': 'def_list_item',
+-          'children': children,
+-        }
+-        start = end
+-
+-    text = src[start:].replace(':', ' ', 1)
+-    children = _process_text(block, text, prev_blank_line)
+-    yield {
+-      'type': 'def_list_item',
+-      'children': children,
+-    }
++    
++    # Parse the definitions
++    # Remove the head text to get just the definitions
++    def_text = text[len(head_text):]
++    
++    # Split by definition markers and process each
++    items = DD_START_RE.split(def_text)
++    
++    # First item is empty or whitespace before first `:`, skip it
++    for item in items[1:]:
++        if item.strip():
++            # Check if there's a blank line (loose list)
++            loose = bool(HAS_BLANK_LINE_RE.search(item))
++            tokens = _process_text(block, item, loose)
++            yield {
++                'type': 'def_list_item',
++                'children': tokens,
++            }
+ 
+ 
+ def _process_text(block: "BlockParser", text: str, loose: bool) -> List[Any]:

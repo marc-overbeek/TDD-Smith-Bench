@@ -1,0 +1,24 @@
+--- a/src/mistune/markdown.py
++++ b/src/mistune/markdown.py
+@@ -105,18 +105,9 @@
+             result = hook3(self, result, state)
+         return result, state
+ 
+-    def read(
+-        self, filepath: str, encoding: str = "utf-8", state: Optional[BlockState] = None
+-    ) -> Tuple[Union[str, List[Dict[str, Any]]], BlockState]:
+-        if state is None:
+-            state = self.block.state_cls()
+-
+-        state.env['__file__'] = filepath
+-        with open(filepath, 'rb') as f:
+-            s = f.read()
+-
+-        s2 = s.decode(encoding)
+-        return self.parse(s2, state)
++    def read(self, filepath: str, encoding: str='utf-8', state: Optional[
++        BlockState]=None) ->Tuple[Union[str, List[Dict[str, Any]]], BlockState]:
++        pass
+ 
+     def __call__(self, s: str) -> Union[str, List[Dict[str, Any]]]:
+         if s is None:

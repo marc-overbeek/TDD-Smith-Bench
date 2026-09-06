@@ -1,0 +1,21 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1077,6 +1077,18 @@
+        :class:`Call` has a successor with a fuller-featured API, new
+        in 19.10.0: the :class:`Invoke` specifier type.
+     """
++    def __init__(self, func=None, args=None, kwargs=None):
++        if func is None:
++            func = T
++        if not (callable(func) or isinstance(func, (Spec, TType))):
++            raise TypeError('expected func to be a callable or T'
++                            ' expression, not: %r' % (func,))
++        if args is None:
++            args = ()
++        if kwargs is None:
++            kwargs = {}
++        self.func, self.args, self.kwargs = func, args, kwargs
++
+     def __init__(self, func=None, args=None, kwargs=None):
+         if func is None:
+             func = T

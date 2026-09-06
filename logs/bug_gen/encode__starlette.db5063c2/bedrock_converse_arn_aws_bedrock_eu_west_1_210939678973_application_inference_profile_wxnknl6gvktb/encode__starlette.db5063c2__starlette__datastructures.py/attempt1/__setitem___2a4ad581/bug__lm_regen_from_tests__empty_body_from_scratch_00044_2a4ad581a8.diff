@@ -1,0 +1,23 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -315,6 +315,20 @@
+ 
+ 
+ class MultiDict(ImmutableMultiDict[typing.Any, typing.Any]):
++    q = MultiDict([('a', '123'), ('a', '456')])
++    q['a'] = '789'
++    assert q['a'] == '789'
++    assert q.get('a') == '789'
++    assert q.getlist('a') == ['789']
++
++    def setlist(self, key: typing.Any, values: list[typing.Any]) -> None:
++        if not values:
++            self.pop(key, None)
++        else:
++            existing_items = [(k, v) for (k, v) in self._list if k != key]
++            self._list = existing_items + [(key, value) for value in values]
++            self._dict[key] = values[-1]
++
+     def __setitem__(self, key: typing.Any, value: typing.Any) -> None:
+         self.setlist(key, [value])
+ 

@@ -1,0 +1,72 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -792,68 +792,7 @@
+                                         value=new_obj, action=parent_to_obj_action)
+ 
+     def _get_reverse_diff(self):
+-        if not self.bidirectional:
+-            raise ValueError('Please recreate the delta with bidirectional=True')
+-
+-        SIMPLE_ACTION_TO_REVERSE = {
+-            'iterable_item_added': 'iterable_item_removed',
+-            'iterable_items_added_at_indexes': 'iterable_items_removed_at_indexes',
+-            'attribute_added': 'attribute_removed',
+-            'set_item_added': 'set_item_removed',
+-            'dictionary_item_added': 'dictionary_item_removed',
+-        }
+-        # Adding the reverse of the dictionary
+-        for key in list(SIMPLE_ACTION_TO_REVERSE.keys()):
+-            SIMPLE_ACTION_TO_REVERSE[SIMPLE_ACTION_TO_REVERSE[key]] = key
+-
+-        r_diff = {}
+-        for action, info in self.diff.items():
+-            reverse_action = SIMPLE_ACTION_TO_REVERSE.get(action)
+-            if reverse_action:
+-                r_diff[reverse_action] = info
+-            elif action == 'values_changed':
+-                r_diff[action] = {}
+-                for path, path_info in info.items():
+-                    reverse_path = path_info['new_path'] if path_info.get('new_path') else path
+-                    r_diff[action][reverse_path] = {
+-                        'new_value': path_info['old_value'], 'old_value': path_info['new_value']
+-                    } 
+-            elif action == 'type_changes':
+-                r_diff[action] = {}
+-                for path, path_info in info.items():
+-                    reverse_path = path_info['new_path'] if path_info.get('new_path') else path
+-                    r_diff[action][reverse_path] = {
+-                        'old_type': path_info['new_type'], 'new_type': path_info['old_type'],
+-                    }
+-                    if 'new_value' in path_info:
+-                        r_diff[action][reverse_path]['old_value'] = path_info['new_value']
+-                    if 'old_value' in path_info:
+-                        r_diff[action][reverse_path]['new_value'] = path_info['old_value']
+-            elif action == 'iterable_item_moved':
+-                r_diff[action] = {}
+-                for path, path_info in info.items():
+-                    old_path = path_info['new_path']
+-                    r_diff[action][old_path] = {
+-                        'new_path': path, 'value': path_info['value'],
+-                    }
+-            elif action == '_iterable_opcodes':
+-                r_diff[action] = {}
+-                for path, op_codes in info.items():
+-                    r_diff[action][path] = []
+-                    for op_code in op_codes:
+-                        tag = op_code.tag
+-                        tag = {'delete': 'insert', 'insert': 'delete'}.get(tag, tag)
+-                        new_op_code = Opcode(
+-                            tag=tag,
+-                            t1_from_index=op_code.t2_from_index,
+-                            t1_to_index=op_code.t2_to_index,
+-                            t2_from_index=op_code.t1_from_index,
+-                            t2_to_index=op_code.t1_to_index,
+-                            new_values=op_code.old_values,
+-                            old_values=op_code.new_values,
+-                        )
+-                        r_diff[action][path].append(new_op_code)
+-        return r_diff
++        pass
+ 
+     def dump(self, file):
+         """

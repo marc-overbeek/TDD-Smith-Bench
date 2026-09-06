@@ -1,0 +1,100 @@
+--- a/src/mistune/plugins/ruby.py
++++ b/src/mistune/plugins/ruby.py
+@@ -14,35 +14,71 @@
+ _ruby_re = re.compile(RUBY_PATTERN)
+ 
+ 
+-def parse_ruby(inline: "InlineParser", m: Match[str], state: "InlineState") -> int:
+-    text = m.group(0)[1:-2]
+-    items = text.split(')')
+-    tokens = []
+-    for item in items:
+-        rb, rt = item.split('(')
+-        tokens.append({
+-            'type': 'ruby',
+-            'raw': rb,
+-            'attrs': {'rt': rt}
++def parse_ruby(inline: 'InlineParser', m: Match[str], state: 'InlineState'
++    ) ->int:
++    text = m.group(0)
++    pos = m.end()
++    
++    # Parse the ruby pattern [text(ruby)]
++    # Split into text and ruby parts
++    parts = []
++    start = 1  # Skip the opening [
++    
++    i = 1
++    while i < len(text) - 1:  # Skip the closing ]
++        if text[i] == '(':
++            # Found opening parenthesis, extract text part
++            text_part = text[start:i]
++            # Find matching closing parenthesis
++            j = i + 1
++            while j < len(text) - 1 and text[j] != ')':
++                j += 1
++            if j < len(text) - 1:  # Found closing parenthesis
++                ruby_part = text[i+1:j]
++                parts.append((text_part, ruby_part))
++                start = j + 1
++                i = j + 1
++            else:
++                break
++        else:
++            i += 1
++    
++    # Handle the case where there's no ruby part (just plain text)
++    if not parts:
++        # Simple case: just text without ruby
++        text_content = text[1:-1]  # Remove brackets
++        state.append_token({
++            'type': 'text',
++            'raw': text_content
+         })
+-
+-    end_pos = m.end()
+-
+-    next_match = _ruby_re.match(state.src, end_pos)
+-    if next_match:
+-        for tok in tokens:
+-            state.append_token(tok)
+-        return parse_ruby(inline, next_match, state)
+-
+-    # repeat link logic
+-    if end_pos < len(state.src):
+-        link_pos = _parse_ruby_link(inline, state, end_pos, tokens)
++        return pos
++    
++    # Create ruby token with multiple rb/rt pairs
++    ruby_tokens = []
++    for text_part, ruby_part in parts:
++        ruby_tokens.append({
++            'type': 'text',
++            'raw': text_part
++        })
++        ruby_tokens.append({
++            'type': 'text',
++            'raw': ruby_part
++        })
++    
++    # Check if there's a link part at the end
++    if pos < len(state.src) and state.src[pos] in ['(', '[']:
++        # Try to parse link
++        link_pos = _parse_ruby_link(inline, state, pos, ruby_tokens)
+         if link_pos:
+             return link_pos
+-
+-    for tok in tokens:
+-        state.append_token(tok)
+-    return end_pos
++    
++    # If no link, just add the ruby structure
++    state.append_token({
++        'type': 'ruby',
++        'children': ruby_tokens
++    })
++    
++    return pos
+ 
+ 
+ def _parse_ruby_link(

@@ -1,0 +1,18 @@
+--- a/src/mistune/directives/admonition.py
++++ b/src/mistune/directives/admonition.py
+@@ -55,12 +55,9 @@
+             md.renderer.register('admonition_content', render_admonition_content)
+ 
+ 
+-def render_admonition(self: Any, text: str, name: str, **attrs: Any) -> str:
+-    html = '<section class="admonition ' + name
+-    _cls = attrs.get('class')
+-    if _cls:
+-        html += ' ' + _cls
+-    return html + '">\n' + text + '</section>\n'
++def render_admonition(self: Any, text: str, name: str, **attrs: Any) ->str:
++    cls = attrs.get('class', 'admonition')
++    return f'<div class="{cls}">{text}</div>\n'
+ 
+ 
+ def render_admonition_title(self: Any, text: str) -> str:

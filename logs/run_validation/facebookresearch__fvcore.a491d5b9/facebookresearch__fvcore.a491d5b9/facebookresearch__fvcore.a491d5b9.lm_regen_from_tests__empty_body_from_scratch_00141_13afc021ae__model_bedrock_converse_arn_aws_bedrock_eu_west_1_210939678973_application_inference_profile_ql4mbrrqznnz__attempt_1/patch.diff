@@ -1,0 +1,18 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -309,13 +309,9 @@
+         Returns:
+             Counter(str) : The number of occurences each unsupported operator.
+         """
+-        if self._stats is None:
+-            raise RuntimeError(
+-                "Analysis results should be computed "
+-                "before calling unsupported_ops()"
+-            )
++        stats = self._analyze()
+         module_name = self.canonical_module_name(module_name)
+-        return self._stats.unsupported_ops[module_name]  # pyre-fixme
++        return stats.unsupported_ops[module_name]  # pyre-fixme
+ 
+     def uncalled_modules(self) -> Set[str]:
+         """

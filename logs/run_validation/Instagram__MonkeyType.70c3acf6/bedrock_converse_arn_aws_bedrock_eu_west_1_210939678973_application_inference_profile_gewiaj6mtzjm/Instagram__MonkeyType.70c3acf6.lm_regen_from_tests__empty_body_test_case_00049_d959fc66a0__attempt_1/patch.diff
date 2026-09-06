@@ -1,0 +1,48 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -52,21 +52,13 @@
+     return is_generic(typ) and name_of_generic(typ) == "List"
+ 
+ 
+-def make_typed_dict(*, required_fields=None, optional_fields=None) -> type:
+-    required_fields = required_fields or {}
+-    optional_fields = optional_fields or {}
+-    assert required_fields.keys().isdisjoint(optional_fields.keys())
+-    return TypedDict(
+-        DUMMY_TYPED_DICT_NAME,
+-        {
+-            "required_fields": TypedDict(
+-                DUMMY_REQUIRED_TYPED_DICT_NAME, required_fields
+-            ),
+-            "optional_fields": TypedDict(
+-                DUMMY_OPTIONAL_TYPED_DICT_NAME, optional_fields
+-            ),
+-        },
+-    )
++def make_typed_dict(*, required_fields=None, optional_fields=None) ->type:
++    annotations = {}
++    if required_fields:
++        annotations["required_fields"] = required_fields
++    if optional_fields:
++        annotations["optional_fields"] = optional_fields
++    return TypedDict(DUMMY_TYPED_DICT_NAME, annotations)
+ 
+ 
+ def field_annotations(typed_dict) -> Tuple[Dict[str, type], Dict[str, type]]:
+@@ -318,7 +310,15 @@
+ 
+     def rewrite_TypedDict(self, typed_dict):
+         if is_anonymous_typed_dict(typed_dict):
+-            return self.rewrite_anonymous_TypedDict(typed_dict)
++            required_fields, optional_fields = field_annotations(typed_dict)
++            return self.make_anonymous_typed_dict(
++                required_fields={
++                    name: self.rewrite(typ) for name, typ in required_fields.items()
++                },
++                optional_fields={
++                    name: self.rewrite(typ) for name, typ in optional_fields.items()
++                },
++            )
+         return self.make_builtin_typed_dict(
+             typed_dict.__name__,
+             {

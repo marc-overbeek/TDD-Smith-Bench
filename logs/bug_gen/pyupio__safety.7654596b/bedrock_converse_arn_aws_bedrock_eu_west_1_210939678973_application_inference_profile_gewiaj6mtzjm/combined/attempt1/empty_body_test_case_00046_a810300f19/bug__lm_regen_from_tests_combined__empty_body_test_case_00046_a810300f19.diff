@@ -1,0 +1,26 @@
+--- a/safety/errors.py
++++ b/safety/errors.py
+@@ -43,18 +43,15 @@
+         message (str): The error message.
+         error_code (Optional[int]): The error code.
+     """
+-    def __init__(self, message: str = "Unhandled Safety generic error", error_code: Optional[int] = None):
++    def __init__(self, message: str='Unhandled Safety generic error',
++        error_code: Optional[int]=None):
+         self.message = message
+         self.error_code = error_code
+         super().__init__(self.message)
+ 
+-    def get_exit_code(self) -> int:
+-        """
+-        Get the exit code associated with this error.
+-
+-        Returns:
+-            int: The exit code.
+-        """
++    def get_exit_code(self) ->int:
++        if self.error_code is not None:
++            return self.error_code
+         return EXIT_CODE_FAILURE
+ 
+ 

@@ -1,0 +1,32 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2733,13 +2733,23 @@
+ 
+         return result
+ 
++    def test_nearest_part(gpx_part: Union[mod_gpx.GPX, mod_gpx.
++        GPXTrack, mod_gpx.GPXTrackSegment], loc: mod_geo.Location
++        ) ->mod_gpx.NearestLocationData:
++        nearest_loc_info = gpx_part.get_nearest_location(loc)
++        print(gpx_part, nearest_loc_info)  # <-- This calls __repr__
++
+     def __repr__(self) -> str:
+-        parts = []
+-        for attribute in 'waypoints', 'routes', 'tracks':
+-            value = getattr(self, attribute)
+-            if value:
+-                parts.append(f'{attribute}={value!r}')
+-        return f'GPX({", ".join(parts)})'
++        return f'GPXTrackSegment(points=[{"..." if self.points else ""}])'
++
++    gpx.tracks[0].segments[0].points = None
++    test_nearest_gpx(gpx)
++
++    def __repr__(self) -> str:
++        return f'GPXTrackSegment(points=[{"..." if self.points else ""}])'
++
++    def __repr__(self) -> str:
++        return f'GPXTrackSegment(points=[{"..." if self.points else ""}])'
+ 
+     def clone(self) -> "GPX":
+         return mod_copy.deepcopy(self)

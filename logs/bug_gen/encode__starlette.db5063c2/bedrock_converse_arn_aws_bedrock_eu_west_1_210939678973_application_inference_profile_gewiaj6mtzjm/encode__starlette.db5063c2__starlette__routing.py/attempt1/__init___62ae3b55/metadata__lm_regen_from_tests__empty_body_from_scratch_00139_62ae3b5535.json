@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests and the code, I need to examine the `_AsyncLiftContextManager` class and its `__init__` method. The issue seems to be related to how the context manager is being initialized.\n\nLooking at the test failures for `test_app_sync_gen_lifespan`, it appears the problem is with the `_AsyncLiftContextManager` class not properly handling the context manager initialization.\n\nThe current `__init__` method just has `pass`, but it needs to properly store the context manager that's passed to it.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "Looking at the failing tests and the code, I need to examine the `_AsyncLiftContextManager` class and its `__init__` method. The issue seems to be related to how the context manager is being initialized.\n\nLooking at the test failures for `test_app_sync_gen_lifespan`, it appears the problem is with the `_AsyncLiftContextManager` class not properly handling the context manager initialization.\n\nThe current `__init__` method just has `pass`, but it needs to properly store the context manager that's passed to it.\n\n```\ndef __init__(self, cm: typing.ContextManager[_T]):\n    self._cm = cm\n```",
+  "rewrite": "def __init__(self, cm: typing.ContextManager[_T]):\n    self._cm = cm\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

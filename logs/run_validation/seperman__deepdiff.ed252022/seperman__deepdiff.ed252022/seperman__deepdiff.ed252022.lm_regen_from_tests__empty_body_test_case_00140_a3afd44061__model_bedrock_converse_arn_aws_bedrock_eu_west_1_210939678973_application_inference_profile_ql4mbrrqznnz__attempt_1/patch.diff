@@ -1,0 +1,67 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -471,47 +471,32 @@
+ 
+ 
+ def cartesian_product(a, b):
+-    """
+-    Get the Cartesian product of two iterables
+-
+-    **parameters**
+-
+-    a: list of lists
+-    b: iterable to do the Cartesian product
+-    """
+-
+-    for i in a:
+-        for j in b:
+-            yield i + (j,)
++    return ((x, y) for x in a for y in b)
+ 
+ 
+ def cartesian_product_of_shape(dimentions, result=None):
+-    """
+-    Cartesian product of a dimentions iterable.
+-    This is mainly used to traverse Numpy ndarrays.
+-
+-    Each array has dimentions that are defines in ndarray.shape
+-    """
+     if result is None:
+-        result = ((),)  # a tuple with an empty tuple
+-    for dimension in dimentions:
+-        result = cartesian_product(result, range(dimension))
+-    return result
++        result = [()]
++    if not dimentions:
++        return result
++    first = dimentions[0]
++    rest = dimentions[1:]
++    new_result = []
++    for item in result:
++        for i in range(first):
++            new_result.append(item + (i,))
++    return cartesian_product_of_shape(rest, new_result)
+ 
+ 
+ def get_numpy_ndarray_rows(obj, shape=None):
+-    """
+-    Convert a multi dimensional numpy array to list of rows
+-    """
+     if shape is None:
+         shape = obj.shape
+-
+-    dimentions = shape[:-1]
+-    for path_tuple in cartesian_product_of_shape(dimentions):
+-        result = obj
+-        for index in path_tuple:
+-            result = result[index]
+-        yield path_tuple, result
++    if len(shape) == 2:
++        for path in cartesian_product_of_shape(shape[:-1]):
++            yield path, obj[path]
++    else:
++        for path in cartesian_product_of_shape(shape[:-1]):
++            yield path, obj[path]
+ 
+ 
+ class _NotFound:

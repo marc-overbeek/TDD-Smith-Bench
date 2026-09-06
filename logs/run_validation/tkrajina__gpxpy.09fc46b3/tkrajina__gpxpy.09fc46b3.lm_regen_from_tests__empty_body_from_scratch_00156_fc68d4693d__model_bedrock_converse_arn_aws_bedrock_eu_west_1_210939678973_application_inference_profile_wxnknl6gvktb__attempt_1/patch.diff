@@ -1,0 +1,70 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1636,19 +1636,24 @@
+                 new_segments.append(segment)
+         self.segments = new_segments
+ 
++    def test_split_and_join(self) ->None:
++        # ... splits track into 3 segments
++        track.split(0, 10)
++        track.split(1, 20)
++        self.assertTrue(len(track.segments) == 3)
++    
++        # joins segment 1 with segment 2 (the next one)
++        track.join(1)
++        self.assertTrue(len(track.segments) == 2)
++    
++        # joins segment 0 with segment 1 (the next one)
++        track.join(0)
++        self.assertTrue(len(track.segments) == 1)
++    
++        # result should equal original track
++        self.assertTrue(equals(track, original_track))
++
+     def join(self, track_segment_no: int, track_segment_no_2: Optional[int]=None) -> None:
+-        """
+-        Joins two segments of this track. The segments will be split in place.
+-
+-        Parameters
+-        ----------
+-        track_segment_no : integer
+-            The index of the first segment to join
+-        track_segment_no_2 : integer
+-            The index of second segment to join. If track_segment_no_2 is not
+-            provided,the join will be with the next segment after
+-            track_segment_no.
+-        """
+         if not track_segment_no_2:
+             track_segment_no_2 = track_segment_no + 1
+ 
+@@ -1661,10 +1666,29 @@
+             if i == track_segment_no:
+                 second_segment = self.segments[track_segment_no_2]
+                 segment.join(second_segment)
+-
+                 new_segments.append(segment)
+             elif i == track_segment_no_2:
+                 # Nothing, it is already joined
++                pass
++            else:
++                new_segments.append(segment)
++        self.segments = new_segments
++
++    def join(self, track_segment_no: int, track_segment_no_2: Optional[int]=None) -> None:
++        if not track_segment_no_2:
++            track_segment_no_2 = track_segment_no + 1
++
++        if track_segment_no_2 >= len(self.segments):
++            return
++
++        new_segments = []
++        for i in range(len(self.segments)):
++            segment = self.segments[i]
++            if i == track_segment_no:
++                second_segment = self.segments[track_segment_no_2]
++                segment.join(second_segment)
++                new_segments.append(segment)
++            elif i == track_segment_no_2:
+                 pass
+             else:
+                 new_segments.append(segment)

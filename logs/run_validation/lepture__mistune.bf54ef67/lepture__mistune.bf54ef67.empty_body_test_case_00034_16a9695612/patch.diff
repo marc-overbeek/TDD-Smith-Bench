@@ -1,0 +1,53 @@
+--- a/src/mistune/directives/toc.py
++++ b/src/mistune/directives/toc.py
+@@ -32,33 +32,9 @@
+     def generate_heading_id(self, token: Dict[str, Any], index: int) -> str:
+         return 'toc_' + str(index + 1)
+ 
+-    def parse(
+-        self, block: "BlockParser", m: Match[str], state: "BlockState"
+-    ) -> Dict[str, Any]:
+-        title = self.parse_title(m)
+-        options = self.parse_options(m)
+-        if options:
+-            d_options = dict(options)
+-            collapse = 'collapse' in d_options
+-            min_level = _normalize_level(d_options, 'min-level', self.min_level)
+-            max_level = _normalize_level(d_options, 'max-level', self.max_level)
+-            if min_level < self.min_level:
+-                raise ValueError(f'"min-level" option MUST be >= {self.min_level}')
+-            if max_level > self.max_level:
+-                raise ValueError(f'"max-level" option MUST be <= {self.max_level}')
+-            if min_level > max_level:
+-                raise ValueError('"min-level" option MUST be less than "max-level" option')
+-        else:
+-            collapse = False
+-            min_level = self.min_level
+-            max_level = self.max_level
+-
+-        attrs = {
+-            'min_level': min_level,
+-            'max_level': max_level,
+-            'collapse': collapse,
+-        }
+-        return {'type': 'toc', 'text': title or '', 'attrs': attrs}
++    def parse(self, block: 'BlockParser', m: Match[str], state: 'BlockState'
++        ) ->Dict[str, Any]:
++        pass
+ 
+     def toc_hook(self, md: "Markdown", state: "BlockState") -> None:
+         sections = []
+@@ -105,11 +81,5 @@
+     return html + content + '</details>\n'
+ 
+ 
+-def _normalize_level(options: Dict[str, Any], name: str, default: Any) -> Any:
+-    level = options.get(name)
+-    if not level:
+-        return default
+-    try:
+-        return int(level)
+-    except (ValueError, TypeError):
+-        raise ValueError(f'"{name}" option MUST be integer')
++def _normalize_level(options: Dict[str, Any], name: str, default: Any) ->Any:
++    pass

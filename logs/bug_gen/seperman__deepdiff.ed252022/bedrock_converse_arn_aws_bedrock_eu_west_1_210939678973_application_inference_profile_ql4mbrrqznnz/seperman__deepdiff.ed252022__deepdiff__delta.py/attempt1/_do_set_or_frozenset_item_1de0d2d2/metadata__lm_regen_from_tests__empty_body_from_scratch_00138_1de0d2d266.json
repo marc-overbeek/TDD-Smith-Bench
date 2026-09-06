@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef _do_set_or_frozenset_item(self, items, func):\n    for path, value in items.items():\n        elements = _path_to_elements(path)\n        parent = self.get_nested_obj(obj=self, elements=elements[:-1])\n        elem, action = elements[-1]\n        obj = self._get_elem_and_compare_to_old_value(\n            parent, path_for_err_reporting=path, expected_old_value=None, elem=elem, action=action, forced_old_value=set())\n        new_value = getattr(obj, func)(value)\n        self._simple_set_elem_value(parent, path_for_err_reporting=path, elem=elem, value=new_value, action=action)\n```",
+  "rewrite": "def _do_set_or_frozenset_item(self, items, func):\n    for path, value in items.items():\n        elements = _path_to_elements(path)\n        parent = self.get_nested_obj(obj=self, elements=elements[:-1])\n        elem, action = elements[-1]\n        obj = self._get_elem_and_compare_to_old_value(\n            parent, path_for_err_reporting=path, expected_old_value=None, elem=elem, action=action, forced_old_value=set())\n        new_value = getattr(obj, func)(value)\n        self._simple_set_elem_value(parent, path_for_err_reporting=path, elem=elem, value=new_value, action=action)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

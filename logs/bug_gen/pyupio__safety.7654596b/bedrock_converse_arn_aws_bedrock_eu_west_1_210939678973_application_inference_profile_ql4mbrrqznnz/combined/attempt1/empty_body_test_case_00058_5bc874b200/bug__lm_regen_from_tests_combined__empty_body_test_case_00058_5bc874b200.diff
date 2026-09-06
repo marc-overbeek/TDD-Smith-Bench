@@ -1,0 +1,242 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -553,42 +553,39 @@
+     A click option that depends on other options.
+     """
+     def __init__(self, *args, **kwargs):
+-        self.required_options = set(kwargs.pop('required_options', []))
++        self.mutually_exclusive = set(kwargs.pop('mutually_exclusive', []))
++        self.with_values = kwargs.pop('with_values', {})
+         help = kwargs.get('help', '')
+-        if self.required_options:
+-            ex_str = ', '.join(self.required_options)
++        if self.mutually_exclusive:
++            ex_str = ', '.join(["{0} with values {1}".format(item, self.with_values.get(item)) if item in self.with_values else item for item in self.mutually_exclusive])
+             kwargs['help'] = help + (
+-                f" Requires: [ {ex_str} ]"
++                ' NOTE: This argument is mutually exclusive with '
++                ' arguments: [' + ex_str + '].'
+             )
+-        super(DependentOption, self).__init__(*args, **kwargs)
+-
+-    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+-        """
+-        Handle the parse result for dependent options.
+-
+-        Args:
+-            ctx (click.Context): The click context.
+-            opts (Dict[str, Any]): The options dictionary.
+-            args (List[str]): The arguments list.
+-
+-        Returns:
+-            Tuple[Any, List[str]]: The result and remaining arguments.
+-        """
+-        missing_required_arguments = None
+-
+-        if self.name in opts:
+-            missing_required_arguments = self.required_options.difference(opts)
+-
+-        if missing_required_arguments:
++        super(MutuallyExclusiveOption, self).__init__(*args, **kwargs)
++
++    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any],
++        args: List[str]) ->Tuple[Any, List[str]]:
++        m_exclusive_used = self.mutually_exclusive.intersection(opts)
++        option_used = m_exclusive_used and self.name in opts
++
++        exclusive_value_used = False
++        for used in m_exclusive_used:
++            value_used = opts.get(used, None)
++            if not isinstance(value_used, List):
++                value_used = [value_used]
++            if value_used and set(self.with_values.get(used, [])).intersection(value_used):
++                exclusive_value_used = True
++
++        if option_used and (not self.with_values or exclusive_value_used):
++            options = ', '.join(self.opts)
++            prohibited = ''.join(["\n * --{0} with {1}".format(item, self.with_values.get(
++                        item)) if item in self.with_values else f"\n * {item}" for item in self.mutually_exclusive])
+             raise click.UsageError(
+-                "Illegal usage: `{}` needs the "
+-                "arguments `{}`.".format(
+-                    self.name,
+-                    ', '.join(missing_required_arguments)
+-                )
++                f"Illegal usage: `{options}` is mutually exclusive with: {prohibited}"
+             )
+ 
+-        return super(DependentOption, self).handle_parse_result(
++        return super(MutuallyExclusiveOption, self).handle_parse_result(
+             ctx,
+             opts,
+             args
+@@ -731,30 +728,19 @@
+     return input_string
+ 
+ 
+-def validate_expiration_date(expiration_date: str) -> Optional[datetime]:
+-    """
+-    Validate an expiration date string.
+-
+-    Args:
+-        expiration_date (str): The expiration date string.
+-
+-    Returns:
+-        Optional[datetime]: The validated expiration date if valid, None otherwise.
+-    """
+-    d = None
+-
+-    if expiration_date:
++def validate_expiration_date(expiration_date: str) ->Optional[datetime]:
++    if not expiration_date:
++        return None
++    
++    formats = ['%Y-%m-%d', '%Y-%m-%d %H:%M:%S']
++    
++    for fmt in formats:
+         try:
+-            d = datetime.strptime(expiration_date, '%Y-%m-%d')
+-        except ValueError as e:
+-            pass
+-
+-        try:
+-            d = datetime.strptime(expiration_date, '%Y-%m-%d %H:%M:%S')
+-        except ValueError as e:
+-            pass
+-
+-    return d
++            return datetime.strptime(expiration_date, fmt)
++        except ValueError:
++            continue
++    
++    return None
+ 
+ 
+ class SafetyPolicyFile(click.ParamType):
+@@ -765,13 +751,9 @@
+     name = "filename"
+     envvar_list_splitter = os.path.pathsep
+ 
+-    def __init__(
+-        self,
+-        mode: str = "r",
+-        encoding: Optional[str] = None,
+-        errors: str = "strict",
+-        pure: bool = os.environ.get('SAFETY_PURE_YAML', 'false').lower() == 'true'
+-    ) -> None:
++    def __init__(self, mode: str='r', encoding: Optional[str]=None, errors: str
++        ='strict', pure: bool=os.environ.get('SAFETY_PURE_YAML', 'false').lower
++        () == 'true') ->None:
+         self.mode = mode
+         self.encoding = encoding
+         self.errors = errors
+@@ -837,44 +819,26 @@
+             self.fail(msg.format(hint=f"'{keyword}' value needs to be a boolean. "
+                                       "You can use True, False, TRUE, FALSE, true or false"))
+ 
+-    def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> Any:
+-        """
+-        Convert the parameter value to a Safety policy file.
+-
+-        Args:
+-            value (Any): The parameter value.
+-            param (Optional[click.Parameter]): The click parameter.
+-            ctx (Optional[click.Context]): The click context.
+-
+-        Returns:
+-            Any: The converted policy file.
+-
+-        Raises:
+-            click.UsageError: If the policy file is invalid.
+-        """
++    def convert(self, value: Any, param: Optional[click.Parameter], ctx:
++        Optional[click.Context]) ->Any:
+         try:
+-            # Check if the value is already a file-like object
+             if hasattr(value, "read") or hasattr(value, "write"):
+                 return value
+ 
+-            # Prepare the error message template
+             msg = self.basic_msg.format(name=value) + '\n' + click.style('HINT:', fg='yellow') + ' {hint}'
+ 
+-            # Open the file stream
+             f, _ = click.types.open_stream(
+                 value, self.mode, self.encoding, self.errors, atomic=False
+             )
+             filename = ''
+ 
+             try:
+-                # Read the content of the file
+                 raw = f.read()
+                 yaml = YAML(typ='safe', pure=self.pure)
+                 safety_policy = yaml.load(raw)
+                 filename = f.name
+                 f.close()
+             except Exception as e:
+-                # Handle YAML parsing errors
+                 show_parsed_hint = isinstance(e, MarkedYAMLError)
+                 hint = str(e)
+                 if show_parsed_hint:
+@@ -882,7 +846,6 @@
+ 
+                 self.fail(msg.format(name=value, hint=hint), param, ctx)
+ 
+-            # Validate the structure of the safety policy
+             if not safety_policy or not isinstance(safety_policy, dict) or not safety_policy.get('security', None):
+                 hint = "you are missing the security root tag"
+                 try:
+@@ -896,14 +859,12 @@
+                 self.fail(
+                     msg.format(hint=hint), param, ctx)
+ 
+-            # Validate 'security' section keys
+             security_config = safety_policy.get('security', {})
+             security_keys = ['ignore-cvss-severity-below', 'ignore-cvss-unknown-severity', 'ignore-vulnerabilities',
+                              'continue-on-vulnerability-error', 'ignore-unpinned-requirements']
+             self.fail_if_unrecognized_keys(security_config.keys(), security_keys, param=param, ctx=ctx, msg=msg,
+                                            context_hint='"security" -> ')
+ 
+-            # Validate 'ignore-cvss-severity-below' value
+             ignore_cvss_security_below = security_config.get('ignore-cvss-severity-below', None)
+             if ignore_cvss_security_below:
+                 limit = 0.0
+@@ -914,15 +875,12 @@
+                 if limit < 0 or limit > 10:
+                     self.fail(msg.format(hint="'ignore-cvss-severity-below' needs to be a value between 0 and 10"))
+ 
+-            # Validate 'continue-on-vulnerability-error' value
+             continue_on_vulnerability_error = security_config.get('continue-on-vulnerability-error', None)
+             self.fail_if_wrong_bool_value('continue-on-vulnerability-error', continue_on_vulnerability_error, msg)
+ 
+-            # Validate 'ignore-cvss-unknown-severity' value
+             ignore_cvss_unknown_severity = security_config.get('ignore-cvss-unknown-severity', None)
+             self.fail_if_wrong_bool_value('ignore-cvss-unknown-severity', ignore_cvss_unknown_severity, msg)
+ 
+-            # Validate 'ignore-vulnerabilities' section
+             ignore_vulns = safety_policy.get('security', {}).get('ignore-vulnerabilities', {})
+             if ignore_vulns:
+                 if not isinstance(ignore_vulns, dict):
+@@ -957,7 +915,6 @@
+                                  f"be a positive integer")
+                         )
+ 
+-                    # Validate expires date
+                     d = validate_expiration_date(expires)
+ 
+                     if expires and not d:
+@@ -975,7 +932,6 @@
+             else:
+                 safety_policy['security']['ignore-vulnerabilities'] = {}
+ 
+-            # Validate 'fix' section keys
+             fix_config = safety_policy.get('fix', {})
+             self.fail_if_unrecognized_keys(fix_config.keys(), ['auto-security-updates-limit'], param=param, ctx=ctx, msg=msg, context_hint='"fix" -> ')
+             auto_remediation_limit = fix_config.get('auto-security-updates-limit', None)
+@@ -989,7 +945,6 @@
+         except BadParameter as expected_e:
+             raise expected_e
+         except Exception as e:
+-            # Handle file not found errors gracefully, don't fail in the default case
+             if ctx and isinstance(e, OSError):
+                 default = ctx.get_parameter_source
+                 source = default("policy_file") if default("policy_file") else default("policy_file_path")

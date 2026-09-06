@@ -1,0 +1,72 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -947,31 +947,44 @@
+     return 'patch'
+ 
+ 
+-def process_fixes(
+-    files: List[str],
+-    remediations: Dict[str, Dict[str, Any]],
+-    auto_remediation_limit: List[str],
+-    output: str,
+-    no_output: bool = True,
+-    prompt: bool = False
+-) -> List[Fix]:
+-    """
+-    Processes the fixes for the given files and remediations.
+-
+-    Args:
+-        files (List[str]): The list of files.
+-        remediations (Dict[str, Dict[str, Any]]): The remediations dictionary.
+-        auto_remediation_limit (List[str]): The automatic remediation limits.
+-        output (str): The output format.
+-        no_output (bool): Whether to suppress output.
+-        prompt (bool): Whether to prompt for confirmation.
+-
+-    Returns:
+-        List[Fix]: The list of applied fixes.
+-    """
+-    req_remediations = itertools.chain.from_iterable(rem.values() for pkg_name, rem in remediations.items())
+-    requirements = compute_fixes_per_requirements(files, req_remediations, auto_remediation_limit, prompt=prompt)
+-    fixes = apply_fixes(requirements, output, no_output, prompt)
++def process_fixes(files: List[str], remediations: Dict[str, Dict[str, Any]],
++    auto_remediation_limit: List[str], output: str, no_output: bool=True,
++    prompt: bool=False) ->List[Fix]:
++    
++    fixes = []
++    
++    for file_path in files:
++        # Create a SafetyPolicyFile object for the file
++        file_to_fix = SafetyPolicyFile()
++        file_to_fix.location = file_path
++        file_to_fix.file_type = FileType.REQUIREMENTS_TXT
++        
++        # Get the requirements from the file
++        with open(file_path, 'r') as f:
++            content = f.read()
++        
++        # Parse requirements to get SafetyRequirement objects
++        from dparse.parser import parse, filetypes
++        dependency_file = parse(content, path=file_path, file_type=filetypes.requirements_txt, resolve=True)
++        
++        # Extract requirements that have remediations
++        to_fix_spec = []
++        for dep in dependency_file.dependencies:
++            pkg_name = dep.name
++            if pkg_name in remediations:
++                # Check if this specific requirement has a remediation
++                for spec_str, rem_data in remediations[pkg_name].items():
++                    if str(dep.specs) == spec_str:
++                        # Create SafetyRequirement from the dependency
++                        req = SafetyRequirement(f"{pkg_name}{spec_str}")
++                        req.remediation = rem_data
++                        to_fix_spec.append(req)
++                        break
++        
++        # Process fixes for this file
++        file_fixes = process_fixes_scan(file_to_fix, to_fix_spec, auto_remediation_limit, output, no_output, prompt)
++        fixes.extend(file_fixes)
++    
+     return fixes
+ 
+ 

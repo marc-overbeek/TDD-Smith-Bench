@@ -1,0 +1,27 @@
+--- a/oauthlib/oauth1/rfc5849/request_validator.py
++++ b/oauthlib/oauth1/rfc5849/request_validator.py
+@@ -147,6 +147,24 @@
+         return []
+ 
+     @property
++    def test_enforce_ssl(self):
++        """Ensure SSL is enforced by default."""
++        v = RequestValidator()
++        e = BaseEndpoint(v)
++        c = Client('foo')
++        u, h, b = c.sign('http://example.com')
++        r = e._create_request(u, 'GET', b, h)
++        self.assertRaises(errors.InsecureTransportError, e.
++            _check_transport_security, r)
++
++    @property
++    def enforce_ssl(self):
++        return True
++
++    def enforce_ssl(self):
++        pass
++
++    @property
+     def enforce_ssl(self):
+         return True
+ 

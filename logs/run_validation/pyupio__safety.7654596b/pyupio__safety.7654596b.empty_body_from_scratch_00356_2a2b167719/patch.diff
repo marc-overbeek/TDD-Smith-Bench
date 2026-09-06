@@ -1,0 +1,43 @@
+--- a/safety/alerts/requirements.py
++++ b/safety/alerts/requirements.py
+@@ -157,38 +157,8 @@
+             self._parse_requirements_txt()
+         self._is_valid = len(self._requirements) > 0 or len(self._other_files) > 0
+ 
+-    def parse_dependencies(self, file_type: str) -> None:
+-        """
+-        Parses the dependencies from the content based on the file type.
+-
+-        Args:
+-            file_type (str): The type of the file.
+-        """
+-        result = parse(
+-            self.content,
+-            path=self.path,
+-            sha=self.sha,
+-            file_type=file_type,
+-            marker=(
+-                ("pyup: ignore file", "pyup:ignore file"),  # file marker
+-                ("pyup: ignore", "pyup:ignore"),  # line marker
+-            )
+-        )
+-        for dep in result.dependencies:
+-            req = Requirement(
+-                name=dep.name,
+-                specs=dep.specs,
+-                line=dep.line,
+-                lineno=dep.line_numbers[0] if dep.line_numbers else 0,
+-                extras=dep.extras,
+-                file_type=file_type,
+-            )
+-            req.index_server = dep.index_server
+-            if self.is_pipfile:
+-                req.pipfile = self.path
+-            req.hashes = dep.hashes
+-            self._requirements.append(req)
+-        self._other_files = result.resolved_files
++    def parse_dependencies(self, file_type: str) ->None:
++        pass
+ 
+     def iter_lines(self, lineno: int = 0) -> Generator[str, None, None]:
+         """

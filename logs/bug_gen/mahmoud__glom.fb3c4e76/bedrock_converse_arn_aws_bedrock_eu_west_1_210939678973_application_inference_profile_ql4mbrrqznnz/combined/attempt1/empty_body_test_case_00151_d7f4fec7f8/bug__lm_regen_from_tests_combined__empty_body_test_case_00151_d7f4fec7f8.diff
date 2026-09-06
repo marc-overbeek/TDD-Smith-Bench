@@ -1,0 +1,289 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -544,34 +544,14 @@
+ 
+ # TODO: push this back up to boltons with repr kwarg
+ def format_invocation(name='', args=(), kwargs=None, **kw):
+-    """Given a name, positional arguments, and keyword arguments, format
+-    a basic Python-style function call.
+-
+-    >>> print(format_invocation('func', args=(1, 2), kwargs={'c': 3}))
+-    func(1, 2, c=3)
+-    >>> print(format_invocation('a_func', args=(1,)))
+-    a_func(1)
+-    >>> print(format_invocation('kw_func', kwargs=[('a', 1), ('b', 2)]))
+-    kw_func(a=1, b=2)
+-
+-    """
+-    _repr = kw.pop('repr', bbrepr)
++    repr_func = kw.pop('repr', repr)
+     if kw:
+-        raise TypeError('unexpected keyword args: %r' % ', '.join(kw.keys()))
+-    kwargs = kwargs or {}
+-    a_text = ', '.join([_repr(a) for a in args])
+-    if isinstance(kwargs, dict):
+-        kwarg_items = [(k, kwargs[k]) for k in sorted(kwargs)]
+-    else:
+-        kwarg_items = kwargs
+-    kw_text = ', '.join([f'{k}={_repr(v)}' for k, v in kwarg_items])
+-
+-    all_args_text = a_text
+-    if all_args_text and kw_text:
+-        all_args_text += ', '
+-    all_args_text += kw_text
+-
+-    return f'{name}({all_args_text})'
++        raise TypeError(f'unexpected kwargs: {kw!r}')
++    if kwargs is None:
++        kwargs = {}
++    parts = [repr_func(a) for a in args]
++    parts += [f'{k}={repr_func(v)}' for k, v in kwargs.items()]
++    return f'{name}({", ".join(parts)})'
+ 
+ 
+ class Path:
+@@ -1722,41 +1702,50 @@
+ 
+ 
+ def _format_t(path, root=T):
+-    prepr = [{T: 'T', S: 'S', A: 'A'}[root]]
++    if not path:
++        return {T: 'T', S: 'S', A: 'A'}.get(root, 'T')
++    root_str = {T: 'T', S: 'S', A: 'A'}.get(root, 'T')
++    parts = [root_str]
+     i = 0
+     while i < len(path):
+         op, arg = path[i], path[i + 1]
+         if op == '.':
+-            prepr.append('.' + arg)
++            parts.append(f'.{arg}')
+         elif op == '[':
+-            if type(arg) is tuple:
+-                index = ", ".join([_format_slice(x) for x in arg])
+-            else:
+-                index = _format_slice(arg)
+-            prepr.append(f"[{index}]")
++            if type(arg) is tuple and len(arg) == 2 and isinstance(arg[0], tuple) and isinstance(arg[1], dict):
++                pass
++            parts.append(f'[{_format_slice(arg)}]')
++        elif op == 'P':
++            parts.append(f'[{bbrepr(arg)}]')
+         elif op == '(':
+             args, kwargs = arg
+-            prepr.append(format_invocation(args=args, kwargs=kwargs, repr=bbrepr))
+-        elif op == 'P':
+-            return _format_path(path)
+-        elif op == 'x':
+-            prepr.append(".__star__()")
+-        elif op == 'X':
+-            prepr.append(".__starstar__()")
+-        elif op in ('_', '~'):  # unary arithmetic operators
+-            if any([o in path[:i] for o in '+-/%:&|^~_']):
+-                prepr = ['('] + prepr + [')']
+-            prepr = ['-' if op == '_' else op] + prepr
+-        else:  # binary arithmetic operators
+-            formatted_arg = bbrepr(arg)
+-            if type(arg) is TType:
+-                arg_path = arg.__ops__
+-                if any([o in arg_path for o in '+-/%:&|^~_']):
+-                    formatted_arg = '(' + formatted_arg + ')'
+-            prepr.append(' ' + ('**' if op == ':' else op) + ' ')
+-            prepr.append(formatted_arg)
++            arg_parts = [bbrepr(a) for a in args]
++            arg_parts += [f'{k}={bbrepr(v)}' for k, v in kwargs.items()]
++            parts.append(f'({", ".join(arg_parts)})')
++        elif op in ('x',):
++            parts.append('.__star__()')
++        elif op in ('X',):
++            parts.append('.__starstar__()')
++        elif op in ('+', '-', '*', '/', '%', ':', '&', '|', '^'):
++            op_map = {'+': '+', '-': '-', '*': '*', '/': '/', '%': '%', ':': '**', '&': '&', '|': '|', '^': '^'}
++            sym = op_map[op]
++            rhs = bbrepr(arg)
++            cur = ''.join(parts)
++            parts = [f'({cur} {sym} {rhs})']
++            i += 2
++            continue
++        elif op == '~':
++            cur = ''.join(parts)
++            parts = [f'(~{cur})']
++            i += 2
++            continue
++        elif op == '_':
++            cur = ''.join(parts)
++            parts = [f'(-{cur})']
++            i += 2
++            continue
+         i += 2
+-    return "".join(prepr)
++    return ''.join(parts)
+ 
+ 
+ class Val:
+@@ -2060,15 +2049,6 @@
+         self.register(_ObjStyleKeys, keys=_ObjStyleKeys.get_keys)
+ 
+     def _register_fuzzy_type(self, op, new_type, _type_tree=None):
+-        """Build a "type tree", an OrderedDict mapping registered types to
+-        their subtypes
+-
+-        The type tree's invariant is that a key in the mapping is a
+-        valid parent type of all its children.
+-
+-        Order is preserved such that non-overlapping parts of the
+-        subtree take precedence by which was most recently added.
+-        """
+         if _type_tree is None:
+             try:
+                 _type_tree = self._op_type_tree[op]
+@@ -2078,7 +2058,7 @@
+         registered = False
+         for cur_type, sub_tree in list(_type_tree.items()):
+             if issubclass(cur_type, new_type):
+-                sub_tree = _type_tree.pop(cur_type)  # mutation for recursion brevity
++                sub_tree = _type_tree.pop(cur_type)
+                 try:
+                     _type_tree[new_type][cur_type] = sub_tree
+                 except KeyError:
+@@ -2184,115 +2164,38 @@
+ 
+ 
+ def glom(target, spec, **kwargs):
+-    """Access or construct a value from a given *target* based on the
+-    specification declared by *spec*.
+-
+-    Accessing nested data, aka deep-get:
+-
+-    >>> target = {'a': {'b': 'c'}}
+-    >>> glom(target, 'a.b')
+-    'c'
+-
+-    Here the *spec* was just a string denoting a path,
+-    ``'a.b'``. As simple as it should be. You can also use 
+-    :mod:`glob`-like wildcard selectors:
+-
+-    >>> target = {'a': [{'k': 'v1'}, {'k': 'v2'}]}
+-    >>> glom(target, 'a.*.k')
+-    ['v1', 'v2']
+-
+-    In addition to ``*``, you can also use ``**`` for recursive access:
+-
+-    >>> target = {'a': [{'k': 'v3'}, {'k': 'v4'}], 'k': 'v0'}
+-    >>> glom(target, '**.k')
+-    ['v0', 'v3', 'v4']
+-    
+-    The next example shows how to use nested data to 
+-    access many fields at once, and make a new nested structure.
+-
+-    Constructing, or restructuring more-complicated nested data:
+-
+-    >>> target = {'a': {'b': 'c', 'd': 'e'}, 'f': 'g', 'h': [0, 1, 2]}
+-    >>> spec = {'a': 'a.b', 'd': 'a.d', 'h': ('h', [lambda x: x * 2])}
+-    >>> output = glom(target, spec)
+-    >>> pprint(output)
+-    {'a': 'c', 'd': 'e', 'h': [0, 2, 4]}
+-
+-    ``glom`` also takes a keyword-argument, *default*. When set,
+-    if a ``glom`` operation fails with a :exc:`GlomError`, the
+-    *default* will be returned, very much like
+-    :meth:`dict.get()`:
+-
+-    >>> glom(target, 'a.xx', default='nada')
+-    'nada'
+-
+-    The *skip_exc* keyword argument controls which errors should
+-    be ignored.
+-
+-    >>> glom({}, lambda x: 100.0 / len(x), default=0.0, skip_exc=ZeroDivisionError)
+-    0.0
+-
+-    Args:
+-       target (object): the object on which the glom will operate.
+-       spec (object): Specification of the output object in the form
+-         of a dict, list, tuple, string, other glom construct, or
+-         any composition of these.
+-       default (object): An optional default to return in the case
+-         an exception, specified by *skip_exc*, is raised.
+-       skip_exc (Exception): An optional exception or tuple of
+-         exceptions to ignore and return *default* (None if
+-         omitted). If *skip_exc* and *default* are both not set,
+-         glom raises errors through.
+-       scope (dict): Additional data that can be accessed
+-         via S inside the glom-spec. Read more: :ref:`scope`.
+-
+-    It's a small API with big functionality, and glom's power is
+-    only surpassed by its intuitiveness. Give it a whirl!
+-
+-    """
+-    # TODO: check spec up front
+-    default = kwargs.pop('default', None if 'skip_exc' in kwargs else _MISSING)
++    scope = kwargs.pop('scope', _DEFAULT_SCOPE)
++    default = kwargs.pop('default', _MISSING)
+     skip_exc = kwargs.pop('skip_exc', () if default is _MISSING else GlomError)
+     glom_debug = kwargs.pop('glom_debug', GLOM_DEBUG)
+-    scope = _DEFAULT_SCOPE.new_child({
+-        Path: kwargs.pop('path', []),
+-        Inspect: kwargs.pop('inspector', None),
++    if kwargs:
++        raise TypeError(f'unexpected keyword arguments: {list(kwargs.keys())!r}')
++    scope = ChainMap(dict(scope))
++    scope.update({
++        Path: [],
++        T: target,
++        Spec: spec,
++        UP: scope,
++        LAST_CHILD_SCOPE: scope,
++        CHILD_ERRORS: [],
+         MODE: AUTO,
+-        MIN_MODE: None,
+-        CHILD_ERRORS: [],
+-        'globals': ScopeVars({}, {}),
++        MIN_MODE: AUTO,
++        ROOT: scope,
+     })
+-    scope[UP] = scope
+-    scope[ROOT] = scope
+-    scope[T] = target
+-    scope.update(kwargs.pop('scope', {}))
+-    err = None
+-    if kwargs:
+-        raise TypeError('unexpected keyword args: %r' % sorted(kwargs.keys()))
++    scope[LAST_CHILD_SCOPE] = scope
+     try:
+-        try:
+-            ret = _glom(target, spec, scope)
+-        except skip_exc:
+-            if default is _MISSING:
+-                raise
+-            ret = default  # should this also be arg_val'd?
+-    except Exception as e:
+-        if glom_debug:
++        ret = _glom(target, spec, scope)
++    except skip_exc:
++        if default is _MISSING:
+             raise
+-        if isinstance(e, GlomError):
+-            # need to change id or else py3 seems to not let us truncate the
+-            # stack trace with the explicit "raise err" below
+-            err = copy.copy(e)
+-            err._set_wrapped(e)
+-        else:
+-            err = GlomError.wrap(e)
+-        if isinstance(err, GlomError):
+-            err._finalize(scope[LAST_CHILD_SCOPE])
+-        else:  # wrapping failed, fall back to default behavior
+-            raise
+-
+-    if err:
+-        raise err
++        ret = default
++    except GlomError as err:
++        if default is not _MISSING and isinstance(err, skip_exc):
++            return default
++        if not glom_debug:
++            err._finalize(scope)
++            raise err from None
++        raise
+     return ret
+ 
+ 

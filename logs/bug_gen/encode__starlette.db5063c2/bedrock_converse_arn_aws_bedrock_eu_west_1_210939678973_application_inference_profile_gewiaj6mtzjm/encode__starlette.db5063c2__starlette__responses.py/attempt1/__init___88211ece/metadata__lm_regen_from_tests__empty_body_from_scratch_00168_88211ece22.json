@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests and the code, I can see that the `RangeNotSatisfiable` exception class has a `__init__` method that takes a `max_size` parameter, but the current implementation just has `pass`. The test is expecting this exception to properly store the `max_size` parameter.\n\nLet me examine the `RangeNotSatisfiable` class more closely:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "Looking at the failing tests and the code, I can see that the `RangeNotSatisfiable` exception class has a `__init__` method that takes a `max_size` parameter, but the current implementation just has `pass`. The test is expecting this exception to properly store the `max_size` parameter.\n\nLet me examine the `RangeNotSatisfiable` class more closely:\n\n```python\nclass RangeNotSatisfiable(Exception):\n    def __init__(self, max_size: int) -> None:\n        self.max_size = max_size\n```\n\nThe issue is that the `__init__` method is currently empty (`pass`) but it should properly initialize the instance variable `self.max_size`.\n\n```\ndef __init__(self, max_size: int) -> None:\n    self.max_size = max_size\n```",
+  "rewrite": "class RangeNotSatisfiable(Exception):\n    def __init__(self, max_size: int) -> None:\n        self.max_size = max_size\n\ndef __init__(self, max_size: int) -> None:\n    self.max_size = max_size",
+  "strategy": "lm_regen_from_tests"
+}

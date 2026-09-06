@@ -1,0 +1,41 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -207,27 +207,20 @@
+     return data
+ 
+ 
+-def fetch_policy(session: requests.Session) -> Dict[str, Any]:
+-    """
+-    Fetches the policy from the server.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-
+-    Returns:
+-        Dict[str, Any]: The fetched policy.
+-    """
++def fetch_policy(session: requests.Session) ->Dict[str, Any]:
+     url = f"{DATA_API_BASE_URL}policy/"
+-
++    
+     try:
+-        LOG.debug(f'Getting policy')
+-        r = session.get(url=url, timeout=REQUEST_TIMEOUT)
+-        LOG.debug(r.text)
++        telemetry_data = build_telemetry_data(telemetry=True)
++        data = {
++            'telemetry': json.dumps(telemetry_data, default=pydantic_encoder)
++        }
++        r = session.post(url=url, timeout=REQUEST_TIMEOUT, json=data)
++        r.raise_for_status()
+         return r.json()
+-    except Exception:
+-        LOG.exception("Error fetching policy")
+-
+-        return {"safety_policy": "", "audit_and_monitor": False}
++    except requests.exceptions.RequestException:
++        # Return empty dict or handle error appropriately
++        return {}
+ 
+ 
+ def post_results(session: requests.Session, safety_json: str, policy_file: str) -> Dict[str, Any]:

@@ -1,0 +1,44 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -518,40 +518,7 @@
+ @click.argument('name', required=True)
+ @click.pass_context
+ def generate(ctx, name, path):
+-    """Create a boilerplate Safety CLI policy file
+-
+-    NAME is the name of the file type to generate. Valid values are: policy_file
+-    """
+-    if name != 'policy_file':
+-        click.secho(f'This Safety version only supports "policy_file" generation. "{name}" is not supported.', fg='red',
+-                    file=sys.stderr)
+-        sys.exit(EXIT_CODE_FAILURE)
+-
+-    LOG.info('Running generate %s', name)
+-
+-    path = Path(path)
+-    if not path.exists():
+-        click.secho(f'The path "{path}" does not exist.', fg='red',
+-                    file=sys.stderr)
+-        sys.exit(EXIT_CODE_FAILURE)
+-
+-    policy = path / '.safety-policy.yml'
+-
+-    default_config = ConfigModel()
+-
+-    try:
+-        default_config.save_policy_file(policy)
+-        LOG.debug('Safety created the policy file.')
+-        msg = f'A default Safety policy file has been generated! Review the file contents in the path {path} in the ' \
+-               'file: .safety-policy.yml'
+-        click.secho(msg, fg='green')
+-    except Exception as exc:
+-        if isinstance(exc, OSError):
+-            LOG.debug('Unable to generate %s because: %s', name, exc.errno)
+-
+-        click.secho(f'{str(exc)} error.', fg='red',
+-                    file=sys.stderr)
+-        sys.exit(EXIT_CODE_FAILURE)
++    pass
+ 
+ 
+ @cli.command(cls=SafetyCLILegacyCommand, utility_command=True)

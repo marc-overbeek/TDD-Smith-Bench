@@ -1,0 +1,30 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -190,8 +190,27 @@
+ 
+     The __cause__ can be a minidom or lxml exception (See http://www.python.org/dev/peps/pep-3134/).
+     """
++    def test_simple_parse_function_invalid_xml(self) ->None:
++        try:
++            mod_gpxpy.parse('<gpx></gpx')
++            self.fail()
++        except mod_gpx.GPXException as e:
++            self.assertTrue('unclosed token: line 1, column 5' in str(e) or 
++                "expected '>'" in str(e))
++            self.assertTrue(isinstance(e, mod_gpx.GPXXMLSyntaxException))
++            self.assertTrue(e.__cause__)  # This checks that __cause__ is set
++            # ... more checks
++
+     def __init__(self, message: str, original_exception: BaseException) -> None:
+         GPXException.__init__(self, message)
++        self.__cause__ = original_exception
++
++    def __init__(self, message: str, original_exception: BaseException) -> None:
++        super().__init__(message)
++        self.__cause__ = original_exception
++
++    def __init__(self, message: str, original_exception: BaseException) -> None:
++        super().__init__(message)
+         self.__cause__ = original_exception
+ 
+ 

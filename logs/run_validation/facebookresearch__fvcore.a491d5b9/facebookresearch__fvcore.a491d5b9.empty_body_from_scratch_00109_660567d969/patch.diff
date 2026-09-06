@@ -1,0 +1,30 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -531,25 +531,8 @@
+         return row
+ 
+     # pyre-fixme[53]: Captured variable `root_prefix` is not annotated.
+-    def fill(indent_lvl: int, prefix: str) -> None:
+-        if indent_lvl > max_depth:
+-            return
+-        for mod_name in statistics:
+-            # 'if mod' excludes root = '', which is never a child
+-            if (
+-                mod_name
+-                and mod_name.count(".") == prefix.count(".")
+-                and mod_name.startswith(prefix)
+-            ):
+-                mod_name, curr_stats = _fastforward(mod_name, statistics)
+-                if root_prefix and mod_name.startswith(root_prefix):
+-                    # Skip the root_prefix shared by all submodules as it carries 0 information
+-                    pretty_mod_name = mod_name[len(root_prefix) :]
+-                else:
+-                    pretty_mod_name = mod_name
+-                row = build_row(pretty_mod_name, curr_stats, indent_lvl)
+-                table.append(row)
+-                fill(indent_lvl + 1, mod_name + ".")
++    def fill(indent_lvl: int, prefix: str) ->None:
++        pass
+ 
+     root_name, curr_stats = _fastforward("", statistics)
+     row = build_row(root_name or "model", curr_stats, indent_lvl=0)

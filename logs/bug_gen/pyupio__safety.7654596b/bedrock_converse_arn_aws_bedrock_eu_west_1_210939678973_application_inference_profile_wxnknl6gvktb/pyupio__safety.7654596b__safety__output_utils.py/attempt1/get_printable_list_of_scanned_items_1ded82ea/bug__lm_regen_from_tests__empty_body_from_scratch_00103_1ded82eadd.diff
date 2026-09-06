@@ -1,0 +1,97 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -636,56 +636,47 @@
+     return "\n".join(formatted_lines)
+ 
+ 
+-def get_printable_list_of_scanned_items(scanning_target: str) -> Tuple[List[Dict[str, Any]], List[str]]:
+-    """
+-    Get a printable list of scanned items.
+-
+-    Args:
+-        scanning_target (str): The scanning target (environment, stdin, files, or file).
+-
+-    Returns:
+-        Tuple[List[Dict[str, Any]], List[str]]: Printable list of scanned items and scanned items data.
+-    """
+-    context = SafetyContext()
+-
+-    result = []
+-    scanned_items_data = []
+-
++def get_printable_list_of_scanned_items(scanning_target: str) ->Tuple[List[
++    Dict[str, Any]], List[str]]:
++    ctx = SafetyContext()
++    styled_items = []
++    plain_items = []
++    
+     if scanning_target == 'environment':
+-        locations = set(SafetyContext().scanned_full_path)
+-
+-        for path in locations:
+-            result.append([{'styled': False, 'value': '-> ' + path}])
+-            scanned_items_data.append(path)
+-
+-        if len(locations) <= 0:
+-            msg = 'No locations found in the environment'
+-            result.append([{'styled': False, 'value': msg}])
+-            scanned_items_data.append(msg)
+-
++        if not ctx.packages:
++            no_locations = 'No locations found in the environment'
++            styled_items = [[{'styled': False, 'value': no_locations}]]
++            plain_items = [no_locations]
++        else:
++            for pkg in ctx.packages:
++                if isinstance(pkg, Package):
++                    styled_items.append([{'styled': False, 'value': pkg.name}])
++                    plain_items.append(pkg.name)
++    
+     elif scanning_target == 'stdin':
+-        scanned_stdin = [pkg.name for pkg in context.packages if isinstance(pkg, Package)]
+-        value = 'No found packages in stdin'
+-        scanned_items_data = [value]
+-
+-        if len(scanned_stdin) > 0:
+-            value = ', '.join(scanned_stdin)
+-            scanned_items_data = scanned_stdin
+-
+-        result.append(
+-            [{'styled': False, 'value': value}])
+-
++        if not ctx.packages:
++            no_packages = 'No found packages in stdin'
++            styled_items = [[{'styled': False, 'value': no_packages}]]
++            plain_items = [no_packages]
++        else:
++            for pkg in ctx.packages:
++                if isinstance(pkg, Package):
++                    styled_items.append([{'styled': False, 'value': pkg.name}])
++                    plain_items.append(pkg.name)
++    
++    elif scanning_target == 'file':
++        file_obj = ctx.params.get('file')
++        if file_obj:
++            styled_items = [[{'styled': False, 'value': f'-> {file_obj.name}'}]]
++            plain_items = [file_obj.name]
++    
+     elif scanning_target == 'files':
+-        for file in context.params.get('files', []):
+-            result.append([{'styled': False, 'value': f'-> {file.name}'}])
+-            scanned_items_data.append(file.name)
+-    elif scanning_target == 'file':
+-        file = context.params.get('file', None)
+-        name = file.name if file else ''
+-        result.append([{'styled': False, 'value': f'-> {name}'}])
+-        scanned_items_data.append(name)
+-
+-    return result, scanned_items_data
++        files = ctx.params.get('files', [])
++        for file_obj in files:
++            styled_items.append([{'styled': False, 'value': f'-> {file_obj.name}'}])
++            plain_items.append(file_obj.name)
++    
++    return styled_items, plain_items
+ 
+ 
+ REPORT_HEADING = format_long_text(click.style('REPORT', bold=True))

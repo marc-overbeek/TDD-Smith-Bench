@@ -1,0 +1,176 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -553,12 +553,12 @@
+ 
+     def __repr__(self) -> str:
+         parts = [f'{self.latitude}, {self.longitude}']
+-        for attribute in 'elevation', 'time', 'symbol', 'comment', 'horizontal_dilution', \
+-                'vertical_dilution', 'position_dilution', 'speed', 'name':
++        for attribute in 'elevation', 'time', 'name', 'description', 'symbol', 'type', 'comment', \
++                'horizontal_dilution', 'vertical_dilution', 'position_dilution':
+             value = getattr(self, attribute)
+             if value is not None:
+                 parts.append(f'{attribute}={value!r}')
+-        return f'GPXTrackPoint({", ".join(parts)})'
++        return f'GPXRoutePoint({", ".join(parts)})'
+ 
+     def adjust_time(self, delta: mod_datetime.timedelta) -> None:
+         """
+@@ -789,22 +789,7 @@
+         for track_point in self.points:
+             track_point.move(location_delta)
+ 
+-    def walk(self, only_points: bool=False) -> Iterator[Any]: # Union[GPXTrackPoint, Tuple[GPXTrackPoint, int]]]:
+-        """
+-        Generator for iterating over segment points
+-
+-        Parameters
+-        ----------
+-        only_points: boolean
+-            Only yield points (no index yielded)
+-
+-        Yields
+-        ------
+-        point: GPXTrackPoint
+-            A point in the sement
+-        point_no: int
+-            Not included in yield if only_points is true
+-        """
++    def walk(self, only_points: bool=False) -> Iterator[Any]:
+         for point_no, point in enumerate(self.points if self.points else []):
+             if only_points:
+                 yield point
+@@ -1222,10 +1207,11 @@
+         return None
+ 
+     def get_nearest_location(self, location: mod_geo.Location) -> Optional[NearestLocationData]:
+-        """ Return the (location, track_point_no) on this track segment """
+-        return min((NearestLocationData(pt, -1, -1, pt_no) for (pt, pt_no) in self.walk()) # type: ignore
+-                   ,key=lambda x: x.location.distance_2d(location) if x is not None else mod_math.inf
+-                   ,default=None)
++        if not self.points:
++            return None
++        return min((NearestLocationData(pt, -1, -1, pt_no) for pt_no, pt in enumerate(self.points)),
++                   key=lambda x: x.location.distance_2d(location) if x is not None else mod_math.inf,
++                   default=None)
+ 
+     def smooth(self, vertical: bool=True, horizontal: bool=False, remove_extremes: bool=False) -> None:
+         """ "Smooths" the elevation graph. Can be called multiple times. """
+@@ -1379,7 +1365,13 @@
+ 
+ 
+     def __repr__(self) -> str:
+-        return f'GPXTrackSegment(points=[{"..." if self.points else ""}])'
++        parts = [f'{self.latitude}, {self.longitude}']
++        for attribute in 'elevation', 'time', 'symbol', 'comment', 'horizontal_dilution', \
++                'vertical_dilution', 'position_dilution', 'speed', 'name':
++            value = getattr(self, attribute)
++            if value is not None:
++                parts.append(f'{attribute}={value!r}')
++        return f'GPXTrackPoint({", ".join(parts)})'
+ 
+     def clone(self) -> "GPXTrackSegment":
+         return mod_copy.deepcopy(self)
+@@ -1551,25 +1543,7 @@
+ 
+         return bounds
+ 
+-    def walk(self, only_points: bool=False) -> Iterator[Any]: #Union[GPXTrackPoint, Tuple[GPXTrackPoint, int, int]]]:
+-        """
+-        Generator used to iterates through track
+-
+-        Parameters
+-        ----------
+-        only_point s: boolean
+-            Only yield points while walking
+-
+-        Yields
+-        ----------
+-        point : GPXTrackPoint
+-            Point in the track
+-        segment_no : integer
+-            Index of segment containing point. This is suppressed if only_points
+-            is True.
+-        point_no : integer
+-            Index of point. This is suppressed if only_points is True.
+-        """
++    def walk(self, only_points: bool=False) -> Iterator[Any]:
+         for segment_no, segment in enumerate(self.segments if self.segments else []):
+             for point_no, point in enumerate(segment.points if segment.points else []):
+                 if only_points:
+@@ -1899,10 +1873,17 @@
+         return result
+ 
+     def get_nearest_location(self, location: mod_geo.Location) -> Optional[NearestLocationData]:
+-        """ Returns (location, track_segment_no, track_point_no) for nearest location on track """
+-        return min((NearestLocationData(pt, -1, seg, pt_no) for (pt, seg, pt_no) in self.walk()) # type: ignore
+-                   ,key=lambda x: x.location.distance_2d(location) if x is not None else mod_math.inf
+-                   ,default=None)
++        if not self.segments:
++            return None
++        nearest = None
++        min_dist = mod_math.inf
++        for segment_no, segment in enumerate(self.segments):
++            for point_no, point in enumerate(segment.points if segment.points else []):
++                dist = point.distance_2d(location)
++                if dist < min_dist:
++                    min_dist = dist
++                    nearest = NearestLocationData(point, -1, segment_no, point_no)
++        return nearest
+         
+     def clone(self) -> "GPXTrack":
+         return mod_copy.deepcopy(self)
+@@ -2299,28 +2280,7 @@
+         return result
+ 
+     def walk(self, only_points: bool=False) -> Iterator[Any]:
+-        """
+-        Generator used to iterates through points in GPX file
+-
+-        Parameters
+-        ----------
+-        only_point s: boolean
+-            Only yield points while walking
+-
+-        Yields
+-        ----------
+-        point : GPXTrackPoint
+-            Point in the track
+-        track_no : integer
+-            Index of track containing point. This is suppressed if only_points
+-            is True.
+-        segment_no : integer
+-            Index of segment containing point. This is suppressed if only_points
+-            is True.
+-        point_no : integer
+-            Index of point. This is suppressed if only_points is True.
+-        """
+-        for track_no, track in enumerate(self.tracks if self.tracks else [] ):
++        for track_no, track in enumerate(self.tracks if self.tracks else []):
+             for segment_no, segment in enumerate(track.segments if track.segments else []):
+                 for point_no, point in enumerate(segment.points if segment.points else []):
+                     if only_points:
+@@ -2514,11 +2474,18 @@
+ 
+ 
+     def get_nearest_location(self, location: mod_geo.Location) -> Optional[NearestLocationData]:
+-        """ Returns (location, track_no, track_segment_no, track_point_no) for the
+-        nearest location on map """
+-        return min((NearestLocationData(pt, tr, seg, pt_no) for (pt,tr, seg, pt_no) in self.walk()) # type:ignore
+-                   ,key=lambda x: x.location.distance_2d(location) if x is not None else mod_math.inf
+-                   ,default=None)
++        if not self.tracks:
++            return None
++        nearest = None
++        min_dist = mod_math.inf
++        for track_no, track in enumerate(self.tracks):
++            for segment_no, segment in enumerate(track.segments if track.segments else []):
++                for point_no, point in enumerate(segment.points if segment.points else []):
++                    dist = point.distance_2d(location)
++                    if dist < min_dist:
++                        min_dist = dist
++                        nearest = NearestLocationData(point, track_no, segment_no, point_no)
++        return nearest
+ 
+     def add_elevation(self, delta: float) -> None:
+         """

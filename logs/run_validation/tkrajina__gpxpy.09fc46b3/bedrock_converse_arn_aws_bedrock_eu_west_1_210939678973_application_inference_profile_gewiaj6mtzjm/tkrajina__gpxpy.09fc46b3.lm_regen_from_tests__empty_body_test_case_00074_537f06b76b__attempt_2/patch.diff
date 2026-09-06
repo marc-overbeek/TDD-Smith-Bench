@@ -1,0 +1,166 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -259,7 +259,7 @@
+         if self.time:
+             self.time += delta
+ 
+-    def remove_time(self) -> None:
++    def remove_time(self) ->None:
+         """ Will remove time metadata. """
+         self.time = None
+ 
+@@ -340,9 +340,11 @@
+         if self.time:
+             self.time += delta
+ 
+-    def remove_time(self) -> None:
+-        """ Will remove time metadata. """
+-        self.time = None
++    def remove_time(self) ->None:
++        """ Removes time meta data from route. """
++        for point in self.points:
++            if point:
++                point.remove_time()
+ 
+ 
+ class GPXRoute:
+@@ -403,10 +405,11 @@
+         for point in self.points:
+             point.adjust_time(delta)
+ 
+-    def remove_time(self) -> None:
+-        """ Removes time meta data from route. """
+-        for point in self.points:
+-            point.remove_time()
++    def remove_time(self) ->None:
++        """ Removes time data for all points in the segment. """
++        for track_point in self.points:
++            if track_point:
++                track_point.remove_time()
+ 
+     def remove_elevation(self) -> None:
+         """ Removes elevation data from route """
+@@ -455,7 +458,7 @@
+ 
+         return mod_geo.Location(latitude=sum_lat / n, longitude=sum_lon / n)
+ 
+-    def walk(self, only_points: bool=False) -> Iterator[Any]:
++    def walk(self, only_points: bool=False) ->Iterator[Any]:
+         """
+         Generator for iterating over route points
+ 
+@@ -573,9 +576,11 @@
+         if self.time:
+             self.time += delta
+ 
+-    def remove_time(self) -> None:
+-        """ Will remove time metadata. """
+-        self.time = None
++    def remove_time(self) ->None:
++        """ Removes time data for all points in all segments of track. """
++        for segment in self.segments:
++            if segment:
++                segment.remove_time()
+ 
+     def time_difference(self, track_point: "GPXTrackPoint") -> Optional[float]:
+         """
+@@ -742,10 +747,11 @@
+         for track_point in self.points:
+             track_point.adjust_time(delta)
+ 
+-    def remove_time(self) -> None:
+-        """ Removes time data for all points in the segment. """
+-        for track_point in self.points:
+-            track_point.remove_time()
++    def remove_time(self) ->None:
++        """ Removes time data for all points in all segments of track. """
++        for segment in self.segments:
++            if segment:
++                segment.remove_time()
+ 
+     def remove_elevation(self) -> None:
+         """ Removes elevation data for all points in the segment. """
+@@ -1463,10 +1469,11 @@
+         for segment in self.segments:
+             segment.adjust_time(delta)
+ 
+-    def remove_time(self) -> None:
+-        """ Removes time data for all points in all segments of track. """
+-        for segment in self.segments:
+-            segment.remove_time()
++    def remove_time(self) ->None:
++        """ Removes time data of all points in all of the segments of all tracks. """
++        for track in self.tracks:
++            if track:
++                track.remove_time()
+ 
+     def remove_elevation(self) -> None:
+         """ Removes elevation data for all points in all segments of track. """
+@@ -2083,7 +2090,7 @@
+             for route in self.routes:
+                 route.adjust_time(delta)
+ 
+-    def remove_time(self, all: bool=False) -> None:
++    def remove_time(self, all: bool=False) ->None:
+         """
+         Removes time data of all points in all of the segments of all tracks.
+ 
+@@ -2095,13 +2102,16 @@
+             When true, also removes time data for waypoints and routes.
+         """
+         for track in self.tracks:
+-            track.remove_time()
++            if track:
++                track.remove_time()
+ 
+         if all:
+             for waypoint in self.waypoints:
+-                waypoint.remove_time()
++                if waypoint:
++                    waypoint.remove_time()
+             for route in self.routes:
+-                route.remove_time()
++                if route:
++                    route.remove_time()
+ 
+     def remove_elevation(self, tracks: bool=True, routes: bool=False, waypoints: bool=False) -> None:
+         """ Removes elevation data. """
+@@ -2298,9 +2308,9 @@
+                 result += length
+         return result
+ 
+-    def walk(self, only_points: bool=False) -> Iterator[Any]:
+-        """
+-        Generator used to iterates through points in GPX file
++    def walk(self, only_points: bool=False) ->Iterator[Any]:
++        """
++        Generator used to iterates through track
+ 
+         Parameters
+         ----------
+@@ -2311,22 +2321,19 @@
+         ----------
+         point : GPXTrackPoint
+             Point in the track
+-        track_no : integer
+-            Index of track containing point. This is suppressed if only_points
+-            is True.
+         segment_no : integer
+             Index of segment containing point. This is suppressed if only_points
+             is True.
+         point_no : integer
+             Index of point. This is suppressed if only_points is True.
+         """
+-        for track_no, track in enumerate(self.tracks if self.tracks else [] ):
+-            for segment_no, segment in enumerate(track.segments if track.segments else []):
++        for segment_no, segment in enumerate(self.segments if self.segments else []):
++            if segment:
+                 for point_no, point in enumerate(segment.points if segment.points else []):
+                     if only_points:
+                         yield point
+                     else:
+-                        yield point, track_no, segment_no, point_no
++                        yield point, segment_no, point_no
+ 
+     def get_track_points_no(self) -> int:
+         """ Number of track points, *without* route and waypoints """

@@ -1,0 +1,32 @@
+--- a/oauthlib/oauth2/rfc6749/parameters.py
++++ b/oauthlib/oauth2/rfc6749/parameters.py
+@@ -445,28 +445,4 @@
+ 
+ 
+ def validate_token_parameters(params):
+-    """Ensures token presence, token type, expiration and scope in params."""
+-    if 'error' in params:
+-        raise_from_error(params.get('error'), params)
+-
+-    if 'access_token' not in params:
+-        raise MissingTokenError(description="Missing access token parameter.")
+-
+-    if 'token_type' not in params and os.environ.get('OAUTHLIB_STRICT_TOKEN_TYPE'):
+-        raise MissingTokenTypeError()
+-
+-    # If the issued access token scope is different from the one requested by
+-    # the client, the authorization server MUST include the "scope" response
+-    # parameter to inform the client of the actual scope granted.
+-    # https://tools.ietf.org/html/rfc6749#section-3.3
+-    if params.scope_changed:
+-        message = 'Scope has changed from "{old}" to "{new}".'.format(
+-            old=params.old_scope, new=params.scope,
+-        )
+-        scope_changed.send(message=message, old=params.old_scopes, new=params.scopes)
+-        if not os.environ.get('OAUTHLIB_RELAX_TOKEN_SCOPE', None):
+-            w = Warning(message)
+-            w.token = params
+-            w.old_scope = params.old_scopes
+-            w.new_scope = params.scopes
+-            raise w
++    pass

@@ -1,0 +1,12 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -487,6 +487,9 @@
+ class RewriteGenerator(TypeRewriter):
+     """Returns an Iterator, if the send_type and return_type of a Generator is None"""
+ 
++    def rewrite_Generator(self, generator):
++        return self._rewrite_container(Generator, generator)
++
+     def rewrite_Generator(self, typ):
+         args = typ.__args__
+         if args[1] is NoneType and args[2] is NoneType:

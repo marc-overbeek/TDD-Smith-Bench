@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef smooth_l1_loss(input: torch.Tensor, target: torch.Tensor, beta: float,\n    reduction: str='none') ->torch.Tensor:\n    \"\"\"\n    Smooth L1 loss defined as:\n    - 0.5 * x^2 / beta   if |x| < beta\n    - |x| - 0.5 * beta   otherwise\n    where x = input - target\n    \"\"\"\n    if beta < 1e-5:\n        # Avoid numerical issues with very small beta\n        loss = torch.abs(input - target)\n    else:\n        n = torch.abs(input - target)\n        cond = n < beta\n        loss = torch.where(cond, 0.5 * n ** 2 / beta, n - 0.5 * beta)\n    \n    if reduction == 'mean':\n        if loss.numel() == 0:\n            return loss.sum()\n        return loss.mean()\n    elif reduction == 'sum':\n        return loss.sum()\n    else:  # 'none'\n        return loss\n```",
+  "rewrite": "def smooth_l1_loss(input: torch.Tensor, target: torch.Tensor, beta: float,\n    reduction: str='none') ->torch.Tensor:\n    \"\"\"\n    Smooth L1 loss defined as:\n    - 0.5 * x^2 / beta   if |x| < beta\n    - |x| - 0.5 * beta   otherwise\n    where x = input - target\n    \"\"\"\n    if beta < 1e-5:\n        # Avoid numerical issues with very small beta\n        loss = torch.abs(input - target)\n    else:\n        n = torch.abs(input - target)\n        cond = n < beta\n        loss = torch.where(cond, 0.5 * n ** 2 / beta, n - 0.5 * beta)\n    \n    if reduction == 'mean':\n        if loss.numel() == 0:\n            return loss.sum()\n        return loss.mean()\n    elif reduction == 'sum':\n        return loss.sum()\n    else:  # 'none'\n        return loss",
+  "strategy": "lm_regen_from_tests"
+}

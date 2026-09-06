@@ -1,0 +1,30 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -1035,7 +1035,8 @@
+ 
+         return result
+ 
+-    def to_flat_dicts(self, include_action_in_path=False, report_type_changes=True) -> List[FlatDeltaRow]:
++    def to_flat_dicts(self, include_action_in_path=False, report_type_changes=True
++        ) ->List[FlatDeltaRow]:
+         """
+         Returns a flat list of actions that is easily machine readable.
+ 
+@@ -1048,7 +1049,7 @@
+                 {'path': [2], 'value': 3, 'action': 'iterable_item_added'},
+             ]
+ 
+-        
++    
+         **Parameters**
+ 
+         include_action_in_path : Boolean, default=False
+@@ -1090,7 +1091,7 @@
+             attribute_removed
+         """
+         return [
+-            i._asdict() for i in self.to_flat_rows(include_action_in_path=False, report_type_changes=True)
++            i._asdict() for i in self.to_flat_rows(include_action_in_path=include_action_in_path, report_type_changes=report_type_changes)
+         ]
+ 
+     def to_flat_rows(self, include_action_in_path=False, report_type_changes=True) -> List[FlatDeltaRow]:

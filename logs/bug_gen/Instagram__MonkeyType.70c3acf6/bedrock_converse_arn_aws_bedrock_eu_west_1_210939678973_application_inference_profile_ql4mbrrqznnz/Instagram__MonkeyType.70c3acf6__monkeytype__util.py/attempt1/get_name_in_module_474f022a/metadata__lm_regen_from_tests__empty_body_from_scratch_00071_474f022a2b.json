@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef get_name_in_module(module: str, qualname: str, attr_getter: Optional[\n    Callable[[Any, str], Any]]=None) ->Any:\n    if attr_getter is None:\n        attr_getter = getattr\n    try:\n        obj = importlib.import_module(module)\n    except ImportError as e:\n        raise NameLookupError(f\"Cannot import module '{module}'\") from e\n    \n    parts = qualname.split('.')\n    for part in parts:\n        try:\n            obj = attr_getter(obj, part)\n        except AttributeError as e:\n            raise NameLookupError(\n                f\"Cannot find '{qualname}' in module '{module}'\"\n            ) from e\n    return obj\n```",
+  "rewrite": "def get_name_in_module(module: str, qualname: str, attr_getter: Optional[\n    Callable[[Any, str], Any]]=None) ->Any:\n    if attr_getter is None:\n        attr_getter = getattr\n    try:\n        obj = importlib.import_module(module)\n    except ImportError as e:\n        raise NameLookupError(f\"Cannot import module '{module}'\") from e\n    \n    parts = qualname.split('.')\n    for part in parts:\n        try:\n            obj = attr_getter(obj, part)\n        except AttributeError as e:\n            raise NameLookupError(\n                f\"Cannot find '{qualname}' in module '{module}'\"\n            ) from e\n    return obj",
+  "strategy": "lm_regen_from_tests"
+}

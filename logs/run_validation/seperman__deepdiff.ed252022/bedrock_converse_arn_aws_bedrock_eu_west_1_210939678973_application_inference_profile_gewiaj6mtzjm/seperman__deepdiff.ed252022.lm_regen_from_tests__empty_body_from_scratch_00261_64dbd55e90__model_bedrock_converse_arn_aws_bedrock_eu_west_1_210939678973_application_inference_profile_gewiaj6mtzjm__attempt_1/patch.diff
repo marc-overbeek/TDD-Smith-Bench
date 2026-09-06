@@ -1,0 +1,33 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -346,13 +346,23 @@
+ 
+ 
+ def convert_item_or_items_into_compiled_regexes_else_none(items):
+-    if items:
+-        if isinstance(items, (strings, RE_COMPILED_TYPE)):
+-            items = [items]
+-        items = [i if isinstance(i, RE_COMPILED_TYPE) else re.compile(i) for i in items]
+-    else:
+-        items = None
+-    return items
++    if items is None:
++        return None
++    
++    if isinstance(items, RE_COMPILED_TYPE):
++        return [items]
++    
++    if isinstance(items, strings):
++        return [re.compile(items)]
++    
++    result = []
++    for item in items:
++        if isinstance(item, RE_COMPILED_TYPE):
++            result.append(item)
++        else:
++            result.append(re.compile(item))
++    
++    return result
+ 
+ 
+ def get_id(obj):

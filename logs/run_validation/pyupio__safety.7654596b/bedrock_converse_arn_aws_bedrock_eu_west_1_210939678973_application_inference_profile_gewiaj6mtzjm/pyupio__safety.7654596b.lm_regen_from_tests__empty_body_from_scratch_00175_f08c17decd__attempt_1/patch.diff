@@ -1,0 +1,20 @@
+--- a/safety/formatter.py
++++ b/safety/formatter.py
+@@ -84,8 +84,6 @@
+         from safety.formatters.bare import BareReport
+         from safety.formatters.html import HTMLReport
+ 
+-        self.format = ScreenReport(**kwargs)
+-
+         if output == 'json':
+             self.format = JsonReport(**kwargs)
+         elif output == 'html':
+@@ -94,6 +92,8 @@
+             self.format = BareReport(**kwargs)
+         elif output == 'text':
+             self.format = TextReport(**kwargs)
++        else:
++            self.format = ScreenReport(**kwargs)
+ 
+     def render_vulnerabilities(self, announcements: List[Dict[str, Any]], vulnerabilities: List[Dict[str, Any]], remediations: Dict[str, Any], full: bool, packages: List[Dict[str, Any]], fixes: Tuple = ()) -> Optional[str]:
+         """

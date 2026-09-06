@@ -1,0 +1,35 @@
+--- a/safety/auth/cli_utils.py
++++ b/safety/auth/cli_utils.py
+@@ -111,30 +111,8 @@
+             print(e)
+             clean_session(client)
+ 
+-def proxy_options(func: Callable) -> Callable:
+-    """
+-    Decorator that defines proxy options for Click commands.
+-
+-    Options defined per command, this will override the proxy settings defined in the
+-    config.ini file.
+-
+-    Args:
+-        func (Callable): The Click command function.
+-
+-    Returns:
+-        Callable: The wrapped Click command function with proxy options.
+-    """
+-    func = click.option("--proxy-protocol",
+-                        type=click.Choice(['http', 'https']), default='https',
+-                        cls=DependentOption, required_options=['proxy_host'],
+-                        help=CLI_PROXY_PROTOCOL_HELP)(func)
+-    func = click.option("--proxy-port", multiple=False, type=int, default=80,
+-                        cls=DependentOption, required_options=['proxy_host'],
+-                        help=CLI_PROXY_PORT_HELP)(func)
+-    func = click.option("--proxy-host", multiple=False, type=str, default=None,
+-                        help=CLI_PROXY_HOST_HELP)(func)
+-
+-    return func
++def proxy_options(func: Callable) ->Callable:
++    pass
+ 
+ def auth_options(stage: bool = True) -> Callable:
+     """

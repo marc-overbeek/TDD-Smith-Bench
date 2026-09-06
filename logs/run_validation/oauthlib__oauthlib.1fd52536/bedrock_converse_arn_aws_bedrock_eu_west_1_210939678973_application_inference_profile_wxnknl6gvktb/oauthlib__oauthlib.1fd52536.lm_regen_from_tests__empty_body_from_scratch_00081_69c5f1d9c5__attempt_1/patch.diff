@@ -1,0 +1,21 @@
+--- a/oauthlib/oauth1/rfc5849/signature.py
++++ b/oauthlib/oauth1/rfc5849/signature.py
+@@ -582,16 +582,8 @@
+ 
+ 
+ def _prepare_key_plus(alg, keystr):
+-    """
+-    Prepare a PEM encoded key (public or private), by invoking the `prepare_key`
+-    method on alg with the keystr.
+-
+-    The keystr should be a string or bytes.  If the keystr is bytes, it is
+-    decoded as UTF-8 before being passed to prepare_key. Otherwise, it
+-    is passed directly.
+-    """
+-    if isinstance(keystr, bytes):
+-        keystr = keystr.decode('utf-8')
++    if not keystr:
++        raise ValueError('Key cannot be None or empty')
+     return alg.prepare_key(keystr)
+ 
+ 

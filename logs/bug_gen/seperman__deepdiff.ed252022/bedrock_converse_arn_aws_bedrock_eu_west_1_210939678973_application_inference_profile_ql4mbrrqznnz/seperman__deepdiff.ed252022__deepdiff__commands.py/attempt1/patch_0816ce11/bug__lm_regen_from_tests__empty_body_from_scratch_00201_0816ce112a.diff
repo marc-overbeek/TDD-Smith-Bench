@@ -1,0 +1,104 @@
+--- a/deepdiff/commands.py
++++ b/deepdiff/commands.py
+@@ -126,45 +126,65 @@
+ @click.option('--backup', '-b', is_flag=True, show_default=True)
+ @click.option('--raise-errors', is_flag=True, show_default=True)
+ @click.option('--debug', is_flag=True, show_default=False)
+-def patch(
+-    path, delta_path, backup, raise_errors, debug
+-):
++def patch(path, delta_path, backup, raise_errors, debug):
+     """
+     Deep Patch Commandline
+ 
+-    Patches a file based on the information in a delta file.
+-    The delta file can be created by the deep diff command and
+-    passing the --create-patch argument.
+-
+-    Deep Patch is similar to Linux's patch command.
+-    The difference is that it is made for patching data.
+-    It can read csv, tsv, json, yaml, and toml files.
+-
+-    """
+-    try:
+-        delta = Delta(delta_path=delta_path, raise_errors=raise_errors)
+-    except Exception as e:  # pragma: no cover.
+-        if debug:  # pragma: no cover.
+-            raise  # pragma: no cover.
+-        else:  # pragma: no cover.
+-            sys.exit(str(f"Error when loading the patch (aka delta) {delta_path}: {e}"))  # pragma: no cover.
+-
+-    extension = path.split('.')[-1]
+-
+-    try:
+-        content = load_path_content(path, file_type=extension)
+-    except Exception as e:  # pragma: no cover.
+-        sys.exit(str(f"Error when loading {path}: {e}"))  # pragma: no cover.
+-
+-    result = delta + content
+-
+-    try:
+-        save_content_to_path(result, path, file_type=extension, keep_backup=backup)
+-    except Exception as e:  # pragma: no cover.
+-        if debug:  # pragma: no cover.
+-            raise  # pragma: no cover.
+-        else:  # pragma: no cover.
+-            sys.exit(str(f"Error when saving {path}: {e}"))  # pragma: no cover.
++    Patch the content of a file using a delta (patch) file.
++    It can read csv, tsv, json, yaml, and toml files.
++
++    PATH is the path to the file to be patched.
++    DELTA_PATH is the path to the delta (patch) file.
++    """
++    path_extension = path.split('.')[-1]
++
++    try:
++        content = load_path_content(path, file_type=path_extension)
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when loading {path}: {e}"))
++
++    if path_extension in {'csv', 'tsv'}:
++        content = [dict(i) for i in content]
++
++    try:
++        with open(delta_path, 'rb') as f:
++            delta_content = f.read()
++        delta = Delta(delta_content, raise_errors=raise_errors)
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when loading the delta from {delta_path}: {e}"))
++
++    try:
++        result = delta + content
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when applying the patch: {e}"))
++
++    if backup:
++        import shutil
++        backup_path = path + '.bak'
++        try:
++            shutil.copy2(path, backup_path)
++        except Exception as e:
++            if debug:
++                raise
++            else:
++                sys.exit(str(f"Error when creating backup: {e}"))
++
++    try:
++        save_content_to_path(result, path, file_type=path_extension)
++    except Exception as e:
++        if debug:
++            raise
++        else:
++            sys.exit(str(f"Error when saving the patched content to {path}: {e}"))
+ 
+ 
+ @cli.command()

@@ -1,0 +1,198 @@
+--- a/deepdiff/path.py
++++ b/deepdiff/path.py
+@@ -41,78 +41,35 @@
+ 
+ @lru_cache(maxsize=1024 * 128)
+ def _path_to_elements(path, root_element=DEFAULT_FIRST_ELEMENT):
+-    """
+-    Given a path, it extracts the elements that form the path and their relevant most likely retrieval action.
+-
+-        >>> from deepdiff import _path_to_elements
+-        >>> path = "root[4.3].b['a3']"
+-        >>> _path_to_elements(path, root_element=None)
+-        [(4.3, 'GET'), ('b', 'GETATTR'), ('a3', 'GET')]
+-    """
+-    if isinstance(path, (tuple, list)):
+-        return path
+     elements = []
+     if root_element:
+         elements.append(root_element)
+-    elem = ''
+-    inside = False
+-    prev_char = None
+-    path = path[4:]  # removing "root from the beginning"
+-    brackets = []
+-    inside_quotes = False
+-    quote_used = ''
+-    for char in path:
+-        if prev_char == '𝆺𝅥𝅯':
+-            elem += char
+-        elif char in {'"', "'"}:
+-            elem += char
+-            # If we are inside and the quote is not what we expected, the quote is not closing
+-            if not(inside_quotes and quote_used != char):
+-                inside_quotes = not inside_quotes
+-                if inside_quotes:
+-                    quote_used = char
+-                else:
+-                    _add_to_elements(elements, elem, inside)
+-                    elem = ''
+-                    quote_used = ''
+-        elif inside_quotes:
+-            elem += char
+-        elif char == '[':
+-            if inside == '.':
+-                _add_to_elements(elements, elem, inside)
+-                inside = '['
+-                elem = ''
+-            # we are already inside. The bracket is a part of the word.
+-            elif inside == '[':
+-                elem += char
+-            else:
+-                inside = '['
+-                brackets.append('[')
+-                elem = ''
+-        elif char == '.':
+-            if inside == '[':
+-                elem += char
+-            elif inside == '.':
+-                _add_to_elements(elements, elem, inside)
+-                elem = ''
+-            else:
+-                inside = '.'
+-                elem = ''
+-        elif char == ']':
+-            if brackets and brackets[-1] == '[':
+-                brackets.pop()
+-            if brackets:
+-                elem += char
+-            else:
+-                _add_to_elements(elements, elem, inside)
+-                elem = ''
+-                inside = False
+-        else:
+-            elem += char
+-        prev_char = char
+-    if elem:
+-        _add_to_elements(elements, elem, inside)
+-    return tuple(elements)
++    
++    if not path or path == root_element[0]:
++        return elements
++    
++    path = path[len(root_element[0]):]
++    
++    i = 0
++    while i < len(path):
++        if path[i] == '[':
++            j = i + 1
++            while j < len(path) and path[j] != ']':
++                j += 1
++            elem = path[i+1:j]
++            _add_to_elements(elements, elem, '[')
++            i = j + 1
++        elif path[i] == '.':
++            j = i + 1
++            while j < len(path) and path[j] not in {'[', '.'}:
++                j += 1
++            elem = path[i+1:j]
++            _add_to_elements(elements, elem, '.')
++            i = j
++        else:
++            i += 1
++    
++    return elements
+ 
+ 
+ def _get_nested_obj(obj, elements, next_element=None):
+@@ -125,49 +82,55 @@
+ 
+ 
+ def _guess_type(elements, elem, index, next_element):
+-    # If we are not at the last elements
+-    if index < len(elements) - 1:
+-        # We assume it is a nested dictionary not a nested list
+-        return {}
+-    if isinstance(next_element, int):
+-        return []
+-    return {}
++    if next_element is None:
++        return None
++    
++    next_elem, next_action = next_element
++    
++    if next_action == GET:
++        if isinstance(next_elem, int):
++            return list
++        else:
++            return dict
++    elif next_action == GETATTR:
++        return object
++    
++    return None
+ 
+ 
+ def _get_nested_obj_and_force(obj, elements, next_element=None):
+-    prev_elem = None
+-    prev_action = None
+-    prev_obj = obj
+-    for index, (elem, action) in enumerate(elements):
+-        _prev_obj = obj
++    for i, (elem, action) in enumerate(elements):
+         if action == GET:
+             try:
+                 obj = obj[elem]
+-                prev_obj = _prev_obj
+-            except KeyError:
+-                obj[elem] = _guess_type(elements, elem, index, next_element)
+-                obj = obj[elem]
+-                prev_obj = _prev_obj
+-            except IndexError:
+-                if isinstance(obj, list) and isinstance(elem, int) and elem >= len(obj):
+-                    obj.extend([None] * (elem - len(obj)))
+-                    obj.append(_guess_type(elements, elem, index), next_element)
+-                    obj = obj[-1]
+-                    prev_obj = _prev_obj
+-                elif isinstance(obj, list) and len(obj) == 0 and prev_elem:
+-                    # We ran into an empty list that should have been a dictionary
+-                    # We need to change it from an empty list to a dictionary
+-                    obj = {elem: _guess_type(elements, elem, index, next_element)}
+-                    if prev_action == GET:
+-                        prev_obj[prev_elem] = obj
+-                    else:
+-                        setattr(prev_obj, prev_elem, obj)
++            except (KeyError, IndexError, TypeError):
++                next_elem = elements[i + 1] if i + 1 < len(elements) else next_element
++                guessed_type = _guess_type(elements, elem, i, next_elem)
++                
++                if guessed_type is list:
++                    obj[elem] = []
++                    obj = obj[elem]
++                elif guessed_type is dict:
++                    obj[elem] = {}
++                    obj = obj[elem]
++                else:
+                     obj = obj[elem]
+         elif action == GETATTR:
+-            obj = getattr(obj, elem)
+-            prev_obj = _prev_obj
+-        prev_elem = elem
+-        prev_action = action
++            try:
++                obj = getattr(obj, elem)
++            except AttributeError:
++                next_elem = elements[i + 1] if i + 1 < len(elements) else next_element
++                guessed_type = _guess_type(elements, elem, i, next_elem)
++                
++                if guessed_type is list:
++                    setattr(obj, elem, [])
++                    obj = getattr(obj, elem)
++                elif guessed_type is dict:
++                    setattr(obj, elem, {})
++                    obj = getattr(obj, elem)
++                else:
++                    obj = getattr(obj, elem)
++    
+     return obj
+ 
+ 

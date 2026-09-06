@@ -1,0 +1,24 @@
+--- a/deepdiff/search.py
++++ b/deepdiff/search.py
+@@ -340,11 +340,18 @@
+ class grep:
+     __doc__ = doc
+ 
++    def test_grep_dict(self):
++        obj = {'for life': 'vegan', 'ingredients': ['no meat', 'no eggs',
++            'no dairy', 'somewhere']}
++        ds = obj | grep(item)
++        assert ds == {'matched_values': {"root['ingredients'][3]"}}
++
+     def __init__(self,
+-                 item,
+-                 **kwargs):
++                     item,
++                     **kwargs):
++
++    def __init__(self, item):
+         self.item = item
+-        self.kwargs = kwargs
+ 
+     def __ror__(self, other):
+         return DeepSearch(obj=other, item=self.item, **self.kwargs)

@@ -1,0 +1,16 @@
+--- a/monkeytype/type_checking_imports_transformer.py
++++ b/monkeytype/type_checking_imports_transformer.py
+@@ -38,6 +38,13 @@
+         self.import_items_to_be_moved: List[ImportItem] = []
+ 
+     @staticmethod
++    context_contents = self.context.scratch.get(
++        MoveImportsToTypeCheckingBlockVisitor.CONTEXT_KEY
++    )
++    if context_contents is not None:
++        (import_items_to_be_moved,) = context_contents
++
++    @staticmethod
+     def store_imports_in_context(
+         context: CodemodContext,
+         import_items_to_be_moved: List[ImportItem],

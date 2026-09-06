@@ -1,0 +1,29 @@
+--- a/safety/auth/cli.py
++++ b/safety/auth/cli.py
+@@ -63,24 +63,8 @@
+         return ctx.forward(default_command)
+ 
+ 
+-def fail_if_authenticated(ctx: typer.Context, with_msg: str) -> None:
+-    """
+-    Exits the command if the user is already authenticated.
+-
+-    Args:
+-        ctx (typer.Context): The Typer context object.
+-        with_msg (str): The message to display if authenticated.
+-    """
+-    info = get_auth_info(ctx)
+-
+-    if info:
+-        console.print()
+-        email = f"[green]{ctx.obj.auth.email}[/green]"
+-        if not ctx.obj.auth.email_verified:
+-            email = f"{email} {render_email_note(ctx.obj.auth)}"
+-
+-        console.print(with_msg.format(email=email))
+-        sys.exit(0)
++def fail_if_authenticated(ctx: typer.Context, with_msg: str) ->None:
++    pass
+ 
+ def render_email_note(auth: Auth) -> str:
+     """

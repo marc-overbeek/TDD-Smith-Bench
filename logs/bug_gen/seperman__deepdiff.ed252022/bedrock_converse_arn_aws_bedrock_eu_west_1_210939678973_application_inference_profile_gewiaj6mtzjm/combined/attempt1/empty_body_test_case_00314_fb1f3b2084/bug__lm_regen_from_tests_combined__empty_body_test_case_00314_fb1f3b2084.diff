@@ -1,0 +1,82 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -409,47 +409,41 @@
+ 
+ 
+ def _get_pretty_form_text(verbose_level):
+-    pretty_form_texts = {
+-        "type_changes": "Type of {diff_path} changed from {type_t1} to {type_t2} and value changed from {val_t1} to {val_t2}.",
+-        "values_changed": "Value of {diff_path} changed from {val_t1} to {val_t2}.",
+-        "dictionary_item_added": "Item {diff_path} added to dictionary.",
+-        "dictionary_item_removed": "Item {diff_path} removed from dictionary.",
+-        "iterable_item_added": "Item {diff_path} added to iterable.",
+-        "iterable_item_removed": "Item {diff_path} removed from iterable.",
+-        "attribute_added": "Attribute {diff_path} added.",
+-        "attribute_removed": "Attribute {diff_path} removed.",
+-        "set_item_added": "Item root[{val_t2}] added to set.",
+-        "set_item_removed": "Item root[{val_t1}] removed from set.",
+-        "repetition_change": "Repetition change for item {diff_path}.",
+-    }
+-    if verbose_level == 2:
+-        pretty_form_texts.update(
+-            {
+-                "dictionary_item_added": "Item {diff_path} ({val_t2}) added to dictionary.",
+-                "dictionary_item_removed": "Item {diff_path} ({val_t1}) removed from dictionary.",
+-                "iterable_item_added": "Item {diff_path} ({val_t2}) added to iterable.",
+-                "iterable_item_removed": "Item {diff_path} ({val_t1}) removed from iterable.",
+-                "attribute_added": "Attribute {diff_path} ({val_t2}) added.",
+-                "attribute_removed": "Attribute {diff_path} ({val_t1}) removed.",
+-            }
+-        )
+-    return pretty_form_texts
++    if verbose_level == 0:
++        return "{}"
++    elif verbose_level == 1:
++        return "{old_value} --> {new_value}"
++    elif verbose_level == 2:
++        return "{old_type} {old_value} --> {new_type} {new_value}"
++    else:
++        raise ValueError("Invalid verbose_level. Must be 0, 1, or 2.")
+ 
+ 
+ def pretty_print_diff(diff):
+-    type_t1 = get_type(diff.t1).__name__
+-    type_t2 = get_type(diff.t2).__name__
+-
+-    val_t1 = '"{}"'.format(str(diff.t1)) if type_t1 == "str" else str(diff.t1)
+-    val_t2 = '"{}"'.format(str(diff.t2)) if type_t2 == "str" else str(diff.t2)
+-
+-    diff_path = diff.path(root='root')
+-    return _get_pretty_form_text(diff.verbose_level).get(diff.report_type, "").format(
+-        diff_path=diff_path,
+-        type_t1=type_t1,
+-        type_t2=type_t2,
+-        val_t1=val_t1,
+-        val_t2=val_t2)
++    if diff.get('type') == 'type_changes':
++        return f"Type changed from {diff['old_type']} to {diff['new_type']} at {diff['path']}"
++    elif diff.get('type') == 'values_changed':
++        return f"Value changed from {diff['old_value']} to {diff['new_value']} at {diff['path']}"
++    elif diff.get('type') == 'dictionary_item_added':
++        return f"Item {diff['path']} added to dictionary"
++    elif diff.get('type') == 'dictionary_item_removed':
++        return f"Item {diff['path']} removed from dictionary"
++    elif diff.get('type') == 'iterable_item_added':
++        return f"Item {diff['path']} added to iterable"
++    elif diff.get('type') == 'iterable_item_removed':
++        return f"Item {diff['path']} removed from iterable"
++    elif diff.get('type') == 'attribute_added':
++        return f"Attribute {diff['path']} added to object"
++    elif diff.get('type') == 'attribute_removed':
++        return f"Attribute {diff['path']} removed from object"
++    elif diff.get('type') == 'set_item_added':
++        return f"Item {diff['path']} added to set"
++    elif diff.get('type') == 'set_item_removed':
++        return f"Item {diff['path']} removed from set"
++    elif diff.get('type') == 'repetition_change':
++        return f"Repetition changed at {diff['path']}"
++    else:
++        return f"Unknown change type at {diff['path']}"
+ 
+ 
+ def load_path_content(path, file_type=None):

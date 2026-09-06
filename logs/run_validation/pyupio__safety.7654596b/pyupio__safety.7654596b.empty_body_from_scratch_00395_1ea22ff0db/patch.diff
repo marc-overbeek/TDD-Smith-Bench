@@ -1,0 +1,35 @@
+--- a/safety/auth/main.py
++++ b/safety/auth/main.py
+@@ -60,30 +60,8 @@
+     """
+     return CLI_CALLBACK
+ 
+-def get_organization() -> Optional[Organization]:
+-    """
+-    Retrieve the organization configuration.
+-
+-    Returns:
+-        Optional[Organization]: The organization object, or None if not configured.
+-    """
+-    config = configparser.ConfigParser()
+-    config.read(CONFIG)
+-
+-    org_conf: Union[Dict[str, str], configparser.SectionProxy] = config[
+-        'organization'] if 'organization' in config.sections() else {}
+-    org_id: Optional[str] = org_conf['id'].replace("\"", "") if org_conf.get('id', None) else None
+-    org_name: Optional[str] = org_conf['name'].replace("\"", "") if org_conf.get('name', None) else None
+-
+-    if not org_id:
+-        return None
+-
+-    org = Organization(
+-        id=org_id,
+-        name=org_name
+-    )
+-
+-    return org
++def get_organization() ->Optional[Organization]:
++    pass
+ 
+ def get_auth_info(ctx) -> Optional[Dict]:
+     """

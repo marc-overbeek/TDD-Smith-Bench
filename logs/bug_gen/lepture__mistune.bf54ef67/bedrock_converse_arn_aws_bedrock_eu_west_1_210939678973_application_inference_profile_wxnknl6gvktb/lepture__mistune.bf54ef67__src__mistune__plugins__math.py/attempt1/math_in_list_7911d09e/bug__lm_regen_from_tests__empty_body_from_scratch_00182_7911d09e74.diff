@@ -1,0 +1,18 @@
+--- a/src/mistune/plugins/math.py
++++ b/src/mistune/plugins/math.py
+@@ -62,6 +62,12 @@
+     md.block.insert_rule(md.block.block_quote_rules, 'block_math', before='list')
+ 
+ 
+-def math_in_list(md: "Markdown") -> None:
+-    """Enable block math plugin in list."""
+-    md.block.insert_rule(md.block.list_rules, 'block_math', before='list')
++def test_math_in_list(self):
++    text = '- $$\n  foo\n  $$\n'
++    md1 = create_markdown(escape=False)
++    md2 = create_markdown(escape=False, plugins=['math', math_in_list])
++    self.assertNotIn('class="math"', md1(text))
++    self.assertIn('class="math"', md2(text))
++
++def math_in_list(md: 'Markdown') ->None:
++    md.block.insert_rule(md.block.list_item_rules, 'block_math', before='list')

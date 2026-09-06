@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef set(self, key, report_type=None, value=None):\n    with self.lock:\n        if key in self.cache:\n            cache_node = self.cache[key]\n            freq_node = cache_node.freq_node\n            if report_type:\n                cache_node.content[report_type].add(value)\n            else:\n                cache_node.content = value\n            self.move_forward(cache_node, freq_node)\n        else:\n            if len(self.cache) >= self.capacity:\n                self.dump_cache()\n\n            self.create_cache_node(key, report_type, value)\n```",
+  "rewrite": "def set(self, key, report_type=None, value=None):\n    with self.lock:\n        if key in self.cache:\n            cache_node = self.cache[key]\n            freq_node = cache_node.freq_node\n            if report_type:\n                cache_node.content[report_type].add(value)\n            else:\n                cache_node.content = value\n            self.move_forward(cache_node, freq_node)\n        else:\n            if len(self.cache) >= self.capacity:\n                self.dump_cache()\n\n            self.create_cache_node(key, report_type, value)",
+  "strategy": "lm_regen_from_tests"
+}

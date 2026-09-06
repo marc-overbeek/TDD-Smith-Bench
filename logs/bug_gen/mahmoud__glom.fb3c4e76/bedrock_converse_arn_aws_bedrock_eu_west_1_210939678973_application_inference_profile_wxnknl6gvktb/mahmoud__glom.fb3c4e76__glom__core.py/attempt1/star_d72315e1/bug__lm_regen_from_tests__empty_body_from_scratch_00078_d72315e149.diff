@@ -1,0 +1,15 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1238,6 +1238,12 @@
+         ret._cur_kwargs = dict(self._cur_kwargs)
+         ret._cur_kwargs.update({k: kw for k, _ in kw.items()})
+         return ret
++
++    elif op == '*':
++        if args is not None:
++            all_args.extend(recurse(args))
++        if kwargs is not None:
++            all_kwargs.update(recurse(kwargs))
+ 
+     def star(self, args=None, kwargs=None):
+         """Returns a new :class:`Invoke` spec, with *args* and/or *kwargs*

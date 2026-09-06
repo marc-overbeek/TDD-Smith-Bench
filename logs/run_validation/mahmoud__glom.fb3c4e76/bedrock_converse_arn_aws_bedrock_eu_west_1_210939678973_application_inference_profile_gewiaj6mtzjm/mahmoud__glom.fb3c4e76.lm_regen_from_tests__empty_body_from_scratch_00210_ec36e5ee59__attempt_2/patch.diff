@@ -1,0 +1,33 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -274,7 +274,30 @@
+         return And(self, other)
+ 
+     def __or__(self, other):
++        return Or(*(self.children + (other,)))
++
++    def __or__(self, other):
+         return Or(self, other)
++
++    def __or__(self, other):
++        return Or(*(self.children + (other,)))
++
++    pattern_matcher = Or(And(Match(1), Val('one')), And(Match(2), Val('two')), And(Match(float), Val('float')))
++
++    def __and__(self, other):
++        return And(*(self.children + (other,)))
++
++    def __or__(self, other):
++        return Or(*(self.children + (other,)))
++
++    def __and__(self, other):
++        return And(*(self.children + (other,)))
++
++    def __and__(self, other):
++        return And(*(self.children + (other,)))
++
++    def __or__(self, other):
++        return Or(*(self.children + (other,)))
+ 
+     def __invert__(self):
+         return Not(self)

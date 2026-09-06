@@ -1,0 +1,74 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -748,9 +748,8 @@
+             track_point.remove_time()
+ 
+     def remove_elevation(self) -> None:
+-        """ Removes elevation data for all points in the segment. """
+-        for track_point in self.points:
+-            track_point.remove_elevation()
++        for point in self.points:
++            point.remove_elevation()
+ 
+     def length_2d(self) -> Optional[float]:
+         """
+@@ -1469,9 +1468,8 @@
+             segment.remove_time()
+ 
+     def remove_elevation(self) -> None:
+-        """ Removes elevation data for all points in all segments of track. """
+-        for segment in self.segments:
+-            segment.remove_elevation()
++        for point in self.points:
++            point.remove_elevation()
+ 
+     def remove_empty(self) -> None:
+         """ Removes empty segments in track """
+@@ -2104,7 +2102,6 @@
+                 route.remove_time()
+ 
+     def remove_elevation(self, tracks: bool=True, routes: bool=False, waypoints: bool=False) -> None:
+-        """ Removes elevation data. """
+         if tracks:
+             for track in self.tracks:
+                 track.remove_elevation()
+@@ -2299,28 +2296,7 @@
+         return result
+ 
+     def walk(self, only_points: bool=False) -> Iterator[Any]:
+-        """
+-        Generator used to iterates through points in GPX file
+-
+-        Parameters
+-        ----------
+-        only_point s: boolean
+-            Only yield points while walking
+-
+-        Yields
+-        ----------
+-        point : GPXTrackPoint
+-            Point in the track
+-        track_no : integer
+-            Index of track containing point. This is suppressed if only_points
+-            is True.
+-        segment_no : integer
+-            Index of segment containing point. This is suppressed if only_points
+-            is True.
+-        point_no : integer
+-            Index of point. This is suppressed if only_points is True.
+-        """
+-        for track_no, track in enumerate(self.tracks if self.tracks else [] ):
++        for track_no, track in enumerate(self.tracks if self.tracks else []):
+             for segment_no, segment in enumerate(track.segments if track.segments else []):
+                 for point_no, point in enumerate(segment.points if segment.points else []):
+                     if only_points:
+@@ -2672,9 +2648,6 @@
+             track.move(location_delta)
+ 
+     def to_xml(self, version: Optional[str]=None, prettyprint: bool=True) -> str:
+-        """
+-        FIXME: Note, this method will change self.version
+-        """
+         if not version:
+             if self.version:
+                 version = self.version

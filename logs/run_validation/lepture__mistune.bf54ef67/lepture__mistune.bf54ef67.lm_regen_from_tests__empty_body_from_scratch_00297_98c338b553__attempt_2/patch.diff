@@ -1,0 +1,63 @@
+--- a/src/mistune/directives/image.py
++++ b/src/mistune/directives/image.py
+@@ -56,45 +56,24 @@
+             md.renderer.register('block_image', render_block_image)
+ 
+ 
+-def render_block_image(
+-    self: 'HTMLRenderer',
+-    src: str,
+-    alt: Optional[str] = None,
+-    width: Optional[str] = None,
+-    height: Optional[str] = None,
+-    **attrs: Any,
+-) -> str:
+-    img = '<img src="' + escape_text(src) + '"'
+-    style = ''
++def render_block_image(self: 'HTMLRenderer', src: str, alt: Optional[str]=
++    None, width: Optional[str]=None, height: Optional[str]=None, **attrs: Any
++    ) ->str:
++    html = '<img src="' + escape_url(src) + '"'
+     if alt:
+-        img += ' alt="' + escape_text(alt) + '"'
++        html += ' alt="' + escape_text(alt) + '"'
+     if width:
+-        if width.isdigit():
+-            img += ' width="' + width + '"'
+-        else:
+-            style += 'width:' + width + ';'
++        html += ' width="' + escape_text(width) + '"'
+     if height:
+-        if height.isdigit():
+-            img += ' height="' + height + '"'
+-        else:
+-            style += 'height:' + height + ';'
+-    if style:
+-        img += ' style="' + escape_text(style) + '"'
+-
+-    img += ' />'
+-
+-    _cls = 'block-image'
+-    align = attrs.get('align')
+-    if align:
+-        _cls += ' align-' + align
+-
+-    target = attrs.get('target')
+-    if target:
+-        href = self.safe_url(target)
+-        outer = '<a class="' + _cls + '" href="' + href + '">'
+-        return outer + img + '</a>\n'
+-    else:
+-        return '<div class="' + _cls + '">' + img + '</div>\n'
++        html += ' height="' + escape_text(height) + '"'
++    if 'align' in attrs:
++        html += ' align="' + escape_text(attrs['align']) + '"'
++    html += ' />'
++    
++    if 'target' in attrs:
++        html = '<a href="' + attrs['target'] + '">' + html + '</a>'
++    
++    return html + '\n'
+ 
+ 
+ class Figure(DirectivePlugin):

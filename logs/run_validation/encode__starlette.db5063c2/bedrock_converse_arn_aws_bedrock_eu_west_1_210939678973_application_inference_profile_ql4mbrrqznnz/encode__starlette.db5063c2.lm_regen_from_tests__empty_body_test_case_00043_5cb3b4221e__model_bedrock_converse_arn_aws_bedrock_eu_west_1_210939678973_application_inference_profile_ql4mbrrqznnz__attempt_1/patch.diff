@@ -1,0 +1,67 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -412,17 +412,17 @@
+     """
+ 
+     def __init__(
+-        self,
+-        file: typing.BinaryIO,
+-        *,
+-        size: int | None = None,
+-        filename: str | None = None,
+-        headers: Headers | None = None,
+-    ) -> None:
+-        self.filename = filename
+-        self.file = file
+-        self.size = size
+-        self.headers = headers or Headers()
++            self,
++            file: typing.BinaryIO,
++            *,
++            size: int | None = None,
++            filename: str | None = None,
++            headers: Headers | None = None,
++        ) -> None:
++            self.filename = filename
++            self.file = file
++            self.size = size
++            self.headers = headers or Headers()
+ 
+     @property
+     def content_type(self) -> str | None:
+@@ -461,12 +461,12 @@
+             await run_in_threadpool(self.file.close)
+ 
+     def __repr__(self) -> str:
+-        return (
+-            f"{self.__class__.__name__}("
+-            f"filename={self.filename!r}, "
+-            f"size={self.size!r}, "
+-            f"headers={self.headers!r})"
+-        )
++            return (
++                f"{self.__class__.__name__}("
++                f"filename={self.filename!r}, "
++                f"size={self.size!r}, "
++                f"headers={self.headers!r})"
++            )
+ 
+ 
+ class FormData(ImmutableMultiDict[str, typing.Union[UploadFile, str]]):
+@@ -557,11 +557,11 @@
+         return sorted(self._list) == sorted(other._list)
+ 
+     def __repr__(self) -> str:
+-        class_name = self.__class__.__name__
+-        as_dict = dict(self.items())
+-        if len(as_dict) == len(self):
+-            return f"{class_name}({as_dict!r})"
+-        return f"{class_name}(raw={self.raw!r})"
++            class_name = self.__class__.__name__
++            as_dict = dict(self.items())
++            if len(as_dict) == len(self):
++                return f"{class_name}({as_dict!r})"
++            return f"{class_name}(raw={self.raw!r})"
+ 
+ 
+ class MutableHeaders(Headers):

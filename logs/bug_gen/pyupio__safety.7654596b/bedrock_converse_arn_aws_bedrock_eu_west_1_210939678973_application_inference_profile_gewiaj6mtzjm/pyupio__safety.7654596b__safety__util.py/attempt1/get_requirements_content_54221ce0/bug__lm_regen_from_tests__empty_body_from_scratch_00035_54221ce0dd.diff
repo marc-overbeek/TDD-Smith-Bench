@@ -1,0 +1,38 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -1155,30 +1155,11 @@
+     return filtered_packages_licenses
+ 
+ 
+-def get_requirements_content(files: List[click.File]) -> Dict[str, str]:
+-    """
+-    Get the content of the requirements files.
+-
+-    Args:
+-        files (List[click.File]): The list of requirement files.
+-
+-    Returns:
+-        Dict[str, str]: The content of the requirement files.
+-
+-    Raises:
+-        InvalidProvidedReportError: If a file cannot be read.
+-    """
+-    requirements_files = {}
+-
+-    for f in files:
+-        try:
+-            f.seek(0)
+-            requirements_files[f.name] = f.read()
+-            f.close()
+-        except Exception as e:
+-            raise InvalidProvidedReportError(message=f"Unable to read a requirement file scanned in the report. {e}")
+-
+-    return requirements_files
++def get_requirements_content(files: List[click.File]) ->Dict[str, str]:
++    content = {}
++    for file in files:
++        content[file.name] = file.read()
++    return content
+ 
+ 
+ def is_ignore_unpinned_mode(version: str) -> bool:

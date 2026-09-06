@@ -1,0 +1,36 @@
+--- a/starlette/middleware/errors.py
++++ b/starlette/middleware/errors.py
+@@ -197,30 +197,9 @@
+             return LINE.format(**values)
+         return CENTER_LINE.format(**values)
+ 
+-    def generate_frame_html(self, frame: inspect.FrameInfo, is_collapsed: bool) -> str:
+-        code_context = "".join(
+-            self.format_line(
+-                index,
+-                line,
+-                frame.lineno,
+-                frame.index,  # type: ignore[arg-type]
+-            )
+-            for index, line in enumerate(frame.code_context or [])
+-        )
+-
+-        values = {
+-            # HTML escape - filename could contain < or >, especially if it's a virtual
+-            # file e.g. <stdin> in the REPL
+-            "frame_filename": html.escape(frame.filename),
+-            "frame_lineno": frame.lineno,
+-            # HTML escape - if you try very hard it's possible to name a function with <
+-            # or >
+-            "frame_name": html.escape(frame.function),
+-            "code_context": code_context,
+-            "collapsed": "collapsed" if is_collapsed else "",
+-            "collapse_button": "+" if is_collapsed else "&#8210;",
+-        }
+-        return FRAME_TEMPLATE.format(**values)
++    def generate_frame_html(self, frame: inspect.FrameInfo, is_collapsed: bool
++        ) ->str:
++        pass
+ 
+     def generate_html(self, exc: Exception, limit: int = 7) -> str:
+         traceback_obj = traceback.TracebackException.from_exception(exc, capture_locals=True)

@@ -1,0 +1,38 @@
+--- a/binaries.py
++++ b/binaries.py
+@@ -92,33 +92,8 @@
+             self.run(f"{python} -m pip install pyinstaller")
+             self.run(f"{python} -m pip install -r test_requirements.txt")
+ 
+-    def dist(self) -> None:
+-        """
+-        Runs PyInstaller to produce a binary for every platform architecture.
+-        """
+-        for arch, python in self.python:
+-
+-            # Build the binary
+-            build_path = os.path.join("dist", f"safety-{arch}")
+-            self.run(f"{python} -m PyInstaller safety.spec"
+-                     f" --distpath {build_path}")
+-
+-            # There seems to be no way to tell pyinstaller the binary name.
+-            # This leads to problems with artifact collector because
+-            # every binary is named the same.
+-            #
+-            # Move them around so they can be picked up correctly
+-            #
+-            artifact_path = os.path.join(
+-                os.getcwd(),
+-                "dist",
+-                f"safety-{self.os}-{'i686' if arch == 32 else 'x86_64'}"
+-            )
+-            binary_path = os.path.join(os.getcwd(), build_path, "safety")
+-            if self.os == self.WIN:
+-                self.run(f"move {binary_path}.exe {artifact_path}.exe")
+-            else:
+-                self.run(f"cp {binary_path} {artifact_path}")
++    def dist(self) ->None:
++        pass
+ 
+     def test(self) -> None:
+         """

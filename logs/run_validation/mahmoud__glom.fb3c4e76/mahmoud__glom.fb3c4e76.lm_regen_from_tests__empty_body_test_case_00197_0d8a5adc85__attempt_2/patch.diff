@@ -1,0 +1,57 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1919,30 +1919,37 @@
+ # spec is the first argument for convenience in the case
+ # that the handler is a method of the spec type
+ def _handle_dict(target, spec, scope):
+-    ret = type(spec)()  # TODO: works for dict + ordereddict, but sufficient for all?
+-    for field, subspec in spec.items():
+-        val = scope[glom](target, subspec, scope)
++    ret = {}
++    for key, subspec in spec.items():
++        if subspec is SKIP:
++            continue
++        scope = chain_child(scope)
++        try:
++            val = scope[glom](target, subspec, scope)
++        except Exception as e:
++            if not isinstance(e, PathAccessError):
++                raise
++            if not isinstance(key, (basestring, int, float, type(None))):
++                raise
++            # if we're skipping a key, we don't want to include it in the result
++            # but we also don't want to raise an error if the key is not present
++            # so we catch the error and continue
++            continue
+         if val is SKIP:
+             continue
+-        if type(field) in (Spec, TType):
+-            field = scope[glom](target, field, scope)
+-        ret[field] = val
++        if val is STOP:
++            break
++        if isinstance(key, TType):
++            key = scope[glom](target, key, scope)
++        ret[key] = val
+     return ret
+ 
+ 
+ def _handle_list(target, spec, scope):
+-    subspec = spec[0]
+-    iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
+-    try:
+-        iterator = iterate(target)
+-    except Exception as e:
+-        raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+-                        % (target.__class__.__name__, Path(*scope[Path]), e))
+     ret = []
+-    base_path = scope[Path]
+-    for i, t in enumerate(iterator):
+-        scope[Path] = base_path + [i]
+-        val = scope[glom](t, subspec, scope)
++    for subspec in spec:
++        scope = chain_child(scope)
++        val = scope[glom](target, subspec, scope)
+         if val is SKIP:
+             continue
+         if val is STOP:

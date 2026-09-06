@@ -1,0 +1,39 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -549,16 +549,26 @@
+         return self._cm.__exit__(exc_type, exc_value, traceback)
+ 
+ 
+-def _wrap_gen_lifespan_context(
+-    lifespan_context: typing.Callable[[typing.Any], typing.Generator[typing.Any, typing.Any, typing.Any]],
+-) -> typing.Callable[[typing.Any], typing.AsyncContextManager[typing.Any]]:
+-    cmgr = contextlib.contextmanager(lifespan_context)
+-
+-    @functools.wraps(cmgr)
+-    def wrapper(app: typing.Any) -> _AsyncLiftContextManager[typing.Any]:
+-        return _AsyncLiftContextManager(cmgr(app))
+-
+-    return wrapper
++def _wrap_gen_lifespan_context(lifespan_context: typing.Callable[[typing.
++    Any], typing.Generator[typing.Any, typing.Any, typing.Any]]
++    ) ->typing.Callable[[typing.Any], typing.AsyncContextManager[typing.Any]]:
++    @functools.wraps(lifespan_context)
++    def wrapped_lifespan(app: typing.Any) -> typing.AsyncContextManager[typing.Any]:
++        @asynccontextmanager
++        async def async_lifespan_context() -> typing.AsyncGenerator[typing.Any, None]:
++            cm = lifespan_context(app)
++            value = await run_in_threadpool(cm.__enter__)
++            try:
++                yield value
++            except BaseException as exc:
++                await run_in_threadpool(cm.__exit__, type(exc), exc, exc.__traceback__)
++                raise
++            else:
++                await run_in_threadpool(cm.__exit__, None, None, None)
++        
++        return async_lifespan_context()
++    
++    return wrapped_lifespan
+ 
+ 
+ class _DefaultLifespan:

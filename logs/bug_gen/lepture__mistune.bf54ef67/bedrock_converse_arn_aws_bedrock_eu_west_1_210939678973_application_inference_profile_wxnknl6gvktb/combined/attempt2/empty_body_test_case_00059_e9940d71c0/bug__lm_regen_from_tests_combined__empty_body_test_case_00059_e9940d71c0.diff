@@ -1,0 +1,71 @@
+--- a/src/mistune/plugins/formatting.py
++++ b/src/mistune/plugins/formatting.py
+@@ -48,13 +48,12 @@
+     return "<ins>" + text + "</ins>"
+ 
+ 
+-def parse_superscript(
+-    inline: "InlineParser", m: Match[str], state: "InlineState"
+-) -> int:
++def parse_superscript(inline: 'InlineParser', m: Match[str], state:
++    'InlineState') -> Optional[int]:
+     return _parse_script(inline, m, state, "superscript")
+ 
+ 
+-def render_superscript(renderer: "BaseRenderer", text: str) -> str:
++def render_superscript(renderer: 'BaseRenderer', text: str) -> str:
+     return "<sup>" + text + "</sup>"
+ 
+ 
+@@ -86,18 +85,23 @@
+     return end_pos
+ 
+ 
+-def _parse_script(
+-    inline: "InlineParser", m: Match[str], state: "InlineState", tok_type: str
+-) -> int:
+-    text = m.group(0)
++def _parse_script(inline: 'InlineParser', m: Match[str], state:
++    'InlineState', tok_type: str) -> Optional[int]:
++    pos = m.end()
++    if tok_type == "superscript":
++        end_pattern = re.compile(r'(?:' + PREVENT_BACKSLASH + r'\\\^|\S|\\ )+?\^')
++    else:
++        end_pattern = re.compile(r'(?:' + PREVENT_BACKSLASH + r'\\~|\S|\\ )+?~')
++    m1 = end_pattern.search(state.src, pos)
++    if not m1:
++        return None
++    end_pos = m1.end()
++    text = state.src[pos:end_pos-1]
+     new_state = state.copy()
+-    new_state.src = text[1:-1].replace('\\ ', ' ')
++    new_state.src = text
+     children = inline.render(new_state)
+-    state.append_token({
+-        'type': tok_type,
+-        'children': children
+-    })
+-    return m.end()
++    state.append_token({'type': tok_type, 'children': children})
++    return end_pos
+ 
+ 
+ def strikethrough(md: "Markdown") -> None:
+@@ -166,16 +170,7 @@
+         md.renderer.register('insert', render_insert)
+ 
+ 
+-def superscript(md: "Markdown") -> None:
+-    """A mistune plugin to add ``<sup>`` tag. Spec defined at
+-    https://pandoc.org/MANUAL.html#superscripts-and-subscripts:
+-
+-    .. code-block:: text
+-
+-        2^10^ is 1024.
+-
+-    :param md: Markdown instance
+-    """
++def superscript(md: 'Markdown') -> None:
+     md.inline.register('superscript', SUPERSCRIPT_PATTERN, parse_superscript, before='linebreak')
+     if md.renderer and md.renderer.NAME == 'html':
+         md.renderer.register('superscript', render_superscript)

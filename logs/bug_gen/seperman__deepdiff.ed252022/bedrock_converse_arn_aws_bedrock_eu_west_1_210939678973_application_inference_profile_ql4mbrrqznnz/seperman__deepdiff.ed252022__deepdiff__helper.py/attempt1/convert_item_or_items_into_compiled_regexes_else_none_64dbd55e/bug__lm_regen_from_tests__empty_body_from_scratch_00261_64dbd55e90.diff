@@ -1,0 +1,21 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -349,10 +349,14 @@
+     if items:
+         if isinstance(items, (strings, RE_COMPILED_TYPE)):
+             items = [items]
+-        items = [i if isinstance(i, RE_COMPILED_TYPE) else re.compile(i) for i in items]
+-    else:
+-        items = None
+-    return items
++        result = []
++        for item in items:
++            if isinstance(item, RE_COMPILED_TYPE):
++                result.append(item)
++            else:
++                result.append(re.compile(item))
++        return result
++    return None
+ 
+ 
+ def get_id(obj):

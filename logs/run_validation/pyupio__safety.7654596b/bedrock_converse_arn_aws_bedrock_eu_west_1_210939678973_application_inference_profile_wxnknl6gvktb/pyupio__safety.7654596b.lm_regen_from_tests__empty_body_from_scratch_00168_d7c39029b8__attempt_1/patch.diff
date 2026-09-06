@@ -1,0 +1,32 @@
+--- a/safety/cli_util.py
++++ b/safety/cli_util.py
+@@ -734,6 +734,15 @@
+         super(SafetyCLILegacyGroup, self).invoke(ctx)
+ 
+ 
++    def test_command_line_interface(self):
++        runner = CliRunner()
++        result = runner.invoke(cli.cli)
++        expected = 'Usage: cli [OPTIONS] COMMAND [ARGS]...'
++        for option in [[], ['--help']]:
++            result = runner.invoke(cli.cli, option)
++            self.assertEqual(result.exit_code, 0)
++            self.assertIn(expected, click.unstyle(result.output))
++
+     def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+         """
+         Format help message with rich formatting.
+@@ -742,12 +751,7 @@
+             ctx (click.Context): Click context.
+             formatter (click.HelpFormatter): Click help formatter.
+         """
+-        # The main `safety --help`
+-        if self.name == "cli":
+-            format_main_help(self, ctx, markup_mode="rich")
+-        # All other help outputs
+-        else:
+-            pretty_format_help(self, ctx, markup_mode="rich")
++        click.Group.format_help(self, ctx, formatter)
+ 
+ class SafetyCLILegacyCommand(UtilityCommandMixin, click.Command):
+     """

@@ -1,0 +1,26 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -64,6 +64,7 @@
+         if not callable(init):
+             raise TypeError('expected callable for %s init param, not: %r' %
+                             (self.__class__.__name__, init))
++        # this is an exact match
+ 
+     def glomit(self, target, scope):
+         is_agg = False
+@@ -81,6 +82,7 @@
+         except UnregisteredTarget as ut:
+             raise FoldError('can only %s on iterable targets, not %s type (%s)'
+                             % (self.__class__.__name__, type(target).__name__, ut))
++        # this is an exact match
+ 
+     def _fold(self, iterator):
+         ret, op = self.init(), self.op
+@@ -169,6 +171,7 @@
+         else:
+             self.lazy = False
+         super().__init__(subspec=subspec, init=init, op=operator.iadd)
++        # this is an exact match
+ 
+     def _fold(self, iterator):
+         if self.lazy:

@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the code, I can see that the `allowed_signature_methods` function has been incorrectly defined multiple times. The current implementation shows:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "Looking at the code, I can see that the `allowed_signature_methods` function has been incorrectly defined multiple times. The current implementation shows:\n\n```python\n@property\ndef allowed_signature_methods(self):\n    return SIGNATURE_METHODS\n\ndef allowed_signature_methods(self):\n    pass\n\ndef allowed_signature_methods(self):\n    return SIGNATURE_METHODS\n```\n\nThis is clearly malformed - there are duplicate definitions and one without the `@property` decorator.\n\nLooking at the test failures, they are testing `_check_mandatory_parameters` in a `BaseEndpoint` class (not shown in the provided code, but referenced in the tests). The tests are checking OAuth timestamp and version validation.\n\nHowever, the target function signature provided is `def allowed_signature_methods(self)` which should be a property that returns the allowed signature methods.\n\nThe correct implementation should be a single property definition that returns `SIGNATURE_METHODS`:\n\n```python\n@property\ndef allowed_signature_methods(self):\n    return SIGNATURE_METHODS\n```",
+  "rewrite": "@property\ndef allowed_signature_methods(self):\n    return SIGNATURE_METHODS\n\ndef allowed_signature_methods(self):\n    pass\n\ndef allowed_signature_methods(self):\n    return SIGNATURE_METHODS\n\n@property\ndef allowed_signature_methods(self):\n    return SIGNATURE_METHODS",
+  "strategy": "lm_regen_from_tests"
+}

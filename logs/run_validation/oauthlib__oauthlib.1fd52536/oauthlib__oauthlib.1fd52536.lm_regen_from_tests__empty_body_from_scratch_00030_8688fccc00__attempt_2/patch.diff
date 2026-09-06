@@ -1,0 +1,61 @@
+--- a/oauthlib/common.py
++++ b/oauthlib/common.py
+@@ -197,21 +197,45 @@
+     return ''.join(rand.choice(chars) for x in range(length))
+ 
+ 
++def test_scopes_and_user_id_stored_in_access_token(self):
++    body = 'grant_type=password&username=a&password=hello&scope=all+of+them'
++    headers, body, status_code = self.endpoint.create_token_response('',
++        body=body)
++    access_token = json.loads(body)['access_token']
++    claims = common.verify_signed_token(self.public_pem, access_token)
++    self.assertEqual(claims['scope'], 'all of them')
++    self.assertEqual(claims['user_id'], 123)
++
+ def generate_signed_token(private_pem, request):
+     import jwt
+-
+-    now = datetime.datetime.utcnow()
+-
+-    claims = {
+-        'scope': request.scope,
+-        'exp': now + datetime.timedelta(seconds=request.expires_in)
+-    }
+-
+-    claims.update(request.claims)
+-
+-    token = jwt.encode(claims, private_pem, 'RS256')
+-    token = to_unicode(token, "UTF-8")
+-
++    
++    claims = {}
++    
++    # Add scope if present - handle both string and list formats
++    scope = None
++    if hasattr(request, 'scope') and request.scope:
++        scope = request.scope
++    elif hasattr(request, 'scopes') and request.scopes:
++        scope = request.scopes
++    
++    if scope:
++        # If scope is a list, join it; if it's a string, use as-is
++        if isinstance(scope, list):
++            claims['scope'] = ' '.join(scope)
++        else:
++            claims['scope'] = scope
++    
++    # Add user_id if present
++    if hasattr(request, 'user_id') and request.user_id is not None:
++        claims['user_id'] = request.user_id
++    
++    # Encode the JWT with RS256 algorithm
++    token = jwt.encode(claims, private_pem, algorithm='RS256')
++    
++    # jwt.encode returns bytes in some versions, string in others
++    if isinstance(token, bytes):
++        token = token.decode('utf-8')
++    
+     return token
+ 
+ 

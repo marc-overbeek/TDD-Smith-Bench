@@ -1,0 +1,26 @@
+--- a/src/mistune/renderers/_list.py
++++ b/src/mistune/renderers/_list.py
+@@ -65,12 +65,15 @@
+         start += 1
+ 
+ 
+-def _render_unordered_list(
+-    renderer: "BaseRenderer", token: Dict[str, Any], state: "BlockState"
+-) -> Iterable[str]:
+-    parent = {
+-        'leading': token['bullet'] + ' ',
+-        'tight': token['tight'],
+-    }
+-    for item in token['children']:
++def _render_unordered_list(renderer: 'BaseRenderer', token: Dict[str, Any],
++    state: 'BlockState') ->Iterable[str]:
++    attrs = token["attrs"]
++    bullet = attrs.get("bullet", "-")
++    tight = token['tight']
++    for i, item in enumerate(token["children"]):
++        leading = bullet + " "
++        parent = {
++            'leading': leading,
++            'tight': tight,
++        }
+         yield _render_list_item(renderer, parent, item, state)

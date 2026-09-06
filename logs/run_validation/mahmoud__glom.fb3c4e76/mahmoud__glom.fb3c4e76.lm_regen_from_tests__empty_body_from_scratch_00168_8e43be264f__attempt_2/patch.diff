@@ -1,0 +1,75 @@
+--- a/glom/cli.py
++++ b/glom/cli.py
+@@ -116,52 +116,33 @@
+ 
+ 
+ def mw_handle_target(target_text, target_format):
+-    """ Handles reading in a file specified in cli command.
+-
+-    Args:
+-        target_text (str): The target data to load, as text
+-        target_format (str): Valid formats include `json`, `toml`, and `yml`/`yaml`
+-    Returns:
+-        The content of the file that you specified
+-    Raises:
+-        CommandLineError: Issue with file format or appropriate file reading package not installed.
+-    """
+-    if not target_text:
++    if target_text is None:
+         return {}
+-    target = {}
++    
+     if target_format == 'json':
+-        load_func = json.loads
++        try:
++            return json.loads(target_text)
++        except (json.JSONDecodeError, ValueError) as e:
++            raise CommandLineError(f'could not load target data, got: {e}')
++    elif target_format == 'python':
++        try:
++            return ast.literal_eval(target_text)
++        except (ValueError, SyntaxError) as e:
++            raise CommandLineError(f'could not load target data, got: {e}')
+     elif target_format in ('yaml', 'yml'):
+         try:
+             import yaml
+-            load_func = yaml.safe_load
+-        except ImportError:  # pragma: no cover
+-            raise UsageError('No YAML package found. To process yaml files, run: pip install PyYAML')  # pragma: no cover
++            return yaml.safe_load(target_text)
++        except Exception as e:
++            raise CommandLineError(str(e))
+     elif target_format == 'toml':
+-        missing =  UsageError('No TOML package found. To process toml files, upgrade to Python 3.11 or run: pip install tomli')
+-        try:
+-            import tomllib 
+-            load_func = tomllib.loads
+-        except ImportError:
+-            try:
+-                import tomli
+-                load_func = tomli.loads
+-            except ImportError:  # pragma: no cover
+-                raise missing  # pragma: no cover
+-    elif target_format == 'python':
+-        load_func = ast.literal_eval
++        try:
++            import toml
++            return toml.loads(target_text)
++        except Exception as e:
++            raise CommandLineError(str(e))
+     else:
+-        raise UsageError('expected target-format to be one of python, json, toml, or yaml')
+-
+-
+-    try:
+-        target = load_func(target_text)
+-    except Exception as e:
+-        raise UsageError('could not load target data, got: %s: %s'
+-                         % (e.__class__.__name__, e))
+-
+-
+-    return target
++        raise CommandLineError(f'expected target-format to be one of json, python, yaml, or toml, got {target_format!r}')
+ 
+ 
+ @face_middleware(provides=['spec', 'target'])

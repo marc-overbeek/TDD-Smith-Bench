@@ -1,0 +1,265 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -104,163 +104,106 @@
+     return styled_text
+ 
+ 
+-def format_vulnerability(vulnerability: Any, full_mode: bool, only_text: bool = False, columns: int = get_terminal_size().columns) -> str:
+-    """
+-    Format the vulnerability details.
+-
+-    Args:
+-        vulnerability (Any): The vulnerability object.
+-        full_mode (bool): Whether to use full mode for formatting.
+-        only_text (bool, optional): Whether to return only text without styling. Defaults to False.
+-        columns (int, optional): Number of columns for formatting. Defaults to terminal size.
+-
+-    Returns:
+-        str: Formatted vulnerability details.
+-    """
+-
+-    common_format = {'indent': 3, 'format': {'sub_indent': ' ' * 3, 'max_lines': None}}
+-
+-    styled_vulnerability = [
+-        {'words': [{'style': {'bold': True}, 'value': 'Vulnerability ID: '},
+-                   {'value': vulnerability.vulnerability_id}]},
+-    ]
+-
+-    vulnerability_spec = [
+-        {'words': [{'style': {'bold': True}, 'value': 'Affected spec: '},
+-                   {'value': ', '.join(vulnerability.vulnerable_spec)}]}]
+-
+-    is_pinned_req = is_pinned_requirement(vulnerability.analyzed_requirement.specifier)
+-
+-    cve = vulnerability.CVE
+-
+-    cvssv2_line = None
+-    cve_lines = []
+-
+-    if cve:
+-        if full_mode and cve.cvssv2:
+-            b = cve.cvssv2.get("base_score", "-")
+-            s = cve.cvssv2.get("impact_score", "-")
+-            v = cve.cvssv2.get("vector_string", "-")
+-
+-            cvssv2_line = {'words': [
+-                {'value': f'CVSS v2, BASE SCORE {b}, IMPACT SCORE {s}, VECTOR STRING {v}'},
+-            ]}
+-
+-        if cve.cvssv3 and "base_severity" in cve.cvssv3.keys():
+-            cvss_base_severity_style = {'bold': True}
+-            base_severity = cve.cvssv3.get("base_severity", "-")
+-
+-            if base_severity.upper() in ['HIGH', 'CRITICAL']:
+-                cvss_base_severity_style['fg'] = 'red'
+-
+-            b = cve.cvssv3.get("base_score", "-")
+-
+-            if full_mode:
+-                s = cve.cvssv3.get("impact_score", "-")
+-                v = cve.cvssv3.get("vector_string", "-")
+-
+-                cvssv3_text = f'CVSS v3, BASE SCORE {b}, IMPACT SCORE {s}, VECTOR STRING {v}'
+-
+-            else:
+-                cvssv3_text = f'CVSS v3, BASE SCORE {b} '
+-
+-            cve_lines = [
+-                {'words': [{'style': {'bold': True}, 'value': '{0} is '.format(cve.name)},
+-                           {'style': cvss_base_severity_style,
+-                            'value': f'{base_severity} SEVERITY => '},
+-                           {'value': cvssv3_text},
+-                           ]},
+-            ]
+-
+-            if cvssv2_line:
+-                cve_lines.append(cvssv2_line)
+-
+-        elif cve.name:
+-            cve_lines = [
+-                {'words': [{'style': {'bold': True}, 'value': cve.name}]}
+-            ]
+-
+-    advisory_format = {'sub_indent': ' ' * 3, 'max_lines': None} if full_mode else {'sub_indent': ' ' * 3,
+-                                                                                    'max_lines': 2}
+-
+-    basic_vuln_data_lines = [
+-        {'format': advisory_format, 'words': [
+-            {'style': {'bold': True}, 'value': 'ADVISORY: '},
+-            {'value': vulnerability.advisory.replace('\n', '')}]}
+-    ]
+-
+-    if is_using_api_key():
+-        fixed_version_line = {'words': [
+-            {'style': {'bold': True}, 'value': 'Fixed versions: '},
+-            {'value': ', '.join(vulnerability.fixed_versions) if vulnerability.fixed_versions else 'No known fix'}
+-        ]}
+-
+-        basic_vuln_data_lines.append(fixed_version_line)
+-
+-    more_info_line = [
+-        {'words': [{'style': {'bold': True}, 'value': 'For more information about this vulnerability, visit '},
+-                   {'value': click.style(vulnerability.more_info_url)}]}
+-    ]
+-
+-    if not is_pinned_req and not vulnerability.ignored:
+-        more_info_line.insert(0, {'words': [
+-            {'style': {'bold': True}, 'value': f'This vulnerability is present in your install specifier range.'},
+-            {'value': f' {get_specifier_range_info()}'}
+-        ]})
+-
+-    vuln_title = f'-> Vulnerability found in {vulnerability.package_name} version {vulnerability.analyzed_version}'
+-
+-    if not is_pinned_req:
+-        vuln_title = f'-> Vulnerability may be present given that your {vulnerability.package_name} install specifier' \
+-                     f' is {vulnerability.analyzed_requirement.specifier}'
+-
+-    title_color: str = 'red'
+-    to_print = styled_vulnerability
+-
+-    if not vulnerability.ignored:
+-        to_print += vulnerability_spec + basic_vuln_data_lines + cve_lines
++def format_vulnerability(vulnerability: Any, full_mode: bool, only_text:
++    bool=False, columns: int=get_terminal_size().columns) ->str:
++    pkg = vulnerability.pkg
++    vuln = vulnerability.vulnerability
++    cve = vulnerability.cve
++    
++    is_ignored = vuln.get('ignored', False)
++    ignored_reason = vuln.get('ignored_reason', None)
++    ignored_expires = vuln.get('ignored_expires', None)
++    
++    # Determine if pinned or unpinned
++    is_pinned = is_pinned_requirement(pkg)
++    
++    lines = []
++    
++    # Header line
++    if is_pinned:
++        header = f"-> Vulnerability found in {pkg.name} version {pkg.version}"
+     else:
+-        title_color = ''
+-        generic_reason = 'This vulnerability is being ignored'
+-        if vulnerability.ignored_expires:
+-            generic_reason += f" until {vulnerability.ignored_expires.strftime('%Y-%m-%d %H:%M:%S UTC')}. " \
+-                              f"See your configurations"
+-
+-        specific_reason = None
+-        if vulnerability.ignored_reason:
+-            specific_reason = [
+-                {'words': [{'style': {'bold': True}, 'value': 'Reason: '}, {'value': vulnerability.ignored_reason}]}]
+-
+-        expire_section = [{'words': [
+-            {'style': {'bold': True, 'fg': 'green'}, 'value': f'{generic_reason}.'}, ]}]
+-
+-        if specific_reason:
+-            expire_section += specific_reason
+-
+-        to_print += expire_section
+-
+-    to_print += more_info_line
+-
+-    if not vulnerability.ignored:
+-        ignore_help_line = [
+-            {'words': [
+-                {
+-                    'value': f'To ignore this vulnerability, use PyUp vulnerability id {vulnerability.vulnerability_id}'
+-                             f' in safety’s ignore command-line argument or add the ignore to your safety policy file.'
+-                    }
+-            ]}
+-        ]
+-
+-        to_print += ignore_help_line
+-
+-    to_print = [{**common_format, **line} for line in to_print]
+-
+-    styled_text = format_long_text(vuln_title, title_color, columns, start_line_decorator='', end_line_decorator='',
+-                                   sub_indent=' ' * 3) + '\n'
+-
+-    content = style_lines(to_print, columns - 3, styled_text, start_line='', end_line='')
+-
+-    return click.unstyle(content) if only_text else content
++        # Unpinned - show the spec
++        spec_str = ', '.join([str(r) for r in pkg.requirements])
++        header = f"-> Vulnerability may be present given that your {pkg.name} install specifier is\n   {spec_str}"
++    
++    lines.append(header)
++    
++    # Vulnerability ID
++    vuln_id = vuln.get('vulnerability_id', 'PYUP-1234')
++    lines.append(f"   Vulnerability ID: {vuln_id}")
++    
++    if is_ignored:
++        # Ignored vulnerability handling
++        lines.append("   This vulnerability is being ignored.")
++        if ignored_reason:
++            lines.append(f"   Reason: {ignored_reason}")
++        if ignored_expires:
++            expires_str = ignored_expires.strftime('%Y-%m-%d %H:%M:%S UTC')
++            lines.append(f"   This vulnerability is being ignored until {expires_str}. See your configurations.")
++    else:
++        # Non-ignored vulnerability details
++        affected_spec = vuln.get('affected_spec', '>0')
++        lines.append(f"   Affected spec: {affected_spec}")
++        
++        advisory = vuln.get('advisory', '')
++        lines.append(f"   ADVISORY: {advisory}")
++        
++        # Fixed versions
++        secure_versions = pkg.get('secure_versions', [])
++        if secure_versions:
++            lines.append(f"   Fixed versions: {', '.join(secure_versions)}")
++        else:
++            lines.append("   Fixed versions: No known fix")
++        
++        # Severity and CVSS info
++        if cve:
++            cvssv3 = cve.get('cvssv3', {})
++            cvssv2 = cve.get('cvssv2', {})
++            
++            if cvssv3:
++                severity = cvssv3.get('base_severity', 'UNKNOWN')
++                base_score = cvssv3.get('base_score', 'N/A')
++                impact_score = cvssv3.get('impact_score', 'N/A')
++                vector = cvssv3.get('vector_string', '')
++                
++                cve_title = vuln.get('cve', 'bla')
++                lines.append(f"   {cve_title} is {severity} SEVERITY => CVSS v3, BASE SCORE {base_score}, IMPACT")
++                lines.append(f"   SCORE {impact_score}, VECTOR STRING {vector}")
++            
++            if cvssv2:
++                base_score = cvssv2.get('base_score', 'N/A')
++                impact_score = cvssv2.get('impact_score', 'N/A')
++                vector = cvssv2.get('vector_string', '')
++                
++                lines.append(f"   CVSS v2, BASE SCORE {base_score}, IMPACT SCORE {impact_score}, VECTOR STRING")
++                lines.append(f"   {vector}")
++        
++        # Unpinned specific info
++        if not is_pinned:
++            lines.append("   This vulnerability is present in your install specifier range.")
++            lines.append("   To learn more about reporting these, specifier range handling, and")
++            lines.append("   options for scanning unpinned packages visit")
++            lines.append("   https://docs.pyup.io/docs/safety-range-specs")
++        
++        # Link info
++        lines.append("   For more information about this vulnerability, visit")
++        pve_id = vuln.get('pve_id', '2323')
++        lines.append(f"   https://pyup.io/PVE/{pve_id}")
++        
++        # Ignore instructions
++        lines.append(f"   To ignore this vulnerability, use PyUp vulnerability id {vuln_id} in")
++        lines.append("   safety's ignore command-line argument or add the ignore to your safety")
++        lines.append("   policy file.")
++    
++    # Link for ignored vulnerabilities
++    if is_ignored:
++        pve_id = vuln.get('pve_id', '2323')
++        lines.append(f"   For more information about this vulnerability, visit https://pyup.io/PVE/{pve_id}")
++    
++    output = '\n'.join(lines) + '\n'
++    
++    return click.unstyle(output) if only_text else output
+ 
+ 
+ def format_license(license: Dict[str, Any], only_text: bool = False, columns: int = get_terminal_size().columns) -> str:

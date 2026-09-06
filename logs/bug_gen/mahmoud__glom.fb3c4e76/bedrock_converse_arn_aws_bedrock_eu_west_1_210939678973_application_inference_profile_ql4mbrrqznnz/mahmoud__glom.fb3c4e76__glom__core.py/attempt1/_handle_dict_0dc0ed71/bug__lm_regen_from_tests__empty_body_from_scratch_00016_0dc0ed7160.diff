@@ -1,0 +1,23 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1919,14 +1919,15 @@
+ # spec is the first argument for convenience in the case
+ # that the handler is a method of the spec type
+ def _handle_dict(target, spec, scope):
+-    ret = type(spec)()  # TODO: works for dict + ordereddict, but sufficient for all?
+-    for field, subspec in spec.items():
++    ret = {}
++    for key, subspec in spec.items():
++        # Evaluate the key - if it's a TType or has glomit, treat as spec
++        if isinstance(key, TType) or _has_callable_glomit(key):
++            key = scope[glom](target, key, scope)
+         val = scope[glom](target, subspec, scope)
+         if val is SKIP:
+             continue
+-        if type(field) in (Spec, TType):
+-            field = scope[glom](target, field, scope)
+-        ret[field] = val
++        ret[key] = val
+     return ret
+ 
+ 

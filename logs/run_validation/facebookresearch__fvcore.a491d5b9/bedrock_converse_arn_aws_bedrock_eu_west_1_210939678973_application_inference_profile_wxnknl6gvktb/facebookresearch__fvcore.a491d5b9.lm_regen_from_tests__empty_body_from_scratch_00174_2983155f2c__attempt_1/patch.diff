@@ -1,0 +1,53 @@
+--- a/fvcore/nn/squeeze_excitation.py
++++ b/fvcore/nn/squeeze_excitation.py
+@@ -94,25 +94,37 @@
+ 
+     block: nn.Module
+ 
+-    def __init__(
+-        self,
+-        num_channels: int,
+-        is_3d: bool = False,
+-    ) -> None:
+-        """
+-        Args:
+-            num_channels (int): Number of input channels.
+-            is_3d (bool): Whether we're operating on 3d data.
+-        """
++    def __init__(self, num_channels: int, is_3d: bool)
++
++    def __init__(self, num_channels: int, is_3d: bool=False) -> None:
++        pass
++
++    def __init__(self, num_channels: int, is_3d: bool) -> None:
+         super().__init__()
+ 
++        num_channels_reduced = int(num_channels // 2.0)
++        activation = nn.ReLU()
++
+         if is_3d:
+-            conv = nn.Conv3d(num_channels, 1, kernel_size=1, bias=True)
++            conv1 = nn.Conv3d(
++                num_channels, num_channels_reduced, kernel_size=1, bias=True
++            )
++            conv2 = nn.Conv3d(
++                num_channels_reduced, num_channels, kernel_size=1, bias=True
++            )
+         else:
+-            conv = nn.Conv2d(num_channels, 1, kernel_size=1, bias=True)
++            conv1 = nn.Conv2d(
++                num_channels, num_channels_reduced, kernel_size=1, bias=True
++            )
++            conv2 = nn.Conv2d(
++                num_channels_reduced, num_channels, kernel_size=1, bias=True
++            )
+ 
++        self.is_3d = is_3d
+         self.block = nn.Sequential(
+-            conv,
++            conv1,
++            activation,
++            conv2,
+             nn.Sigmoid(),
+         )
+ 

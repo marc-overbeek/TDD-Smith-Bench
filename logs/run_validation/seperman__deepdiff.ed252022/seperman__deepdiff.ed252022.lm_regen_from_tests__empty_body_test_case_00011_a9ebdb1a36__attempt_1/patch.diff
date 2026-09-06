@@ -1,0 +1,73 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -656,17 +656,19 @@
+ 
+ 
+ def cartesian_product_numpy(*arrays):
+-    """
+-    Cartesian product of Numpy arrays by Paul Panzer
+-    https://stackoverflow.com/a/49445693/1497443
+-    """
+-    la = len(arrays)
+-    dtype = np.result_type(*arrays)
+-    arr = np.empty((la, *map(len, arrays)), dtype=dtype)
+-    idx = slice(None), *repeat(None, la)
+-    for i, a in enumerate(arrays):
+-        arr[i, ...] = a[idx[:la - i]]
+-    return arr.reshape(la, -1).T
++    arrays = [np.asarray(x) for x in arrays]
++    dtype = np.dtype(int) if len(arrays) == 0 else np.result_type(arrays[0], arrays[1])
++    n = np.prod([x.size for x in arrays])
++    if n <= 0:
++        return np.array([]).reshape(0, len(arrays))
++    out = np.zeros([n, len(arrays)], dtype=dtype)
++    m = n // arrays[0].size
++    out[:, 0] = np.repeat(arrays[0], m)
++    if arrays[1:]:
++        cartesian_product_numpy(*arrays[1:], out=out[0:m, 1:])
++        for j in range(1, arrays[0].size):
++            out[j * m:(j + 1) * m, 1:] = out[0:m, 1:]
++    return out
+ 
+ 
+ def diff_numpy_array(A, B):
+@@ -687,18 +689,28 @@
+ 
+ 
+ def get_homogeneous_numpy_compatible_type_of_seq(seq):
+-    """
+-    Return with the numpy dtype if the array can be converted to a non-object numpy array.
+-    Originally written by mgilson https://stackoverflow.com/a/13252348/1497443
+-    This is the modified version.
+-    """
+-    iseq = iter(seq)
+-    first_type = type(next(iseq))
+-    if first_type in {int, float, Decimal}:
+-        type_ = first_type if all((type(x) is first_type) for x in iseq) else False
+-        return PYTHON_TYPE_TO_NUMPY_TYPE.get(type_, False)
++    if not seq:
++        return np.float64
++    types = set()
++    for item in seq:
++        if isinstance(item, (int, np.integer)):
++            types.add(np.int64)
++        elif isinstance(item, (float, np.floating)):
++            types.add(np.float64)
++        elif isinstance(item, (complex, np.complexfloating)):
++            types.add(np.complex128)
++        elif isinstance(item, bool):
++            types.add(np.bool_)
++        elif isinstance(item, (str, bytes)):
++            types.add(object)
++        elif isinstance(item, (Decimal, np.number)):
++            types.add(np.number)
++    if len(types) == 1:
++        return list(types)[0]
++    elif len(types) == 0:
++        return np.object_
+     else:
+-        return False
++        return np.object_
+ 
+ 
+ def detailed__dict__(obj, ignore_private_variables=True, ignore_keys=frozenset(), include_keys=None):

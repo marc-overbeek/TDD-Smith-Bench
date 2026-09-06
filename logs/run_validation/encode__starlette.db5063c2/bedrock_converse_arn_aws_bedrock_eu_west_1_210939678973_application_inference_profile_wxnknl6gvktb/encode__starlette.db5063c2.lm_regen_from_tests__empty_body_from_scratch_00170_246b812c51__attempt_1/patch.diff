@@ -1,0 +1,19 @@
+--- a/starlette/responses.py
++++ b/starlette/responses.py
+@@ -323,6 +323,16 @@
+         self.stat_result = stat_result
+         if stat_result is not None:
+             self.set_stat_headers(stat_result)
++
++    def set_stat_headers(self, stat_result: os.stat_result) -> None:
++        content_length = str(stat_result.st_size)
++        last_modified = formatdate(stat_result.st_mtime, usegmt=True)
++        etag_base = str(stat_result.st_mtime) + "-" + str(stat_result.st_size)
++        etag = f'"{md5_hexdigest(etag_base.encode(), usedforsecurity=False)}"'
++
++        self.headers.setdefault("content-length", content_length)
++        self.headers.setdefault("last-modified", last_modified)
++        self.headers.setdefault("etag", etag)
+ 
+     def set_stat_headers(self, stat_result: os.stat_result) -> None:
+         content_length = str(stat_result.st_size)

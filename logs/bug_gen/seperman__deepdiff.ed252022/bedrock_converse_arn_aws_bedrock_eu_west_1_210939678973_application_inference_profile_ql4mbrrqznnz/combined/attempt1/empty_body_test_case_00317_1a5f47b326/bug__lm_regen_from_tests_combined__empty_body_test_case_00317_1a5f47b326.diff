@@ -1,0 +1,95 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -325,7 +325,6 @@
+         super().__init__(*args, **kwargs)
+ 
+     def find_class(self, module, name):
+-        # Only allow safe classes from self.safe_to_import.
+         module_dot_class = '{}.{}'.format(module, name)
+         if module_dot_class in self.safe_to_import:
+             try:
+@@ -333,7 +332,6 @@
+             except KeyError:
+                 raise ModuleNotFoundError(MODULE_NOT_FOUND_MSG.format(module_dot_class)) from None
+             return getattr(module_obj, name)
+-        # Forbid everything else.
+         raise ForbiddenModule(FORBIDDEN_MODULE_MSG.format(module_dot_class)) from None
+ 
+     def persistent_load(self, persistent_id):
+@@ -349,63 +347,22 @@
+ 
+ 
+ def pickle_dump(obj, file_obj=None, protocol=4):
+-    """
+-    **pickle_dump**
+-    Dumps the obj into pickled content.
+-
+-    **Parameters**
+-
+-    obj : Any python object
+-
+-    file_obj : (Optional) A file object to dump the contents into
+-
+-    **Returns**
+-
+-    If file_obj is passed the return value will be None. It will write the object's pickle contents into the file.
+-    However if no file_obj is passed, then it will return the pickle serialization of the obj in the form of bytes.
+-    """
+-    file_obj_passed = bool(file_obj)
+-    file_obj = file_obj or io.BytesIO()
+-    _RestrictedPickler(file_obj, protocol=protocol, fix_imports=False).dump(obj)
+-    if not file_obj_passed:
+-        return file_obj.getvalue()
++    if file_obj is not None:
++        _RestrictedPickler(file_obj, protocol=protocol).dump(obj)
++    else:
++        buf = io.BytesIO()
++        _RestrictedPickler(buf, protocol=protocol).dump(obj)
++        return buf.getvalue()
+ 
+ 
+ def pickle_load(content=None, file_obj=None, safe_to_import=None):
+-    """
+-    **pickle_load**
+-    Load the pickled content. content should be a bytes object.
+-
+-    **Parameters**
+-
+-    content : Bytes of pickled object. 
+-
+-    file_obj : A file object to load the content from
+-
+-    safe_to_import : A set of modules that needs to be explicitly allowed to be loaded.
+-        Example: {'mymodule.MyClass', 'decimal.Decimal'}
+-        Note that this set will be added to the basic set of modules that are already allowed.
+-        The set of what is already allowed can be found in deepdiff.serialization.SAFE_TO_IMPORT
+-
+-    **Returns**
+-
+-        A delta object that can be added to t1 to recreate t2.
+-
+-    **Examples**
+-
+-    Importing
+-        >>> from deepdiff import DeepDiff, Delta
+-        >>> from pprint import pprint
+-
+-
+-    """
+-    if not content and not file_obj:
+-        raise ValueError('Please either pass the content or the file_obj to pickle_load.') 
+-    if isinstance(content, str):
+-        content = content.encode('utf-8')
+-    if content:
+-        file_obj = io.BytesIO(content)
+-    return _RestrictedUnpickler(file_obj, safe_to_import=safe_to_import).load()
++    if file_obj is not None:
++        return _RestrictedUnpickler(file_obj, safe_to_import=safe_to_import).load()
++    else:
++        if isinstance(content, str):
++            content = content.encode('utf-8')
++        buf = io.BytesIO(content)
++        return _RestrictedUnpickler(buf, safe_to_import=safe_to_import).load()
+ 
+ 
+ def _get_pretty_form_text(verbose_level):

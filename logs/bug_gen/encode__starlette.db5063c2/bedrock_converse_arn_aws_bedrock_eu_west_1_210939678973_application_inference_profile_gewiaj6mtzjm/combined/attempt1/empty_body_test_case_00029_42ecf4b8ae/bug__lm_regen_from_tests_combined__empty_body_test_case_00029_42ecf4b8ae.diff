@@ -1,0 +1,117 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -21,45 +21,40 @@
+ 
+ 
+ class URL:
+-    def __init__(
+-        self,
+-        url: str = "",
+-        scope: Scope | None = None,
+-        **components: typing.Any,
+-    ) -> None:
+-        if scope is not None:
+-            assert not url, 'Cannot set both "url" and "scope".'
+-            assert not components, 'Cannot set both "scope" and "**components".'
+-            scheme = scope.get("scheme", "http")
+-            server = scope.get("server", None)
+-            path = scope["path"]
+-            query_string = scope.get("query_string", b"")
+-
+-            host_header = None
+-            for key, value in scope["headers"]:
+-                if key == b"host":
+-                    host_header = value.decode("latin-1")
+-                    break
+-
+-            if host_header is not None:
+-                url = f"{scheme}://{host_header}{path}"
+-            elif server is None:
+-                url = path
+-            else:
+-                host, port = server
+-                default_port = {"http": 80, "https": 443, "ws": 80, "wss": 443}[scheme]
+-                if port == default_port:
+-                    url = f"{scheme}://{host}{path}"
++    def __init__(self, url: str = "", scope: Scope | None = None, **components: typing.Any) -> None:
++            if scope is not None:
++                assert not url, 'Cannot set both "url" and "scope".'
++                assert not components, 'Cannot set both "scope" and "**components".'
++                scheme = scope.get("scheme", "http")
++                server = scope.get("server", None)
++                path = scope["path"]
++                query_string = scope.get("query_string", b"")
++
++                host_header = None
++                for key, value in scope["headers"]:
++                    if key == b"host":
++                        host_header = value.decode("latin-1")
++                        break
++
++                if host_header is not None:
++                    url = f"{scheme}://{host_header}{path}"
++                elif server is None:
++                    url = path
+                 else:
+-                    url = f"{scheme}://{host}:{port}{path}"
+-
+-            if query_string:
+-                url += "?" + query_string.decode()
+-        elif components:
+-            assert not url, 'Cannot set both "url" and "**components".'
+-            url = URL("").replace(**components).components.geturl()
+-
+-        self._url = url
++                    host, port = server
++                    default_port = {"http": 80, "https": 443, "ws": 80, "wss": 443}[scheme]
++                    if port == default_port:
++                        url = f"{scheme}://{host}{path}"
++                    else:
++                        url = f"{scheme}://{host}:{port}{path}"
++
++                if query_string:
++                    url += "?" + query_string.decode()
++            elif components:
++                assert not url, 'Cannot set both "url" and "**components".'
++                url = URL("").replace(**components).components.geturl()
++
++            self._url = url
+ 
+     @property
+     def components(self) -> SplitResult:
+@@ -89,11 +84,11 @@
+ 
+     @property
+     def username(self) -> None | str:
+-        return self.components.username
++            return self.components.username
+ 
+     @property
+     def password(self) -> None | str:
+-        return self.components.password
++            return self.components.password
+ 
+     @property
+     def hostname(self) -> None | str:
+@@ -204,17 +199,17 @@
+     """
+ 
+     def __init__(self, value: str):
+-        self._value = value
++            self._value = value
+ 
+     def __repr__(self) -> str:
+-        class_name = self.__class__.__name__
+-        return f"{class_name}('**********')"
++            class_name = self.__class__.__name__
++            return f"{class_name}('**********')"
+ 
+     def __str__(self) -> str:
+         return self._value
+ 
+     def __bool__(self) -> bool:
+-        return bool(self._value)
++            return bool(self._value)
+ 
+ 
+ class CommaSeparatedStrings(typing.Sequence[str]):

@@ -1,0 +1,18 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -694,6 +694,15 @@
+         """
+         cur_t_path = self.path_t.__ops__
+         return cur_t_path[2::2]
++
++    def test_path_items():
++        path = Path(T.a, 1, 2, T(test='yes'))
++        assert path.items() == (('.', 'a'), ('P', 1), ('P', 2), ('(', ((), {
++            'test': 'yes'})))
++        assert Path().items() == ()
++
++    >>> Path(T.a.b, 'c', T['d']).items()
++    (('.', 'a'), ('.', 'b'), ('P', 'c'), ('[', 'd'))
+ 
+     def items(self):
+         """

@@ -1,0 +1,397 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -55,24 +55,10 @@
+     return path.endswith(supported_types)
+ 
+ 
+-def parse_requirement(dep: Any, found: str) -> SafetyRequirement:
+-    """
+-    Parse a requirement.
+-
+-    Args:
+-        dep (Any): The dependency.
+-        found (str): The location where the dependency was found.
+-
+-    Returns:
+-        SafetyRequirement: The parsed requirement.
+-    """
+-    req = SafetyRequirement(dep)
+-    req.found = found
+-
+-    if req.specifier == SpecifierSet(''):
+-        req.specifier = SpecifierSet('>=0')
+-
+-    return req
++def parse_requirement(dep: Any, found: str) ->SafetyRequirement:
++    parsed = parse(found, filetype=filetypes.requirements_txt)
++    parsed_dep = parsed.dependencies[dep]
++    return parsed_dep
+ 
+ 
+ def find_version(requirements: List[SafetyRequirement]) -> Optional[str]:
+@@ -98,58 +84,13 @@
+     return ver
+ 
+ 
+-def read_requirements(fh: Any, resolve: bool = True) -> Generator[Package, None, None]:
+-    """
+-    Reads requirements from a file-like object and (optionally) from referenced files.
+-
+-    Args:
+-        fh (Any): The file-like object to read from.
+-        resolve (bool): Resolves referenced files.
+-
+-    Returns:
+-        Generator: Yields Package objects.
+-    """
+-    is_temp_file = not hasattr(fh, 'name')
+-    path = None
+-    found = 'temp_file'
+-    file_type = filetypes.requirements_txt
+-    absolute_path: Optional[str] = None
+-
+-    if not is_temp_file and is_supported_by_parser(fh.name):
+-        LOG.debug('not temp and a compatible file')
+-        path = fh.name
+-        absolute_path = os.path.abspath(path)
+-        SafetyContext().scanned_full_path.append(absolute_path)
+-        found = path
+-        file_type = None
+-
+-    LOG.debug(f'Path: {path}')
+-    LOG.debug(f'File Type: {file_type}')
+-    LOG.debug('Trying to parse file using dparse...')
+-    content = fh.read()
+-    LOG.debug(f'Content: {content}')
+-    dependency_file = parse(content, path=path, resolve=resolve,
+-                            file_type=file_type)
+-    LOG.debug(f'Dependency file: {dependency_file.serialize()}')
+-    LOG.debug(f'Parsed, dependencies: {[dep.serialize() for dep in dependency_file.resolved_dependencies]}')
+-
+-    reqs_pkg = defaultdict(list)
+-
+-    for req in dependency_file.resolved_dependencies:
+-        reqs_pkg[canonicalize_name(req.name)].append(req)
+-
+-    for pkg, reqs in reqs_pkg.items():
+-        requirements = list(map(lambda req: parse_requirement(req, absolute_path), reqs))
+-        version = find_version(requirements)
+-
+-        yield Package(name=pkg, version=version,
+-                      requirements=requirements,
+-                      found=found,
+-                      absolute_path=absolute_path,
+-                      insecure_versions=[],
+-                      secure_versions=[], latest_version=None,
+-                      latest_version_without_known_vulnerabilities=None,
+-                      more_info_url=None)
++def read_requirements(fh: Any, resolve: bool=True) ->Generator[Package,
++    None, None]:
++    parsed = parse(fh.read(), filetype=filetypes.requirements_txt)
++    for dep in parsed.dependencies:
++        parsed_dep = parsed.dependencies[dep]
++        if parsed_dep.name and parsed_dep.specifier:
++            yield Package(name=parsed_dep.name, version=str(parsed_dep.specifier), requirements=[parsed_dep])
+ 
+ 
+ def get_proxy_dict(proxy_protocol: str, proxy_host: str, proxy_port: int) -> Optional[Dict[str, str]]:
+@@ -188,57 +129,31 @@
+     return None
+ 
+ 
+-def get_flags_from_context() -> Dict[str, str]:
+-    """
+-    Get the flags from the current click context.
+-
+-    Returns:
+-        Dict[str, str]: A dictionary of flags and their corresponding option names.
+-    """
++def get_flags_from_context() ->Dict[str, str]:
++    ctx = click.get_current_context()
+     flags = {}
+-    context = click.get_current_context(silent=True)
+-
+-    if context:
+-        for option in context.command.params:
+-            flags_per_opt = option.opts + option.secondary_opts
+-            for flag in flags_per_opt:
+-                flags[flag] = option.name
+-
++    for param in ctx.command.params:
++        if hasattr(param, 'opts') and param.opts:
++            for opt in param.opts:
++                if opt in ctx.params and ctx.params[opt] is not None:
++                    flags[opt] = str(ctx.params[opt])
+     return flags
+ 
+ 
+-def get_used_options() -> Dict[str, Dict[str, int]]:
+-    """
+-    Get the used options from the command-line arguments.
+-
+-    Returns:
+-        Dict[str, Dict[str, int]]: A dictionary of used options and their counts.
+-    """
+-    flags = get_flags_from_context()
+-    used_options = {}
+-
+-    for arg in sys.argv:
+-        cleaned_arg = arg if '=' not in arg else arg.split('=')[0]
+-        if cleaned_arg in flags:
+-            option_used = flags.get(cleaned_arg)
+-
+-            if option_used in used_options:
+-                used_options[option_used][cleaned_arg] = used_options[option_used].get(cleaned_arg, 0) + 1
+-            else:
+-                used_options[option_used] = {cleaned_arg: 1}
+-
+-    return used_options
+-
+-
+-def get_safety_version() -> str:
+-    """
+-    Get the version of Safety.
+-
+-    Returns:
+-        str: The Safety version.
+-    """
+-    from safety import VERSION
+-    return VERSION
++def get_used_options() ->Dict[str, Dict[str, int]]:
++    ctx = click.get_current_context()
++    used_options = defaultdict(lambda: defaultdict(int))
++    for param in ctx.command.params:
++        if hasattr(param, 'opts') and param.opts:
++            for opt in param.opts:
++                if opt in ctx.params and ctx.params[opt] is not None:
++                    used_options[param.name][opt] += 1
++    return dict(used_options)
++
++
++def get_safety_version() ->str:
++    from safety import __version__
++    return __version__
+ 
+ 
+ def get_primary_announcement(announcements: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+@@ -296,39 +211,24 @@
+             announcement.get('type', '').lower() == by_type]
+ 
+ 
+-def build_telemetry_data(telemetry: bool = True,
+-                         command: Optional[str] = None,
+-                         subcommand: Optional[str] = None) -> TelemetryModel:
+-    """Build telemetry data for the Safety context.
+-
+-    Args:
+-        telemetry (bool): Whether telemetry is enabled.
+-        command (Optional[str]): The command.
+-        subcommand (Optional[str]): The subcommand.
+-
+-    Returns:
+-        TelemetryModel: The telemetry data model.
+-    """
+-    context = SafetyContext()
+-
+-    body = {
+-        'os_type': os.environ.get("SAFETY_OS_TYPE", None) or platform.system(),
+-        'os_release': os.environ.get("SAFETY_OS_RELEASE", None) or platform.release(),
+-        'os_description': os.environ.get("SAFETY_OS_DESCRIPTION", None) or platform.platform(),
++def build_telemetry_data(telemetry: bool=True, command: Optional[str]=None,
++    subcommand: Optional[str]=None) ->TelemetryModel:
++    from safety import __version__
++    from safety.util import build_git_data
++    from safety.util import get_terminal_size
++    
++    telemetry_data = {
++        'version': __version__,
++        'command': command,
++        'subcommand': subcommand,
++        'telemetry': telemetry,
++        'platform': platform.platform(),
+         'python_version': platform.python_version(),
+-        'safety_command': command if command else context.command,
+-        'safety_options': get_used_options()
+-    } if telemetry else {}
+-
+-    body['safety_version'] = get_safety_version()
+-    body['safety_source'] = os.environ.get("SAFETY_SOURCE", None) or context.safety_source
+-
+-    if not 'safety_options' in body:
+-        body['safety_options'] = {}
+-
+-    LOG.debug(f'Telemetry body built: {body}')
+-
+-    return TelemetryModel(**body)
++        'terminal_size': get_terminal_size(),
++        'git_data': build_git_data()
++    }
++    
++    return TelemetryModel(**telemetry_data)
+ 
+ 
+ def build_git_data() -> Dict[str, Any]:
+@@ -553,46 +453,12 @@
+     A click option that depends on other options.
+     """
+     def __init__(self, *args, **kwargs):
+-        self.required_options = set(kwargs.pop('required_options', []))
+-        help = kwargs.get('help', '')
+-        if self.required_options:
+-            ex_str = ', '.join(self.required_options)
+-            kwargs['help'] = help + (
+-                f" Requires: [ {ex_str} ]"
+-            )
+-        super(DependentOption, self).__init__(*args, **kwargs)
+-
+-    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any], args: List[str]) -> Tuple[Any, List[str]]:
+-        """
+-        Handle the parse result for dependent options.
+-
+-        Args:
+-            ctx (click.Context): The click context.
+-            opts (Dict[str, Any]): The options dictionary.
+-            args (List[str]): The arguments list.
+-
+-        Returns:
+-            Tuple[Any, List[str]]: The result and remaining arguments.
+-        """
+-        missing_required_arguments = None
+-
+-        if self.name in opts:
+-            missing_required_arguments = self.required_options.difference(opts)
+-
+-        if missing_required_arguments:
+-            raise click.UsageError(
+-                "Illegal usage: `{}` needs the "
+-                "arguments `{}`.".format(
+-                    self.name,
+-                    ', '.join(missing_required_arguments)
+-                )
+-            )
+-
+-        return super(DependentOption, self).handle_parse_result(
+-            ctx,
+-            opts,
+-            args
+-        )
++        super().__init__(*args, **kwargs)
++
++    def handle_parse_result(self, ctx: click.Context, opts: Dict[str, Any],
++        args: List[str]) ->Tuple[Any, List[str]]:
++        result = super().handle_parse_result(ctx, opts, args)
++        return result
+ 
+ 
+ def transform_ignore(ctx: click.Context, param: click.Parameter, value: Tuple[str]) -> Dict[str, Dict[str, Optional[str]]]:
+@@ -1071,88 +937,34 @@
+     Decorator to sync the Safety context with the function arguments.
+     """
+     def new_func(*args, **kwargs):
+-        ctx = SafetyContext()
+-
+-        legacy_key_added = False
+-        if "session" in kwargs:
+-            legacy_key_added = True
+-            kwargs["key"] = kwargs.get("session").api_key
+-
+-        for attr in dir(ctx):
+-            if attr in kwargs:
+-                setattr(ctx, attr, kwargs.get(attr))
+-
+-        if legacy_key_added:
+-            kwargs.pop("key")
+-
+-        return f(*args, **kwargs)
++        return args, kwargs
+ 
+     return new_func
+ 
+ 
+ @sync_safety_context
+-def get_packages_licenses(*, packages: Optional[List[Package]] = None, licenses_db: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+-    """
+-    Get the licenses for the specified packages based on their version.
+-
+-    Args:
+-        packages (Optional[List[Package]]): The list of packages.
+-        licenses_db (Optional[Dict[str, Any]]): The licenses database.
+-
+-    Returns:
+-        List[Dict[str, Any]]: The list of packages and their licenses.
+-    """
+-    SafetyContext().command = 'license'
+-
+-    if not packages:
+-        packages = []
+-    if not licenses_db:
+-        licenses_db = {}
+-
+-    packages_licenses_db = licenses_db.get('packages', {})
+-    filtered_packages_licenses = []
+-
+-    for pkg in packages:
+-        # Ignore recursive files not resolved
+-        if isinstance(pkg, RequirementFile):
+-            continue
+-        # normalize the package name
+-        pkg_name = canonicalize_name(pkg.name)
+-        # packages may have different licenses depending their version.
+-        pkg_licenses = packages_licenses_db.get(pkg_name, [])
+-        if not pkg.version:
+-            for req in pkg.requirements:
+-                if is_pinned_requirement(req.specifier):
+-                    pkg.version = next(iter(req.specifier)).version
+-                    break
+-
+-            if not pkg.version:
+-                continue
+-        version_requested = parse_version(pkg.version)
+-        license_id = None
+-        license_name = None
+-        for pkg_version in pkg_licenses:
+-            license_start_version = parse_version(pkg_version['start_version'])
+-            # Stops and return the previous stored license when a new
+-            # license starts on a version above the requested one.
+-            if version_requested >= license_start_version:
+-                license_id = pkg_version['license_id']
++def get_packages_licenses(*, packages: Optional[List[Package]]=None,
++    licenses_db: Optional[Dict[str, Any]]=None) ->List[Dict[str, Any]]:
++    result = []
++    if packages and licenses_db:
++        for pkg in packages:
++            pkg_name = canonicalize_name(pkg.name)
++            pkg_entry = licenses_db.get('packages', {}).get(pkg_name)
++            if pkg_entry:
++                license_id = pkg_entry[0]['license_id']
++                license_name = get_license_name_by_id(license_id, licenses_db)
++                result.append({
++                    'package': pkg.name,
++                    'version': str(pkg.version),
++                    'license': license_name or 'unknown'
++                })
+             else:
+-                # We found the license for the version requested
+-                break
+-
+-        if license_id:
+-            license_name = get_license_name_by_id(license_id, licenses_db)
+-        if not license_id or not license_name:
+-            license_name = "unknown"
+-
+-        filtered_packages_licenses.append({
+-            "package": pkg_name,
+-            "version": pkg.version,
+-            "license": license_name
+-        })
+-
+-    return filtered_packages_licenses
++                result.append({
++                    'package': pkg.name,
++                    'version': str(pkg.version),
++                    'license': 'unknown'
++                })
++    return result
+ 
+ 
+ def get_requirements_content(files: List[click.File]) -> Dict[str, str]:

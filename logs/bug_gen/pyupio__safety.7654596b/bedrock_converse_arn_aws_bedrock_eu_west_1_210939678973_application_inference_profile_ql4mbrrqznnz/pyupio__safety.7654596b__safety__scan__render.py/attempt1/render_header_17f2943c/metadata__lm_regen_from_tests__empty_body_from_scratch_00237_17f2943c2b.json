@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef render_header(targets: List[Path], is_system_scan: bool) ->Text:\n    version = get_safety_version()\n    now = datetime.datetime.now(tz=datetime.timezone.utc)\n    timestamp = now.strftime('%Y-%m-%d %H:%M:%S UTC')\n    \n    if is_system_scan:\n        header_text = f\"Safety {version} running system scan\\n{timestamp}\"\n    else:\n        targets_str = ', '.join(t.as_posix() for t in targets)\n        header_text = f\"Safety {version} scanning {targets_str}\\n{timestamp}\"\n    \n    return Text(header_text)\n```",
+  "rewrite": "def render_header(targets: List[Path], is_system_scan: bool) ->Text:\n    version = get_safety_version()\n    now = datetime.datetime.now(tz=datetime.timezone.utc)\n    timestamp = now.strftime('%Y-%m-%d %H:%M:%S UTC')\n    \n    if is_system_scan:\n        header_text = f\"Safety {version} running system scan\\n{timestamp}\"\n    else:\n        targets_str = ', '.join(t.as_posix() for t in targets)\n        header_text = f\"Safety {version} scanning {targets_str}\\n{timestamp}\"\n    \n    return Text(header_text)",
+  "strategy": "lm_regen_from_tests"
+}

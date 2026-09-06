@@ -1,0 +1,33 @@
+--- a/oauthlib/oauth2/rfc6749/utils.py
++++ b/oauthlib/oauth2/rfc6749/utils.py
+@@ -39,22 +39,14 @@
+ 
+ 
+ def host_from_uri(uri):
+-    """Extract hostname and port from URI.
+-
+-    Will use default port for HTTP and HTTPS if none is present in the URI.
+-    """
+-    default_ports = {
+-        'HTTP': '80',
+-        'HTTPS': '443',
+-    }
+-
+-    sch, netloc, path, par, query, fra = urlparse(uri)
+-    if ':' in netloc:
+-        netloc, port = netloc.split(':', 1)
+-    else:
+-        port = default_ports.get(sch.upper())
+-
+-    return netloc, port
++    parsed = urlparse(uri)
++    host = parsed.hostname
++    port = str(parsed.port) if parsed.port else None
++    
++    if port is None:
++        port = '443' if parsed.scheme == 'https' else '80'
++    
++    return (host, port)
+ 
+ 
+ def escape(u):

@@ -1,0 +1,16 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -374,6 +374,13 @@
+         if type(self.child) not in (And, Or, Not):
+             return False
+         return self.child._m_repr()
++
++    assert repr(~And(1)) == 'Not(And(1))'
++    assert repr(~Or(M) & Or(M)) == '~(M) & M'
++    assert repr(Not(M < 3)) == '~(M < 3)'
++    assert repr(~(M < 4)) == '~(M < 4)'
++    assert repr(~M | 'default') == "~M | 'default'"
++    assert repr(Or(M, default=1)) == 'Or(M, default=1)'
+ 
+     def __repr__(self):
+         if self.child is M:

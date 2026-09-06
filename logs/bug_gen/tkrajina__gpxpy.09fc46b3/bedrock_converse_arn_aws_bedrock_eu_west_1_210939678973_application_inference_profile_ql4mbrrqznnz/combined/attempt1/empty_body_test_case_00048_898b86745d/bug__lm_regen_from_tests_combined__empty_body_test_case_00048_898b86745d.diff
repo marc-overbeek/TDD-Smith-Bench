@@ -1,0 +1,330 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -37,7 +37,7 @@
+ class SimpleTZ(mod_datetime.tzinfo):
+     __slots__ = ('offset',)
+ 
+-    def __init__(self, s: str="") -> None:
++    def __init__(self, s: str='') ->None:
+         self.offset = 0
+         if s and len(s) >= 2:
+             if s[0] in ('−', '-'):
+@@ -78,26 +78,52 @@
+         return self.offset == other.offset # type: ignore
+ 
+ 
+-def parse_time(string: str) -> Optional[mod_datetime.datetime]:
+-    from . import gpx as mod_gpx
++def parse_time(string: str) ->Optional[mod_datetime.datetime]:
+     if not string:
+         return None
+     m = RE_TIMESTAMP.match(string)
+-    if m:
+-        dt = [int(m.group(i)) for i in range(1, 7)]
+-        if m.group(7):
+-            f = m.group(7)[1:7]
+-            dt.append(int(f + "0" * (6 - len(f))))
+-        else:
+-            dt.append(0)
+-        if m.group(8):
+-            dt.append(SimpleTZ(m.group(8))) # type: ignore
+-        return mod_datetime.datetime(*dt) # type: ignore
+-    raise mod_gpx.GPXException(f'Invalid time: {string}')
+-
+-
+-def format_time(time: mod_datetime.datetime) -> str:
+-    return time.isoformat().replace('+00:00', 'Z')
++    if not m:
++        return None
++    year, month, day, hour, minute, second = (int(m.group(i)) for i in range(1, 7))
++    microsecond = 0
++    if m.group(7):
++        frac = m.group(7)[1:]
++        frac = frac[:6]
++        frac = frac.ljust(6, '0')
++        microsecond = int(frac)
++    tz_str = m.group(8)
++    if tz_str is None:
++        tzinfo = None
++    elif tz_str == 'Z':
++        tzinfo = SimpleTZ()
++    else:
++        tzinfo = SimpleTZ(tz_str)
++    return mod_datetime.datetime(year, month, day, hour, minute, second, microsecond, tzinfo=tzinfo)
++
++
++def format_time(time: mod_datetime.datetime) ->str:
++    if not time:
++        return ''
++    if time.tzinfo is None:
++        result = time.strftime('%Y-%m-%dT%H:%M:%S')
++    else:
++        offset = time.utcoffset()
++        if offset == mod_datetime.timedelta(0):
++            if time.microsecond:
++                result = time.strftime('%Y-%m-%dT%H:%M:%S.') + f'{time.microsecond:06d}'.rstrip('0') + 'Z'
++            else:
++                result = time.strftime('%Y-%m-%dT%H:%M:%SZ')
++        else:
++            total_seconds = int(offset.total_seconds())
++            sign = '+' if total_seconds >= 0 else '-'
++            total_seconds = abs(total_seconds)
++            hours, remainder = divmod(total_seconds, 3600)
++            minutes = remainder // 60
++            if time.microsecond:
++                result = time.strftime('%Y-%m-%dT%H:%M:%S.') + f'{time.microsecond:06d}'.rstrip('0') + f'{sign}{hours:02d}:{minutes:02d}'
++            else:
++                result = time.strftime('%Y-%m-%dT%H:%M:%S') + f'{sign}{hours:02d}:{minutes:02d}'
++    return result
+ 
+ 
+ 
+@@ -119,13 +145,13 @@
+ 
+ 
+ class TimeConverter:
+-    def from_string(self, string: str) -> Optional[mod_datetime.datetime]:
++    def from_string(self, string: str) ->Optional[mod_datetime.datetime]:
+         try:
+             return parse_time(string)
+         except:
+             return None
+ 
+-    def to_string(self, time: Optional[mod_datetime.datetime]) -> Optional[str]:
++    def to_string(self, time: Optional[mod_datetime.datetime]) ->Optional[str]:
+         return format_time(time) if time else None
+ 
+ 
+@@ -178,7 +204,7 @@
+         self.possible = possible
+         self.mandatory = mandatory
+ 
+-    def from_xml(self, node: Any, version: str) -> Any:
++    def from_xml(self, node: Any, version: str) ->Any:
+         if self.attribute:
+             if node is not None:
+                 result = node.get(self.attribute)
+@@ -208,7 +234,7 @@
+ 
+         return result
+ 
+-    def to_xml(self, value: Any, version: str, nsmap: Any=None, prettyprint: bool=True, indent: str='') -> Optional[str]:
++    def to_xml(self, value: Any, version: str, nsmap: Any=None, prettyprint: bool=True, indent: str='') ->Optional[str]:
+         if value is None:
+             return ''
+         if not prettyprint:
+@@ -245,7 +271,7 @@
+                 return None
+             return gpx_fields_from_xml(self.classs, field_node, version)
+ 
+-    def to_xml(self, value: Any, version: str, nsmap: Dict[str, str]={}, prettyprint: bool=True, indent: str='') -> str:
++    def to_xml(self, value: Any, version: str, nsmap: Dict[str, str]={}, prettyprint: bool=True, indent: str='') ->str:
+         if not prettyprint:
+             indent = ''
+         if self.is_list:
+@@ -456,138 +482,81 @@
+ # Utility methods:
+ # ----------------------------------------------------------------------------------------------------
+ 
+-def _check_dependents(gpx_object: Any, fieldname: str) -> Tuple[str, str]:
+-    """
+-    Check for data in subelements.
+-
+-    Fieldname takes the form of 'tag:dep1:dep2:dep3' for an arbitrary
+-    number of dependents. If all the gpx_object.dep attributes are
+-    empty, return a sentinel value to suppress serialization of all
+-    subelements.
+-
+-    Args:
+-        gpx_object: GPXField object to check for data
+-        fieldname: string with tag and dependents delimited with ':'
+-
+-    Returns:
+-        Two strings. The first is a sentinel value, '/' + tag, if all
+-        the subelements are empty and an empty string otherwise. The
+-        second is the bare tag name.
+-    """
+-    if ':' in fieldname:
+-        children = fieldname.split(':')
+-        field = children.pop(0)
+-        for child in children:
+-            if getattr(gpx_object, child.lstrip('@')):
+-                return '', field # Child has data
+-        return f'/{field}', field # No child has data
+-    return '', fieldname # No children
+-
+-def gpx_fields_to_xml(instance: Any, tag: str, version: str, custom_attributes: Dict[str, str]={},
+-                      nsmap: Dict[str, str]={}, prettyprint: bool=True, indent: str='', empty_body: bool=False) -> str:
++def _check_dependents(gpx_object: Any, fieldname: str) ->Tuple[str, str]:
++    fields = gpx_object.gpx_10_fields + gpx_object.gpx_11_fields
++    for field in fields:
++        if isinstance(field, str):
++            continue
++        if hasattr(field, 'attribute_field') and field.attribute_field == fieldname:
++            return field
++    return None
++
++def gpx_fields_to_xml(instance: Any, tag: str, version: str,
++    custom_attributes: Dict[str, str]={}, nsmap: Dict[str, str]={},
++    prettyprint: bool=True, indent: str='', empty_body: bool=False) ->str:
+     if not prettyprint:
+         indent = ''
+     fields = instance.gpx_10_fields
+     if version == '1.1':
+-        fields = instance.gpx_11_fields
+-
+-    tag_open = bool(tag)
++        fields = fields + instance.gpx_11_fields
++
++    tag_open = f'\n{indent}<{tag}'
+     body = []
+-    if tag:
+-        body.append(f'\n{indent}<{tag}')
+-        if tag == 'gpx':  # write nsmap in root node
+-            body.append(f' xmlns="{nsmap["defaultns"]}"')
+-            namespaces = set(nsmap.keys())
+-            namespaces.remove('defaultns')
+-            for prefix in sorted(namespaces):
+-                body.append(f' xmlns:{prefix}="{nsmap[prefix]}"')
+-        if custom_attributes:
+-            # Make sure to_xml() always return attributes in the same order:
+-            for key in sorted(custom_attributes.keys()):
+-                body.append(f' {key}="{mod_utils.make_str(custom_attributes[key])}"')
+-    suppressuntil = ''
+-    for gpx_field in fields:
+-        # strings indicate non-data container tags with subelements
+-        if isinstance(gpx_field, str):
+-            # Suppress empty tags
+-            if suppressuntil:
+-                if suppressuntil == gpx_field:
+-                    suppressuntil = ''
+-            else:
+-                suppressuntil, gpx_field = _check_dependents(instance,
+-                                                             gpx_field)
+-                if not suppressuntil:
+-                    if tag_open:
+-                        body.append('>')
+-                        tag_open = False
+-                    if gpx_field[0] == '/':
+-                        body.append(f'\n{indent}<{gpx_field}>')
+-                        if prettyprint and len(indent) > 1:
+-                            indent = indent[:-2]
+-                    else:
+-                        if prettyprint:
+-                            indent += '  '
+-                        body.append(f'\n{indent}<{gpx_field}')
+-                        tag_open = True
+-        elif not suppressuntil:
+-            value = getattr(instance, gpx_field.name)
+-            if gpx_field.attribute:
+-                body.append(' ' + gpx_field.to_xml(value, version, nsmap,
+-                                                   prettyprint=prettyprint,
+-                                                   indent=f'{indent}  '))
+-            elif value is not None:
+-                if tag_open:
+-                    body.append('>')
+-                    tag_open = False
+-                xml_value = gpx_field.to_xml(value, version, nsmap,
+-                                             prettyprint=prettyprint,
+-                                             indent=f'{indent}  ')
+-                if xml_value:
+-                    body.append(xml_value)
+-
+-    if tag:
+-        if empty_body:
+-            body.append(' />')
+-            #print("tag,body:",tag,'\t',body)
+-        else:
+-            if tag_open:
+-                body.append('>')
+-            body.append('\n' + indent + '</' + tag + '>')
+-    return ''.join(body)
+-
+-
+-def gpx_fields_from_xml(class_or_instance: Any, node: str, version: str) -> Any:
++    attributes = []
++
++    if custom_attributes:
++        for key, value in custom_attributes.items():
++            attributes.append(f' {key}="{mod_utils.make_str(value)}"')
++
++    for field in fields:
++        if isinstance(field, str):
++            if field == version or field in ('1.0', '1.1'):
++                pass
++            continue
++        if field.attribute:
++            value = getattr(instance, field.name)
++            xml_value = field.to_xml(value, version, nsmap, prettyprint=prettyprint, indent=indent)
++            if xml_value:
++                attributes.append(f' {xml_value}')
++        else:
++            value = getattr(instance, field.name)
++            xml_value = field.to_xml(value, version, nsmap, prettyprint=prettyprint, indent=f'{indent}  ')
++            if xml_value:
++                body.append(xml_value)
++
++    if not body and empty_body:
++        return f'{tag_open}{"".join(attributes)} />'
++    if not body:
++        return f'{tag_open}{"".join(attributes)} />'
++
++    result = [tag_open, ''.join(attributes), '>']
++    result.extend(body)
++    if prettyprint:
++        result.append(f'\n{indent}</{tag}>')
++    else:
++        result.append(f'</{tag}>')
++    return ''.join(result)
++
++
++def gpx_fields_from_xml(class_or_instance: Any, node: str, version: str) ->Any:
+     if mod_inspect.isclass(class_or_instance):
+-        result = class_or_instance()
++        instance = class_or_instance()
+     else:
+-        result = class_or_instance
+-
+-    fields = result.gpx_10_fields
++        instance = class_or_instance
++
++    fields = instance.gpx_10_fields
+     if version == '1.1':
+-        fields = result.gpx_11_fields
+-
+-    node_path: List[Union[str, int]] = [node]
+-
+-    for gpx_field in fields:
+-        current_node = node_path[-1]
+-        if isinstance(gpx_field, str):
+-            gpx_field = gpx_field.partition(':')[0]
+-            if gpx_field.startswith('/'):
+-                node_path.pop()
+-            else:
+-                if current_node is None:
+-                    node_path.append(None)
+-                else:
+-                    node_path.append(cast(str, current_node).find(gpx_field))
+-        else:
+-            if current_node is not None:
+-                value = gpx_field.from_xml(current_node, version)
+-                setattr(result, gpx_field.name, value)
+-            elif gpx_field.attribute:
+-                value = gpx_field.from_xml(node, version)
+-                setattr(result, gpx_field.name, value)
+-
+-    return result
++        fields = fields + instance.gpx_11_fields
++
++    for field in fields:
++        if isinstance(field, str):
++            continue
++        if field.attribute_field:
++            continue
++        value = field.from_xml(node, version)
++        setattr(instance, field.name, value)
++
++    return instance
+ 
+ def gpx_check_slots_and_default_values(classs: Callable[[], Any]) -> None:
+     """

@@ -1,0 +1,110 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -150,56 +150,8 @@
+         return [self.apply_coords(p) for p in polygons]
+ 
+     @classmethod
+-    def register_type(cls, data_type: str, func: Optional[Callable] = None):
+-        """
+-        Register the given function as a handler that this transform will use
+-        for a specific data type.
+-
+-        Args:
+-            data_type (str): the name of the data type (e.g., box)
+-            func (callable): takes a transform and a data, returns the
+-                transformed data.
+-
+-        Examples:
+-
+-        .. code-block:: python
+-
+-            # call it directly
+-            def func(flip_transform, voxel_data):
+-                return transformed_voxel_data
+-            HFlipTransform.register_type("voxel", func)
+-
+-            # or, use it as a decorator
+-            @HFlipTransform.register_type("voxel")
+-            def func(flip_transform, voxel_data):
+-                return transformed_voxel_data
+-
+-            # ...
+-            transform = HFlipTransform(...)
+-            transform.apply_voxel(voxel_data)  # func will be called
+-        """
+-        if func is None:  # the decorator style
+-
+-            def wrapper(decorated_func):
+-                assert decorated_func is not None
+-                cls.register_type(data_type, decorated_func)
+-                return decorated_func
+-
+-            return wrapper
+-
+-        assert callable(
+-            func
+-        ), "You can only register a callable to a Transform. Got {} instead.".format(
+-            func
+-        )
+-        argspec = inspect.getfullargspec(func)
+-        assert len(argspec.args) == 2, (
+-            "You can only register a function that takes two positional "
+-            "arguments to a Transform! Got a function with spec {}".format(str(argspec))
+-        )
+-        setattr(cls, "apply_" + data_type, func)
+-
+-    def inverse(self) -> "Transform":
++    def register_type(cls, data_type: str, func: Optional[Callable]=None):
++        pass
+         """
+         Create a transform that inverts the geometric changes (i.e. change of
+         coordinates) of this transform.
+@@ -259,43 +211,13 @@
+     """
+ 
+     def __init__(self, transforms: List[Transform]):
+-        """
+-        Args:
+-            transforms (list[Transform]): list of transforms to perform.
+-        """
+-        super().__init__()
+-        # "Flatten" the list so that TransformList do not recursively contain TransfomList.
+-        # The additional hierarchy does not change semantic of the class, but cause extra
+-        # complexities in e.g, telling whether a TransformList contains certain Transform
+-        tfms_flatten = []
+-        for t in transforms:
+-            assert isinstance(
+-                t, Transform
+-            ), f"TransformList requires a list of Transform. Got type {type(t)}!"
+-            if isinstance(t, TransformList):
+-                tfms_flatten.extend(t.transforms)
+-            else:
+-                tfms_flatten.append(t)
+-        self.transforms = tfms_flatten
+-
+-    def _apply(self, x: _T, meth: str) -> _T:
+-        """
+-        Apply the transforms on the input.
+-        Args:
+-            x: input to apply the transform operations.
+-            meth (str): meth.
+-        Returns:
+-            x: after apply the transformation.
+-        """
+-        for t in self.transforms:
+-            x = getattr(t, meth)(x)
+-        return x
++        pass
++
++    def _apply(self, x: _T, meth: str) ->_T:
++        pass
+ 
+     def __getattribute__(self, name: str):
+-        # use __getattribute__ to win priority over any registered dtypes
+-        if name.startswith("apply_"):
+-            return lambda x: self._apply(x, name)
+-        return super().__getattribute__(name)
++        pass
+ 
+     def __add__(self, other: "TransformList") -> "TransformList":
+         """

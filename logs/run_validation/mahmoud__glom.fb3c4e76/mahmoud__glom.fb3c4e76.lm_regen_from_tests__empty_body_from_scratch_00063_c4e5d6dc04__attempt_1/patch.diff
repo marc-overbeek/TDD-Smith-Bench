@@ -1,0 +1,15 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -815,6 +815,12 @@
+     def glomit(self, target, scope):
+         scope.update(self.scope)
+         return scope[glom](target, self.spec, scope)
++
++    def __repr__(self):
++        cn = self.__class__.__name__
++        if self.scope:
++            return f'{cn}({bbrepr(self.spec)}, scope={self.scope!r})'
++        return f'{cn}({bbrepr(self.spec)})'
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__

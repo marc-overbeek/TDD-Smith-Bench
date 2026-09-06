@@ -1,0 +1,71 @@
+--- a/safety/scan/ecosystems/python/main.py
++++ b/safety/scan/ecosystems/python/main.py
+@@ -397,66 +397,5 @@
+ 
+         return sorted(sec_ver_for_user, key=lambda ver: parse_version(ver), reverse=True)
+ 
+-    def remediate(self) -> None:
+-        """
+-        Remediates the vulnerabilities in the file.
+-        """
+-        db_full = get_from_cache(db_name="insecure_full.json",
+-                                 skip_time_verification=True)
+-        if not db_full:
+-            return
+-
+-        for dependency in self.dependency_results.get_affected_dependencies():
+-            secure_versions = dependency.secure_versions
+-
+-            if not secure_versions:
+-                secure_versions = []
+-
+-            secure_vulns_by_user = set(self.dependency_results.ignored_vulns.keys())
+-            if not secure_vulns_by_user:
+-                secure_v = sorted(secure_versions, key=lambda ver: parse_version(ver),
+-                                  reverse=True)
+-            else:
+-                secure_v = self.__get_secure_specifications_for_user__(
+-                    dependency=dependency, db_full=db_full,
+-                    secure_vulns_by_user=secure_vulns_by_user)
+-
+-            for specification in dependency.specifications:
+-                if len(specification.vulnerabilities) <= 0:
+-                    continue
+-
+-                version = None
+-                if is_pinned_requirement(specification.specifier):
+-                    version = next(iter(specification.specifier)).version
+-                closest_secure = {key: str(value) if value else None for key, value in
+-                                  get_closest_ver(secure_v,
+-                                                  version,
+-                                                  specification.specifier).items()}
+-                closest_secure = ClosestSecureVersion(**closest_secure)
+-                recommended = None
+-
+-                if closest_secure.upper:
+-                    recommended = closest_secure.upper
+-                elif closest_secure.lower:
+-                    recommended = closest_secure.lower
+-
+-                other_recommended = [other_v for other_v in secure_v if other_v != str(recommended)]
+-
+-                remed_more_info_url = dependency.more_info_url
+-
+-                if remed_more_info_url:
+-                    remed_more_info_url = build_remediation_info_url(
+-                        base_url=remed_more_info_url, version=version,
+-                        spec=str(specification.specifier),
+-                        target_version=recommended)
+-
+-                if not remed_more_info_url:
+-                    remed_more_info_url = "-"
+-
+-                vulns_found = sum(1 for vuln in specification.vulnerabilities if not vuln.ignored)
+-
+-                specification.remediation = RemediationModel(vulnerabilities_found=vulns_found,
+-                                                   more_info_url=remed_more_info_url,
+-                                                   closest_secure=closest_secure if recommended else None,
+-                                                   recommended=recommended,
+-                                                   other_recommended=other_recommended)
++    def remediate(self) ->None:
++        pass

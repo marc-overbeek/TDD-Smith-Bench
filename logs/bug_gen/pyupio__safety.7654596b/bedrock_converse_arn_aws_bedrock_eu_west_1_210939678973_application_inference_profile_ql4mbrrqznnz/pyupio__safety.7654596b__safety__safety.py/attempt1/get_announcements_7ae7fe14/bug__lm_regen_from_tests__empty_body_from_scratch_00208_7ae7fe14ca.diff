@@ -1,0 +1,121 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1496,71 +1496,58 @@
+     return announcements
+ 
+ 
+-def get_announcements(
+-    session: requests.Session,
+-    telemetry: bool = True,
+-    with_telemetry: Any = None
+-) -> List[Dict[str, str]]:
+-    """
+-    Retrieves announcements from the server.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        telemetry (bool): Whether to include telemetry data.
+-        with_telemetry (Optional[Dict[str, Any]]): The telemetry data.
+-
+-    Returns:
+-        List[Dict[str, str]]: The list of announcements.
+-    """
+-    LOG.info('Getting announcements')
++def get_announcements(session: requests.Session, telemetry: bool=True,
++    with_telemetry: Any=None) ->List[Dict[str, str]]:
++    from .util import get_used_options, build_telemetry_data
++    from json import JSONDecodeError
++    from requests.exceptions import RequestException
++    from http import HTTPStatus
++    from pydantic.json import pydantic_encoder
+ 
+     announcements = []
+ 
+-    url = f"{DATA_API_BASE_URL}announcements/"
+-    method = 'post'
+-    telemetry_data = with_telemetry if with_telemetry else build_telemetry_data(telemetry=telemetry)
+-    data = asdict(telemetry_data)
+-    request_kwargs = {'timeout': 3}
+-    data_keyword = 'json'
+-
+-    source = os.environ.get('SAFETY_ANNOUNCEMENTS_URL', None)
+-
+-    if source:
+-        LOG.debug(f'Getting the announcement from a different source: {source}')
+-        url = source
+-        method = 'get'
+-        data = {
+-            'telemetry': json.dumps(data)}
+-        data_keyword = 'params'
+-
+-    request_kwargs[data_keyword] = data
+-    request_kwargs['url'] = url
+-
+-    LOG.debug(f'Telemetry data sent: {data}')
+-
+     try:
+-        request_func = getattr(session, method)
+-        r = request_func(**request_kwargs)
+-        LOG.debug(r.text)
+-    except Exception as e:
+-        LOG.info('Unexpected but HANDLED Exception happened getting the announcements: %s', e)
++        used_options = get_used_options()
++    except Exception:
++        used_options = {}
++
++    try:
++        telemetry_data = build_telemetry_data(telemetry=telemetry)
++        payload = {
++            'telemetry': json.dumps(telemetry_data, default=pydantic_encoder),
++            'used_options': json.dumps(used_options)
++        }
++
++        if used_options:
++            r = session.get(
++                url=f"{DATA_API_BASE_URL}announcements/",
++                timeout=REQUEST_TIMEOUT,
++                headers=session.headers,
++                params=payload
++            )
++        else:
++            r = session.post(
++                url=f"{DATA_API_BASE_URL}announcements/",
++                timeout=REQUEST_TIMEOUT,
++                headers=session.headers,
++                json=payload
++            )
++    except RequestException:
++        return []
++    except Exception:
++        return []
++
++    if r.status_code != HTTPStatus.OK.value:
++        return []
++
++    try:
++        data = r.json()
++        announcements = data.get('announcements', None)
++        if announcements is None:
++            return []
+         return announcements
+-
+-    if r.status_code == 200:
+-        try:
+-            announcements = r.json()
+-            if 'announcements' in announcements.keys():
+-                announcements = announcements.get('announcements', [])
+-            else:
+-                LOG.info('There is not announcements key in the JSON response, is this a wrong structure?')
+-                announcements = []
+-
+-        except json.JSONDecodeError as e:
+-            LOG.info('Unexpected but HANDLED Exception happened decoding the announcement response: %s', e)
+-
+-    LOG.info('Announcements fetched')
+-
+-    return announcements
++    except (JSONDecodeError, Exception):
++        return []
+ 
+ 
+ 

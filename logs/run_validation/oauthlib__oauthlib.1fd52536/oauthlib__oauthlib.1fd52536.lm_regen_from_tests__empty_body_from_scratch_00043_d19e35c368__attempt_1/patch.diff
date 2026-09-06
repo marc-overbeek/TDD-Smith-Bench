@@ -1,0 +1,14 @@
+--- a/oauthlib/common.py
++++ b/oauthlib/common.py
+@@ -321,6 +321,11 @@
+     def __setitem__(self, k, v):
+         super().__setitem__(k, v)
+         self.proxy[k.lower()] = k
++
++    def test_update(self):
++        cid = CaseInsensitiveDict({})
++        cid.update({'KeY': 'value'})
++        self.assertEqual(cid['kEy'], 'value')
+ 
+     def update(self, *args, **kwargs):
+         super().update(*args, **kwargs)

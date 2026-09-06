@@ -1,0 +1,49 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -44,15 +44,38 @@
+ 
+ 
+ def module_path(path: str) -> Tuple[str, Optional[str]]:
+-    """Parse <module>[:<qualname>] into its constituent parts."""
+-    parts = path.split(":", 1)
+-    module = parts.pop(0)
+-    qualname = parts[0] if parts else None
+-    if os.sep in module:  # Smells like a path
++    """Parse a path string of the form <module>[:<qualname>].
++    
++    Returns a tuple of (module, qualname) where qualname may be None.
++    """
++    if '/' in path or (path.endswith('.py') and os.path.sep in path):
+         raise argparse.ArgumentTypeError(
+-            f"{module} does not look like a valid Python import path"
+-        )
+-
++            f"{path} does not look like a valid Python import path"
++        )
++    
++    # Check for path-like parameters (contains os.sep or looks like a file path)
++    parts = path.split(':')
++    if len(parts) > 2:
++        raise argparse.ArgumentTypeError(
++            f"{path} does not look like a valid Python import path"
++        )
++    
++    module = parts[0]
++    
++    # Check if the module part looks like a file path
++    if os.sep in module:
++        raise argparse.ArgumentTypeError(
++            f"{path} does not look like a valid Python import path"
++        )
++    
++    # Check for forward slash which indicates a file path
++    if '/' in module:
++        raise argparse.ArgumentTypeError(
++            f"{path} does not look like a valid Python import path"
++        )
++    
++    qualname = parts[1] if len(parts) == 2 else None
++    
+     return module, qualname
+ 
+ 

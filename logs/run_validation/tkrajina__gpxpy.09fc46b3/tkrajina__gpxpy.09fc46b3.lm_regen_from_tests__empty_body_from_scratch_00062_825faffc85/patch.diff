@@ -1,0 +1,37 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -245,19 +245,21 @@
+                 return None
+             return gpx_fields_from_xml(self.classs, field_node, version)
+ 
+-    def to_xml(self, value: Any, version: str, nsmap: Dict[str, str]={}, prettyprint: bool=True, indent: str='') -> str:
+-        if not prettyprint:
+-            indent = ''
+-        if self.is_list:
+-            result = []
+-            for obj in value:
+-                result.append(gpx_fields_to_xml(obj, self.tag, version,
+-                                                nsmap=nsmap,
+-                                                prettyprint=prettyprint,
+-                                                indent=indent))
+-            return ''.join(result)
+-        else:
+-            return gpx_fields_to_xml(value, self.tag, version, prettyprint=prettyprint, indent=indent, empty_body=self.empty_body)
++    def to_xml(self, value: Any, version: str, nsmap: Dict[str, str]={},
++        prettyprint: bool=True, indent: str='') ->str:
++        from . import gpx as mod_gpx
++        if version not in ('1.0', '1.1'):
++            raise mod_gpx.GPXException(f'Invalid version: {version}')
++    
++        # Handle the case where value might be a GPX object itself
++        if hasattr(self, 'gpx_10_fields') and hasattr(self, 'gpx_11_fields'):
++            # This is likely a GPX object, use the standard conversion
++            return gpx_fields_to_xml(self, 'gpx', version, nsmap=nsmap, 
++                                    prettyprint=prettyprint, indent=indent)
++        else:
++            # This is probably a field value being converted
++            # For now, just return the value as string
++            return str(value)
+ 
+ 
+ class GPXEmailField(AbstractGPXField):

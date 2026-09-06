@@ -1,0 +1,38 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -2462,13 +2462,28 @@
+           True.
+ 
+     """
+-    def __init__(self, **kwargs):
+-        register_default_types = kwargs.pop('register_default_types', True)
+-        scope = kwargs.pop('scope', _DEFAULT_SCOPE)
+-
+-        # this "freezes" the scope in at the time of construction
+-        self.scope = ChainMap(dict(scope))
+-        self.scope[TargetRegistry] = TargetRegistry(register_default_types=register_default_types)
++    def __init__(self, register_default_types=True):
++        self._op_type_map = {}
++        self._op_type_tree = {}
++        self._type_cache = {}
++        self._op_auto_map = OrderedDict()
++        self._register_builtin_ops()
++        if register_default_types:
++            self._register_default_types()
++        return
++
++    def __init__(self, register_default_types=True):
++        self._op_type_map = {}
++        self._op_type_tree = {}  # see _register_fuzzy_type for details
++        self._type_cache = {}
++
++        self._op_auto_map = OrderedDict()  # op name to function that returns handler function
++
++        self._register_builtin_ops()
++
++        if register_default_types:
++            self._register_default_types()
++        return
+ 
+     def register(self, target_type, **kwargs):
+         """Register *target_type* so :meth:`~Glommer.glom()` will

@@ -1,0 +1,34 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -212,8 +212,30 @@
+                                  - {dict, list, BaseException, object, type})
+ 
+ 
++def test_sequence_assign():
++    target = {'alist': [0, 1, 2]}
++    assign(target, 'alist.2', 3)
++    assert target['alist'][2] == 3
++    with pytest.raises(PathAssignError, match='could not assign') as exc_info:
++        assign(target, 'alist.3', 4)
++    exc_repr = repr(exc_info.value)
++    assert exc_repr.startswith('PathAssignError(')
++    assert exc_repr.endswith("'3')")
++
++def _del_sequence_item(target, idx):
++    del target[int(idx)]
++
+ def _set_sequence_item(target, idx, val):
+-    target[int(idx)] = val
++    try:
++        target[int(idx)] = val
++    except IndexError as e:
++        raise PathAssignError(e, Path(), idx)
++
++def _set_sequence_item(target, idx, val):
++    try:
++        target[int(idx)] = val
++    except IndexError as e:
++        raise PathAssignError(e, Path(), idx)
+ 
+ 
+ def _assign_autodiscover(type_obj):

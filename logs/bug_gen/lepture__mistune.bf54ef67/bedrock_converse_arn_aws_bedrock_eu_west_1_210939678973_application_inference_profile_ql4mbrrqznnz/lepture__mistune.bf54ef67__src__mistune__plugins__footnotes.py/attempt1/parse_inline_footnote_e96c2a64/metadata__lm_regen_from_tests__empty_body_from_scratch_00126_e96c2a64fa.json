@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef parse_inline_footnote(inline: 'InlineParser', m: Match[str], state:\n    'InlineState') ->int:\n    key = unikey(m.group('footnote_key'))\n    footnotes = state.env.get('footnotes')\n    if not footnotes:\n        footnotes = []\n    if key not in footnotes:\n        footnotes.append(key)\n        state.env['footnotes'] = footnotes\n    index = footnotes.index(key) + 1\n    state.append_token({\n        'type': 'footnote_ref',\n        'attrs': {'key': key, 'index': index}\n    })\n    return m.end()\n```",
+  "rewrite": "def parse_inline_footnote(inline: 'InlineParser', m: Match[str], state:\n    'InlineState') ->int:\n    key = unikey(m.group('footnote_key'))\n    footnotes = state.env.get('footnotes')\n    if not footnotes:\n        footnotes = []\n    if key not in footnotes:\n        footnotes.append(key)\n        state.env['footnotes'] = footnotes\n    index = footnotes.index(key) + 1\n    state.append_token({\n        'type': 'footnote_ref',\n        'attrs': {'key': key, 'index': index}\n    })\n    return m.end()",
+  "strategy": "lm_regen_from_tests"
+}

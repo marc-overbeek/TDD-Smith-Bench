@@ -1,0 +1,21 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -316,6 +316,18 @@
+             },
+         )
+ 
++    def rewrite_anonymous_TypedDict(self, typed_dict):
++        assert is_anonymous_typed_dict(typed_dict)
++        required_fields, optional_fields = field_annotations(typed_dict)
++        return self.make_anonymous_typed_dict(
++            required_fields={
++                name: self.rewrite(typ) for name, typ in required_fields.items()
++            },
++            optional_fields={
++                name: self.rewrite(typ) for name, typ in optional_fields.items()
++            },
++        )
++
+     def rewrite_TypedDict(self, typed_dict):
+         if is_anonymous_typed_dict(typed_dict):
+             return self.rewrite_anonymous_TypedDict(typed_dict)

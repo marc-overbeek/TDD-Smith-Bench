@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```python\ndef _verify_hmac(hash_algorithm_name: str, request, client_secret=None,\n    resource_owner_secret=None):\n    norm_params = normalize_parameters(request.params)\n    bs_uri = base_string_uri(request.uri)\n    sig_base_str = signature_base_string(request.http_method, bs_uri, norm_params)\n    \n    expected_signature = _sign_hmac(hash_algorithm_name, sig_base_str,\n                                    client_secret, resource_owner_secret)\n    \n    match = safe_string_equals(expected_signature, request.signature)\n    if not match:\n        log.debug('Verify HMAC-%s failed', hash_algorithm_name)\n    return match\n```",
+  "rewrite": "def _verify_hmac(hash_algorithm_name: str, request, client_secret=None,\n    resource_owner_secret=None):\n    norm_params = normalize_parameters(request.params)\n    bs_uri = base_string_uri(request.uri)\n    sig_base_str = signature_base_string(request.http_method, bs_uri, norm_params)\n    \n    expected_signature = _sign_hmac(hash_algorithm_name, sig_base_str,\n                                    client_secret, resource_owner_secret)\n    \n    match = safe_string_equals(expected_signature, request.signature)\n    if not match:\n        log.debug('Verify HMAC-%s failed', hash_algorithm_name)\n    return match",
+  "strategy": "lm_regen_from_tests"
+}

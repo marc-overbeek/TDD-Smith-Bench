@@ -1,0 +1,19 @@
+--- a/oauthlib/oauth2/rfc6749/grant_types/client_credentials.py
++++ b/oauthlib/oauth2/rfc6749/grant_types/client_credentials.py
+@@ -88,9 +88,6 @@
+         :param request: OAuthlib request.
+         :type request: oauthlib.common.Request
+         """
+-        for validator in self.custom_validators.pre_token:
+-            validator(request)
+-
+         if not getattr(request, 'grant_type', None):
+             raise errors.InvalidRequestError('Request is missing grant type.',
+                                              request=request)
+@@ -117,6 +114,3 @@
+         request.client_id = request.client_id or request.client.client_id
+         log.debug('Authorizing access to client %r.', request.client_id)
+         self.validate_scopes(request)
+-
+-        for validator in self.custom_validators.post_token:
+-            validator(request)

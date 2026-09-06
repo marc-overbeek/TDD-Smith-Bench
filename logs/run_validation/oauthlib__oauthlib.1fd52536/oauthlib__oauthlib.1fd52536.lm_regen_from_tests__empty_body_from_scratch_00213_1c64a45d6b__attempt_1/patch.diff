@@ -1,0 +1,15 @@
+--- a/oauthlib/openid/connect/core/grant_types/implicit.py
++++ b/oauthlib/openid/connect/core/grant_types/implicit.py
+@@ -16,9 +16,10 @@
+ 
+ class ImplicitGrant(GrantTypeBase):
+ 
+-    def __init__(self, request_validator=None, **kwargs):
++    def __init__(self, request_validator):
++        GrantTypeBase.__init__(self, request_validator)
+         self.proxy_target = OAuth2ImplicitGrant(
+-            request_validator=request_validator, **kwargs)
++            request_validator=request_validator)
+         self.register_response_type('id_token')
+         self.register_response_type('id_token token')
+         self.custom_validators.post_auth.append(

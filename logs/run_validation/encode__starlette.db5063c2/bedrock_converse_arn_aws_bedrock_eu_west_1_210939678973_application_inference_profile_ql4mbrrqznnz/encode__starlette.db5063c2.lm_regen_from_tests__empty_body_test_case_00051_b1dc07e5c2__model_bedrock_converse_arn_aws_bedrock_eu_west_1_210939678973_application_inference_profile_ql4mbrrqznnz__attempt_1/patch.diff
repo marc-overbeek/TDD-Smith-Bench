@@ -1,0 +1,28 @@
+--- a/starlette/formparsers.py
++++ b/starlette/formparsers.py
+@@ -125,14 +125,7 @@
+     max_file_size = 1024 * 1024  # 1MB
+     max_part_size = 1024 * 1024  # 1MB
+ 
+-    def __init__(
+-        self,
+-        headers: Headers,
+-        stream: typing.AsyncGenerator[bytes, None],
+-        *,
+-        max_files: int | float = 1000,
+-        max_fields: int | float = 1000,
+-    ) -> None:
++    def __init__(self, headers: Headers, stream: typing.AsyncGenerator[bytes, None], *, max_files: int | float = 1000, max_fields: int | float = 1000) -> None:
+         assert multipart is not None, "The `python-multipart` library must be installed to use form parsing."
+         self.headers = headers
+         self.stream = stream
+@@ -171,9 +164,6 @@
+             )
+         else:
+             self._file_parts_to_finish.append(self._current_part)
+-            # The file can be added to the items right now even though it's not
+-            # finished yet, because it will be finished in the `parse()` method, before
+-            # self.items is used in the return value.
+             self.items.append((self._current_part.field_name, self._current_part.file))
+ 
+     def on_header_field(self, data: bytes, start: int, end: int) -> None:

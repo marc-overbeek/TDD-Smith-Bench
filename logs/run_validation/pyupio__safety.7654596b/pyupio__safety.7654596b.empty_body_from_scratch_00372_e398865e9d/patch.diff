@@ -1,0 +1,33 @@
+--- a/safety/alerts/requirements.py
++++ b/safety/alerts/requirements.py
+@@ -424,28 +424,8 @@
+             prereleases=self.prereleases
+         )
+ 
+-    def get_hashes(self, version: str) -> List:
+-        """
+-        Retrieves the hashes for a specific version from PyPI.
+-
+-        Args:
+-            version (str): The version to retrieve hashes for.
+-
+-        Returns:
+-            List: A list of hashes for the specified version.
+-        """
+-        r = requests.get('https://pypi.org/pypi/{name}/{version}/json'.format(
+-            name=self.key,
+-            version=version
+-        ))
+-        hashes = []
+-        data = r.json()
+-
+-        for item in data.get("urls", {}):
+-            sha256 = item.get("digests", {}).get("sha256", False)
+-            if sha256:
+-                hashes.append({"hash": sha256, "method": "sha256"})
+-        return hashes
++    def get_hashes(self, version: str) ->List:
++        pass
+ 
+     def update_version(self, content: str, version: str, update_hashes: bool = True) -> str:
+         """

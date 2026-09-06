@@ -1,0 +1,42 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -856,12 +856,39 @@
+         """
+         return coords
+ 
++    gt_transformer = getattr(self, '{}_seg_gt'.format(_trans_name))
++    transformer = getattr(T, _trans_name)(*param)
++    result = transformer.apply_segmentation(seg)
++    seg_gt, shape_gt = gt_transformer(seg, *param)
++
+     def apply_segmentation(self, segmentation: np.ndarray) -> np.ndarray:
+         """
+         Apply no transform on the full-image segmentation.
+         """
+         return segmentation
+ 
++    def apply_segmentation(self, segmentation: np.ndarray) -> np.ndarray:
++        """
++        Apply blend transform on the full-image segmentation.
++        """
++        if segmentation.dtype == np.uint8:
++            segmentation = segmentation.astype(np.float32)
++            segmentation = self.src_weight * self.src_image + self.dst_weight * segmentation
++            return np.clip(segmentation, 0, 255).astype(np.uint8)
++        else:
++            return self.src_weight * self.src_image + self.dst_weight * segmentation
++
++    def apply_segmentation(self, segmentation: np.ndarray) -> np.ndarray:
++        """
++        Apply blend transform on the full-image segmentation.
++        """
++        if segmentation.dtype == np.uint8:
++            segmentation = segmentation.astype(np.float32)
++            segmentation = self.src_weight * self.src_image + self.dst_weight * segmentation
++            return np.clip(segmentation, 0, 255).astype(np.uint8)
++        else:
++            return self.src_weight * self.src_image + self.dst_weight * segmentation
++
+     def inverse(self) -> Transform:
+         """
+         The inverse is a no-op.

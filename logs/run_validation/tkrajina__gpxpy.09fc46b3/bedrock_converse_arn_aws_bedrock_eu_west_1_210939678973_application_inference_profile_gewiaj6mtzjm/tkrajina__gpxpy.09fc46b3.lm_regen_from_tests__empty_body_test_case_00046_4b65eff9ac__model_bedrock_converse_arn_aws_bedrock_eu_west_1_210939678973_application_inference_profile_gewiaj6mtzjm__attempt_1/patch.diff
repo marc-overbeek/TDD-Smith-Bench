@@ -1,0 +1,112 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -226,34 +226,21 @@
+     return uphill, downhill
+ 
+ 
+-def distance(latitude_1: float, longitude_1: float, elevation_1: Optional[float],
+-            latitude_2: float, longitude_2: float, elevation_2: Optional[float],
+-            haversine: bool=False) -> float:
+-    """
+-    Distance between two points. If elevation is None compute a 2d distance
+-
+-    if haversine==True -- haversine will be used for every computations,
+-    otherwise...
+-
+-    Haversine distance will be used for distant points where elevation makes a
+-    small difference, so it is ignored. That's because haversine is 5-6 times
+-    slower than the dummy distance algorithm (which is OK for most GPS tracks).
+-    """
+-
+-    # If points too distant -- compute haversine distance:
+-    if haversine or (abs(latitude_1 - latitude_2) > .2 or abs(longitude_1 - longitude_2) > .2):
+-        return haversine_distance(latitude_1, longitude_1, latitude_2, longitude_2)
+-
+-    coef = mod_math.cos(mod_math.radians(latitude_1))
+-    x = latitude_1 - latitude_2
+-    y = (longitude_1 - longitude_2) * coef
+-
+-    distance_2d = mod_math.sqrt(x * x + y * y) * ONE_DEGREE
+-
+-    if elevation_1 is None or elevation_2 is None or elevation_1 == elevation_2:
+-        return distance_2d
+-
+-    return mod_math.sqrt(distance_2d ** 2 + (elevation_1 - elevation_2) ** 2)
++def distance(latitude_1: float, longitude_1: float, elevation_1: Optional[
++    float], latitude_2: float, longitude_2: float, elevation_2: Optional[
++    float], haversine: bool=False) ->float:
++    if haversine:
++        d = haversine_distance(latitude_1, longitude_1, latitude_2, longitude_2)
++    else:
++        a = latitude_1 - latitude_2
++        b = longitude_1 - longitude_2
++        d = mod_math.sqrt(a*a + b*b) * ONE_DEGREE
++
++    if elevation_1 is not None and elevation_2 is not None:
++        e = elevation_1 - elevation_2
++        d = mod_math.sqrt(d*d + e*e)
++
++    return d
+ 
+ 
+ def elevation_angle(location1: "Location", location2: "Location", radians: float=False) -> Optional[float]:
+@@ -370,21 +357,7 @@
+         """ Remove the elevation data from this location."""
+         self.elevation = None
+ 
+-    def distance_2d(self, location: "Location") -> Optional[float]:
+-        """
+-        Calculate the distance between self and location in meters.
+-        Does not take elevation in account.
+-
+-        Parameters
+-        ----------
+-        location: Location
+-            Location to calculate the distance to.
+-
+-        Returns
+-        ----------
+-        distance : float
+-            Distance returned in meters.
+-        """
++    def distance_2d(self, location: 'Location') ->Optional[float]:
+         if not location:
+             return None
+ 
+@@ -440,7 +413,7 @@
+         """
+         self.latitude, self.longitude = location_delta.move(self)
+ 
+-    def __add__(self, location_delta: "LocationDelta") -> "Location":
++    def __add__(self, location_delta: 'LocationDelta') ->'Location':
+         latitude, longitude = location_delta.move(self)
+         return Location(latitude, longitude)
+ 
+@@ -464,8 +437,9 @@
+     SOUTH = 180
+     WEST = 270
+ 
+-    def __init__(self, distance: Optional[float]=None, angle: Optional[float]=None,
+-                 latitude_diff: Optional[float]=None,longitude_diff: Optional[float]=None) -> None:
++    def __init__(self, distance: Optional[float]=None, angle: Optional[float]=
++        None, latitude_diff: Optional[float]=None, longitude_diff: Optional[
++        float]=None) ->None:
+         """
+         Version 1:
+             Distance (in meters).
+@@ -488,13 +462,13 @@
+             self.longitude_diff = longitude_diff
+             self.move_function = self.move_by_lat_lon_diff
+ 
+-    def move(self, location: Location) -> Tuple[float, float]:
++    def move(self, location: Location) ->Tuple[float, float]:
+         """
+         Move location by this LocationDelta.
+         """
+         return self.move_function(location)
+ 
+-    def move_by_angle_and_distance(self, location: Location) -> Tuple[float, float]:
++    def move_by_angle_and_distance(self, location: Location) ->Tuple[float, float]:
+         coef = mod_math.cos(mod_math.radians(location.latitude))
+         vertical_distance_diff   = mod_math.sin(mod_math.radians(90 - self.angle_from_north)) / ONE_DEGREE
+         horizontal_distance_diff = mod_math.cos(mod_math.radians(90 - self.angle_from_north)) / ONE_DEGREE

@@ -1,0 +1,93 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -40,49 +40,56 @@
+ LOG = logging.getLogger(__name__)
+ 
+ 
+-def get_from_cache(db_name: str, cache_valid_seconds: int = 0, skip_time_verification: bool = False) -> Optional[Dict[str, Any]]:
+-    """
+-    Retrieves the database from the cache if it is valid.
++cache[db_name] = {
++    "cached_at": time.time(),
++    "db": data
++}
++
++def get_from_cache(db_name: str, cache_valid_seconds: int=0,
++    skip_time_verification: bool=False) ->Optional[Dict[str, Any]]:
++    """
++    Retrieves the database from the cache.
+ 
+     Args:
+         db_name (str): The name of the database.
+-        cache_valid_seconds (int): The validity period of the cache in seconds.
++        cache_valid_seconds (int): The cache validity in seconds.
+         skip_time_verification (bool): Whether to skip time verification.
+ 
+     Returns:
+-        Optional[[Dict[str, Any]]: The cached database if available and valid, otherwise False.
+-    """
++        Optional[Dict[str, Any]]: The cached database if valid, otherwise None.
++    """
++    if not cache_valid_seconds and not skip_time_verification:
++        return None
++    
++    if not os.path.exists(DB_CACHE_FILE):
++        return None
++    
+     cache_file_lock = f"{DB_CACHE_FILE}.lock"
+-    os.makedirs(os.path.dirname(cache_file_lock), exist_ok=True)
+     lock = FileLock(cache_file_lock, timeout=10)
++    
+     with lock:
+-        if os.path.exists(DB_CACHE_FILE):
+-            with open(DB_CACHE_FILE) as f:
+-                try:
+-                    data = json.loads(f.read())
+-                    if db_name in data:
+-
+-                        if "cached_at" in data[db_name]:
+-                            if data[db_name]["cached_at"] + cache_valid_seconds > time.time() or skip_time_verification:
+-                                LOG.debug('Getting the database from cache at %s, cache setting: %s',
+-                                        data[db_name]["cached_at"], cache_valid_seconds)
+-
+-                                try:
+-                                    data[db_name]["db"]["meta"]["base_domain"] = "https://data.safetycli.com"
+-                                except KeyError as e:
+-                                    pass
+-
+-                                return data[db_name]["db"]
+-
+-                            LOG.debug('Cached file is too old, it was cached at %s', data[db_name]["cached_at"])
+-                        else:
+-                            LOG.debug('There is not the cached_at key in %s database', data[db_name])
+-
+-                except json.JSONDecodeError:
+-                    LOG.debug('JSONDecodeError trying to get the cached database.')
+-        else:
+-            LOG.debug("Cache file doesn't exist...")
+-    return None
++        try:
++            with open(DB_CACHE_FILE, "r") as f:
++                cache = json.loads(f.read())
++        except (json.JSONDecodeError, IOError):
++            LOG.debug('Unable to read the cache file.')
++            return None
++        
++        if db_name not in cache:
++            return None
++        
++        cached_entry = cache[db_name]
++        cached_at = cached_entry.get("cached_at", 0)
++        current_time = time.time()
++        
++        if skip_time_verification:
++            return cached_entry.get("db", None)
++        
++        if current_time - cached_at < cache_valid_seconds:
++            LOG.debug('Database %s retrieved from cache.', db_name)
++            return cached_entry.get("db", None)
++        
++        return None
+ 
+ 
+ def write_to_cache(db_name: str, data: Dict[str, Any]) -> None:

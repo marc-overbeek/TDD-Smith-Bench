@@ -1,0 +1,72 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -207,27 +207,49 @@
+     return flags
+ 
+ 
+-def get_used_options() -> Dict[str, Dict[str, int]]:
+-    """
+-    Get the used options from the command-line arguments.
+-
+-    Returns:
+-        Dict[str, Dict[str, int]]: A dictionary of used options and their counts.
+-    """
++@patch('safety.util.get_flags_from_context')
++@patch.object(sys, 'argv', ['safety/__main__.py', 'check', '--key=my-key',
++    '-i', '3232', '-i', '3231', '--ignore', '1212', '--json'])
++def test_log_used_options_with_argv(self, get_flags_from_context):
++    get_flags_from_context.return_value = {'--key': 'key', '--db': 'db',
++        '--json': 'json', '--no-json': 'json', '--full-report':
++        'full_report', '--short-report': 'full_report', '--bare': 'bare',
++        '--not-bare': 'bare', '--cache': 'cache', '--no-cache': 'cache',
++        '--stdin': 'stdin', '--no-stdin': 'stdin', '--file': 'files', '-r':
++        'files', '--ignore': 'ignore', '-i': 'ignore', '--output': 'output',
++        '-o': 'output', '--proxy-host': 'proxyhost', '-ph': 'proxyhost',
++        '--proxy-port': 'proxyport', '-pp': 'proxyport', '--proxy-protocol':
++        'proxyprotocol', '-pr': 'proxyprotocol'}
++    used_options = util.get_used_options()
++    self.assertEqual(used_options, {'ignore': {'-i': 2, '--ignore': 1},
++        'json': {'--json': 1}, 'key': {'--key': 1}})
++
++def get_used_options() ->Dict[str, Dict[str, int]]:
+     flags = get_flags_from_context()
+-    used_options = {}
+-
+-    for arg in sys.argv:
+-        cleaned_arg = arg if '=' not in arg else arg.split('=')[0]
+-        if cleaned_arg in flags:
+-            option_used = flags.get(cleaned_arg)
+-
+-            if option_used in used_options:
+-                used_options[option_used][cleaned_arg] = used_options[option_used].get(cleaned_arg, 0) + 1
+-            else:
+-                used_options[option_used] = {cleaned_arg: 1}
+-
+-    return used_options
++    used_options: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
++    
++    i = 1  # Skip the script name at index 0
++    while i < len(sys.argv):
++        arg = sys.argv[i]
++        
++        # Handle --flag=value format
++        if '=' in arg:
++            flag = arg.split('=')[0]
++            if flag in flags:
++                option_name = flags[flag]
++                used_options[option_name][flag] += 1
++            i += 1
++        # Handle --flag value or -f value format
++        elif arg.startswith('-'):
++            if arg in flags:
++                option_name = flags[arg]
++                used_options[option_name][arg] += 1
++            i += 1
++        else:
++            i += 1
++    
++    # Convert defaultdict to regular dict for return
++    return {k: dict(v) for k, v in used_options.items()}
+ 
+ 
+ def get_safety_version() -> str:

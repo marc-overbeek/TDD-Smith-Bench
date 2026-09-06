@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef parse_codespan(self, m: Match[str], state: InlineState) -> int:\n    marker = m.group(0)\n    # require same marker with same length at end\n\n    pattern = re.compile(r'(.*?[^`])' + re.escape(marker) + r'(?!`)', re.S)\n\n    pos = m.end()\n    m2 = pattern.match(state.src, pos)\n    if m2:\n        end_pos = m2.end()\n        code = m2.group(1)\n        # Line endings are treated like spaces\n        code = code.replace('\\n', ' ')\n        if len(code.strip()):\n            if code.startswith(' ') and code.endswith(' '):\n                code = code[1:-1]\n        state.append_token({'type': 'codespan', 'raw': code})\n        return end_pos\n    else:\n        state.append_token({'type': 'text', 'raw': marker})\n        return pos\n```",
+  "rewrite": "def parse_codespan(self, m: Match[str], state: InlineState) -> int:\n    marker = m.group(0)\n    # require same marker with same length at end\n\n    pattern = re.compile(r'(.*?[^`])' + re.escape(marker) + r'(?!`)', re.S)\n\n    pos = m.end()\n    m2 = pattern.match(state.src, pos)\n    if m2:\n        end_pos = m2.end()\n        code = m2.group(1)\n        # Line endings are treated like spaces\n        code = code.replace('\\n', ' ')\n        if len(code.strip()):\n            if code.startswith(' ') and code.endswith(' '):\n                code = code[1:-1]\n        state.append_token({'type': 'codespan', 'raw': code})\n        return end_pos\n    else:\n        state.append_token({'type': 'text', 'raw': marker})\n        return pos",
+  "strategy": "lm_regen_from_tests"
+}

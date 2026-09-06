@@ -1,0 +1,68 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -67,26 +67,16 @@
+ 
+     __doc__ = doc
+ 
+-    def __init__(
+-        self,
+-        diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
+-        delta_path: Optional[str]=None,
+-        delta_file: Optional[IO]=None,
+-        delta_diff: Optional[dict]=None,
+-        flat_dict_list: Optional[List[Dict]]=None,
+-        flat_rows_list: Optional[List[FlatDeltaRow]]=None,
+-        deserializer: Callable=pickle_load,
+-        log_errors: bool=True,
+-        mutate: bool=False,
+-        raise_errors: bool=False,
+-        safe_to_import: Optional[Set[str]]=None,
+-        serializer: Callable=pickle_dump,
+-        verify_symmetry: Optional[bool]=None,
+-        bidirectional: bool=False,
+-        always_include_values: bool=False,
+-        iterable_compare_func_was_used: Optional[bool]=None,
+-        force: bool=False,
+-    ):
++    def __init__(self, diff: Union[DeepDiff, Mapping, str, bytes, None]=None,
++        delta_path: Optional[str]=None, delta_file: Optional[IO]=None,
++        delta_diff: Optional[dict]=None, flat_dict_list: Optional[List[Dict]]=
++        None, flat_rows_list: Optional[List[FlatDeltaRow]]=None, deserializer:
++        Callable=pickle_load, log_errors: bool=True, mutate: bool=False,
++        raise_errors: bool=False, safe_to_import: Optional[Set[str]]=None,
++        serializer: Callable=pickle_dump, verify_symmetry: Optional[bool]=None,
++        bidirectional: bool=False, always_include_values: bool=False,
++        iterable_compare_func_was_used: Optional[bool]=None, force: bool=False):
++    
+         # for pickle deserializer:
+         if hasattr(deserializer, '__code__') and 'safe_to_import' in set(deserializer.__code__.co_varnames):
+             _deserializer = deserializer
+@@ -106,7 +96,6 @@
+                     result['_iterable_opcodes'] = _iterable_opcodes
+                 return result
+ 
+-
+         self._reversed_diff = None
+ 
+         if verify_symmetry is not None:
+@@ -126,8 +115,10 @@
+                 self.diff = diff._to_delta_dict(directed=not bidirectional, always_include_values=self.always_include_values)
+             elif isinstance(diff, Mapping):
+                 self.diff = diff
+-            elif isinstance(diff, strings):
++            elif isinstance(diff, (str, bytes)):
+                 self.diff = _deserializer(diff, safe_to_import=safe_to_import)
++            else:
++                raise ValueError("Invalid diff type")
+         elif delta_path:
+             with open(delta_path, 'rb') as the_file:
+                 content = the_file.read()
+@@ -151,7 +142,7 @@
+         self.mutate = mutate
+         self.raise_errors = raise_errors
+         self.log_errors = log_errors
+-        self._numpy_paths = self.diff.get('_numpy_paths', False)
++        self._numpy_paths = self.diff.get('_numpy_paths', {})
+         # When we create the delta from a list of flat dictionaries, details such as iterable_compare_func_was_used get lost.
+         # That's why we allow iterable_compare_func_was_used to be explicitly set.
+         self._iterable_compare_func_was_used = self.diff.get('_iterable_compare_func_was_used', iterable_compare_func_was_used)

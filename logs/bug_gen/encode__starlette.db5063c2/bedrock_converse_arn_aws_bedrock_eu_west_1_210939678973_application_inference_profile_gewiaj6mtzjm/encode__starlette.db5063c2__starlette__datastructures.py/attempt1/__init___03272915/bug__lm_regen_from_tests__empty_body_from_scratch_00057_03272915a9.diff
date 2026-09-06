@@ -1,0 +1,21 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -423,6 +423,18 @@
+         self.file = file
+         self.size = size
+         self.headers = headers or Headers()
++    
++        # Initialize size if not provided
++        if self.size is None:
++            # Try to determine the size by seeking to end and getting position
++            try:
++                current_pos = file.tell()
++                file.seek(0, 2)  # Seek to end
++                self.size = file.tell()
++                file.seek(current_pos)  # Restore original position
++            except Exception:
++                # If we can't determine size, set it to 0
++                self.size = 0
+ 
+     @property
+     def content_type(self) -> str | None:

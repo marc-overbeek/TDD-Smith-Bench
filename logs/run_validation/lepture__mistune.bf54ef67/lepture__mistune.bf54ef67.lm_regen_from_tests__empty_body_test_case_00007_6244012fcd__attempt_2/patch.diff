@@ -1,0 +1,24 @@
+--- a/src/mistune/inline_parser.py
++++ b/src/mistune/inline_parser.py
+@@ -310,6 +310,12 @@
+             if len(code.strip()):
+                 if code.startswith(' ') and code.endswith(' '):
+                     code = code[1:-1]
++        
++            rules = ['link', 'prec_auto_link', 'prec_inline_html']
++            prec_pos = self.precedence_scan(m, state, end_pos, rules)
++            if prec_pos:
++                return prec_pos
++        
+             state.append_token({'type': 'codespan', 'raw': code})
+             return end_pos
+         else:
+@@ -395,7 +401,7 @@
+         new_state = state.copy()
+         new_state.src = state.src
+         m2_pos = func(m2, new_state)
+-        if not m2_pos or m2_pos < end_pos:
++        if not m2_pos or m2_pos <= end_pos:
+             return None
+ 
+         raw_text = state.src[m.start():m2.start()]

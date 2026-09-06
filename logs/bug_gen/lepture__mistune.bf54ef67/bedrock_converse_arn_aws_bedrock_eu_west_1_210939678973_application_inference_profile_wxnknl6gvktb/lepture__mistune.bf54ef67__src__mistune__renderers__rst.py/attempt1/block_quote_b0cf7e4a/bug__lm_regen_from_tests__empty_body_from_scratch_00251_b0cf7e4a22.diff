@@ -1,0 +1,14 @@
+--- a/src/mistune/renderers/rst.py
++++ b/src/mistune/renderers/rst.py
+@@ -135,9 +135,9 @@
+             'linebreak',
+             'heading',
+         )
+-        if prev and prev['type'] not in ignore_blocks:
++        if not prev or prev['type'] in ignore_blocks:
+             text = '..\n\n' + text
+-        return text
++        return text + '\n\n'
+ 
+     def block_html(self, token: Dict[str, Any], state: BlockState) -> str:
+         raw = token['raw']

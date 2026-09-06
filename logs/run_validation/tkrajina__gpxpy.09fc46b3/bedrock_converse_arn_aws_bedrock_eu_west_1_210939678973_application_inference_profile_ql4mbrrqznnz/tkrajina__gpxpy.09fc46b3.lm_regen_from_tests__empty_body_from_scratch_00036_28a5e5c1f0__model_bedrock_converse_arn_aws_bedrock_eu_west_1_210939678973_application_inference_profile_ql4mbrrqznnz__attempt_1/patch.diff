@@ -1,0 +1,66 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -96,8 +96,61 @@
+     raise mod_gpx.GPXException(f'Invalid time: {string}')
+ 
+ 
+-def format_time(time: mod_datetime.datetime) -> str:
+-    return time.isoformat().replace('+00:00', 'Z')
++def format_time(time: mod_datetime.datetime) ->str:
++    if not time:
++        return ''
++    
++    result = time.strftime('%Y-%m-%dT%H:%M:%S')
++    
++    if time.microsecond:
++        result += f'.{time.microsecond:06d}'
++    
++    if time.tzinfo is None:
++        pass  # no timezone suffix
++    else:
++        utcoffset = time.utcoffset()
++        if utcoffset is None:
++            pass
++        else:
++            total_seconds = int(utcoffset.total_seconds())
++            if total_seconds == 0:
++                result += 'Z'
++            else:
++                sign = '+' if total_seconds >= 0 else '-'
++                total_seconds = abs(total_seconds)
++                hours = total_seconds // 3600
++                minutes = (total_seconds % 3600) // 60
++                result += f'{sign}{hours:02d}:{minutes:02d}'
++    
++    return result
++
++def format_time(time: mod_datetime.datetime) ->str:
++    if not time:
++        return ''
++    
++    result = time.strftime('%Y-%m-%dT%H:%M:%S')
++    
++    if time.microsecond:
++        result += f'.{time.microsecond:06d}'
++    
++    if time.tzinfo is None:
++        pass  # no timezone suffix
++    else:
++        utcoffset = time.utcoffset()
++        if utcoffset is None:
++            pass
++        else:
++            total_seconds = int(utcoffset.total_seconds())
++            if total_seconds == 0:
++                result += 'Z'
++            else:
++                sign = '+' if total_seconds >= 0 else '-'
++                total_seconds = abs(total_seconds)
++                hours = total_seconds // 3600
++                minutes = (total_seconds % 3600) // 60
++                result += f'{sign}{hours:02d}:{minutes:02d}'
++    
++    return result
+ 
+ 
+ 

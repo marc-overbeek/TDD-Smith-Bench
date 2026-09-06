@@ -1,0 +1,85 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -46,13 +46,6 @@
+     """
+ 
+     def _set_attributes(self, params: Optional[List[Any]] = None) -> None:
+-        """
+-        Set attributes from the input list of parameters.
+-
+-        Args:
+-            params (list): list of parameters.
+-        """
+-
+         if params:
+             for k, v in params.items():
+                 if k != "self" and not k.startswith("_"):
+@@ -641,21 +634,7 @@
+ 
+ 
+ class CropTransform(Transform):
+-    def __init__(
+-        self,
+-        x0: int,
+-        y0: int,
+-        w: int,
+-        h: int,
+-        orig_w: Optional[int] = None,
+-        orig_h: Optional[int] = None,
+-    ):
+-        """
+-        Args:
+-            x0, y0, w, h (int): crop the image(s) by img[y0:y0+h, x0:x0+w].
+-            orig_w, orig_h (int): optional, the original width and height
+-                before cropping. Needed to make this transform invertible.
+-        """
++    def __init__(self, x0: int, y0: int, w: int, h: int, orig_w: Optional[int] = None, orig_h: Optional[int] = None):
+         super().__init__()
+         self._set_attributes(locals())
+ 
+@@ -690,20 +669,8 @@
+         return coords
+ 
+     def apply_polygons(self, polygons: list) -> list:
+-        """
+-        Apply crop transform on a list of polygons, each represented by a Nx2 array.
+-        It will crop the polygon with the box, therefore the number of points in the
+-        polygon might change.
+-
+-        Args:
+-            polygon (list[ndarray]): each is a Nx2 floating point array of
+-                (x, y) format in absolute coordinates.
+-        Returns:
+-            ndarray: cropped polygons.
+-        """
+         import shapely.geometry as geometry
+ 
+-        # Create a window that will be used to crop
+         crop_box = geometry.box(
+             self.x0, self.y0, self.x0 + self.w, self.y0 + self.h
+         ).buffer(0.0)
+@@ -712,7 +679,6 @@
+ 
+         for polygon in polygons:
+             polygon = geometry.Polygon(polygon).buffer(0.0)
+-            # polygon must be valid to perform intersection.
+             if not polygon.is_valid:
+                 continue
+             cropped = polygon.intersection(crop_box)
+@@ -722,16 +688,10 @@
+                 cropped = cropped.geoms
+             else:
+                 cropped = [cropped]
+-            # one polygon may be cropped to multiple ones
+             for poly in cropped:
+-                # It could produce lower dimensional objects like lines or
+-                # points, which we want to ignore
+                 if not isinstance(poly, geometry.Polygon) or not poly.is_valid:
+                     continue
+                 coords = np.asarray(poly.exterior.coords)
+-                # NOTE This process will produce an extra identical vertex at
+-                # the end. So we remove it. This is tested by
+-                # `tests/test_data_transform.py`
+                 cropped_polygons.append(coords[:-1])
+         return [self.apply_coords(p) for p in cropped_polygons]
+ 

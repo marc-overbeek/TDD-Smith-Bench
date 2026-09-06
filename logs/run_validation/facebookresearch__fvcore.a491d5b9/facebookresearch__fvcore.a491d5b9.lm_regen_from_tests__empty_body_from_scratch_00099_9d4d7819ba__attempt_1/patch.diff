@@ -1,0 +1,32 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -452,22 +452,13 @@
+     return child
+ 
+ 
+-def _try_combine(
+-    stats1: Dict[str, str], stats2: Dict[str, str]
+-) -> Optional[Dict[str, str]]:
+-    """
+-    Try combine two statistics dict to display in one row. If they conflict,
+-    returns None.
+-    """
+-    ret = {}
+-    if set(stats1.keys()) != set(stats2.keys()):
+-        return None
+-    for k, v1 in stats1.items():
+-        v2 = stats2[k]
+-        if v1 != v2 and len(v1) and len(v2):
+-            return None
+-        ret[k] = v1 if len(v1) else v2
+-    return ret
++def _try_combine(stats1: Dict[str, str], stats2: Dict[str, str]) -> Optional[Dict[str, str]]:
++    # If stats1 (parent) has all empty values, we can combine with stats2 (child)
++    # by returning stats2. This allows single-child modules with no direct stats
++    # to be merged into their child's row.
++    if all(v == "" for v in stats1.values()):
++        return stats2
++    return None
+ 
+ 
+ def _fastforward(

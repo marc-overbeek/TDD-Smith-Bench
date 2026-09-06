@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing test and the function signature, I need to implement `save_as_callback` which takes an optional tuple of `(ScanExport, Path)` and returns a tuple of `(Optional[str], Optional[Path])`.\n\nThe function should extract the format string and path from the input tuple, handling the `None` case and validating SPDX extension if needed.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing test and the function signature, I need to implement `save_as_callback` which takes an optional tuple of `(ScanExport, Path)` and returns a tuple of `(Optional[str], Optional[Path])`.\n\nThe function should extract the format string and path from the input tuple, handling the `None` case and validating SPDX extension if needed.\n\n```python\ndef save_as_callback(save_as: Optional[Tuple[ScanExport, Path]]) ->Tuple[\n    Optional[str], Optional[Path]]:\n    if not save_as:\n        return None, None\n    \n    export_format, path = save_as\n    \n    if ScanExport.is_format(export_format, ScanExport.SPDX):\n        raise_if_not_spdx_extension_installed()\n    \n    return export_format.value, path\n```",
+  "rewrite": "def save_as_callback(save_as: Optional[Tuple[ScanExport, Path]]) ->Tuple[\n    Optional[str], Optional[Path]]:\n    if not save_as:\n        return None, None\n    \n    export_format, path = save_as\n    \n    if ScanExport.is_format(export_format, ScanExport.SPDX):\n        raise_if_not_spdx_extension_installed()\n    \n    return export_format.value, path",
+  "strategy": "lm_regen_from_tests"
+}

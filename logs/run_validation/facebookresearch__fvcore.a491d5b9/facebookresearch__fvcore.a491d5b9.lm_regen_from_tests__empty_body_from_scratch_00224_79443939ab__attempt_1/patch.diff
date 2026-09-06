@@ -1,0 +1,30 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -659,6 +659,14 @@
+         super().__init__()
+         self._set_attributes(locals())
+ 
++    def apply_image(self, img: np.ndarray) ->np.ndarray:
++        pass
++
++    if len(img.shape) <= 3:
++        return img[self.y0 : self.y0 + self.h, self.x0 : self.x0 + self.w]
++    else:
++        return img[..., self.y0 : self.y0 + self.h, self.x0 : self.x0 + self.w, :]
++
+     def apply_image(self, img: np.ndarray) -> np.ndarray:
+         """
+         Crop the image(s).
+@@ -670,6 +678,12 @@
+         Returns:
+             ndarray: cropped image(s).
+         """
++        if len(img.shape) <= 3:
++            return img[self.y0 : self.y0 + self.h, self.x0 : self.x0 + self.w]
++        else:
++            return img[..., self.y0 : self.y0 + self.h, self.x0 : self.x0 + self.w, :]
++
++    def apply_image(self, img: np.ndarray) -> np.ndarray:
+         if len(img.shape) <= 3:
+             return img[self.y0 : self.y0 + self.h, self.x0 : self.x0 + self.w]
+         else:

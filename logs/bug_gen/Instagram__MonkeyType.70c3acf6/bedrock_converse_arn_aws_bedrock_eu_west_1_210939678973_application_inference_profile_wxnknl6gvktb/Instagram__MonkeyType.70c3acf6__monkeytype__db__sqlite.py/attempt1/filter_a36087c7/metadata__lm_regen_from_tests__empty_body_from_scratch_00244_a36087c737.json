@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef filter(\n    self, module: str, qualname_prefix: Optional[str] = None, limit: int = 2000\n) -> List[CallTraceThunk]:\n    sql_query, values = make_query(self.table, module, qualname_prefix, limit)\n    with self.conn:\n        cur = self.conn.cursor()\n        cur.execute(sql_query, values)\n        return [CallTraceRow(*row) for row in cur.fetchall()]\n```",
+  "rewrite": "def filter(\n    self, module: str, qualname_prefix: Optional[str] = None, limit: int = 2000\n) -> List[CallTraceThunk]:\n    sql_query, values = make_query(self.table, module, qualname_prefix, limit)\n    with self.conn:\n        cur = self.conn.cursor()\n        cur.execute(sql_query, values)\n        return [CallTraceRow(*row) for row in cur.fetchall()]\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

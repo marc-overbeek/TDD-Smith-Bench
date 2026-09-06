@@ -1,0 +1,54 @@
+--- a/deepdiff/helper.py
++++ b/deepdiff/helper.py
+@@ -613,22 +613,37 @@
+ 
+ 
+ def datetime_normalize(truncate_datetime, obj):
+-    if truncate_datetime:
+-        if truncate_datetime == 'second':
+-            obj = obj.replace(microsecond=0)
+-        elif truncate_datetime == 'minute':
+-            obj = obj.replace(second=0, microsecond=0)
+-        elif truncate_datetime == 'hour':
+-            obj = obj.replace(minute=0, second=0, microsecond=0)
+-        elif truncate_datetime == 'day':
+-            obj = obj.replace(hour=0, minute=0, second=0, microsecond=0)
+-    if isinstance(obj, datetime.datetime):
+-        if has_timezone(obj):
+-            obj = obj.astimezone(datetime.timezone.utc)
++    if not isinstance(obj, datetimes):
++        return obj
++    
++    if truncate_datetime is None:
++        return obj
++    
++    # Handle timezone awareness
++    if hasattr(obj, 'tzinfo') and obj.tzinfo is not None:
++        # Ensure timezone-aware datetime objects are normalized to UTC
++        if hasattr(obj, 'utcoffset') and obj.utcoffset() is not None:
++            # Convert to UTC if timezone-aware
++            if obj.tzinfo.utcoffset(obj) != datetime.timedelta(0):
++                obj = obj.astimezone(datetime.timezone.utc)
++        # If timezone is UTC, ensure it's properly set
++        elif obj.tzinfo == datetime.timezone.utc:
++            pass  # Already UTC
+         else:
++            # For naive datetime objects or those without proper timezone info,
++            # convert to UTC assuming local time
+             obj = obj.replace(tzinfo=datetime.timezone.utc)
+-    elif isinstance(obj, datetime.time):
+-        obj = time_to_seconds(obj)
++    
++    # Apply truncation based on the specified level
++    if truncate_datetime == 'second':
++        obj = obj.replace(microsecond=0)
++    elif truncate_datetime == 'minute':
++        obj = obj.replace(second=0, microsecond=0)
++    elif truncate_datetime == 'hour':
++        obj = obj.replace(minute=0, second=0, microsecond=0)
++    elif truncate_datetime == 'day':
++        obj = obj.replace(hour=0, minute=0, second=0, microsecond=0)
++    
+     return obj
+ 
+ 

@@ -1,0 +1,77 @@
+--- a/src/mistune/plugins/formatting.py
++++ b/src/mistune/plugins/formatting.py
+@@ -18,10 +18,9 @@
+ SUBSCRIPT_PATTERN = r'~(?:' + PREVENT_BACKSLASH + r'\\~|\S|\\ )+?~'
+ 
+ 
+-def parse_strikethrough(
+-    inline: "InlineParser", m: Match[str], state: "InlineState"
+-) -> Optional[int]:
+-    return _parse_to_end(inline, m, state, "strikethrough", _STRIKE_END)
++def parse_strikethrough(inline: 'InlineParser', m: Match[str], state:
++    'InlineState') ->Optional[int]:
++    pass
+ 
+ 
+ def render_strikethrough(renderer: "BaseRenderer", text: str) -> str:
+@@ -66,24 +65,9 @@
+     return "<sub>" + text + "</sub>"
+ 
+ 
+-def _parse_to_end(
+-    inline: "InlineParser",
+-    m: Match[str],
+-    state: "InlineState",
+-    tok_type: str,
+-    end_pattern: Pattern[str],
+-) -> Optional[int]:
+-    pos = m.end()
+-    m1 = end_pattern.search(state.src, pos)
+-    if not m1:
+-        return None
+-    end_pos = m1.end()
+-    text = state.src[pos:end_pos-2]
+-    new_state = state.copy()
+-    new_state.src = text
+-    children = inline.render(new_state)
+-    state.append_token({'type': tok_type, 'children': children})
+-    return end_pos
++def _parse_to_end(inline: 'InlineParser', m: Match[str], state:
++    'InlineState', tok_type: str, end_pattern: Pattern[str]) ->Optional[int]:
++    pass
+ 
+ 
+ def _parse_script(
+@@ -100,30 +84,8 @@
+     return m.end()
+ 
+ 
+-def strikethrough(md: "Markdown") -> None:
+-    """A mistune plugin to support strikethrough. Spec defined by
+-    GitHub flavored Markdown and commonly used by many parsers:
+-
+-    .. code-block:: text
+-
+-        ~~This was mistaken text~~
+-
+-    It will be converted into HTML:
+-
+-    .. code-block:: html
+-
+-        <del>This was mistaken text</del>
+-
+-    :param md: Markdown instance
+-    """
+-    md.inline.register(
+-        'strikethrough',
+-        r'~~(?=[^\s~])',
+-        parse_strikethrough,
+-        before='link',
+-    )
+-    if md.renderer and md.renderer.NAME == 'html':
+-        md.renderer.register('strikethrough', render_strikethrough)
++def strikethrough(md: 'Markdown') ->None:
++    pass
+ 
+ 
+ def mark(md: "Markdown") -> None:

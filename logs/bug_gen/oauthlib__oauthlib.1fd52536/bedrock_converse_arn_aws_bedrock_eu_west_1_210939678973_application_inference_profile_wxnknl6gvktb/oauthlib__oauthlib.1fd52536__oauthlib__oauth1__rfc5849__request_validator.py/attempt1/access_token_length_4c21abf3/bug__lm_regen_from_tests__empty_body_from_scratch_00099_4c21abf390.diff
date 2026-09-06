@@ -1,0 +1,20 @@
+--- a/oauthlib/oauth1/rfc5849/request_validator.py
++++ b/oauthlib/oauth1/rfc5849/request_validator.py
+@@ -127,6 +127,17 @@
+         return 20, 30
+ 
+     @property
++    def test_check_length(self):
++        v = RequestValidator()
++        for method in (v.check_client_key, v.check_request_token, v.
++            check_access_token, v.check_nonce, v.check_verifier):
++            for not_valid in ('tooshort', 'invalid?characters!',
++                'thisclientkeyisalittlebittoolong'):
++                self.assertFalse(method(not_valid))
++            for valid in ('itsjustaboutlongenough',):
++                self.assertTrue(method(valid))
++
++    @property
+     def access_token_length(self):
+         return 20, 30
+ 

@@ -1,0 +1,86 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -58,11 +58,9 @@
+     def __init__(self, subspec=T, **kwargs):
+         self.subspec = subspec
+         self._iter_stack = kwargs.pop('_iter_stack', [])
+-
+         self.sentinel = kwargs.pop('sentinel', STOP)
+         if kwargs:
+             raise TypeError('unexpected keyword arguments: %r' % sorted(kwargs))
+-        return
+ 
+     def __repr__(self):
+         base_args = ()
+@@ -73,9 +71,8 @@
+         for fname, args, _ in reversed(self._iter_stack):
+             meth = getattr(self, fname)
+             fb = FunctionBuilder.from_func(meth)
+-            fb.args = fb.args[1:]  # drop self
++            fb.args = fb.args[1:]
+             arg_names = fb.get_arg_names()
+-            # TODO: something fancier with defaults:
+             kwargs = []
+             if len(args) > 1 and arg_names:
+                 args, kwargs = (), zip(arg_names, args)
+@@ -84,10 +81,8 @@
+ 
+     def glomit(self, target, scope):
+         iterator = self._iterate(target, scope)
+-
+         for _, _, callback in reversed(self._iter_stack):
+             iterator = callback(iterator, scope)
+-
+         return iter(iterator)
+ 
+     def _iterate(self, target, scope):
+@@ -97,7 +92,6 @@
+         except Exception as e:
+             raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+                             % (target.__class__.__name__, Path(*scope[Path]), e))
+-
+         base_path = scope[Path]
+         for i, t in enumerate(iterator):
+             scope[Path] = base_path + [i]
+@@ -105,12 +99,8 @@
+             if yld is SKIP:
+                 continue
+             elif yld is self.sentinel or yld is STOP:
+-                # NB: sentinel defaults to STOP so I was torn whether
+-                # to also check for STOP, and landed on the side of
+-                # never letting STOP through.
+                 return
+             yield yld
+-        return
+ 
+     def _add_op(self, opname, args, callback):
+         return type(self)(subspec=self.subspec, _iter_stack=[(opname, args, callback)] + self._iter_stack)
+@@ -335,20 +325,6 @@
+         return Pipe(self, list)
+ 
+     def first(self, key=T, default=None):
+-        """A convenience method for lazily yielding a single truthy item from
+-        an iterable.
+-
+-        >>> target = [False, 1, 2, 3]
+-        >>> glom(target, Iter().first())
+-        1
+-
+-        This method takes a condition, *key*, which can also be a
+-        glomspec, as well as a *default*, in case nothing matches the
+-        condition.
+-
+-        As this spec yields at most one item, and not an iterable, the
+-        spec returned from this method is not an :class:`Iter()` instance.
+-        """
+         return (self, First(key=key, default=default))
+ 
+ 
+@@ -371,7 +347,6 @@
+     def __init__(self, key=T, default=None):
+         self._spec = key
+         self._default = default
+-
+         spec_glom = Spec(Call(partial, args=(Spec(self._spec).glom,), kwargs={'scope': S}))
+         self._first = Call(first, args=(T,), kwargs={'default': default, 'key': spec_glom})
+ 

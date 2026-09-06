@@ -1,0 +1,553 @@
+--- a/gpxpy/__init__.py
++++ b/gpxpy/__init__.py
+@@ -18,22 +18,531 @@
+ 
+ __version__ = '1.6.2'
+ 
+-def parse(xml_or_file: Union[AnyStr, IO[str]], version: Optional[str] = None) -> mod_gpx.GPX:
+-    """
+-    Parse xml (string) or file object. This is just an wrapper for
+-    GPXParser.parse() function.
+-
+-    parser may be 'lxml', 'minidom' or None (then it will be automatically
+-    detected, lxml if possible).
+-
+-    xml_or_file must be the xml to parse or a file-object with the XML.
+-
+-    version may be '1.0', '1.1' or None (then it will be read from the gpx
+-    xml node if possible, if not then version 1.0 will be used).
+-    """
+-
+-    from . import parser as mod_parser
+-
+-    parser = mod_parser.GPXParser(xml_or_file)
+-
+-    return parser.parse(version)
++def parse(xml_or_file: Union[AnyStr, IO[str]], version: Optional[str]=None
++    ) ->mod_gpx.GPX:
++    import xml.parsers.expat as mod_expat
++    import xml.etree.ElementTree as mod_etree
++    import io
++    import datetime as mod_datetime
++    import math as mod_math
++    import os as mod_os
++    
++    # Handle file-like objects
++    if hasattr(xml_or_file, 'read'):
++        xml_content = xml_or_file.read()
++    else:
++        xml_content = xml_or_file
++    
++    # Parse the XML
++    try:
++        root = mod_etree.fromstring(xml_content)
++    except Exception as e:
++        if "unclosed token" in str(e) or "expected '>'" in str(e):
++            raise mod_gpx.GPXXMLSyntaxException(str(e))
++        else:
++            raise mod_gpx.GPXException(str(e))
++    
++    # Check if root element is gpx
++    if root.tag != 'gpx':
++        raise mod_gpx.GPXException("Document must have a `gpx` root node.")
++    
++    # Create GPX object
++    gpx = mod_gpx.GPX()
++    
++    # Set version
++    if version:
++        gpx.version = version
++    elif 'version' in root.attrib:
++        gpx.version = root.attrib['version']
++    else:
++        gpx.version = '1.0'  # Default fallback
++    
++    # Parse basic metadata
++    if 'creator' in root.attrib:
++        gpx.creator = root.attrib['creator']
++    
++    # Parse metadata section for version 1.1
++    metadata = root.find('metadata')
++    if metadata is not None:
++        if version is None or version == '1.1':
++            # Parse metadata fields
++            name_elem = metadata.find('name')
++            if name_elem is not None:
++                gpx.name = name_elem.text
++            
++            desc_elem = metadata.find('desc')
++            if desc_elem is not None:
++                gpx.description = desc_elem.text
++                
++            author = metadata.find('author')
++            if author is not None:
++                author_name_elem = author.find('name')
++                if author_name_elem is not None:
++                    gpx.author_name = author_name_elem.text
++                    
++                email = author.find('email')
++                if email is not None:
++                    gpx.author_email = email.text
++                    if 'id' in email.attrib and 'domain' in email.attrib:
++                        gpx.author_email = f"{email.attrib['id']}@{email.attrib['domain']}"
++                    
++                link = author.find('link')
++                if link is not None:
++                    gpx.author_link = link.get('href')
++                    gpx.author_link_text = link.text
++                    gpx.author_link_type = link.get('type')
++            
++            copyright_elem = metadata.find('copyright')
++            if copyright_elem is not None:
++                gpx.copyright_author = copyright_elem.get('author')
++                year_elem = copyright_elem.find('year')
++                if year_elem is not None:
++                    gpx.copyright_year = year_elem.text
++                license_elem = copyright_elem.find('license')
++                if license_elem is not None:
++                    gpx.copyright_license = license_elem.text
++            
++            link_elem = metadata.find('link')
++            if link_elem is not None:
++                gpx.link = link_elem.get('href')
++                gpx.link_text = link_elem.text
++                gpx.link_type = link_elem.get('type')
++                
++            time_elem = metadata.find('time')
++            if time_elem is not None:
++                gpx.time = mod_gpxfield.gpx_date(time_elem.text)
++                
++            keywords_elem = metadata.find('keywords')
++            if keywords_elem is not None:
++                gpx.keywords = keywords_elem.text
++                
++            bounds = metadata.find('bounds')
++            if bounds is not None:
++                gpx.bounds = mod_gpx.GPXBounds(
++                    float(bounds.get('minlat')),
++                    float(bounds.get('maxlat')),
++                    float(bounds.get('minlon')),
++                    float(bounds.get('maxlon'))
++                )
++                
++            # Parse metadata extensions
++            extensions = metadata.find('extensions')
++            if extensions is not None:
++                gpx.metadata_extensions = list(extensions)
++    
++    # For version 1.0, also parse direct elements
++    if gpx.version == '1.0':
++        # Parse direct elements
++        name_elem = root.find('name')
++        if name_elem is not None:
++            gpx.name = name_elem.text
++            
++        desc_elem = root.find('desc')
++        if desc_elem is not None:
++            gpx.description = desc_elem.text
++            
++        author_elem = root.find('author')
++        if author_elem is not None:
++            gpx.author_name = author_elem.text
++            
++        email_elem = root.find('email')
++        if email_elem is not None:
++            gpx.author_email = email_elem.text
++            
++        link_elem = root.find('url')
++        if link_elem is not None:
++            gpx.link = link_elem.text
++            
++        urlname_elem = root.find('urlname')
++        if urlname_elem is not None:
++            gpx.link_text = urlname_elem.text
++            
++        time_elem = root.find('time')
++        if time_elem is not None:
++            gpx.time = mod_gpxfield.gpx_date(time_elem.text)
++            
++        keywords_elem = root.find('keywords')
++        if keywords_elem is not None:
++            gpx.keywords = keywords_elem.text
++            
++        bounds_elem = root.find('bounds')
++        if bounds_elem is not None:
++            gpx.bounds = mod_gpx.GPXBounds(
++                float(bounds_elem.get('minlat')),
++                float(bounds_elem.get('maxlat')),
++                float(bounds_elem.get('minlon')),
++                float(bounds_elem.get('maxlon'))
++            )
++    
++    # Parse waypoints
++    for wpt in root.findall('wpt'):
++        waypoint = mod_gpx.GPXWaypoint()
++        waypoint.latitude = float(wpt.get('lat'))
++        waypoint.longitude = float(wpt.get('lon'))
++        
++        ele = wpt.find('ele')
++        if ele is not None and ele.text:
++            try:
++                waypoint.elevation = float(ele.text)
++            except ValueError:
++                if ele.text.lower() == 'nan':
++                    waypoint.elevation = float('nan')
++        
++        time_elem = wpt.find('time')
++        if time_elem is not None and time_elem.text:
++            waypoint.time = mod_gpxfield.gpx_date(time_elem.text)
++            
++        magvar = wpt.find('magvar')
++        if magvar is not None and magvar.text:
++            waypoint.magnetic_variation = float(magvar.text)
++            
++        geoidheight = wpt.find('geoidheight')
++        if geoidheight is not None and geoidheight.text:
++            waypoint.geoid_height = float(geoidheight.text)
++            
++        name = wpt.find('name')
++        if name is not None and name.text:
++            waypoint.name = name.text
++            
++        cmt = wpt.find('cmt')
++        if cmt is not None and cmt.text:
++            waypoint.comment = cmt.text
++            
++        desc = wpt.find('desc')
++        if desc is not None and desc.text:
++            waypoint.description = desc.text
++            
++        src = wpt.find('src')
++        if src is not None and src.text:
++            waypoint.source = src.text
++            
++        link = wpt.find('link')
++        if link is not None:
++            waypoint.link = link.get('href')
++            waypoint.link_text = link.text
++            waypoint.link_type = link.get('type')
++            
++        sym = wpt.find('sym')
++        if sym is not None and sym.text:
++            waypoint.symbol = sym.text
++            
++        type_elem = wpt.find('type')
++        if type_elem is not None and type_elem.text:
++            waypoint.type = type_elem.text
++            
++        fix = wpt.find('fix')
++        if fix is not None and fix.text:
++            waypoint.type_of_gpx_fix = fix.text
++            
++        sat = wpt.find('sat')
++        if sat is not None and sat.text:
++            waypoint.satellites = int(sat.text)
++            
++        vdop = wpt.find('vdop')
++        if vdop is not None and vdop.text:
++            waypoint.vertical_dilution = float(vdop.text)
++            
++        hdop = wpt.find('hdop')
++        if hdop is not None and hdop.text:
++            waypoint.horizontal_dilution = float(hdop.text)
++            
++        pdop = wpt.find('pdop')
++        if pdop is not None and pdop.text:
++            waypoint.position_dilution = float(pdop.text)
++            
++        ageofdgpsdata = wpt.find('ageofdgpsdata')
++        if ageofdgpsdata is not None and ageofdgpsdata.text:
++            waypoint.age_of_dgps_data = float(ageofdgpsdata.text)
++            
++        dgpsid = wpt.find('dgpsid')
++        if dgpsid is not None and dgpsid.text:
++            waypoint.dgps_id = int(dgpsid.text)
++            
++        # Parse extensions
++        extensions = wpt.find('extensions')
++        if extensions is not None:
++            waypoint.extensions = list(extensions)
++            
++        gpx.waypoints.append(waypoint)
++    
++    # Parse routes
++    for rte in root.findall('rte'):
++        route = mod_gpx.GPXRoute()
++        
++        name = rte.find('name')
++        if name is not None and name.text:
++            route.name = name.text
++            
++        cmt = rte.find('cmt')
++        if cmt is not None and cmt.text:
++            route.comment = cmt.text
++            
++        desc = rte.find('desc')
++        if desc is not None and desc.text:
++            route.description = desc.text
++            
++        src = rte.find('src')
++        if src is not None and src.text:
++            route.source = src.text
++            
++        link = rte.find('link')
++        if link is not None:
++            route.link = link.get('href')
++            route.link_text = link.text
++            route.link_type = link.get('type')
++            
++        number = rte.find('number')
++        if number is not None and number.text:
++            route.number = int(number.text)
++            
++        type_elem = rte.find('type')
++        if type_elem is not None and type_elem.text:
++            route.type = type_elem.text
++            
++        # Parse route points
++        for rtept in rte.findall('rtept'):
++            route_point = mod_gpx.GPXRoutePoint()
++            route_point.latitude = float(rtept.get('lat'))
++            route_point.longitude = float(rtept.get('lon'))
++            
++            ele = rtept.find('ele')
++            if ele is not None and ele.text:
++                try:
++                    route_point.elevation = float(ele.text)
++                except ValueError:
++                    if ele.text.lower() == 'nan':
++                        route_point.elevation = float('nan')
++            
++            time_elem = rtept.find('time')
++            if time_elem is not None and time_elem.text:
++                route_point.time = mod_gpxfield.gpx_date(time_elem.text)
++                
++            magvar = rtept.find('magvar')
++            if magvar is not None and magvar.text:
++                route_point.magnetic_variation = float(magvar.text)
++                
++            geoidheight = rtept.find('geoidheight')
++            if geoidheight is not None and geoidheight.text:
++                route_point.geoid_height = float(geoidheight.text)
++                
++            name = rtept.find('name')
++            if name is not None and name.text:
++                route_point.name = name.text
++                
++            cmt = rtept.find('cmt')
++            if cmt is not None and cmt.text:
++                route_point.comment = cmt.text
++                
++            desc = rtept.find('desc')
++            if desc is not None and desc.text:
++                route_point.description = desc.text
++                
++            src = rtept.find('src')
++            if src is not None and src.text:
++                route_point.source = src.text
++                
++            link = rtept.find('link')
++            if link is not None:
++                route_point.link = link.get('href')
++                route_point.link_text = link.text
++                route_point.link_type = link.get('type')
++                
++            sym = rtept.find('sym')
++            if sym is not None and sym.text:
++                route_point.symbol = sym.text
++                
++            type_elem = rtept.find('type')
++            if type_elem is not None and type_elem.text:
++                route_point.type = type_elem.text
++                
++            fix = rtept.find('fix')
++            if fix is not None and fix.text:
++                route_point.type_of_gpx_fix = fix.text
++                
++            sat = rtept.find('sat')
++            if sat is not None and sat.text:
++                route_point.satellites = int(sat.text)
++                
++            vdop = rtept.find('vdop')
++            if vdop is not None and vdop.text:
++                route_point.vertical_dilution = float(vdop.text)
++                
++            hdop = rtept.find('hdop')
++            if hdop is not None and hdop.text:
++                route_point.horizontal_dilution = float(hdop.text)
++                
++            pdop = rtept.find('pdop')
++            if pdop is not None and pdop.text:
++                route_point.position_dilution = float(pdop.text)
++                
++            ageofdgpsdata = rtept.find('ageofdgpsdata')
++            if ageofdgpsdata is not None and ageofdgpsdata.text:
++                route_point.age_of_dgps_data = float(ageofdgpsdata.text)
++                
++            dgpsid = rtept.find('dgpsid')
++            if dgpsid is not None and dgpsid.text:
++                route_point.dgps_id = int(dgpsid.text)
++                
++            # Parse extensions
++            extensions = rtept.find('extensions')
++            if extensions is not None:
++                route_point.extensions = list(extensions)
++                
++            route.points.append(route_point)
++            
++        # Parse route extensions
++        extensions = rte.find('extensions')
++        if extensions is not None:
++            route.extensions = list(extensions)
++            
++        gpx.routes.append(route)
++    
++    # Parse tracks
++    for trk in root.findall('trk'):
++        track = mod_gpx.GPXTrack()
++        
++        name = trk.find('name')
++        if name is not None and name.text:
++            track.name = name.text
++            
++        cmt = trk.find('cmt')
++        if cmt is not None and cmt.text:
++            track.comment = cmt.text
++            
++        desc = trk.find('desc')
++        if desc is not None and desc.text:
++            track.description = desc.text
++            
++        src = trk.find('src')
++        if src is not None and src.text:
++            track.source = src.text
++            
++        link = trk.find('link')
++        if link is not None:
++            track.link = link.get('href')
++            track.link_text = link.text
++            track.link_type = link.get('type')
++            
++        number = trk.find('number')
++        if number is not None and number.text:
++            track.number = int(number.text)
++            
++        type_elem = trk.find('type')
++        if type_elem is not None and type_elem.text:
++            track.type = type_elem.text
++            
++        # Parse track segments
++        for trkseg in trk.findall('trkseg'):
++            segment = mod_gpx.GPXTrackSegment()
++            
++            # Parse track points
++            for trkpt in trkseg.findall('trkpt'):
++                track_point = mod_gpx.GPXTrackPoint()
++                track_point.latitude = float(trkpt.get('lat'))
++                track_point.longitude = float(trkpt.get('lon'))
++                
++                ele = trkpt.find('ele')
++                if ele is not None and ele.text:
++                    try:
++                        track_point.elevation = float(ele.text)
++                    except ValueError:
++                        if ele.text.lower() == 'nan':
++                            track_point.elevation = float('nan')
++                
++                time_elem = trkpt.find('time')
++                if time_elem is not None and time_elem.text:
++                    track_point.time = mod_gpxfield.gpx_date(time_elem.text)
++                    
++                magvar = trkpt.find('magvar')
++                if magvar is not None and magvar.text:
++                    track_point.magnetic_variation = float(magvar.text)
++                    
++                geoidheight = trkpt.find('geoidheight')
++                if geoidheight is not None and geoidheight.text:
++                    track_point.geoid_height = float(geoidheight.text)
++                    
++                name = trkpt.find('name')
++                if name is not None and name.text:
++                    track_point.name = name.text
++                    
++                cmt = trkpt.find('cmt')
++                if cmt is not None and cmt.text:
++                    track_point.comment = cmt.text
++                    
++                desc = trkpt.find('desc')
++                if desc is not None and desc.text:
++                    track_point.description = desc.text
++                    
++                src = trkpt.find('src')
++                if src is not None and src.text:
++                    track_point.source = src.text
++                    
++                link = trkpt.find('link')
++                if link is not None:
++                    track_point.link = link.get('href')
++                    track_point.link_text = link.text
++                    track_point.link_type = link.get('type')
++                    
++                sym = trkpt.find('sym')
++                if sym is not None and sym.text:
++                    track_point.symbol = sym.text
++                    
++                type_elem = trkpt.find('type')
++                if type_elem is not None and type_elem.text:
++                    track_point.type = type_elem.text
++                    
++                fix = trkpt.find('fix')
++                if fix is not None and fix.text:
++                    track_point.type_of_gpx_fix = fix.text
++                    
++                sat = trkpt.find('sat')
++                if sat is not None and sat.text:
++                    track_point.satellites = int(sat.text)
++                    
++                vdop = trkpt.find('vdop')
++                if vdop is not None and vdop.text:
++                    track_point.vertical_dilution = float(vdop.text)
++                    
++                hdop = trkpt.find('hdop')
++                if hdop is not None and hdop.text:
++                    track_point.horizontal_dilution = float(hdop.text)
++                    
++                pdop = trkpt.find('pdop')
++                if pdop is not None and pdop.text:
++                    track_point.position_dilution = float(pdop.text)
++                    
++                ageofdgpsdata = trkpt.find('ageofdgpsdata')
++                if ageofdgpsdata is not None and ageofdgpsdata.text:
++                    track_point.age_of_dgps_data = float(ageofdgpsdata.text)
++                    
++                dgpsid = trkpt.find('dgpsid')
++                if dgpsid is not None and dgpsid.text:
++                    track_point.dgps_id = int(dgpsid.text)
++                    
++                # Parse extensions
++                extensions = trkpt.find('extensions')
++                if extensions is not None:
++                    track_point.extensions = list(extensions)
++                    
++                segment.points.append(track_point)
++                
++            # Parse segment extensions
++            extensions = trkseg.find('extensions')
++            if extensions is not None:
++                segment.extensions = list(extensions)
++                
++            track.segments.append(segment)
++            
++        # Parse track extensions
++        extensions = trk.find('extensions')
++        if extensions is not None:
++            track.extensions = list(extensions)
++            
++        gpx.tracks.append(track)
++    
++    # Parse top-level extensions
++    extensions = root.find('extensions')
++    if extensions is not None:
++        gpx.extensions = list(extensions)
++    
++    return gpx

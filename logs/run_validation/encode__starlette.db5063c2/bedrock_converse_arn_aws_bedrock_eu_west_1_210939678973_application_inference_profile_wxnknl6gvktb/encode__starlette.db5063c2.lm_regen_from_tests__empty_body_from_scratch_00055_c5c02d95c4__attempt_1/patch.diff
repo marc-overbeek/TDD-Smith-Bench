@@ -1,0 +1,12 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -396,6 +396,9 @@
+             super().__init__(*args, **kwargs)  # type: ignore[arg-type]
+         self._list = [(str(k), str(v)) for k, v in self._list]
+         self._dict = {str(k): str(v) for k, v in self._dict.items()}
++
++    q = QueryParams('a=123&a=456&b=789')
++    assert str(q) == 'a=123&a=456&b=789'
+ 
+     def __str__(self) -> str:
+         return urlencode(self._list)

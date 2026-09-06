@@ -1,0 +1,81 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -453,63 +453,7 @@
+ 
+ 
+ def load_path_content(path, file_type=None):
+-    """
+-    Loads and deserializes the content of the path.
+-    """
+-
+-    if file_type is None:
+-        file_type = path.split('.')[-1]
+-    if file_type == 'json':
+-        with open(path, 'r') as the_file:
+-            content = json_loads(the_file.read())
+-    elif file_type in {'yaml', 'yml'}:
+-        try:
+-            import yaml
+-        except ImportError:  # pragma: no cover.
+-            raise ImportError('Pyyaml needs to be installed.') from None  # pragma: no cover.
+-        with open(path, 'r') as the_file:
+-            content = yaml.safe_load(the_file)
+-    elif file_type == 'toml':
+-        try:
+-            if sys.version_info >= (3, 11):
+-                import tomllib as tomli
+-            else:
+-                import tomli
+-        except ImportError:  # pragma: no cover.
+-            raise ImportError('On python<=3.10 tomli needs to be installed.') from None  # pragma: no cover.
+-        with open(path, 'rb') as the_file:
+-            content = tomli.load(the_file)
+-    elif file_type == 'pickle':
+-        with open(path, 'rb') as the_file:
+-            content = the_file.read()
+-            content = pickle_load(content)
+-    elif file_type in {'csv', 'tsv'}:
+-        try:
+-            import clevercsv
+-            content = clevercsv.read_dicts(path)
+-        except ImportError:  # pragma: no cover.
+-            import csv
+-            with open(path, 'r') as the_file:
+-                content = list(csv.DictReader(the_file))
+-
+-        logger.info(f"NOTE: CSV content was empty in {path}")
+-
+-        # Everything in csv is string but we try to automatically convert any numbers we find
+-        for row in content:
+-            for key, value in row.items():
+-                value = value.strip()
+-                for type_ in [int, float, complex]:
+-                    try:
+-                        value = type_(value)
+-                    except Exception:
+-                        pass
+-                    else:
+-                        row[key] = value
+-                        break
+-    else:
+-        raise UnsupportedFormatErr(f'Only json, yaml, toml, csv, tsv and pickle are supported.\n'
+-                                   f' The {file_type} extension is not known.')
+-    return content
++    pass
+ 
+ 
+ def save_content_to_path(content, path, file_type=None, keep_backup=True):
+@@ -632,12 +576,7 @@
+         json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
+ 
+     def object_hook(self, obj):
+-        if 'old_type' in obj and 'new_type' in obj:
+-            for type_key in ('old_type', 'new_type'):
+-                type_str = obj[type_key]
+-                obj[type_key] = TYPE_STR_TO_TYPE.get(type_str, type_str)
+-
+-        return obj
++        pass
+ 
+ 
+ def json_dumps(item, default_mapping=None, force_use_builtin_json: bool=False, **kwargs):

@@ -1,0 +1,23 @@
+--- a/oauthlib/oauth2/rfc6749/tokens.py
++++ b/oauthlib/oauth2/rfc6749/tokens.py
+@@ -289,7 +289,7 @@
+         )
+         self.expires_in = expires_in or 3600
+ 
+-    def create_token(self, request, refresh_token=False, **kwargs):
++    def create_token(self, request, refresh_token):
+         """
+         Create a BearerToken, by default without refresh token.
+ 
+@@ -297,11 +297,6 @@
+         :type request: oauthlib.common.Request
+         :param refresh_token:
+         """
+-        if "save_token" in kwargs:
+-            warnings.warn("`save_token` has been deprecated, it was not called internally."
+-                          "If you do, call `request_validator.save_token()` instead.",
+-                          DeprecationWarning)
+-
+         expires_in = self.expires_in(request) if callable(self.expires_in) else self.expires_in
+ 
+         request.expires_in = expires_in

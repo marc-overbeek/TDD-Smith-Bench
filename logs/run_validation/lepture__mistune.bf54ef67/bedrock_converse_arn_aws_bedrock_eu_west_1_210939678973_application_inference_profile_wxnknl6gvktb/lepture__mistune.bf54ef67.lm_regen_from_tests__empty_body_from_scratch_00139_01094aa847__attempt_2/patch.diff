@@ -1,0 +1,143 @@
+--- a/src/mistune/plugins/abbr.py
++++ b/src/mistune/plugins/abbr.py
+@@ -33,46 +33,104 @@
+     return m.end() + 1
+ 
+ 
+-def process_text(inline: "InlineParser", text: str, state: "InlineState") -> None:
+-    ref = state.env.get("ref_abbrs")
+-    if not ref:
+-        return state.append_token({'type': 'text', 'raw': text})
+-
+-    if state.tokens:
+-        last = state.tokens[-1]
+-        if last['type'] == 'text':
+-            state.tokens.pop()
+-            text = last['raw'] + text
+-
+-    abbrs_re = state.env.get('abbrs_re')
+-    if not abbrs_re:
+-        abbrs_re = re.compile(r'|'.join(re.escape(k) for k in ref.keys()))
+-        state.env['abbrs_re'] = abbrs_re
+-
++def process_text(inline: 'InlineParser', text: str, state: 'InlineState'
++    ) ->None:
++    ref_abbrs = state.env.get('ref_abbrs', {})
++    if not ref_abbrs:
++        # No abbreviations defined, just append the text as-is
++        state.append_token({'type': 'text', 'raw': text})
++        return
++    
++    # Sort by length (longest first) to match longer abbreviations first
++    sorted_abbrs = sorted(ref_abbrs.keys(), key=len, reverse=True)
++    
+     pos = 0
+     while pos < len(text):
+-        m = abbrs_re.search(text, pos)
+-        if not m:
+-            break
++        matched = False
++        
++        # Try to match each abbreviation at current position
++        for abbr in sorted_abbrs:
++            if text[pos:pos+len(abbr)] == abbr:
++                # Check word boundaries
++                # Character before must not be alphanumeric
++                if pos > 0 and text[pos-1].isalnum():
++                    continue
++                # Character after must not be alphanumeric
++                if pos + len(abbr) < len(text) and text[pos+len(abbr)].isalnum():
++                    continue
++                
++                # Found a match - append any text before it
++                if pos > 0:
++                    # Find the start of current text segment
++                    start = pos
++                    while start > 0 and text[start-1].isalnum():
++                        start -= 1
++                    if start < pos:
++                        state.append_token({'type': 'text', 'raw': text[start:pos]})
++                
++                # Append the abbreviation token
++                state.append_token({
++                    'type': 'abbr',
++                    'raw': abbr,
++                    'attrs': {'title': ref_abbrs[abbr]}
++                })
++                pos += len(abbr)
++                matched = True
++                break
++        
++        if not matched:
++            # No abbreviation matched, collect text until next potential match
++            start = pos
++            pos += 1
++            while pos < len(text):
++                # Check if any abbreviation could start at this position
++                could_match = False
++                for abbr in sorted_abbrs:
++                    if text[pos:pos+len(abbr)] == abbr:
++                        # Check if it's a valid word boundary
++                        if pos == 0 or not text[pos-1].isalnum():
++                            if pos + len(abbr) >= len(text) or not text[pos+len(abbr)].isalnum():
++                                could_match = True
++                                break
++                if could_match:
++                    break
++                pos += 1
++            
++            state.append_token({'type': 'text', 'raw': text[start:pos]})
+ 
+-        end_pos = m.start()
+-        if end_pos > pos:
+-            hole = text[pos:end_pos]
+-            state.append_token({'type': 'text', 'raw': hole})
+-
+-        label = m.group(0)
+-        state.append_token({
+-            'type': 'abbr',
+-            'children': [{'type': 'text', 'raw': label}],
+-            'attrs': {'title': ref[label]}
+-        })
+-        pos = m.end()
+-
+-    if pos == 0:
+-        # special case, just pure text
++def process_text(inline: 'InlineParser', text: str, state: 'InlineState'
++    ) ->None:
++    ref_abbrs = state.env.get('ref_abbrs', {})
++    if not ref_abbrs:
+         state.append_token({'type': 'text', 'raw': text})
+-    elif pos < len(text):
+-        state.append_token({'type': 'text', 'raw': text[pos:]})
++        return
++    
++    # Sort by length (longest first) to match longer abbreviations first
++    sorted_abbrs = sorted(ref_abbrs.keys(), key=len, reverse=True)
++    
++    pos = 0
++    while pos < len(text):
++        matched = False
++        
++        for abbr in sorted_abbrs:
++            if text[pos:].startswith(abbr):
++                # Check word boundaries
++                before_ok = (pos == 0 or not text[pos-1].isalnum())
++                after_ok = (pos + len(abbr) >= len(text) or not text[pos+len(abbr)].isalnum())
++                
++                if before_ok and after_ok:
++                    state.append_token({
++                        'type': 'abbr',
++                        'raw': abbr,
++                        'attrs': {'title': ref_abbrs[abbr]}
++                    })
++                    pos += len(abbr)
++                    matched = True
++                    break
++        
++        if not matched:
++            state.append_token({'type': 'text', 'raw': text[pos]})
++            pos += 1
+ 
+ 
+ def render_abbr(renderer: "BaseRenderer", text: str, title: str) -> str:

@@ -1,0 +1,24 @@
+--- a/src/mistune/directives/_base.py
++++ b/src/mistune/directives/_base.py
+@@ -58,14 +58,15 @@
+             return []
+ 
+         options = []
+-        for line in re.split(r'\n+', text):
+-            line = line.strip()[1:]
++        for line in text.split('\n'):
++            line = line.strip()
+             if not line:
+                 continue
+-            i = line.find(':')
+-            k = line[:i]
+-            v = line[i + 1:].strip()
+-            options.append((k, v))
++            if ':' in line:
++                i = line.find(':')
++                k = line[:i].strip()
++                v = line[i + 1:].strip()
++                options.append((k, v))
+         return options
+ 
+ 

@@ -1,0 +1,77 @@
+--- a/fvcore/nn/squeeze_excitation.py
++++ b/fvcore/nn/squeeze_excitation.py
+@@ -135,14 +135,29 @@
+          in Fully Convolutional Networks, arXiv:1803.02579*
+     """
+ 
++    model = layer(num_channels=num_channels, is_3d=is_3d)
++
+     def __init__(
+         self,
+         num_channels: int,
+         num_channels_reduced: Optional[int] = None,
+-        reduction_ratio: float = 16.0,
++        reduction_ratio: float = 2.0,  # This is from the file
+         is_3d: bool = False,
+         activation: Optional[nn.Module] = None,
+     ) -> None:
++
++    def __init__(
++        self,
++        num_channels: int,
++        num_channels_reduced: Optional[int] = None,
++        reduction_ratio: float = 2.0,
++        is_3d: bool = False,
++        activation: Optional[nn.Module] = None,
++    ) -> None:
++
++    def __init__(self, num_channels: int, num_channels_reduced: Optional[int]=
++        None, reduction_ratio: float=16.0, is_3d: bool=False, activation:
++        Optional[nn.Module]=None) ->None:
+         """
+         Args:
+             num_channels (int): Number of input channels.
+@@ -154,14 +169,35 @@
+             activation (nn.Module): Activation function used, defaults to ReLU.
+         """
+         super().__init__()
+-        self.channel = SqueezeExcitation(
+-            num_channels=num_channels,
+-            num_channels_reduced=num_channels_reduced,
+-            reduction_ratio=reduction_ratio,
+-            is_3d=is_3d,
+-            activation=activation,
+-        )
+-        self.spatial = SpatialSqueezeExcitation(num_channels=num_channels, is_3d=is_3d)
++
++        if num_channels_reduced is None:
++            num_channels_reduced = int(num_channels // reduction_ratio)
++
++        if activation is None:
++            activation = nn.ReLU()
++
++        if is_3d:
++            conv1 = nn.Conv3d(
++                num_channels, num_channels_reduced, kernel_size=1, bias=True
++            )
++            conv2 = nn.Conv3d(
++                num_channels_reduced, num_channels, kernel_size=1, bias=True
++            )
++        else:
++            conv1 = nn.Conv2d(
++                num_channels, num_channels_reduced, kernel_size=1, bias=True
++            )
++            conv2 = nn.Conv2d(
++                num_channels_reduced, num_channels, kernel_size=1, bias=True
++            )
++
++        self.is_3d = is_3d
++        self.block = nn.Sequential(
++            conv1,
++            activation,
++            conv2,
++            nn.Sigmoid(),
++        )
+ 
+     def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
+         """

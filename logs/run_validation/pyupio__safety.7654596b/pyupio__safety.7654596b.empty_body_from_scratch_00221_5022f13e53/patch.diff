@@ -1,0 +1,40 @@
+--- a/safety/scan/main.py
++++ b/safety/scan/main.py
+@@ -125,35 +125,8 @@
+         config.write(configfile)
+ 
+ 
+-def load_policy_file(path: Path) -> Optional[PolicyFileModel]:
+-    """
+-    Loads a policy file from the specified path.
+-
+-    Args:
+-        path (Path): The path to the policy file.
+-
+-    Returns:
+-        Optional[PolicyFileModel]: PolicyFileModel object if successful, otherwise None.
+-    """
+-    config = None
+-
+-    if not path or not path.exists():
+-        return None
+-
+-    err = f'Unable to load the Safety Policy file ("{path}"), this command ' \
+-        "only supports version 3.0"
+-
+-    try:
+-        config = ConfigModel.parse_policy_file(raw_report=path)
+-    except ValidationError as e:
+-        LOG.error(f"Failed to parse policy file {path}.", exc_info=True)
+-        raise SafetyError(f"{err}, details: {e}")
+-    except ValueError as e:
+-        LOG.error(f"Wrong YML file for policy file {path}.", exc_info=True)
+-        raise SafetyError(f"{err}, details: {e}")
+-
+-    return PolicyFileModel(id=str(path), source=PolicySource.local,
+-                           location=path, config=config)
++def load_policy_file(path: Path) ->Optional[PolicyFileModel]:
++    pass
+ 
+ 
+ def resolve_policy(local_policy: Optional[PolicyFileModel], cloud_policy: Optional[PolicyFileModel]) -> Optional[PolicyFileModel]:

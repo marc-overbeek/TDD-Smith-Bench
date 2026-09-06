@@ -1,0 +1,99 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -533,39 +533,65 @@
+     return content
+ 
+ 
+-def get_final_brief(total_vulns_found: int, remediations: Dict[str, Any], ignored: Dict[str, Any], total_ignored: int, kwargs: Optional[Dict[str, Any]] = None) -> str:
+-    """
+-    Get the final brief summary.
+-
+-    Args:
+-        total_vulns_found (int): Total vulnerabilities found.
+-        remediations (Dict[str, Any]): Remediation details.
+-        ignored (Dict[str, Any]): Ignored vulnerabilities details.
+-        total_ignored (int): Total ignored vulnerabilities.
+-        kwargs (Optional[Dict[str, Any]], optional): Additional arguments for formatting. Defaults to None.
+-
+-    Returns:
+-        str: Final brief summary.
+-    """
++def get_final_brief(total_vulns_found: int, remediations: Dict[str, Any],
++    ignored: Dict[str, Any], total_ignored: int, kwargs: Optional[Dict[str,
++    Any]]=None) ->str:
++    
+     if not kwargs:
+         kwargs = {}
+-
+-    rem_count: int = get_remediations_count(remediations)
+-    total_vulns = max(0, total_vulns_found - total_ignored)
+-
+-    vuln_text = 'vulnerabilities' if total_ignored > 1 else 'vulnerability'
+-    pkg_text = 'packages were' if len(ignored.keys()) > 1 else 'package was'
+-
+-    policy_file_text = ' using a safety policy file' if is_using_a_safety_policy_file() else ''
+-
+-    vuln_brief = f" {total_vulns} vulnerabilit{'y was' if total_vulns == 1 else 'ies were'} reported."
+-    ignored_text = f' {total_ignored} {vuln_text} from {len(ignored.keys())} {pkg_text} ignored.' if ignored else ''
+-    remediation_text = f" {rem_count} remediation{' was' if rem_count == 1 else 's were'} " \
+-                       f"recommended." if is_using_api_key() else ''
+-
+-    raw_brief = f"Scan was completed{policy_file_text}.{vuln_brief}{ignored_text}{remediation_text}"
+-
+-    return format_long_text(raw_brief, start_line_decorator=' ', **kwargs)
++    
++    columns = kwargs.get('columns', get_terminal_size().columns)
++    indent = ' ' * 2
++    
++    content = []
++    
++    # Add announcements if any
++    announcements = kwargs.get('announcements', [])
++    if announcements:
++        announcement_section = build_announcements_section_content(announcements, columns, indent)
++        content.append(announcement_section)
++    
++    # Add summary information
++    if total_vulns_found > 0:
++        vuln_text = 'vulnerabilities' if total_vulns_found != 1 else 'vulnerability'
++        content.append(f"Found {total_vulns_found} {vuln_text}")
++    
++    if total_ignored > 0:
++        ignored_text = 'vulnerabilities' if total_ignored != 1 else 'vulnerability'
++        content.append(f"Skipped {total_ignored} {ignored_text} (ignored)")
++    
++    # Add remediation information if available
++    if remediations and is_using_api_key():
++        remediation_count = get_remediations_count(remediations)
++        if remediation_count > 0:
++            remediation_text = 'remediations' if remediation_count != 1 else 'remediation'
++            content.append(f"{remediation_count} {remediation_text} recommended")
++    
++    # Add unpinned requirements warning if applicable
++    ignore_unpinned = kwargs.get('ignore_unpinned_requirements', False)
++    unpinned_packages = kwargs.get('unpinned_packages', {})
++    
++    if unpinned_packages and not ignore_unpinned:
++        unpinned_lines = format_unpinned_vulnerabilities(unpinned_packages, columns)
++        content.extend(unpinned_lines)
++    
++    # Add unpinned requirements warning when they should be ignored
++    if unpinned_packages and ignore_unpinned:
++        for pkg_name, vulns in unpinned_packages.items():
++            total = {vuln.vulnerability_id for vuln in vulns}
++            pkg = vulns[0].pkg
++            reqs = ', '.join([str(r) for r in pkg.get_unpinned_req()])
++            
++            match_text = 'vulnerabilities match' if len(total) > 1 else 'vulnerability matches'
++            content.append(
++                f"Warning: {len(total)} known {match_text} the {pkg.name} versions that could be "
++                f"installed from your specifier{'s' if len(pkg.requirements) > 1 else ''}: {reqs} (unpinned). "
++                f"These vulnerabilities are not reported by default. To report these vulnerabilities, "
++                f"use --check-unpinned-requirements or set 'ignore-unpinned-requirements' to False "
++                f"in your policy file."
++            )
++    
++    return '\n'.join(content) if content else ""
+ 
+ 
+ def get_final_brief_license(licenses: List[str], kwargs: Optional[Dict[str, Any]] = None) -> str:

@@ -1,0 +1,36 @@
+--- a/starlette/staticfiles.py
++++ b/starlette/staticfiles.py
+@@ -60,10 +60,6 @@
+         directory: PathLike | None = None,
+         packages: list[str | tuple[str, str]] | None = None,
+     ) -> list[PathLike]:
+-        """
+-        Given `directory` and `packages` arguments, return a list of all the
+-        directories that should be used for serving static files from.
+-        """
+         directories = []
+         if directory is not None:
+             directories.append(directory)
+@@ -156,9 +152,8 @@
+             else:
+                 full_path = os.path.realpath(joined_path)
+                 directory = os.path.realpath(directory)
+-            if os.path.commonpath([full_path, directory]) != directory:
+-                # Don't allow misbehaving clients to break out of the static files
+-                # directory.
++            directory_real = os.path.realpath(directory)
++            if os.path.commonpath([full_path, directory_real]) != directory_real:
+                 continue
+             try:
+                 return full_path, os.stat(full_path)
+@@ -197,10 +192,6 @@
+             raise RuntimeError(f"StaticFiles path '{self.directory}' is not a directory.")
+ 
+     def is_not_modified(self, response_headers: Headers, request_headers: Headers) -> bool:
+-        """
+-        Given the request and response headers, return `True` if an HTTP
+-        "Not Modified" response could be returned instead.
+-        """
+         try:
+             if_none_match = request_headers["if-none-match"]
+             etag = response_headers["etag"]

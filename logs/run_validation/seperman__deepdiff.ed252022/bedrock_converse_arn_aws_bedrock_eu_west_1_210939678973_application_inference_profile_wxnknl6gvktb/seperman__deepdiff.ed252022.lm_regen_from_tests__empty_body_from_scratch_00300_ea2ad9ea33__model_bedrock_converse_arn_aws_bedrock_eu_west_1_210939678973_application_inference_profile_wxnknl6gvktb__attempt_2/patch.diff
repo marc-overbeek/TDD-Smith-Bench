@@ -1,0 +1,73 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -436,20 +436,57 @@
+     return pretty_form_texts
+ 
+ 
++for key in keys:  # key is like "type_changes", "values_changed"
++    for item_key in self.tree[key]:  # item_key is the path like "root[2]"
++        result += [pretty_print_diff(item_key)]
++
+ def pretty_print_diff(diff):
+-    type_t1 = get_type(diff.t1).__name__
+-    type_t2 = get_type(diff.t2).__name__
+-
+-    val_t1 = '"{}"'.format(str(diff.t1)) if type_t1 == "str" else str(diff.t1)
+-    val_t2 = '"{}"'.format(str(diff.t2)) if type_t2 == "str" else str(diff.t2)
+-
+-    diff_path = diff.path(root='root')
+-    return _get_pretty_form_text(diff.verbose_level).get(diff.report_type, "").format(
+-        diff_path=diff_path,
+-        type_t1=type_t1,
+-        type_t2=type_t2,
+-        val_t1=val_t1,
+-        val_t2=val_t2)
++    """
++    Format a single diff item into a human-readable string.
++    
++    diff is expected to be a string key from the tree structure like:
++    "root[2]" or "root['key']" etc.
++    
++    This function is called from the pretty() method which iterates through
++    the tree structure.
++    """
++    if isinstance(diff, tuple) and len(diff) >= 3:
++        change_type, path, values = diff[0], diff[1], diff[2]
++        pretty_form_texts = _get_pretty_form_text(verbose_level=diff[3] if len(diff) > 3 else 0)
++        
++        if change_type in pretty_form_texts:
++            template = pretty_form_texts[change_type]
++            
++            # Extract values from the values dict
++            val_t1 = values.get('old_value', '')
++            val_t2 = values.get('new_value', '')
++            type_t1 = values.get('old_type', '')
++            type_t2 = values.get('new_type', '')
++            
++            return template.format(
++                diff_path=path,
++                val_t1=val_t1,
++                val_t2=val_t2,
++                type_t1=type_t1,
++                type_t2=type_t2,
++            )
++    
++    return str(diff)
++
++def pretty_print_diff(diff):
++    """
++    Format a single diff item into a human-readable string.
++    
++    diff is expected to be a string key from the tree structure like:
++    "root[2]" or "root['key']" etc.
++    
++    This function is called from the pretty() method which iterates through
++    the tree structure.
++    """
++    return f"Item {diff} changed."
++
++def pretty_print_diff(diff):
++    return str(diff)
+ 
+ 
+ def load_path_content(path, file_type=None):

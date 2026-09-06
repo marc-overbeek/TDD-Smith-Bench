@@ -1,0 +1,22 @@
+--- a/starlette/exceptions.py
++++ b/starlette/exceptions.py
+@@ -31,7 +31,18 @@
+ class WebSocketException(Exception):
+     def __init__(self, code: int, reason: str | None = None) -> None:
+         self.code = code
+-        self.reason = reason or ""
++        self.reason = reason
++
++    def __init__(self, code: int, reason: str | None = None) -> None:
++        self.code = code
++        self.reason = reason
++
++    def __str__(self) -> str:
++        return f"{self.code}: {self.reason or ''}"
++
++    def __init__(self, code: int, reason: str | None = None) -> None:
++        self.code = code
++        self.reason = reason
+ 
+     def __str__(self) -> str:
+         return f"{self.code}: {self.reason}"

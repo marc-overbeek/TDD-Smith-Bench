@@ -1,0 +1,19 @@
+--- a/src/mistune/core.py
++++ b/src/mistune/core.py
+@@ -230,14 +230,8 @@
+         # bind self into renderer method
+         self.__methods[name] = lambda *arg, **kwargs: method(self, *arg, **kwargs)
+ 
+-    def _get_method(self, name: str) -> Callable[..., str]:
+-        try:
+-            return cast(Callable[..., str], object.__getattribute__(self, name))
+-        except AttributeError:
+-            method = self.__methods.get(name)
+-            if not method:
+-                raise AttributeError('No renderer "{!r}"'.format(name))
+-            return method
++    def _get_method(self, name: str) ->Callable[..., str]:
++        pass
+ 
+     def render_token(self, token: Dict[str, Any], state: BlockState) -> str:
+         func = self._get_method(token['type'])

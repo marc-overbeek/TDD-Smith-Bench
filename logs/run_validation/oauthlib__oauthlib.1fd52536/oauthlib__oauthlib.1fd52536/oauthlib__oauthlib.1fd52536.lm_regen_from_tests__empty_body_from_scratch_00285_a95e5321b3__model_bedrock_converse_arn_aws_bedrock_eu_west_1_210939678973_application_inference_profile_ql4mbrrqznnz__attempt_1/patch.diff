@@ -1,0 +1,49 @@
+--- a/oauthlib/oauth2/rfc6749/errors.py
++++ b/oauthlib/oauth2/rfc6749/errors.py
+@@ -386,14 +386,36 @@
+ 
+ 
+ def raise_from_error(error, params=None):
+-    import inspect
+-    import sys
+-    kwargs = {
+-        'description': params.get('error_description'),
+-        'uri': params.get('error_uri'),
+-        'state': params.get('state')
++    lookup = {
++        AccessDeniedError.error: AccessDeniedError,
++        FatalClientError.error: FatalClientError,
++        InvalidClientError.error: InvalidClientError,
++        InvalidGrantError.error: InvalidGrantError,
++        InvalidRequestError.error: InvalidRequestError,
++        InvalidRequestFatalError.error: InvalidRequestFatalError,
++        InvalidScopeError.error: InvalidScopeError,
++        InvalidTokenError.error: InvalidTokenError,
++        MismatchingStateError.error: MismatchingStateError,
++        MissingCodeError.error: MissingCodeError,
++        MissingTokenError.error: MissingTokenError,
++        MissingTokenTypeError.error: MissingTokenTypeError,
++        ServerError.error: ServerError,
++        TemporarilyUnavailableError.error: TemporarilyUnavailableError,
++        UnauthorizedClientError.error: UnauthorizedClientError,
++        UnsupportedGrantTypeError.error: UnsupportedGrantTypeError,
++        UnsupportedResponseTypeError.error: UnsupportedResponseTypeError,
++        UnsupportedTokenTypeError.error: UnsupportedTokenTypeError,
++        InsufficientScopeError.error: InsufficientScopeError,
++        ConsentRequired.error: ConsentRequired,
++        LoginRequired.error: LoginRequired,
+     }
+-    for _, cls in inspect.getmembers(sys.modules[__name__], inspect.isclass):
+-        if cls.error == error:
+-            raise cls(**kwargs)
+-    raise CustomOAuth2Error(error=error, **kwargs)
++    
++    params = params or {}
++    description = params.get('error_description')
++    uri = params.get('error_uri')
++    state = params.get('state')
++    
++    if error in lookup:
++        raise lookup[error](description=description, uri=uri, state=state)
++    else:
++        raise CustomOAuth2Error(error=error, description=description, uri=uri, state=state)

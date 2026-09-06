@@ -1,0 +1,190 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1171,145 +1171,49 @@
+     return requirements
+ 
+ 
+-def apply_fixes(
+-    requirements: Dict[str, Any],
+-    out_type: str,
+-    no_output: bool,
+-    prompt: bool,
+-    scan_flow: bool = False,
+-    auto_remediation_limit: List[str] = None
+-) -> List[Fix]:
+-    """
+-    Applies the fixes to the requirements.
+-
+-    Args:
+-        requirements (Dict[str, Any]): The requirements with fixes.
+-        out_type (str): The output format.
+-        no_output (bool): Whether to suppress output.
+-        prompt (bool): Whether to prompt for confirmation.
+-        scan_flow (bool): Whether it is in scan flow mode.
+-        auto_remediation_limit (List[str]): The automatic remediation limits.
+-
+-    Returns:
+-        List[Fix]: The list of applied fixes.
+-    """
+-
+-    from dparse.updater import RequirementsTXTUpdater
+-
+-    skip = []
+-    apply = []
+-    confirm = []
+-
+-    brief = []
+-
++def apply_fixes(requirements: Dict[str, Any], out_type: str, no_output:
++    bool, prompt: bool, scan_flow: bool=False, auto_remediation_limit: List
++    [str]=None) ->List[Fix]:
++    
++    fixes = []
++    
++    if scan_flow:
++        # Handle scan flow mode
++        for file_name, file_data in requirements['files'].items():
++            if not file_data['supported']:
++                continue
++                
++            fixes_per_file = file_data['fixes']
++            
++            # Apply fixes that are marked for application
++            for fix in fixes_per_file['TO_APPLY']:
++                fixes.append(fix)
++                
++            # Handle confirmed fixes
++            if prompt:
++                for fix in fixes_per_file['TO_CONFIRM']:
++                    # In scan flow, we might not actually prompt but just collect
++                    fixes.append(fix)
++                    
++    else:
++        # Handle regular flow
++        for file_name, file_data in requirements['files'].items():
++            fixes_per_file = file_data['fixes']
++            
++            # Apply fixes that are marked for application
++            for fix in fixes_per_file['TO_APPLY']:
++                fixes.append(fix)
++                
++            # Handle confirmed fixes
++            if prompt:
++                for fix in fixes_per_file['TO_CONFIRM']:
++                    fixes.append(fix)
++    
++    # If no_output is False, print the fixes
+     if not no_output:
+-        style_kwargs = {}
+-
+-        if not scan_flow:
+-            brief.append(('', {}))
+-            brief.append((f"Safety fix running", style_kwargs))
+-        print_service(brief, out_type)
+-
+-    for name, data in requirements['files'].items():
+-        output = [('', {}),
+-                  (f"Analyzing {name}... [{get_fix_opt_used_msg(auto_remediation_limit)} limit]", {'styling': {'bold': True}, 'start_line_decorator': '->', 'indent': ' '})]
+-
+-        r_skip = data['fixes']['TO_SKIP']
+-        r_apply = data['fixes']['TO_APPLY']
+-        r_confirm = data['fixes']['TO_CONFIRM']
+-
+-        if data.get('supported', True):
+-            new_content = data['content']
+-
+-            updated: bool = False
+-
+-            for f in r_apply:
+-                new_content = RequirementsTXTUpdater.update(content=new_content, version=f.updated_version,
+-                                                            dependency=f.dependency, hashes=get_hashes(f.dependency))
+-                f.status = 'APPLIED'
+-                updated = True
+-                output.append(('', {}))
+-                output.append((f'- {get_applied_msg(f, mode="auto")}', {}))
+-
+-            for f in r_skip:
+-                output.append(('', {}))
+-                output.append((f'- {get_skipped_msg(f)}', {}))
+-
+-            if not no_output:
+-                print_service(output, out_type)
+-
+-            if prompt and not no_output:
+-                for f in r_confirm:
+-                    options = [f"({index}) =={option}" for index, option in enumerate(f.other_options)]
+-                    input_hint = f'Enter “y” to update to {f.package}=={f.updated_version}, “n” to skip this package upgrade'
+-
+-                    if len(options) > 0:
+-                        input_hint += f', or enter the index from these secure versions to upgrade to that version: {", ".join(options)}'
+-
+-                    print_service([('', {})], out_type)
+-                    confirmed: str = prompt_service(
+-                        (f'- {f.package}{f.previous_spec} requires at least a {f.update_type} version update. Do you want to update {f.package} from {f.previous_spec} to =={f.updated_version}, which is the closest secure version? {input_hint}', {}),
+-                        out_type
+-                    ).lower()
+-
+-                    try:
+-                        index: int = int(confirmed)
+-                        if index <= len(f.other_options):
+-                            confirmed = 'y'
+-                    except ValueError:
+-                        index = -1
+-
+-                    if confirmed == 'y' or index > -1:
+-                        f.status = 'APPLIED'
+-                        updated = True
+-
+-                        if index > -1:
+-                            f.updated_version = f.other_options[index]
+-
+-                        new_content = RequirementsTXTUpdater.update(content=new_content, version=f.updated_version,
+-                                                                    dependency=f.dependency,
+-                                                                    hashes=get_hashes(f.dependency))
+-                        output.append((get_applied_msg(f, mode="manual"), {'indent': ' ' * 5}))
+-                    else:
+-                        f.status = 'MANUALLY_SKIPPED'
+-                        output.append((get_skipped_msg(f), {'indent': ' ' * 5}))
+-
+-                    if not no_output:
+-                        print_service(output, out_type)
+-
+-            if updated:
+-                output.append(('', {}))
+-                output.append((f"Updating {name}...", {}))
+-                with open(name, mode="w") as r_file:
+-                    r_file.write(new_content)
+-                output.append((f"Changes applied to {name}.", {}))
+-                count = len(r_apply) + len([1 for fix in r_confirm if fix.status == 'APPLIED'])
+-                output.append((f"{count} package {pluralize('version', count)} {pluralize('has', count)} been updated to secure versions in {Path(name).name}", {}))
+-                output.append(("Always check for breaking changes after updating packages.", {}))
+-            else:
+-                output.append((f"No fixes to be made in {name}.", {}))
+-                output.append(('', {}))
+-        else:
+-            not_supported_filename = data.get('filename', name)
+-            output.append(
+-                (f"{not_supported_filename} updates not supported: Please update these dependencies using your package manager.",
+-                 {'start_line_decorator': ' -', 'indent': ' '}))
+-            output.append(('', {}))
+-
+-        if not no_output:
+-            print_service(output, out_type)
+-
+-        skip.extend(r_skip)
+-        apply.extend(r_apply)
+-        confirm.extend(r_confirm)
+-
+-    # The scan flow will handle the header and divider, because the scan flow can be called multiple times.
+-    if not no_output and not scan_flow:
+-        divider = f'{"=" * 78}' if out_type == 'text' else f'{"=" * (get_terminal_size().columns - 2)}'
+-        format_text = {'start_line_decorator': '+', 'end_line_decorator': '+', 'indent': ''}
+-        print_service([(divider, {})], out_type, format_text=format_text)
+-
+-    return skip + apply + confirm
++        print_service(fixes, out_type)
++        
++    return fixes
+ 
+ 
+ def find_vulnerabilities_fixed(

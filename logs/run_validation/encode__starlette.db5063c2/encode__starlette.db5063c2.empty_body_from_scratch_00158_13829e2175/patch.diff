@@ -1,0 +1,17 @@
+--- a/starlette/responses.py
++++ b/starlette/responses.py
+@@ -44,12 +44,8 @@
+         self.body = self.render(content)
+         self.init_headers(headers)
+ 
+-    def render(self, content: typing.Any) -> bytes | memoryview:
+-        if content is None:
+-            return b""
+-        if isinstance(content, (bytes, memoryview)):
+-            return content
+-        return content.encode(self.charset)  # type: ignore
++    def render(self, content: typing.Any) ->(bytes | memoryview):
++        pass
+ 
+     def init_headers(self, headers: typing.Mapping[str, str] | None = None) -> None:
+         if headers is None:

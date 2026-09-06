@@ -1,0 +1,66 @@
+--- a/src/mistune/plugins/formatting.py
++++ b/src/mistune/plugins/formatting.py
+@@ -48,14 +48,13 @@
+     return "<ins>" + text + "</ins>"
+ 
+ 
+-def parse_superscript(
+-    inline: "InlineParser", m: Match[str], state: "InlineState"
+-) -> int:
+-    return _parse_script(inline, m, state, "superscript")
++def parse_superscript(inline: 'InlineParser', m: Match[str], state:
++    'InlineState') ->int:
++    pass
+ 
+ 
+-def render_superscript(renderer: "BaseRenderer", text: str) -> str:
+-    return "<sup>" + text + "</sup>"
++def render_superscript(renderer: 'BaseRenderer', text: str) ->str:
++    pass
+ 
+ 
+ def parse_subscript(inline: "InlineParser", m: Match[str], state: "InlineState") -> int:
+@@ -86,18 +85,9 @@
+     return end_pos
+ 
+ 
+-def _parse_script(
+-    inline: "InlineParser", m: Match[str], state: "InlineState", tok_type: str
+-) -> int:
+-    text = m.group(0)
+-    new_state = state.copy()
+-    new_state.src = text[1:-1].replace('\\ ', ' ')
+-    children = inline.render(new_state)
+-    state.append_token({
+-        'type': tok_type,
+-        'children': children
+-    })
+-    return m.end()
++def _parse_script(inline: 'InlineParser', m: Match[str], state:
++    'InlineState', tok_type: str) ->int:
++    pass
+ 
+ 
+ def strikethrough(md: "Markdown") -> None:
+@@ -166,19 +156,8 @@
+         md.renderer.register('insert', render_insert)
+ 
+ 
+-def superscript(md: "Markdown") -> None:
+-    """A mistune plugin to add ``<sup>`` tag. Spec defined at
+-    https://pandoc.org/MANUAL.html#superscripts-and-subscripts:
+-
+-    .. code-block:: text
+-
+-        2^10^ is 1024.
+-
+-    :param md: Markdown instance
+-    """
+-    md.inline.register('superscript', SUPERSCRIPT_PATTERN, parse_superscript, before='linebreak')
+-    if md.renderer and md.renderer.NAME == 'html':
+-        md.renderer.register('superscript', render_superscript)
++def superscript(md: 'Markdown') ->None:
++    pass
+ 
+ 
+ def subscript(md: "Markdown") -> None:

@@ -1,0 +1,37 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1844,32 +1844,8 @@
+ 
+         return MinimumMaximum(min(elevations), max(elevations))
+ 
+-    def get_center(self) -> Optional[mod_geo.Location]:
+-        """
+-        Get the center of the route.
+-
+-        Returns
+-        -------
+-        center: Location
+-            latitude: latitude of center in degrees
+-            longitude: longitude of center in degrees
+-            elevation: not calculated here
+-        """
+-        if not self.segments:
+-            return None
+-        sum_lat: float = 0
+-        sum_lon: float = 0
+-        n = 0
+-        for track_segment in self.segments:
+-            for point in track_segment.points:
+-                n += 1
+-                sum_lat += point.latitude
+-                sum_lon += point.longitude
+-
+-        if not n:
+-            return mod_geo.Location(0, 0)
+-
+-        return mod_geo.Location(latitude=sum_lat / n, longitude=sum_lon / n)
++    def get_center(self) ->Optional[mod_geo.Location]:
++        pass
+ 
+     def smooth(self, vertical: bool=True, horizontal: bool=False, remove_extremes: bool=False) -> None:
+         """ See: GPXTrackSegment.smooth() """

@@ -1,0 +1,408 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -63,204 +63,117 @@
+     return format_long_text('')
+ 
+ 
+-def style_lines(lines: List[Dict[str, Any]], columns: int, pre_processed_text: str = '', start_line: str = ' ' * 4, end_line: str = ' ' * 4) -> str:
+-    """
+-    Style the lines with the specified format.
+-
+-    Args:
+-        lines (List[Dict[str, Any]]): List of lines to style.
+-        columns (int): Number of columns for formatting.
+-        pre_processed_text (str, optional): Pre-processed text. Defaults to ''.
+-        start_line (str, optional): Starting line decorator. Defaults to ' ' * 4.
+-        end_line (str, optional): Ending line decorator. Defaults to ' ' * 4.
+-
+-    Returns:
+-        str: Styled text.
+-    """
+-    styled_text = pre_processed_text
+-
++def style_lines(lines: List[Dict[str, Any]], columns: int,
++    pre_processed_text: str='', start_line: str=' ' * 4, end_line: str=' ' * 4
++    ) ->str:
++    result = pre_processed_text
+     for line in lines:
+-        styled_line = ''
+-        left_padding = ' ' * line.get('indent', 0)
+-
+-        for i, word in enumerate(line.get('words', [])):
+-            if word.get('style', {}):
+-                text = ''
+-
+-                if i == 0:
+-                    text = left_padding  # Include the line padding in the word to avoid Github issues
+-                    left_padding = ''  # Clean left padding to avoid be added two times
+-
+-                text += word.get('value', '')
+-
+-                styled_line += click.style(text=text, **word.get('style', {}))
+-            else:
+-                styled_line += word.get('value', '')
+-
+-        styled_text += format_long_text(styled_line, columns=columns, start_line_decorator=start_line,
+-                                        end_line_decorator=end_line,
+-                                        indent=left_padding, **line.get('format', {})) + '\n'
+-
+-    return styled_text
+-
+-
+-def format_vulnerability(vulnerability: Any, full_mode: bool, only_text: bool = False, columns: int = get_terminal_size().columns) -> str:
+-    """
+-    Format the vulnerability details.
+-
+-    Args:
+-        vulnerability (Any): The vulnerability object.
+-        full_mode (bool): Whether to use full mode for formatting.
+-        only_text (bool, optional): Whether to return only text without styling. Defaults to False.
+-        columns (int, optional): Number of columns for formatting. Defaults to terminal size.
+-
+-    Returns:
+-        str: Formatted vulnerability details.
+-    """
+-
+-    common_format = {'indent': 3, 'format': {'sub_indent': ' ' * 3, 'max_lines': None}}
+-
+-    styled_vulnerability = [
+-        {'words': [{'style': {'bold': True}, 'value': 'Vulnerability ID: '},
+-                   {'value': vulnerability.vulnerability_id}]},
+-    ]
+-
+-    vulnerability_spec = [
+-        {'words': [{'style': {'bold': True}, 'value': 'Affected spec: '},
+-                   {'value': ', '.join(vulnerability.vulnerable_spec)}]}]
+-
+-    is_pinned_req = is_pinned_requirement(vulnerability.analyzed_requirement.specifier)
+-
+-    cve = vulnerability.CVE
+-
+-    cvssv2_line = None
+-    cve_lines = []
+-
+-    if cve:
+-        if full_mode and cve.cvssv2:
+-            b = cve.cvssv2.get("base_score", "-")
+-            s = cve.cvssv2.get("impact_score", "-")
+-            v = cve.cvssv2.get("vector_string", "-")
+-
+-            cvssv2_line = {'words': [
+-                {'value': f'CVSS v2, BASE SCORE {b}, IMPACT SCORE {s}, VECTOR STRING {v}'},
+-            ]}
+-
+-        if cve.cvssv3 and "base_severity" in cve.cvssv3.keys():
+-            cvss_base_severity_style = {'bold': True}
+-            base_severity = cve.cvssv3.get("base_severity", "-")
+-
+-            if base_severity.upper() in ['HIGH', 'CRITICAL']:
+-                cvss_base_severity_style['fg'] = 'red'
+-
+-            b = cve.cvssv3.get("base_score", "-")
+-
+-            if full_mode:
+-                s = cve.cvssv3.get("impact_score", "-")
+-                v = cve.cvssv3.get("vector_string", "-")
+-
+-                cvssv3_text = f'CVSS v3, BASE SCORE {b}, IMPACT SCORE {s}, VECTOR STRING {v}'
+-
+-            else:
+-                cvssv3_text = f'CVSS v3, BASE SCORE {b} '
+-
+-            cve_lines = [
+-                {'words': [{'style': {'bold': True}, 'value': '{0} is '.format(cve.name)},
+-                           {'style': cvss_base_severity_style,
+-                            'value': f'{base_severity} SEVERITY => '},
+-                           {'value': cvssv3_text},
+-                           ]},
++        words = line.get('words', [])
++        line_text = ''
++        for word in words:
++            value = word.get('value', '')
++            style_opts = word.get('style', {})
++            if style_opts:
++                value = click.style(value, **style_opts)
++            line_text += value
++        result += line_text
++    return result
++
++
++def format_vulnerability(vulnerability: Any, full_mode: bool, only_text:
++    bool=False, columns: int=get_terminal_size().columns) ->str:
++    indent = ' ' * 3
++    kwargs = {'indent': indent, 'sub_indent': indent, 'columns': columns,
++              'start_line_decorator': '', 'end_line_decorator': ''}
++
++    pkg = vulnerability.pkg
++    req = pkg.requirements[0] if pkg.requirements else None
++    is_pinned = is_pinned_requirement(req) if req else True
++
++    lines = []
++
++    if is_pinned:
++        title = f'-> Vulnerability found in {pkg.name} version {pkg.version}'
++    else:
++        spec_str = str(req.specifier) if req and req.specifier else ''
++        req_str = f'{pkg.name}{spec_str}'
++        title = f'-> Vulnerability may be present given that your {pkg.name} install specifier is\n{indent}{req_str}'
++
++    title_styled = click.style(title, fg=RED, bold=True)
++    lines.append(format_long_text(title_styled, **kwargs))
++
++    vuln_id_line = f'Vulnerability ID: {vulnerability.vulnerability_id}'
++    lines.append(format_long_text(vuln_id_line, **kwargs))
++
++    if vulnerability.ignored:
++        ignored_line = 'This vulnerability is being ignored.'
++        expires = vulnerability.ignored_expires
++        if expires:
++            expires_str = expires.strftime('%Y-%m-%d %H:%M:%S UTC')
++            ignored_line = f'This vulnerability is being ignored until {expires_str}. See your configurations.'
++        lines.append(format_long_text(ignored_line, **kwargs))
++
++        reason = vulnerability.ignored_reason
++        if reason:
++            lines.append(format_long_text(f'Reason: {reason}', **kwargs))
++
++        more_info = f'For more information about this vulnerability, visit\n{indent}{vulnerability.more_info_url}'
++        if columns >= 120:
++            more_info = f'For more information about this vulnerability, visit {vulnerability.more_info_url}'
++        lines.append(format_long_text(more_info, **kwargs) + '\n')
++    else:
++        affected_spec = f'Affected spec: {vulnerability.vulnerable_spec}'
++        lines.append(format_long_text(affected_spec, **kwargs))
++
++        advisory = f'ADVISORY: {vulnerability.advisory if vulnerability.advisory else ""}'
++        lines.append(format_long_text(advisory, **kwargs))
++
++        secure_versions = pkg.secure_versions if pkg.secure_versions else []
++        if secure_versions:
++            fixed_versions = ', '.join(str(v) for v in secure_versions)
++            fixed_line = f'Fixed versions: {fixed_versions}'
++        else:
++            fixed_line = 'Fixed versions: No known fix'
++        lines.append(format_long_text(fixed_line, **kwargs))
++
++        cve = vulnerability.CVE
++        if cve and (cve.cvssv3 or cve.cvssv2):
++            severity_lines = []
++            if cve.cvssv3:
++                v3 = cve.cvssv3
++                severity = v3.get('base_severity', '').upper()
++                base_score = v3.get('base_score', '')
++                impact_score = v3.get('impact_score', '')
++                vector = v3.get('vector_string', '')
++                sev_msg = f'{vulnerability.advisory} is {severity} SEVERITY => CVSS v3, BASE SCORE {base_score}, IMPACT SCORE {impact_score}, VECTOR STRING {vector}'
++                severity_lines.append(format_long_text(sev_msg, **kwargs))
++            if cve.cvssv2:
++                v2 = cve.cvssv2
++                base_score = v2.get('base_score', '')
++                impact_score = v2.get('impact_score', '')
++                vector = v2.get('vector_string', '')
++                v2_msg = f'CVSS v2, BASE SCORE {base_score}, IMPACT SCORE {impact_score}, VECTOR STRING {vector}'
++                severity_lines.append(format_long_text(v2_msg, **kwargs))
++            lines.extend(severity_lines)
++
++        if not is_pinned:
++            range_info_lines = [
++                'This vulnerability is present in your install specifier range.',
++                get_specifier_range_info(style=False),
+             ]
+-
+-            if cvssv2_line:
+-                cve_lines.append(cvssv2_line)
+-
+-        elif cve.name:
+-            cve_lines = [
+-                {'words': [{'style': {'bold': True}, 'value': cve.name}]}
+-            ]
+-
+-    advisory_format = {'sub_indent': ' ' * 3, 'max_lines': None} if full_mode else {'sub_indent': ' ' * 3,
+-                                                                                    'max_lines': 2}
+-
+-    basic_vuln_data_lines = [
+-        {'format': advisory_format, 'words': [
+-            {'style': {'bold': True}, 'value': 'ADVISORY: '},
+-            {'value': vulnerability.advisory.replace('\n', '')}]}
+-    ]
+-
+-    if is_using_api_key():
+-        fixed_version_line = {'words': [
+-            {'style': {'bold': True}, 'value': 'Fixed versions: '},
+-            {'value': ', '.join(vulnerability.fixed_versions) if vulnerability.fixed_versions else 'No known fix'}
+-        ]}
+-
+-        basic_vuln_data_lines.append(fixed_version_line)
+-
+-    more_info_line = [
+-        {'words': [{'style': {'bold': True}, 'value': 'For more information about this vulnerability, visit '},
+-                   {'value': click.style(vulnerability.more_info_url)}]}
+-    ]
+-
+-    if not is_pinned_req and not vulnerability.ignored:
+-        more_info_line.insert(0, {'words': [
+-            {'style': {'bold': True}, 'value': f'This vulnerability is present in your install specifier range.'},
+-            {'value': f' {get_specifier_range_info()}'}
+-        ]})
+-
+-    vuln_title = f'-> Vulnerability found in {vulnerability.package_name} version {vulnerability.analyzed_version}'
+-
+-    if not is_pinned_req:
+-        vuln_title = f'-> Vulnerability may be present given that your {vulnerability.package_name} install specifier' \
+-                     f' is {vulnerability.analyzed_requirement.specifier}'
+-
+-    title_color: str = 'red'
+-    to_print = styled_vulnerability
+-
+-    if not vulnerability.ignored:
+-        to_print += vulnerability_spec + basic_vuln_data_lines + cve_lines
+-    else:
+-        title_color = ''
+-        generic_reason = 'This vulnerability is being ignored'
+-        if vulnerability.ignored_expires:
+-            generic_reason += f" until {vulnerability.ignored_expires.strftime('%Y-%m-%d %H:%M:%S UTC')}. " \
+-                              f"See your configurations"
+-
+-        specific_reason = None
+-        if vulnerability.ignored_reason:
+-            specific_reason = [
+-                {'words': [{'style': {'bold': True}, 'value': 'Reason: '}, {'value': vulnerability.ignored_reason}]}]
+-
+-        expire_section = [{'words': [
+-            {'style': {'bold': True, 'fg': 'green'}, 'value': f'{generic_reason}.'}, ]}]
+-
+-        if specific_reason:
+-            expire_section += specific_reason
+-
+-        to_print += expire_section
+-
+-    to_print += more_info_line
+-
+-    if not vulnerability.ignored:
+-        ignore_help_line = [
+-            {'words': [
+-                {
+-                    'value': f'To ignore this vulnerability, use PyUp vulnerability id {vulnerability.vulnerability_id}'
+-                             f' in safety’s ignore command-line argument or add the ignore to your safety policy file.'
+-                    }
+-            ]}
+-        ]
+-
+-        to_print += ignore_help_line
+-
+-    to_print = [{**common_format, **line} for line in to_print]
+-
+-    styled_text = format_long_text(vuln_title, title_color, columns, start_line_decorator='', end_line_decorator='',
+-                                   sub_indent=' ' * 3) + '\n'
+-
+-    content = style_lines(to_print, columns - 3, styled_text, start_line='', end_line='')
+-
+-    return click.unstyle(content) if only_text else content
++            for ri in range_info_lines:
++                lines.append(format_long_text(ri, **kwargs))
++
++        more_info = f'For more information about this vulnerability, visit\n{indent}{vulnerability.more_info_url}'
++        lines.append(format_long_text(more_info, **kwargs))
++
++        ignore_msg = f'To ignore this vulnerability, use PyUp vulnerability id {vulnerability.vulnerability_id} in\n{indent}safety\u2019s ignore command-line argument or add the ignore to your safety\n{indent}policy file.'
++        lines.append(format_long_text(ignore_msg, **kwargs) + '\n')
++
++    result = '\n'.join(lines)
++    if only_text:
++        result = click.unstyle(result)
++    return result
+ 
+ 
+ def format_license(license: Dict[str, Any], only_text: bool = False, columns: int = get_terminal_size().columns) -> str:
+@@ -590,50 +503,47 @@
+     return format_long_text("{0}".format(licenses_text), start_line_decorator=' ', **kwargs)
+ 
+ 
+-def format_long_text(text: str, color: str = '', columns: int = get_terminal_size().columns, start_line_decorator: str = ' ', end_line_decorator: str = ' ', max_lines: Optional[int] = None, styling: Optional[Dict[str, Any]] = None, indent: str = '', sub_indent: str = '') -> str:
+-    """
+-    Format long text with wrapping and styling.
+-
+-    Args:
+-        text (str): The text to format.
+-        color (str, optional): Color for the text. Defaults to ''.
+-        columns (int, optional): Number of columns for formatting. Defaults to terminal size.
+-        start_line_decorator (str, optional): Starting line decorator. Defaults to ' '.
+-        end_line_decorator (str, optional): Ending line decorator. Defaults to ' '.
+-        max_lines (Optional[int], optional): Maximum number of lines. Defaults to None.
+-        styling (Optional[Dict[str, Any]], optional): Additional styling options. Defaults to None.
+-        indent (str, optional): Indentation for the text. Defaults to ''.
+-        sub_indent (str, optional): Sub-indentation for the text. Defaults to ''.
+-
+-    Returns:
+-        str: Formatted text.
+-    """
+-    if not styling:
+-        styling = {}
+-
+-    if color:
+-        styling.update({'fg': color})
+-
+-    columns -= len(start_line_decorator) + len(end_line_decorator)
+-    formatted_lines = []
+-    lines = text.replace('\r', '').splitlines()
+-
+-    for line in lines:
+-        base_format = "{:" + str(columns) + "}"
+-        if line == '':
+-            empty_line = base_format.format(" ")
+-            formatted_lines.append("{0}{1}{2}".format(start_line_decorator, empty_line, end_line_decorator))
+-        wrapped_lines = textwrap.wrap(line, width=columns, max_lines=max_lines, initial_indent=indent,
+-                                      subsequent_indent=sub_indent, placeholder='...')
+-        for wrapped_line in wrapped_lines:
+-            new_line = f'{wrapped_line}'
+-
+-            if styling:
+-                new_line = click.style(new_line, **styling)
+-
+-            formatted_lines.append(f"{start_line_decorator}{new_line}{end_line_decorator}")
+-
+-    return "\n".join(formatted_lines)
++def format_long_text(text: str, color: str='', columns: int=
++    get_terminal_size().columns, start_line_decorator: str=' ',
++    end_line_decorator: str=' ', max_lines: Optional[int]=None, styling:
++    Optional[Dict[str, Any]]=None, indent: str='', sub_indent: str='') ->str:
++    if not text or text == '\n':
++        width = columns
++        return start_line_decorator + ' ' * (width - len(start_line_decorator) - len(end_line_decorator)) + end_line_decorator
++
++    raw_text = click.unstyle(text)
++    wrapper = textwrap.TextWrapper(
++        width=columns - len(start_line_decorator) - len(end_line_decorator),
++        initial_indent=indent,
++        subsequent_indent=sub_indent if sub_indent else indent,
++        break_long_words=False,
++        break_on_hyphens=False,
++    )
++
++    wrapped_lines = wrapper.wrap(raw_text)
++
++    if not wrapped_lines:
++        wrapped_lines = ['']
++
++    if max_lines:
++        wrapped_lines = wrapped_lines[:max_lines]
++
++    styled_lines = []
++    if color or styling:
++        for line in wrapped_lines:
++            if color:
++                styled_line = click.style(line, fg=color)
++            else:
++                styled_line = line
++            styled_lines.append(styled_line)
++    else:
++        styled_lines = wrapped_lines
++
++    result_lines = []
++    for line in styled_lines:
++        result_lines.append(start_line_decorator + line + end_line_decorator)
++
++    return '\n'.join(result_lines)
+ 
+ 
+ def get_printable_list_of_scanned_items(scanning_target: str) -> Tuple[List[Dict[str, Any]], List[str]]:

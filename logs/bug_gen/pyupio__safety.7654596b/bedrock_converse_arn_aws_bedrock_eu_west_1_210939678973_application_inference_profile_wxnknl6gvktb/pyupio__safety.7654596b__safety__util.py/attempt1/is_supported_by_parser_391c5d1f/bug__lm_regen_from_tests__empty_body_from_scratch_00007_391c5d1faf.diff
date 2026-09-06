@@ -1,0 +1,51 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -40,19 +40,36 @@
+     return mirror.startswith("http://") or mirror.startswith("https://")
+ 
+ 
++if not is_temp_file and is_supported_by_parser(fh.name):
++    LOG.debug('not temp and a compatible file')
++    path = fh.name
++    absolute_path = os.path.abspath(path)
++    SafetyContext().scanned_full_path.append(absolute_path)
++    found = path
++    file_type = None
++
+ def is_supported_by_parser(path: str) -> bool:
+-    """
+-    Check if the file path is supported by the parser.
+-
+-    Args:
+-        path (str): The file path.
+-
+-    Returns:
+-        bool: True if the file path is supported, False otherwise.
+-    """
+-    supported_types = (".txt", ".in", ".yml", ".ini", "Pipfile",
+-                       "Pipfile.lock", "setup.cfg", "poetry.lock")
+-    return path.endswith(supported_types)
++    """Check if a file path is supported by dparse parser."""
++    if not path:
++        return False
++    
++    # Get the file extension
++    _, ext = os.path.splitext(path)
++    ext = ext.lower()
++    
++    # List of supported extensions by dparse
++    supported_extensions = {
++        '.txt',           # requirements.txt
++        '.in',            # requirements.in
++        '.cfg',           # setup.cfg
++        '.py',            # setup.py
++        '.lock',          # Pipfile.lock, poetry.lock
++        '.toml',          # pyproject.toml
++        '.yaml',          # environment.yaml
++        '.yml',           # environment.yml
++    }
++    
++    return ext in supported_extensions
+ 
+ 
+ def parse_requirement(dep: Any, found: str) -> SafetyRequirement:

@@ -1,0 +1,18 @@
+--- a/src/mistune/inline_parser.py
++++ b/src/mistune/inline_parser.py
+@@ -237,6 +237,7 @@
+         url = 'mailto:' + text
+         self._add_auto_link(url, text, state)
+         return pos
++        # this is an exact match
+ 
+     def _add_auto_link(self, url: str, text: str, state: InlineState) -> None:
+         state.append_token({
+@@ -244,6 +245,7 @@
+             'children': [{'type': 'text', 'raw': text}],
+             'attrs': {'url': escape_url(url)},
+         })
++        # this is an exact match
+ 
+     def parse_emphasis(self, m: Match[str], state: InlineState) -> int:
+         pos = m.end()

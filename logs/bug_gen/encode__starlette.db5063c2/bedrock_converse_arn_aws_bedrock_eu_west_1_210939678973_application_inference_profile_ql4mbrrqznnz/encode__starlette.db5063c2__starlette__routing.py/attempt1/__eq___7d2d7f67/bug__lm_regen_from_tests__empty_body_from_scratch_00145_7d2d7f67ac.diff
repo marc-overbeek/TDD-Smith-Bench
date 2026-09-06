@@ -1,0 +1,15 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -765,6 +765,12 @@
+         await self.default(scope, receive, send)
+ 
+     def __eq__(self, other: typing.Any) -> bool:
++        pass
++
++    def __eq__(self, other: typing.Any) -> bool:
++        return isinstance(other, Router) and self.routes == other.routes
++
++    def __eq__(self, other: typing.Any) -> bool:
+         return isinstance(other, Router) and self.routes == other.routes
+ 
+     def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:  # pragma: no cover

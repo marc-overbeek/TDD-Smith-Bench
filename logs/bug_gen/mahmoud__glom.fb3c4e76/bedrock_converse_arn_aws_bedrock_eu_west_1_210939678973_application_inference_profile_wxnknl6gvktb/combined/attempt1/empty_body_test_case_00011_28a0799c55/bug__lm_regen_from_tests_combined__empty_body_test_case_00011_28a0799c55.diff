@@ -1,0 +1,27 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -58,11 +58,9 @@
+     def __init__(self, subspec=T, **kwargs):
+         self.subspec = subspec
+         self._iter_stack = kwargs.pop('_iter_stack', [])
+-
+         self.sentinel = kwargs.pop('sentinel', STOP)
+         if kwargs:
+             raise TypeError('unexpected keyword arguments: %r' % sorted(kwargs))
+-        return
+ 
+     def __repr__(self):
+         base_args = ()
+@@ -105,12 +103,8 @@
+             if yld is SKIP:
+                 continue
+             elif yld is self.sentinel or yld is STOP:
+-                # NB: sentinel defaults to STOP so I was torn whether
+-                # to also check for STOP, and landed on the side of
+-                # never letting STOP through.
+                 return
+             yield yld
+-        return
+ 
+     def _add_op(self, opname, args, callback):
+         return type(self)(subspec=self.subspec, _iter_stack=[(opname, args, callback)] + self._iter_stack)

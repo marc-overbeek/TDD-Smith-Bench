@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef __setattr__(self, name: str, val: Any) -> None:  # pyre-ignore\n    if name.startswith(\"COMPUTED_\"):\n        if name in self:\n            old_val = self[name]\n            if old_val == val:\n                return\n            raise KeyError(\n                \"Computed attributed '{}' already exists \"\n                \"with a different value! old={}, new={}.\".format(name, old_val, val)\n            )\n        self[name] = val\n    else:\n        super().__setattr__(name, val)\n```",
+  "rewrite": "def __setattr__(self, name: str, val: Any) -> None:  # pyre-ignore\n    if name.startswith(\"COMPUTED_\"):\n        if name in self:\n            old_val = self[name]\n            if old_val == val:\n                return\n            raise KeyError(\n                \"Computed attributed '{}' already exists \"\n                \"with a different value! old={}, new={}.\".format(name, old_val, val)\n            )\n        self[name] = val\n    else:\n        super().__setattr__(name, val)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

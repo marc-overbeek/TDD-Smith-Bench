@@ -1,0 +1,108 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -280,31 +280,82 @@
+ 
+ 
+ # TODO: not used (yet)
++def test_line_trace():
++    stacklifier = [{'data': S}],
++    scope = glom([1], stacklifier)[0]['data'][ROOT][LAST_CHILD_SCOPE]
++    fmtd_stack = format_oneline_trace(scope)
++    assert fmtd_stack == '/tuple!list/list<0>/dict!int/S'
++
+ def format_oneline_trace(scope):
+-    """
+-    unpack a scope into a single line summary
+-    (shortest summary possible)
+-    """
+-    # the goal here is to do a kind of delta-compression --
+-    # if the target is the same, don't repeat it
+-    segments = []
+-    prev_target = _MISSING
+-    for scope, spec, target, error, branches in _unpack_stack(scope, only_errors=False):
+-        segments.append('/')
+-        if type(spec) in (TType, Path):
+-            segments.append(bbrepr(spec))
++    parts = []
++    for scope_map, spec, target, error, branches in _unpack_stack(scope, only_errors=False):
++        spec_repr = bbrepr(spec)
++        target_type = type(target).__name__
++        
++        if type(spec) is TType:
++            parts.append('/' + repr(spec))
++        elif type(spec) is list:
++            # find the index from the path
++            path = scope_map.get(Path, [])
++            if path:
++                idx = path[-1]
++                parts.append(f'/list<{idx}>')
++            else:
++                parts.append(f'/list!{target_type}')
++        elif type(spec) is tuple:
++            parts.append(f'/tuple!{target_type}')
++        elif type(spec) is dict:
++            parts.append(f'/dict!{target_type}')
+         else:
+-            segments.append(type(spec).__name__)
+-        if target != prev_target:
+-            segments.append('!')
+-            segments.append(type(target).__name__)
+-        if Path in scope:
+-            segments.append('<')
+-            segments.append('->'.join([str(p) for p in scope[Path]]))
+-            segments.append('>')
+-        prev_target = target
+-
+-    return "".join(segments)
++            parts.append(f'/{spec_repr}!{target_type}')
++    
++    return ''.join(parts)
++
++def format_oneline_trace(scope):
++    parts = []
++    for scope_map, spec, target, error, branches in _unpack_stack(scope, only_errors=False):
++        target_type = type(target).__name__
++        
++        if type(spec) is TType:
++            parts.append('/' + repr(spec))
++        elif type(spec) is list:
++            path = scope_map.get(Path, [])
++            if path:
++                idx = path[-1]
++                parts.append(f'/list<{idx}>')
++            else:
++                parts.append(f'/list!{target_type}')
++        elif type(spec) is tuple:
++            parts.append(f'/tuple!{target_type}')
++        elif type(spec) is dict:
++            parts.append(f'/dict!{target_type}')
++        else:
++            parts.append(f'/{bbrepr(spec)}!{target_type}')
++    
++    return ''.join(parts)
++
++def format_oneline_trace(scope):
++    parts = []
++    for scope_map, spec, target, error, branches in _unpack_stack(scope, only_errors=False):
++        target_type = type(target).__name__
++        
++        if type(spec) is TType:
++            parts.append('/' + repr(spec))
++        elif type(spec) is list:
++            path = scope_map.get(Path, [])
++            if path:
++                idx = path[-1]
++                parts.append(f'/list<{idx}>')
++            else:
++                parts.append(f'/list!{target_type}')
++        elif type(spec) is tuple:
++            parts.append(f'/tuple!{target_type}')
++        elif type(spec) is dict:
++            parts.append(f'/dict!{target_type}')
++        else:
++            parts.append(f'/{bbrepr(spec)}!{target_type}')
++    
++    return ''.join(parts)
+ 
+ 
+ class PathAccessError(GlomError, AttributeError, KeyError, IndexError):

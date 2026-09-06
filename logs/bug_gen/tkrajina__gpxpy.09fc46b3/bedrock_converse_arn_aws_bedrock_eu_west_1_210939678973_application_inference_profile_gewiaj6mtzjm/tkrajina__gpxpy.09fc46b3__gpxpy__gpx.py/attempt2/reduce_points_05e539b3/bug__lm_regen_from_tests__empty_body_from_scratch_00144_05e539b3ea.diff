@@ -1,0 +1,51 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1437,18 +1437,36 @@
+         for segment in self.segments:
+             segment.simplify(max_distance=max_distance)
+ 
+-    def reduce_points(self, min_distance: float) -> None:
+-        """
+-        Reduces the number of points in the track. Segment points will be
+-        updated in place.
+-
+-        Parameters
+-        ----------
+-        min_distance : float
+-            The minimum separation in meters between points
+-        """
+-        for segment in self.segments:
+-            segment.reduce_points(min_distance)
++    def reduce_points(self, max_points_no: Optional[float]=None, min_distance: Optional[float]=None) -> None:
++        if max_points_no is None and min_distance is None:
++            raise ValueError("Either max_point_no or min_distance must be supplied")
++
++        if max_points_no is not None and max_points_no < 2:
++            raise ValueError("max_points_no must be greater than or equal to 2")
++
++        if min_distance is not None and min_distance <= 0:
++            raise ValueError("min_distance must be greater than 0")
++
++        points_no = len(list(self.walk()))
++        if max_points_no is not None and points_no <= max_points_no:
++            # No need to reduce points only if no min_distance is specified:
++            if not min_distance:
++                return
++
++        if min_distance is not None:
++            # If min_distance is provided, use it directly
++            for track in self.tracks:
++                track.reduce_points(min_distance)
++        else:
++            # If only max_points_no is provided, calculate min_distance
++            length = self.length_3d()
++            max_points_no = max_points_no or 1000000000
++            min_distance = max(0.1, mod_math.ceil(length / max_points_no))
++            for track in self.tracks:
++                track.reduce_points(min_distance)
++
++        # TODO
++        log.debug('Track reduced to %s points', self.get_track_points_no())
+ 
+     def adjust_time(self, delta: mod_datetime.timedelta) -> None:
+         """

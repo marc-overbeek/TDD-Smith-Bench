@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, they're testing `inbox.Inbox` and `inbox.models`, but the target function is `User.__init__` in what appears to be `demo/models.py`. The current implementation is just `pass`, which means the `User` object won't have `id`, `name`, or `following` attributes set.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing tests, they're testing `inbox.Inbox` and `inbox.models`, but the target function is `User.__init__` in what appears to be `demo/models.py`. The current implementation is just `pass`, which means the `User` object won't have `id`, `name`, or `following` attributes set.\n\n```\ndef __init__(self, id: UserId, name: str, following: List[UserId]) ->None:\n    self.id = id\n    self.name = name\n    self.following = following\n```",
+  "rewrite": "def __init__(self, id: UserId, name: str, following: List[UserId]) ->None:\n    self.id = id\n    self.name = name\n    self.following = following",
+  "strategy": "lm_regen_from_tests"
+}

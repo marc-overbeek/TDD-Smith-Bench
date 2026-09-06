@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef toc_hook(md: 'Markdown', state: 'BlockState') -> None:\n    headings = []\n\n    for tok in state.tokens:\n        if tok['type'] == 'heading':\n            level = tok['attrs']['level']\n            if min_level <= level <= max_level:\n                headings.append(tok)\n\n    toc_items = []\n    for i, tok in enumerate(headings):\n        tok['attrs']['id'] = heading_id(tok, i)\n        toc_items.append(normalize_toc_item(md, tok))\n\n    # save items into state\n    state.env['toc_items'] = toc_items\n```",
+  "rewrite": "def toc_hook(md: 'Markdown', state: 'BlockState') -> None:\n    headings = []\n\n    for tok in state.tokens:\n        if tok['type'] == 'heading':\n            level = tok['attrs']['level']\n            if min_level <= level <= max_level:\n                headings.append(tok)\n\n    toc_items = []\n    for i, tok in enumerate(headings):\n        tok['attrs']['id'] = heading_id(tok, i)\n        toc_items.append(normalize_toc_item(md, tok))\n\n    # save items into state\n    state.env['toc_items'] = toc_items",
+  "strategy": "lm_regen_from_tests"
+}

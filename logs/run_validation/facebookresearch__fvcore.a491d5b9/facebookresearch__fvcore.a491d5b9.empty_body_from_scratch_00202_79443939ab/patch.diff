@@ -1,0 +1,28 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -368,23 +368,8 @@
+         super().__init__()
+         self._set_attributes(locals())
+ 
+-    def apply_image(self, img: np.ndarray) -> np.ndarray:
+-        """
+-        Flip the image(s).
+-
+-        Args:
+-            img (ndarray): of shape HxW, HxWxC, or NxHxWxC. The array can be
+-                of type uint8 in range [0, 255], or floating point in range
+-                [0, 1] or [0, 255].
+-        Returns:
+-            ndarray: the flipped image(s).
+-        """
+-        # NOTE: opencv would be faster:
+-        # https://github.com/pytorch/pytorch/issues/16424#issuecomment-580695672
+-        if img.ndim <= 3:  # HxW, HxWxC
+-            return np.flip(img, axis=1)
+-        else:
+-            return np.flip(img, axis=-2)
++    def apply_image(self, img: np.ndarray) ->np.ndarray:
++        pass
+ 
+     def apply_coords(self, coords: np.ndarray) -> np.ndarray:
+         """

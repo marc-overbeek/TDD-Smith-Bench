@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "```\ndef get_shape(val: Any) ->Optional[List[int]]:\n    if hasattr(val, 'type') and callable(val.type):\n        try:\n            return val.type().sizes()\n        except Exception:\n            return None\n    return None\n\n\ndef einsum_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:\n    equation = inputs[0].toIValue()\n    input_shapes = [get_shape(v) for v in inputs[1].node().inputs()]\n    \n    letter_order = OrderedDict()\n    for shape, term in zip(input_shapes, equation.split('->')[0].split(',')):\n        for letter, dim in zip(term.strip(), shape):\n            if letter not in letter_order:\n                letter_order[letter] = dim\n    \n    flop = prod(list(letter_order.values()))\n    return flop\n```",
+  "rewrite": "def get_shape(val: Any) ->Optional[List[int]]:\n    if hasattr(val, 'type') and callable(val.type):\n        try:\n            return val.type().sizes()\n        except Exception:\n            return None\n    return None\n\n\ndef einsum_flop_jit(inputs: List[Any], outputs: List[Any]) ->Number:\n    equation = inputs[0].toIValue()\n    input_shapes = [get_shape(v) for v in inputs[1].node().inputs()]\n    \n    letter_order = OrderedDict()\n    for shape, term in zip(input_shapes, equation.split('->')[0].split(',')):\n        for letter, dim in zip(term.strip(), shape):\n            if letter not in letter_order:\n                letter_order[letter] = dim\n    \n    flop = prod(list(letter_order.values()))\n    return flop",
+  "strategy": "lm_regen_from_tests_combined"
+}

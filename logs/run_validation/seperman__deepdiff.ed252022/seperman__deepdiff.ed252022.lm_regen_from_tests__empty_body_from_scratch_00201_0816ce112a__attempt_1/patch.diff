@@ -1,0 +1,93 @@
+--- a/deepdiff/commands.py
++++ b/deepdiff/commands.py
+@@ -126,45 +126,51 @@
+ @click.option('--backup', '-b', is_flag=True, show_default=True)
+ @click.option('--raise-errors', is_flag=True, show_default=True)
+ @click.option('--debug', is_flag=True, show_default=False)
+-def patch(
+-    path, delta_path, backup, raise_errors, debug
+-):
+-    """
+-    Deep Patch Commandline
+-
+-    Patches a file based on the information in a delta file.
+-    The delta file can be created by the deep diff command and
+-    passing the --create-patch argument.
+-
+-    Deep Patch is similar to Linux's patch command.
+-    The difference is that it is made for patching data.
+-    It can read csv, tsv, json, yaml, and toml files.
+-
+-    """
+-    try:
+-        delta = Delta(delta_path=delta_path, raise_errors=raise_errors)
+-    except Exception as e:  # pragma: no cover.
+-        if debug:  # pragma: no cover.
+-            raise  # pragma: no cover.
+-        else:  # pragma: no cover.
+-            sys.exit(str(f"Error when loading the patch (aka delta) {delta_path}: {e}"))  # pragma: no cover.
+-
+-    extension = path.split('.')[-1]
+-
+-    try:
+-        content = load_path_content(path, file_type=extension)
+-    except Exception as e:  # pragma: no cover.
+-        sys.exit(str(f"Error when loading {path}: {e}"))  # pragma: no cover.
+-
+-    result = delta + content
+-
+-    try:
+-        save_content_to_path(result, path, file_type=extension, keep_backup=backup)
+-    except Exception as e:  # pragma: no cover.
+-        if debug:  # pragma: no cover.
+-            raise  # pragma: no cover.
+-        else:  # pragma: no cover.
+-            sys.exit(str(f"Error when saving {path}: {e}"))  # pragma: no cover.
++def patch(path, delta_path, backup, raise_errors, debug):
++    path_extension = path.split('.')[-1]
++    
++    try:
++        original_content = load_path_content(path, file_type=path_extension)
++    except Exception as e:  # pragma: no cover.
++        if debug:  # pragma: no cover.
++            raise  # pragma: no cover.
++        else:  # pragma: no cover.
++            sys.exit(str(f"Error when loading {path}: {e}"))  # pragma: no cover.
++    
++    try:
++        delta_content = load_path_content(delta_path, file_type='pickle')
++        delta = Delta(delta_content)
++    except Exception as e:  # pragma: no cover.
++        if debug:  # pragma: no cover.
++            raise  # pragma: no cover.
++        else:  # pragma: no cover.
++            sys.exit(str(f"Error when loading the patch (aka delta): {e}"))  # pragma: no cover.
++    
++    try:
++        patched_content = delta + original_content
++    except Exception as e:  # pragma: no cover.
++        if raise_errors:  # pragma: no cover.
++            raise  # pragma: no cover.
++        else:  # pragma: no cover.
++            sys.exit(str(f"Error when applying the patch: {e}"))  # pragma: no cover.
++    
++    if backup:
++        try:
++            backup_path = path + '.backup'
++            save_content_to_path(original_content, backup_path, file_type=path_extension)
++        except Exception as e:  # pragma: no cover.
++            if debug:  # pragma: no cover.
++                raise  # pragma: no cover.
++            else:  # pragma: no cover.
++                sys.exit(str(f"Error when creating backup: {e}"))  # pragma: no cover.
++    
++    try:
++        save_content_to_path(patched_content, path, file_type=path_extension)
++    except Exception as e:  # pragma: no cover.
++        if debug:  # pragma: no cover.
++            raise  # pragma: no cover.
++        else:  # pragma: no cover.
++            sys.exit(str(f"Error when saving patched content: {e}"))  # pragma: no cover.
+ 
+ 
+ @cli.command()

@@ -1,0 +1,111 @@
+--- a/monkeytype/db/sqlite.py
++++ b/monkeytype/db/sqlite.py
+@@ -18,59 +18,36 @@
+ DEFAULT_TABLE = "monkeytype_call_traces"
+ 
+ 
+-def create_call_trace_table(
+-    conn: sqlite3.Connection, table: str = DEFAULT_TABLE
+-) -> None:
+-    queries = [
++def create_call_trace_table(conn: sqlite3.Connection, table: str=DEFAULT_TABLE
++    ) ->None:
++    conn.execute(
++        f"""
++        CREATE TABLE IF NOT EXISTS {table} (
++            created_at TIMESTAMP,
++            module TEXT,
++            qualname TEXT,
++            arg_types TEXT,
++            return_type TEXT,
++            yield_type TEXT
++        )
+         """
+-        CREATE TABLE IF NOT EXISTS {table} (
+-          created_at  TEXT,
+-          module      TEXT,
+-          qualname    TEXT,
+-          arg_types   TEXT,
+-          return_type TEXT,
+-          yield_type  TEXT);
+-        """,
+-        """
+-        -- This index speeds up lookups of call traces of a single module
+-        -- (see `make_query()`).
+-        CREATE INDEX IF NOT EXISTS {table}_module ON {table} (module);
+-        """,
+-    ]
+-
+-    with conn:
+-        for query in queries:
+-            conn.execute(query.format(table=table))
++    )
+ 
+ 
+ QueryValue = Union[str, int]
+ ParameterizedQuery = Tuple[str, List[QueryValue]]
+ 
+ 
+-def make_query(
+-    table: str, module: str, qualname: Optional[str], limit: int
+-) -> ParameterizedQuery:
+-    raw_query = """
+-    SELECT
+-        module, qualname, arg_types, return_type, yield_type
+-    FROM {table}
+-    WHERE
+-        module == ?
+-    """.format(
+-        table=table
+-    )
+-    values: List[QueryValue] = [module]
++def make_query(table: str, module: str, qualname: Optional[str], limit: int
++    ) ->ParameterizedQuery:
++    query = f"SELECT * FROM {table} WHERE module = ?"
++    values = [module]
+     if qualname is not None:
+-        raw_query += " AND qualname LIKE ? || '%'"
+-        values.append(qualname)
+-    raw_query += """
+-    GROUP BY
+-        module, qualname, arg_types, return_type, yield_type
+-    ORDER BY date(created_at) DESC
+-    LIMIT ?
+-    """
++        query += " AND qualname LIKE ?"
++        values.append(f"{qualname}%")
++    query += " ORDER BY created_at DESC LIMIT ?"
+     values.append(limit)
+-    return raw_query, values
++    return (query, values)
+ 
+ 
+ class SQLiteStore(CallTraceStore):
+@@ -84,7 +61,7 @@
+         create_call_trace_table(conn)
+         return cls(conn)
+ 
+-    def add(self, traces: Iterable[CallTrace]) -> None:
++    def add(self, traces: Iterable[CallTrace]) ->None:
+         values = []
+         for row in serialize_traces(traces):
+             values.append(
+@@ -105,14 +82,14 @@
+                 values,
+             )
+ 
+-    def filter(
+-        self, module: str, qualname_prefix: Optional[str] = None, limit: int = 2000
+-    ) -> List[CallTraceThunk]:
++    def filter(self, module: str, qualname_prefix: Optional[str]=None, limit:
++        int=2000) ->List[CallTraceThunk]:
+         sql_query, values = make_query(self.table, module, qualname_prefix, limit)
+         with self.conn:
+             cur = self.conn.cursor()
+             cur.execute(sql_query, values)
+-            return [CallTraceRow(*row) for row in cur.fetchall()]
++            rows = cur.fetchall()
++            return [CallTraceRow(*row).to_trace() for row in rows]
+ 
+     def list_modules(self) -> List[str]:
+         with self.conn:

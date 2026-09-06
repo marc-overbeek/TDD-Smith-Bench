@@ -1,0 +1,143 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -1091,68 +1091,85 @@
+ 
+ 
+ @sync_safety_context
+-def get_packages_licenses(*, packages: Optional[List[Package]] = None, licenses_db: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+-    """
+-    Get the licenses for the specified packages based on their version.
++@sync_safety_context
++def get_packages_licenses(*, packages: Optional[List[Package]]=None,
++    licenses_db: Optional[Dict[str, Any]]=None) ->List[Dict[str, Any]]:
++    """
++    Get the licenses for a list of packages.
+ 
+     Args:
+         packages (Optional[List[Package]]): The list of packages.
+         licenses_db (Optional[Dict[str, Any]]): The licenses database.
+ 
+     Returns:
+-        List[Dict[str, Any]]: The list of packages and their licenses.
+-    """
+-    SafetyContext().command = 'license'
+-
+-    if not packages:
+-        packages = []
+-    if not licenses_db:
+-        licenses_db = {}
+-
+-    packages_licenses_db = licenses_db.get('packages', {})
+-    filtered_packages_licenses = []
+-
+-    for pkg in packages:
+-        # Ignore recursive files not resolved
+-        if isinstance(pkg, RequirementFile):
+-            continue
+-        # normalize the package name
+-        pkg_name = canonicalize_name(pkg.name)
+-        # packages may have different licenses depending their version.
+-        pkg_licenses = packages_licenses_db.get(pkg_name, [])
+-        if not pkg.version:
+-            for req in pkg.requirements:
+-                if is_pinned_requirement(req.specifier):
+-                    pkg.version = next(iter(req.specifier)).version
+-                    break
+-
+-            if not pkg.version:
+-                continue
+-        version_requested = parse_version(pkg.version)
+-        license_id = None
+-        license_name = None
+-        for pkg_version in pkg_licenses:
+-            license_start_version = parse_version(pkg_version['start_version'])
+-            # Stops and return the previous stored license when a new
+-            # license starts on a version above the requested one.
+-            if version_requested >= license_start_version:
+-                license_id = pkg_version['license_id']
++        List[Dict[str, Any]]: A list of dictionaries containing package license information.
++    """
++    result = []
++    
++    if not packages or not licenses_db:
++        return result
++    
++    packages_db = licenses_db.get('packages', {})
++    
++    for package in packages:
++        package_name = canonicalize_name(package.name)
++        version = package.version or 'unknown'
++        
++        # Look up the package in the licenses database
++        if package_name in packages_db:
++            package_info = packages_db[package_name]
++            license_id = None
++            
++            # Find the license ID for this version
++            if isinstance(package_info, list):
++                for entry in package_info:
++                    if isinstance(entry, dict):
++                        start_version = entry.get('start_version')
++                        end_version = entry.get('end_version')
++                        
++                        # Check if the package version falls within the range
++                        if start_version and version:
++                            try:
++                                if end_version:
++                                    if parse_version(start_version) <= parse_version(version) <= parse_version(end_version):
++                                        license_id = entry.get('license_id')
++                                        break
++                                else:
++                                    if parse_version(start_version) <= parse_version(version):
++                                        license_id = entry.get('license_id')
++                                        break
++                            except Exception:
++                                pass
++            
++            # Get the license name from the ID
++            if license_id is not None:
++                license_name = get_license_name_by_id(license_id, licenses_db)
++                if license_name:
++                    result.append({
++                        'package': package_name,
++                        'version': version,
++                        'license': license_name
++                    })
++                else:
++                    result.append({
++                        'package': package_name,
++                        'version': version,
++                        'license': 'unknown'
++                    })
+             else:
+-                # We found the license for the version requested
+-                break
+-
+-        if license_id:
+-            license_name = get_license_name_by_id(license_id, licenses_db)
+-        if not license_id or not license_name:
+-            license_name = "unknown"
+-
+-        filtered_packages_licenses.append({
+-            "package": pkg_name,
+-            "version": pkg.version,
+-            "license": license_name
+-        })
+-
+-    return filtered_packages_licenses
++                result.append({
++                    'package': package_name,
++                    'version': version,
++                    'license': 'unknown'
++                })
++        else:
++            result.append({
++                'package': package_name,
++                'version': version,
++                'license': 'unknown'
++            })
++    
++    return result
+ 
+ 
+ def get_requirements_content(files: List[click.File]) -> Dict[str, str]:

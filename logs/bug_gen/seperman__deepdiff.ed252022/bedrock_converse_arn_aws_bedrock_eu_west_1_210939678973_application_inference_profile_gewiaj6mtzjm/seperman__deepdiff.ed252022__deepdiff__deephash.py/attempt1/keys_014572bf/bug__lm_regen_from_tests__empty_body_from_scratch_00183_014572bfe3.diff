@@ -1,0 +1,21 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -322,6 +322,18 @@
+     def __bool__(self):
+         return bool(self.hashes)
+ 
++    assert set(result.keys()) == {1, get_id(obj)}
++
++    def __contains__(self, obj):
++        result = False
++        try:
++            result = obj in self.hashes
++        except (TypeError, KeyError):
++            result = False
++        if not result:
++            result = get_id(obj) in self.hashes
++        return result
++
+     def keys(self):
+         return self.hashes.keys()
+ 

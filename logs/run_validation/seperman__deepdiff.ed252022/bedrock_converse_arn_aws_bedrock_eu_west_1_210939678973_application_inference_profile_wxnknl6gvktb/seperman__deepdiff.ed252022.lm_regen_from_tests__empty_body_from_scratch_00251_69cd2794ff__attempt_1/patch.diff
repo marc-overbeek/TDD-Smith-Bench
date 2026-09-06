@@ -1,0 +1,30 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -411,6 +411,27 @@
+                 )
+             return attribute
+ 
++        def unmangle(attribute):
++            if attribute.startswith('__') and attribute != '__weakref__':
++                return '_{type}{attribute}'.format(
++                    type=type(object).__name__,
++                    attribute=attribute
++                )
++            return attribute
++
++        @staticmethod
++        def _dict_from_slots(object):
++            def unmangle(attribute):
++                # This needs to reference 'object' from the enclosing scope
++
++        def unmangle(attribute):
++            if attribute.startswith('__') and attribute != '__weakref__':
++                return '_{type}{attribute}'.format(
++                    type=type(object).__name__,
++                    attribute=attribute
++                )
++            return attribute
++
+         all_slots = []
+ 
+         if isinstance(object, type):

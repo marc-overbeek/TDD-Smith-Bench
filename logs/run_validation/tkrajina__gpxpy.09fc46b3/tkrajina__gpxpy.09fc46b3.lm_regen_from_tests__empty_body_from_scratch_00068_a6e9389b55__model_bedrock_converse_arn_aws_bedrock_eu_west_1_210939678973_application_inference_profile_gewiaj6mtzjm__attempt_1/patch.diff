@@ -1,0 +1,26 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -352,7 +352,7 @@
+         Convert a tag from Clark notation using the nsmap into a
+         prefixed tag. If the tag isn't in Clark notation, return the
+         qname back. Converts {namespace}tag -> prefix:tag
+-        
++    
+         Args:
+             qname: string with the fully qualified name in Clark notation
+             nsmap: a dict of prefix, namespace pairs
+@@ -363,11 +363,11 @@
+         if nsmap is not None and '}' in qname:
+             uri, _, localname = qname.partition("}")
+             uri = uri.lstrip("{")
+-            qname = uri + ':' + localname
+             for prefix, namespace in nsmap.items():
+                 if uri == namespace:
+-                    qname = prefix + ':' + localname
+-                    break
++                    return prefix + ':' + localname
++            # If no matching prefix found, return the original qname
++            return qname
+         return qname
+ 
+     def _ETree_to_xml(self, node: Any, nsmap: Dict[str, str]={}, prettyprint: bool=True, indent: str='') -> str:

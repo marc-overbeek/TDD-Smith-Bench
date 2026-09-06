@@ -1,0 +1,59 @@
+--- a/oauthlib/oauth2/rfc6749/grant_types/base.py
++++ b/oauthlib/oauth2/rfc6749/grant_types/base.py
+@@ -135,14 +135,6 @@
+         raise NotImplementedError('Subclasses must implement this method.')
+ 
+     def add_token(self, token, token_handler, request):
+-        """
+-        :param token:
+-        :param token_handler: A token handler instance, for example of type
+-                              oauthlib.oauth2.BearerToken.
+-        :param request: OAuthlib request.
+-        :type request: oauthlib.common.Request
+-        """
+-        # Only add a hybrid access token on auth step if asked for
+         if request.response_type not in ["token", "code token", "id_token token", "code id_token token"]:
+             return token
+ 
+@@ -162,10 +154,6 @@
+             raise errors.UnauthorizedClientError(request=request)
+ 
+     def validate_scopes(self, request):
+-        """
+-        :param request: OAuthlib request.
+-        :type request: oauthlib.common.Request
+-        """
+         if not request.scopes:
+             request.scopes = utils.scope_to_list(request.scope) or utils.scope_to_list(
+                 self.request_validator.get_default_scopes(request.client_id, request))
+@@ -176,18 +164,6 @@
+             raise errors.InvalidScopeError(request=request)
+ 
+     def prepare_authorization_response(self, request, token, headers, body, status):
+-        """Place token according to response mode.
+-
+-        Base classes can define a default response mode for their authorization
+-        response by overriding the static `default_response_mode` member.
+-
+-        :param request: OAuthlib request.
+-        :type request: oauthlib.common.Request
+-        :param token:
+-        :param headers:
+-        :param body:
+-        :param status:
+-        """
+         request.response_mode = request.response_mode or self.default_response_mode
+ 
+         if request.response_mode not in ('query', 'fragment'):
+@@ -229,11 +205,6 @@
+             if not is_absolute_uri(request.redirect_uri):
+                 raise errors.InvalidRedirectURIError(request=request)
+ 
+-            # The authorization server MUST verify that the redirection URI
+-            # to which it will redirect the access token matches a
+-            # redirection URI registered by the client as described in
+-            # Section 3.1.2.
+-            # https://tools.ietf.org/html/rfc6749#section-3.1.2
+             if not self.request_validator.validate_redirect_uri(
+                     request.client_id, request.redirect_uri, request):
+                 raise errors.MismatchingRedirectURIError(request=request)

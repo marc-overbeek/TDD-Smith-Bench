@@ -1,0 +1,63 @@
+--- a/fvcore/transforms/transform.py
++++ b/fvcore/transforms/transform.py
+@@ -45,14 +45,7 @@
+     :meth:`register_type` method.
+     """
+ 
+-    def _set_attributes(self, params: Optional[List[Any]] = None) -> None:
+-        """
+-        Set attributes from the input list of parameters.
+-
+-        Args:
+-            params (list): list of parameters.
+-        """
+-
++    def _set_attributes(self, params: Optional[List[Any]]=None) ->None:
+         if params:
+             for k, v in params.items():
+                 if k != "self" and not k.startswith("_"):
+@@ -493,41 +486,17 @@
+     Resize the image to a target size.
+     """
+ 
+-    def __init__(self, h: int, w: int, new_h: int, new_w: int, interp: str = None):
+-        """
+-        Args:
+-            h, w (int): original image size.
+-            new_h, new_w (int): new image size.
+-            interp (str): interpolation methods. Options includes `nearest`, `linear`
+-                (3D-only), `bilinear`, `bicubic` (4D-only), and `area`.
+-                Details can be found in:
+-                https://pytorch.org/docs/stable/nn.functional.html
+-        """
++    def __init__(self, h: int, w: int, new_h: int, new_w: int, interp: str=None):
+         super().__init__()
+         self._set_attributes(locals())
+ 
+-    def apply_image(self, img: np.ndarray, interp: str = None) -> np.ndarray:
+-        """
+-        Resize the image(s).
+-
+-        Args:
+-            img (ndarray): of shape NxHxWxC, or HxWxC or HxW. The array can be
+-                of type uint8 in range [0, 255], or floating point in range
+-                [0, 1] or [0, 255].
+-            interp (str): interpolation methods. Options includes `nearest`, `linear`
+-                (3D-only), `bilinear`, `bicubic` (4D-only), and `area`.
+-                Details can be found in:
+-                https://pytorch.org/docs/stable/nn.functional.html
+-
+-        Returns:
+-            ndarray: resized image(s).
+-        """
++    def apply_image(self, img: np.ndarray, interp: str=None) ->np.ndarray:
+         if len(img.shape) == 4:
+             h, w = img.shape[1:3]
+         elif len(img.shape) in (2, 3):
+             h, w = img.shape[:2]
+         else:
+-            raise ("Unsupported input with shape of {}".format(img.shape))
++            raise RuntimeError("Unsupported input with shape of {}".format(img.shape))
+         assert (
+             self.h == h and self.w == w
+         ), "Input size mismatch h w {}:{} -> {}:{}".format(self.h, self.w, h, w)

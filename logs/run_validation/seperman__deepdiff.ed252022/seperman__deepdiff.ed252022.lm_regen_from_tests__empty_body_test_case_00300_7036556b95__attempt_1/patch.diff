@@ -1,0 +1,85 @@
+--- a/deepdiff/search.py
++++ b/deepdiff/search.py
+@@ -103,12 +103,13 @@
+ 
+         self.obj = obj
+         self.case_sensitive = case_sensitive if isinstance(item, strings) else True
+-        item = item if self.case_sensitive else item.lower()
++        self.item_original = item
++        item = item if self.case_sensitive else (item.lower() if isinstance(item, strings) else item)
+         self.exclude_paths = SetOrdered(exclude_paths)
+         self.exclude_regex_paths = [re.compile(exclude_regex_path) for exclude_regex_path in exclude_regex_paths]
+         self.exclude_types = SetOrdered(exclude_types)
+         self.exclude_types_tuple = tuple(
+-            exclude_types)  # we need tuple for checking isinstance
++            exclude_types)
+         self.verbose_level = verbose_level
+         self.update(
+             matched_paths=self.__set_or_dict(),
+@@ -123,9 +124,8 @@
+             except TypeError as e:
+                 raise TypeError(f"The passed item of {item} is not usable for regex: {e}") from None
+         self.strict_checking = strict_checking
+-
+-        # Cases where user wants to match exact string item
+         self.match_string = match_string
++        self.item = item
+ 
+         self.__search(obj, item, parents_ids=frozenset({id(obj)}))
+ 
+@@ -242,12 +242,16 @@
+                           item,
+                           parent="root",
+                           parents_ids=frozenset()):
+-        """Search iterables except dictionaries, sets and strings."""
+         for i, thing in enumerate(obj):
+             new_parent = "{}[{}]".format(parent, i)
+             if self.__skip_this(thing, parent=new_parent):
+                 continue
+ 
++            item_id = id(thing)
++            if parents_ids and item_id in parents_ids:
++                continue
++            parents_ids_added = add_to_frozen_set(parents_ids, item_id)
++
+             if self.case_sensitive or not isinstance(thing, strings):
+                 thing_cased = thing
+             else:
+@@ -257,15 +261,9 @@
+                 self.__report(
+                     report_key='matched_values', key=new_parent, value=thing)
+             else:
+-                item_id = id(thing)
+-                if parents_ids and item_id in parents_ids:
+-                    continue
+-                parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+-                self.__search(thing, item, "%s[%s]" %
+-                              (parent, i), parents_ids_added)
++                self.__search(thing, item, new_parent, parents_ids_added)
+ 
+     def __search_str(self, obj, item, parent):
+-        """Compare strings"""
+         obj_text = obj if self.case_sensitive else obj.lower()
+ 
+         is_matched = False
+@@ -289,20 +287,15 @@
+             self.__report(report_key='matched_values', key=parent, value=obj)
+ 
+     def __search_tuple(self, obj, item, parent, parents_ids):
+-        # Checking to see if it has _fields. Which probably means it is a named
+-        # tuple.
+         try:
+             obj._asdict
+-        # It must be a normal tuple
+         except AttributeError:
+             self.__search_iterable(obj, item, parent, parents_ids)
+-        # We assume it is a namedtuple then
+         else:
+             self.__search_obj(
+                 obj, item, parent, parents_ids, is_namedtuple=True)
+ 
+     def __search(self, obj, item, parent="root", parents_ids=frozenset()):
+-        """The main search method"""
+         if self.__skip_this(item, parent):
+             return
+ 

@@ -1,0 +1,48 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -421,36 +421,18 @@
+ 
+         return ''.join(result)
+ 
+-    def to_xml(self, value: Any, version: str, nsmap: Dict[str, str]={}, prettyprint: bool=True, indent: str='') -> str:
+-        """
+-        Serialize list of ETree.
+-
+-        Creates a string of all the ETrees in the list. The prefixes are
+-        resolved through the nsmap for easier to read XML.
+-
+-        Args:
+-            value: list of ETrees with the extension data
+-            version: string of GPX version, must be 1.1
+-            nsmap: dict of prefixes and URIs
+-            prettyprint: boolean, when true, indent line
+-            indent: string prepended to tag, usually 2 spaces per level
+-
+-        Returns:
+-            string with all the prefixed tags and data for each node
+-            as XML.
+-
+-        """
++    def to_xml(self, value: Any, version: str, nsmap: Dict[str, str]={},
++        prettyprint: bool=True, indent: str='') ->str:
+         if not prettyprint:
+             indent = ''
+-        if not value or version != "1.1":
++        if value is None:
+             return ''
+-        result = [f'\n{indent}<{self.tag}>']
+-        for extension in value:
+-            result.append(self._ETree_to_xml(extension, nsmap,
+-                                             prettyprint=prettyprint,
+-                                             indent=f'{indent}  '))
+-        result.append(f'\n{indent}</{self.tag}>')
+-        return ''.join(result)
++        if hasattr(value, 'gpx_10_fields') or hasattr(value, 'gpx_11_fields'):
++            # This is a GPX object with fields
++            return gpx_fields_to_xml(value, None, version, nsmap=nsmap, prettyprint=prettyprint, indent=indent)
++        else:
++            # This is a simple value
++            return mod_utils.make_str(value)
+ 
+ # ----------------------------------------------------------------------------------------------------
+ # Utility methods:

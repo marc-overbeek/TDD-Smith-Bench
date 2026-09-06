@@ -1,0 +1,39 @@
+--- a/oauthlib/oauth2/rfc6749/grant_types/implicit.py
++++ b/oauthlib/oauth2/rfc6749/grant_types/implicit.py
+@@ -160,7 +160,35 @@
+         .. _`Section 10.12`: https://tools.ietf.org/html/rfc6749#section-10.12
+         .. _`Appendix B`: https://tools.ietf.org/html/rfc6749#appendix-B
+         """
+-        return self.create_token_response(request, token_handler)
++        try:
++            self.validate_authorization_request(request)
++        except errors.FatalClientError as e:
++            log.debug('Fatal client error during validation of %r. %r.',
++                      request, e)
++            raise
++        except errors.OAuth2Error as e:
++            log.debug('Client error during validation of %r. %r.', request, e)
++            return {'Location': common.add_params_to_uri(request.redirect_uri, e.twotuples,
++                                                         fragment=True)}, None, 302
++
++        # In OIDC implicit flow it is possible to have a request_type that does not include the access_token!
++        # "id_token token" - return the access token and the id token
++        # "id_token" - don't return the access token
++        token = token_handler.create_token(request, refresh_token=False) if 'token' in request.response_type.split() else {}
++
++        if request.state is not None:
++            token['state'] = request.state
++
++        for modifier in self._token_modifiers:
++            token = modifier(token, token_handler, request)
++
++        # In OIDC implicit flow it is possible to have a request_type that does
++        # not include the access_token! In this case there is no need to save a token.
++        if "token" in request.response_type.split():
++            self.request_validator.save_token(token, request)
++
++        return self.prepare_authorization_response(
++            request, token, {}, None, 302)
+ 
+     def create_token_response(self, request, token_handler):
+         """Return token or error embedded in the URI fragment.

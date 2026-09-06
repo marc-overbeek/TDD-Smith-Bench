@@ -1,0 +1,44 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -675,40 +675,7 @@
+ 
+ 
+ def _handle_dict(target, spec, scope):
+-    if not isinstance(target, dict):
+-        raise TypeMatchError(type(target), dict)
+-    spec_keys = spec  # cheating a little bit here, list-vs-dict, but saves an object copy sometimes
+-
+-    required = {
+-        key for key in spec_keys
+-        if _precedence(key) == 0 and type(key) is not Optional
+-        or type(key) is Required}
+-    defaults = {  # pre-load result with defaults
+-        key.key: key.default for key in spec_keys
+-        if type(key) is Optional and key.default is not _MISSING}
+-    result = {}
+-    for key, val in target.items():
+-        for maybe_spec_key in spec_keys:
+-            # handle Required as a special case here rather than letting it be a stand-alone spec
+-            if type(maybe_spec_key) is Required:
+-                spec_key = maybe_spec_key.key
+-            else:
+-                spec_key = maybe_spec_key
+-            try:
+-                key = scope[glom](key, spec_key, scope)
+-            except GlomError:
+-                pass
+-            else:
+-                result[key] = scope[glom](val, spec[maybe_spec_key], chain_child(scope))
+-                required.discard(maybe_spec_key)
+-                break
+-        else:
+-            raise MatchError("key {0!r} didn't match any of {1!r}", key, spec_keys)
+-    for key in set(defaults) - set(result):
+-        result[key] = arg_val(target, defaults[key], scope)
+-    if required:
+-        raise MatchError("target missing expected keys: {0}", ', '.join([bbrepr(r) for r in required]))
+-    return result
++    pass
+ 
+ 
+ def _glom_match(target, spec, scope):

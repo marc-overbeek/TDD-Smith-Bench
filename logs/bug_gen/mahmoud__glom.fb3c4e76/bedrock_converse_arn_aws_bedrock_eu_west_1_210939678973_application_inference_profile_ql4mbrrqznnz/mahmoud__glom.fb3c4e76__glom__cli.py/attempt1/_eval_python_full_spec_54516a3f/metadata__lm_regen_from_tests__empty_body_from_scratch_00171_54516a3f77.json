@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the test, I need to understand what `_eval_python_full_spec` should do. It's called with a Python expression string like `'T[T[3].bit_length()]'` or `'(T.values(), [T])'` and should return a glom spec object that can be used with `glom.glom()`.\n\nThe function needs to evaluate Python expressions that use glom's full API (like `T`, `Path`, etc.) - hence \"python-full\" format. It should evaluate the expression in a namespace that includes all of glom's exports.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the test, I need to understand what `_eval_python_full_spec` should do. It's called with a Python expression string like `'T[T[3].bit_length()]'` or `'(T.values(), [T])'` and should return a glom spec object that can be used with `glom.glom()`.\n\nThe function needs to evaluate Python expressions that use glom's full API (like `T`, `Path`, etc.) - hence \"python-full\" format. It should evaluate the expression in a namespace that includes all of glom's exports.\n\n```python\ndef _eval_python_full_spec(py_text):\n    env = _from_glom_import_star()\n    try:\n        return eval(py_text, env)\n    except Exception as e:\n        raise UsageError('could not load spec, got: %s: %s'\n                         % (e.__class__.__name__, e))\n```",
+  "rewrite": "def _eval_python_full_spec(py_text):\n    env = _from_glom_import_star()\n    try:\n        return eval(py_text, env)\n    except Exception as e:\n        raise UsageError('could not load spec, got: %s: %s'\n                         % (e.__class__.__name__, e))",
+  "strategy": "lm_regen_from_tests"
+}

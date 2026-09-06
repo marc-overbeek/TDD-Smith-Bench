@@ -1,0 +1,89 @@
+--- a/oauthlib/oauth1/rfc5849/__init__.py
++++ b/oauthlib/oauth1/rfc5849/__init__.py
+@@ -88,8 +88,7 @@
+     def register_signature_method(cls, method_name, method_callback):
+         cls.SIGNATURE_METHODS[method_name] = method_callback
+ 
+-    def __init__(self, client_key,
+-                 client_secret=None,
++    def __init__(self, client_key, client_secret=None,
+                  resource_owner_key=None,
+                  resource_owner_secret=None,
+                  callback_uri=None,
+@@ -120,7 +119,6 @@
+         :param nonce: Use this nonce instead of generating one. (Mainly for testing)
+         :param timestamp: Use this timestamp instead of using current. (Mainly for testing)
+         """
+-        # Convert to unicode using encoding if given, else assume unicode
+         def encode(x):
+             return to_unicode(x, encoding) if encoding else x
+ 
+@@ -291,67 +289,39 @@
+         scheme supplied to the Client constructor, default utf-8. This includes
+         strings inside body dicts, for example.
+         """
+-        # normalize request data
+         request = Request(uri, http_method, body, headers,
+                           encoding=self.encoding)
+ 
+-        # sanity check
+         content_type = request.headers.get('Content-Type', None)
+         multipart = content_type and content_type.startswith('multipart/')
+         should_have_params = content_type == CONTENT_TYPE_FORM_URLENCODED
+         has_params = request.decoded_body is not None
+-        # 3.4.1.3.1.  Parameter Sources
+-        # [Parameters are collected from the HTTP request entity-body, but only
+-        # if [...]:
+-        #    *  The entity-body is single-part.
++
+         if multipart and has_params:
+             raise ValueError(
+                 "Headers indicate a multipart body but body contains parameters.")
+-        #    *  The entity-body follows the encoding requirements of the
+-        #       "application/x-www-form-urlencoded" content-type as defined by
+-        #       [W3C.REC-html40-19980424].
+         elif should_have_params and not has_params:
+             raise ValueError(
+                 "Headers indicate a formencoded body but body was not decodable.")
+-        #    *  The HTTP request entity-header includes the "Content-Type"
+-        #       header field set to "application/x-www-form-urlencoded".
+         elif not should_have_params and has_params:
+             raise ValueError(
+                 "Body contains parameters but Content-Type header was {} "
+                 "instead of {}".format(content_type or "not set",
+                                         CONTENT_TYPE_FORM_URLENCODED))
+ 
+-        # 3.5.2.  Form-Encoded Body
+-        # Protocol parameters can be transmitted in the HTTP request entity-
+-        # body, but only if the following REQUIRED conditions are met:
+-        # o  The entity-body is single-part.
+-        # o  The entity-body follows the encoding requirements of the
+-        #    "application/x-www-form-urlencoded" content-type as defined by
+-        #    [W3C.REC-html40-19980424].
+-        # o  The HTTP request entity-header includes the "Content-Type" header
+-        #    field set to "application/x-www-form-urlencoded".
+         elif self.signature_type == SIGNATURE_TYPE_BODY and not (
+                 should_have_params and has_params and not multipart):
+             raise ValueError(
+                 'Body signatures may only be used with form-urlencoded content')
+ 
+-        # We amend https://tools.ietf.org/html/rfc5849#section-3.4.1.3.1
+-        # with the clause that parameters from body should only be included
+-        # in non GET or HEAD requests. Extracting the request body parameters
+-        # and including them in the signature base string would give semantic
+-        # meaning to the body, which it should not have according to the
+-        # HTTP 1.1 spec.
+         elif http_method.upper() in ('GET', 'HEAD') and has_params:
+             raise ValueError('GET/HEAD requests should not include body.')
+ 
+-        # generate the basic OAuth parameters
+         request.oauth_params = self.get_oauth_params(request)
+ 
+-        # generate the signature
+         request.oauth_params.append(
+             ('oauth_signature', self.get_oauth_signature(request)))
+ 
+-        # render the signed request and return it
+         uri, headers, body = self._render(request, formencode=True,
+                                           realm=(realm or self.realm))
+ 

@@ -1,0 +1,39 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2402,34 +2402,8 @@
+ 
+         return result
+ 
+-    def get_elevation_extremes(self) -> MinimumMaximum:
+-        """
+-        Calculate elevation extremes of GPX file
+-
+-        Returns
+-        -------
+-        min_max_elevation: MinimumMaximum named tuple
+-            minimum: float
+-                Minimum elevation in meters
+-            maximum: float
+-                Maximum elevation in meters
+-        """
+-        if not self.tracks:
+-            return MinimumMaximum(None, None)
+-
+-        elevations = []
+-
+-        for track in self.tracks:
+-            (_min, _max) = track.get_elevation_extremes()
+-            if _min is not None:
+-                elevations.append(_min)
+-            if _max is not None:
+-                elevations.append(_max)
+-
+-        if len(elevations) == 0:
+-            return MinimumMaximum(None, None)
+-
+-        return MinimumMaximum(min(elevations), max(elevations))
++    def get_elevation_extremes(self) ->MinimumMaximum:
++        pass
+ 
+     def get_points_data(self, distance_2d: bool=False) -> List[PointData]:
+         """

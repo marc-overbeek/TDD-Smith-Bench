@@ -1,0 +1,113 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -54,64 +54,68 @@
+ LOG = logging.getLogger(__name__)
+ 
+ def get_network_telemetry():
++    import socket
+     import psutil
+-    import socket
+-    network_info = {}
++
++    result = {}
++
+     try:
+-        # Get network IO statistics
++        # Get network I/O statistics
+         net_io = psutil.net_io_counters()
+-        network_info['bytes_sent'] = net_io.bytes_sent
+-        network_info['bytes_recv'] = net_io.bytes_recv
+-        network_info['packets_sent'] = net_io.packets_sent
+-        network_info['packets_recv'] = net_io.packets_recv
+-
+-        # Test network speed (download speed)
+-        test_url = "https://data.safetycli.com/api/v1/safety/announcements/"  # Test the download speed
+-        start_time = time.perf_counter()
+-        try:
+-            response = requests.get(test_url, timeout=10)
+-            end_time = time.perf_counter()
+-            download_time = end_time - start_time
+-            download_speed = len(response.content) / download_time
+-            network_info['download_speed'] = download_speed
+-        except requests.RequestException as e:
+-            network_info['download_speed'] = None
+-            network_info['error'] = str(e)
+-
+-
+-        # Get network addresses
++        result['bytes_sent'] = net_io.bytes_sent
++        result['bytes_recv'] = net_io.bytes_recv
++        result['packets_sent'] = net_io.packets_sent
++        result['packets_recv'] = net_io.packets_recv
++
++        # Get network interfaces and their addresses
+         net_if_addrs = psutil.net_if_addrs()
+-        network_info['interfaces'] = {iface: [addr.address for addr in addrs if addr.family == socket.AF_INET] for iface, addrs in net_if_addrs.items()}
++        interfaces = {}
++        for iface, addrs in net_if_addrs.items():
++            interfaces[iface] = [addr.address for addr in addrs if addr.family == socket.AF_INET]
++        result['interfaces'] = interfaces
+ 
+         # Get network connections
+-        net_connections = psutil.net_connections(kind='inet')
+-        network_info['connections'] = [
+-            {
++        connections = []
++        for conn in psutil.net_connections():
++            conn_info = {
+                 'fd': conn.fd,
+                 'family': conn.family,
+                 'type': conn.type,
+-                'laddr': f"{conn.laddr.ip}:{conn.laddr.port}",
+-                'raddr': f"{conn.raddr.ip}:{conn.raddr.port}" if conn.raddr else None,
+-                'status': conn.status
++                'laddr': f'{conn.laddr.ip}:{conn.laddr.port}' if conn.laddr else '',
++                'raddr': f'{conn.raddr.ip}:{conn.raddr.port}' if conn.raddr else '',
++                'status': conn.status,
+             }
+-            for conn in net_connections
+-        ]
+-
+-        # Get network interface stats
++            connections.append(conn_info)
++        result['connections'] = connections
++
++        # Get interface stats
+         net_if_stats = psutil.net_if_stats()
+-        network_info['interface_stats'] = {
+-            iface: {
++        interface_stats = {}
++        for iface, stats in net_if_stats.items():
++            interface_stats[iface] = {
+                 'isup': stats.isup,
+                 'duplex': stats.duplex,
+                 'speed': stats.speed,
+-                'mtu': stats.mtu
++                'mtu': stats.mtu,
+             }
+-            for iface, stats in net_if_stats.items()
+-        }
++        result['interface_stats'] = interface_stats
++
+     except psutil.AccessDenied as e:
+-        network_info['error'] = f"Access denied when trying to gather network telemetry: {e}"
+-
+-    return network_info
++        result['error'] = str(e)
++        return result
++
++    # Measure download speed
++    try:
++        start_time = time.time()
++        response = requests.get('http://httpbin.org/bytes/1024', timeout=5)
++        elapsed = time.time() - start_time
++        download_speed = len(response.content) / elapsed if elapsed > 0 else None
++        result['download_speed'] = download_speed
++    except requests.RequestException as e:
++        result['download_speed'] = None
++        result['error'] = str(e)
++
++    return result
+ 
+ def preprocess_args(f):
+     if '--debug' in sys.argv:

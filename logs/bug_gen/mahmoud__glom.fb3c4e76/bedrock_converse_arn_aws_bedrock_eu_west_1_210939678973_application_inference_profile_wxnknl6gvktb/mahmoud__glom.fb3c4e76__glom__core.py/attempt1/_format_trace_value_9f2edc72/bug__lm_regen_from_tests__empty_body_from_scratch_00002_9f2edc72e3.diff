@@ -1,0 +1,62 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -228,15 +228,52 @@
+     return stack
+ 
+ 
++fmt_t = mk_fmt("Target")
++# ...
++segments.append(fmt_t(target))
++
+ def _format_trace_value(value, maxlen):
+-    s = bbrepr(value).replace("\\'", "'")
+-    if len(s) > maxlen:
++    """Format a value for display in a trace, truncating if necessary."""
++    repr_str = bbrepr(value)
++    
++    if len(repr_str) <= maxlen:
++        return repr_str
++    
++    # Need to truncate
++    # For sequences (list, tuple, dict), show length instead
++    if isinstance(value, (list, tuple, dict)):
++        # Try to show a truncated version with length
++        truncated = repr_str[:maxlen - 10]  # Leave room for " (len=...)"
+         try:
+-            suffix = '... (len=%s)' % len(value)
+-        except Exception:
+-            suffix = '...'
+-        s = s[:maxlen - len(suffix)] + suffix
+-    return s
++            length = len(value)
++            suffix = f" (len={length})"
++            return truncated + suffix
++        except TypeError:
++            pass
++    
++    # For other types, just truncate with ellipsis
++    return repr_str[:maxlen - 3] + "..."
++
++def _format_trace_value(value, maxlen):
++    """Format a value for display in a trace, truncating if necessary."""
++    repr_str = bbrepr(value)
++    
++    if len(repr_str) <= maxlen:
++        return repr_str
++    
++    # Need to truncate
++    # For sequences (list, tuple, dict), show length instead of full content
++    if isinstance(value, (list, tuple, dict)):
++        try:
++            length = len(value)
++            # Truncate and add length indicator
++            truncated = repr_str[:maxlen - len(f" (len={length})") - 3]
++            return truncated + f"... (len={length})"
++        except TypeError:
++            pass
++    
++    # For other types, just truncate with ellipsis
++    return repr_str[:maxlen - 3] + "..."
+ 
+ 
+ def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0, prev_target=_MISSING, last_branch=True):

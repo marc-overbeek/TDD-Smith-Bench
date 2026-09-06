@@ -1,0 +1,50 @@
+--- a/src/mistune/directives/toc.py
++++ b/src/mistune/directives/toc.py
+@@ -91,25 +91,28 @@
+             md.renderer.register('toc', render_html_toc)
+ 
+ 
+-def render_html_toc(
+-    renderer: "BaseRenderer", title: str, collapse: bool = False, **attrs: Any
+-) -> str:
+-    if not title:
+-        title = 'Table of Contents'
+-    content = render_toc_ul(attrs['toc'])
+-
+-    html = '<details class="toc"'
+-    if not collapse:
+-        html += ' open'
+-    html += '>\n<summary>' + title + '</summary>\n'
+-    return html + content + '</details>\n'
++def render_html_toc(renderer: 'BaseRenderer', title: str, collapse: bool=
++    False, **attrs: Any) ->str:
++    toc = attrs.get('toc', [])
++    html = render_toc_ul(toc)
++    if collapse:
++        html = '<details><summary>' + title + '</summary>\n' + html + '</details>\n'
++    elif title:
++        html = '<div class="toc">\n<span class="toc-title">' + title + '</span>\n' + html + '</div>\n'
++    else:
++        html = '<div class="toc">\n' + html + '</div>\n'
++    return html
+ 
+ 
+-def _normalize_level(options: Dict[str, Any], name: str, default: Any) -> Any:
+-    level = options.get(name)
+-    if not level:
++def _normalize_level(options: Dict[str, Any], name: str, default: Any) ->Any:
++    if name not in options:
+         return default
+-    try:
+-        return int(level)
+-    except (ValueError, TypeError):
+-        raise ValueError(f'"{name}" option MUST be integer')
++    value = options[name]
++    if isinstance(value, int):
++        return value
++    if isinstance(value, str):
++        try:
++            return int(value)
++        except ValueError:
++            return default
++    return default

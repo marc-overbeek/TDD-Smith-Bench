@@ -1,0 +1,31 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -1609,24 +1609,13 @@
+     ]
+ 
+ 
+-def read_vulnerabilities(fh: Any) -> Dict[str, Any]:
+-    """
+-    Reads vulnerabilities from a file handle.
+-
+-    Args:
+-        fh (Any): The file handle.
+-
+-    Returns:
+-        Dict[str, Any]: The vulnerabilities data.
+-    """
++def read_vulnerabilities(fh: Any) ->Dict[str, Any]:
+     try:
+-        data = json.load(fh)
++        return json.load(fh)
+     except json.JSONDecodeError as e:
+-        raise MalformedDatabase(reason=e, fetched_from=fh.name)
++        raise MalformedDatabase(reason=e)
+     except TypeError as e:
+-        raise MalformedDatabase(reason=e, fetched_from=fh.name)
+-
+-    return data
++        raise MalformedDatabase(reason=e)
+ 
+ 
+ def get_server_policies(

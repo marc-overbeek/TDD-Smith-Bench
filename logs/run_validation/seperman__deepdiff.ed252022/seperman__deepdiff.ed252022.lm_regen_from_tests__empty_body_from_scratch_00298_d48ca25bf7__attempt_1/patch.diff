@@ -1,0 +1,64 @@
+--- a/deepdiff/serialization.py
++++ b/deepdiff/serialization.py
+@@ -373,38 +373,32 @@
+ 
+ def pickle_load(content=None, file_obj=None, safe_to_import=None):
+     """
+-    **pickle_load**
+-    Load the pickled content. content should be a bytes object.
+-
++    Load pickled content from either bytes content or a file object.
++    
+     **Parameters**
+-
+-    content : Bytes of pickled object. 
+-
+-    file_obj : A file object to load the content from
+-
+-    safe_to_import : A set of modules that needs to be explicitly allowed to be loaded.
+-        Example: {'mymodule.MyClass', 'decimal.Decimal'}
+-        Note that this set will be added to the basic set of modules that are already allowed.
+-        The set of what is already allowed can be found in deepdiff.serialization.SAFE_TO_IMPORT
+-
++    
++    content : (Optional) Bytes containing pickled data
++    
++    file_obj : (Optional) A file object to load the pickled contents from
++    
++    safe_to_import : (Optional) A string, set, or list of module.class names that are safe to import
++    
+     **Returns**
+-
+-        A delta object that can be added to t1 to recreate t2.
+-
+-    **Examples**
+-
+-    Importing
+-        >>> from deepdiff import DeepDiff, Delta
+-        >>> from pprint import pprint
+-
+-
+-    """
+-    if not content and not file_obj:
+-        raise ValueError('Please either pass the content or the file_obj to pickle_load.') 
+-    if isinstance(content, str):
+-        content = content.encode('utf-8')
+-    if content:
++    
++    The unpickled object
++    """
++    if content is not None and file_obj is not None:
++        raise ValueError("Cannot specify both content and file_obj")
++    
++    if content is None and file_obj is None:
++        raise ValueError("Must specify either content or file_obj")
++    
++    if content is not None:
++        # If content is a string, it's not valid pickle data
++        if isinstance(content, str):
++            raise pickle.UnpicklingError("pickle data was not a bytes object")
+         file_obj = io.BytesIO(content)
++    
+     return _RestrictedUnpickler(file_obj, safe_to_import=safe_to_import).load()
+ 
+ 

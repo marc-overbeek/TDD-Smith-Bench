@@ -1,0 +1,470 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -567,102 +567,66 @@
+ 
+ 
+ @sync_safety_context
+-def check(
+-    *,
+-    session: requests.Session,
+-    packages: List[Package] = [],
+-    db_mirror: Union[Optional[str], bool] = False,
+-    cached: int = 0,
+-    ignore_vulns: Optional[Dict[str, Any]] = None,
+-    ignore_severity_rules: Optional[Dict[str, Any]] = None,
+-    proxy: Optional[Dict[str, Any]] = None,
+-    include_ignored: bool = False,
+-    is_env_scan: bool = True,
+-    telemetry: bool = True,
+-    params: Optional[Dict[str, Any]] = None,
+-    project: Optional[str] = None
+-) -> tuple:
+-    """
+-    Performs a vulnerability check on the provided packages.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        packages (List[Package]): The list of packages to check.
+-        db_mirror (Union[Optional[str], bool]): The database mirror.
+-        cached (int): The cache validity in seconds.
+-        ignore_vulns (Optional[Dict[str, Any]]): The ignored vulnerabilities.
+-        ignore_severity_rules (Optional[Dict[str, Any]]): The severity rules for ignoring vulnerabilities.
+-        proxy (Optional[Dict[str, Any]]): The proxy settings.
+-        include_ignored (bool): Whether to include ignored vulnerabilities.
+-        is_env_scan (bool): Whether it is an environment scan.
+-        telemetry (bool): Whether to include telemetry data.
+-        params (Optional[Dict[str, Any]]): Additional parameters.
+-        project (Optional[str]): The project name.
+-
+-    Returns:
+-        tuple: A tuple containing the list of vulnerabilities and the full database.
+-    """
++def check(*, session: requests.Session, packages: List[Package]=[],
++    db_mirror: Union[Optional[str], bool]=False, cached: int=0,
++    ignore_vulns: Optional[Dict[str, Any]]=None, ignore_severity_rules:
++    Optional[Dict[str, Any]]=None, proxy: Optional[Dict[str, Any]]=None,
++    include_ignored: bool=False, is_env_scan: bool=True, telemetry: bool=
++    True, params: Optional[Dict[str, Any]]=None, project: Optional[str]=None
++    ) ->tuple:
+     SafetyContext().command = 'check'
+-    db = fetch_database(session, db=db_mirror, cached=cached, telemetry=telemetry)
+-    db_full = None
+-    vulnerable_packages = frozenset(db.get('vulnerable_packages', []))
+-    vulnerabilities = []
+-    found_pkgs = {}
+-    requirements = iter([])
+-
+-    for p in packages:
+-        requirements = itertools.chain(p.requirements, requirements)
+-        found_pkgs[canonicalize_name(p.name)] = p
+-
+-    # Let's report by req, pinned in environment will be ==version
+-    for req in requirements:
+-        vuln_per_req = {}
+-        name = canonicalize_name(req.name)
+-
+-        pkg = found_pkgs.get(name, None)
+-
+-        if not pkg.version:
+-            if not db_full:
+-                db_full = fetch_database(session, full=True, db=db_mirror, cached=cached,
+-                                         telemetry=telemetry)
+-            pkg.refresh_from(db_full)
+-
+-        if name in vulnerable_packages:
+-            # we have a candidate here, build the spec set
+-            for specifier in db['vulnerable_packages'][name]:
+-                spec_set = SpecifierSet(specifiers=specifier)
+-
+-                if is_vulnerable(spec_set, req, pkg):
+-                    if not db_full:
+-                        db_full = fetch_database(session, full=True, db=db_mirror, cached=cached,
+-                                                 telemetry=telemetry)
+-                    if not pkg.latest_version:
+-                        pkg.refresh_from(db_full)
+-
+-                    for data in get_vulnerabilities(pkg=name, spec=specifier, db=db_full):
+-                        try:
+-                            vuln_id: str = str(next(filter(lambda i: i.get('type', None) == 'pyup', data.get('ids', []))).get('id', ''))
+-                        except StopIteration:
+-                            vuln_id: str = ''
+-
+-                        if vuln_id in vuln_per_req:
+-                            vuln_per_req[vuln_id].vulnerable_spec.add(specifier)
+-                            continue
+-
+-                        cve = get_cve_from(data, db_full)
+-
+-                        ignore_vuln_if_needed(pkg, vuln_id, cve, ignore_vulns, ignore_severity_rules, req)
+-
+-                        vulnerability = get_vulnerability_from(vuln_id, cve, data, specifier, db_full, name, pkg,
+-                                                               ignore_vulns, req)
+-
+-                        should_add_vuln = not (vulnerability.is_transitive and is_env_scan)
+-
+-                        if (include_ignored or vulnerability.vulnerability_id not in ignore_vulns) and should_add_vuln:
+-                            vuln_per_req[vulnerability.vulnerability_id] = vulnerability
+-                            vulnerabilities.append(vulnerability)
+-
+-    return vulnerabilities, db_full
++
++    if ignore_vulns is None:
++        ignore_vulns = {}
++
++    db = fetch_database(session=session, full=True, db=db_mirror, cached=cached, telemetry=telemetry)
++    db_full = db
++
++    vulnerable = []
++    found_packages = packages
++
++    for pkg in packages:
++        if not pkg.name:
++            continue
++
++        name = canonicalize_name(pkg.name)
++
++        if name not in db.get('vulnerable_packages', {}):
++            continue
++
++        for req in pkg.requirements:
++            for entry in db['vulnerable_packages'][name]:
++                for spec in entry.get('specs', []):
++                    specifier = SpecifierSet(spec)
++                    if not is_vulnerable(specifier, req, pkg):
++                        continue
++
++                    vuln_id = str(next(filter(lambda i: i.get('type', None) == 'pyup', entry.get('ids', []))).get('id', ''))
++                    cve = get_cve_from(entry, db_full)
++
++                    ignore_vuln_if_needed(pkg, vuln_id, cve, ignore_vulns, ignore_severity_rules, req)
++
++                    vuln = get_vulnerability_from(
++                        vuln_id=vuln_id,
++                        cve=cve,
++                        data=entry,
++                        specifier=spec,
++                        db=db,
++                        name=name,
++                        pkg=pkg,
++                        ignore_vulns=ignore_vulns,
++                        affected=req
++                    )
++
++                    if include_ignored or not vuln.ignored:
++                        vulnerable.append(vuln)
++                    elif vuln.ignored:
++                        vulnerable.append(vuln)
++
++    if not include_ignored:
++        vulnerable = [v for v in vulnerable if not v.ignored]
++
++    return vulnerable, db_full
+ 
+ 
+ def precompute_remediations(
+@@ -1454,159 +1418,94 @@
+     raise DatabaseFetchError()
+ 
+ 
+-def add_local_notifications(
+-    packages: List[Package],
+-    ignore_unpinned_requirements: Optional[bool]
+-) -> List[Dict[str, str]]:
+-    """
+-    Adds local notifications for unpinned packages.
+-
+-    Args:
+-        packages (List[Package]): The list of packages.
+-        ignore_unpinned_requirements (Optional[bool]): Whether to ignore unpinned requirements.
+-
+-    Returns:
+-        List[Dict[str, str]]: The list of notifications.
+-    """
++def add_local_notifications(packages: List[Package],
++    ignore_unpinned_requirements: Optional[bool]) ->List[Dict[str, str]]:
++    notifications = []
++
++    unpinned = [pkg for pkg in packages if not pkg.version]
++
++    if unpinned:
++        unpinned_names = ' and '.join([pkg.name for pkg in unpinned])
++
++        if ignore_unpinned_requirements:
++            msg = (
++                f"Warning: {unpinned_names} are unpinned and potential vulnerabilities are "
++                f"being ignored given `ignore-unpinned-requirements` is True in your config."
++            )
++        else:
++            msg = (
++                f"Warning: {unpinned_names} are unpinned. Safety by default does not report "
++                f"vulnerabilities for packages that are not pinned to a specific version."
++            )
++
++        notifications.append({'type': 'warning', 'message': msg, 'local': True})
++
++    return notifications
++
++
++def get_announcements(session: requests.Session, telemetry: bool=True,
++    with_telemetry: Any=None) ->List[Dict[str, str]]:
++    from .util import get_used_options
++    from requests.exceptions import RequestException
++
+     announcements = []
+-    unpinned_packages: List[str] = [f"{pkg.name}" for pkg in packages if pkg.has_unpinned_req()]
+-
+-    if unpinned_packages and ignore_unpinned_requirements is not False:
+-        found = len(unpinned_packages)
+-        and_msg = ''
+-
+-        if found >= 2:
+-            last = unpinned_packages.pop()
+-            and_msg = f' and {last}'
+-
+-        pkgs: str = f"{', '.join(unpinned_packages)}{and_msg} {'are' if found > 1 else 'is'}"
+-        doc_msg: str = get_specifier_range_info(style=False, pin_hint=True)
+-
+-        if ignore_unpinned_requirements is None:
+-            msg = f'Warning: {pkgs} unpinned. Safety by default does not ' \
+-                  f'report on potential vulnerabilities in unpinned packages. {doc_msg}'
+-        else:
+-            msg = f'Warning: {pkgs} unpinned and potential vulnerabilities are ' \
+-                  f'being ignored given `ignore-unpinned-requirements` is True in your config. {doc_msg}'
+-
+-        announcements.append({'message': msg, 'type': 'warning', 'local': True})
+-
+-    announcements.extend(SafetyContext().local_announcements)
+-
+-    return announcements
+-
+-
+-def get_announcements(
+-    session: requests.Session,
+-    telemetry: bool = True,
+-    with_telemetry: Any = None
+-) -> List[Dict[str, str]]:
+-    """
+-    Retrieves announcements from the server.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        telemetry (bool): Whether to include telemetry data.
+-        with_telemetry (Optional[Dict[str, Any]]): The telemetry data.
+-
+-    Returns:
+-        List[Dict[str, str]]: The list of announcements.
+-    """
+-    LOG.info('Getting announcements')
+-
+-    announcements = []
+-
+-    url = f"{DATA_API_BASE_URL}announcements/"
+-    method = 'post'
+-    telemetry_data = with_telemetry if with_telemetry else build_telemetry_data(telemetry=telemetry)
+-    data = asdict(telemetry_data)
+-    request_kwargs = {'timeout': 3}
+-    data_keyword = 'json'
+-
+-    source = os.environ.get('SAFETY_ANNOUNCEMENTS_URL', None)
+-
+-    if source:
+-        LOG.debug(f'Getting the announcement from a different source: {source}')
+-        url = source
+-        method = 'get'
+-        data = {
+-            'telemetry': json.dumps(data)}
+-        data_keyword = 'params'
+-
+-    request_kwargs[data_keyword] = data
+-    request_kwargs['url'] = url
+-
+-    LOG.debug(f'Telemetry data sent: {data}')
+ 
+     try:
+-        request_func = getattr(session, method)
+-        r = request_func(**request_kwargs)
+-        LOG.debug(r.text)
+-    except Exception as e:
+-        LOG.info('Unexpected but HANDLED Exception happened getting the announcements: %s', e)
+-        return announcements
+-
+-    if r.status_code == 200:
++        url = f"{DATA_API_BASE_URL}announcements/"
++
++        telemetry_data = build_telemetry_data(telemetry=telemetry)
++
+         try:
+-            announcements = r.json()
+-            if 'announcements' in announcements.keys():
+-                announcements = announcements.get('announcements', [])
+-            else:
+-                LOG.info('There is not announcements key in the JSON response, is this a wrong structure?')
+-                announcements = []
+-
+-        except json.JSONDecodeError as e:
+-            LOG.info('Unexpected but HANDLED Exception happened decoding the announcement response: %s', e)
+-
+-    LOG.info('Announcements fetched')
+-
+-    return announcements
+-
+-
+-
+-def get_packages(files: Optional[List[str]] = None, stdin: bool = False) -> List[Package]:
+-    """
+-    Retrieves the packages from the given files or standard input.
+-
+-    Args:
+-        files (Optional[List[str]]): The list of files.
+-        stdin (bool): Whether to read from standard input.
+-
+-    Returns:
+-        List[Package]: The list of packages.
+-    """
+-    if files:
+-        return list(itertools.chain.from_iterable(read_requirements(f, resolve=True) for f in files))
++            ctx = click.get_current_context()
++            command_name = ctx.command.name()
++        except Exception:
++            command_name = ''
++
++        payload = {
++            'telemetry': json.dumps(telemetry_data, default=pydantic_encoder),
++            'command': command_name,
++            'options': json.dumps(get_used_options()),
++        }
++
++        try:
++            r = session.post(url=url, timeout=REQUEST_TIMEOUT, json=payload)
++        except RequestException:
++            return []
++
++        from http import HTTPStatus
++        if r.status_code != HTTPStatus.OK.value:
++            return []
++
++        try:
++            data = r.json()
++        except Exception:
++            return []
++
++        if not isinstance(data, dict):
++            return []
++
++        result = data.get('announcements', None)
++        if result is None or not isinstance(result, list):
++            return []
++
++        return result
++
++    except Exception:
++        return []
++
++
++
++def get_packages(files: Optional[List[str]]=None, stdin: bool=False) ->List[
++    Package]:
++    packages = []
+ 
+     if stdin:
+-        return list(read_requirements(sys.stdin))
+-
+-    import pkg_resources
+-
+-    def allowed_version(pkg: str, version: str) -> bool:
+-        try:
+-            parse_version(version)
+-        except Exception:
+-            SafetyContext.local_announcements.append(
+-                {'message': f'Version {version} for {pkg} is invalid and is ignored by Safety. Please See PEP 440.',
+-                 'type': 'warning', 'local': True})
+-            return False
+-
+-        return True
+-
+-    w_set = pkg_resources.working_set
+-
+-    SafetyContext().scanned_full_path.extend(w_set.entry_keys.keys())
+-
+-    return [
+-        Package(name=d.key, version=d.version,
+-                requirements=[SafetyRequirement(f'{d.key}=={d.version}', found=d.location)],
+-                found=d.location, insecure_versions=[],
+-                secure_versions=[], latest_version=None, latest_version_without_known_vulnerabilities=None,
+-                more_info_url=None) for d in
+-        w_set
+-        if d.key not in {"python", "wsgiref", "argparse"} and allowed_version(d.key, d.version)
+-    ]
++        packages = list(read_requirements(sys.stdin, resolve=True))
++    elif files:
++        for f in files:
++            packages += list(read_requirements(f, resolve=True))
++
++    return packages
+ 
+ 
+ def read_vulnerabilities(fh: Any) -> Dict[str, Any]:
+@@ -1629,46 +1528,23 @@
+     return data
+ 
+ 
+-def get_server_policies(
+-    session: requests.Session,
+-    policy_file: SafetyPolicyFile,
+-    proxy_dictionary: Dict[str, str]
+-) -> tuple:
+-    """
+-    Retrieves the server policies.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        policy_file (SafetyPolicyFile): The policy file.
+-        proxy_dictionary (Dict[str, str]): The proxy dictionary.
+-
+-    Returns:
+-        tuple: A tuple containing the policy file and the audit and monitor flag.
+-    """
+-    if session.api_key:
+-        server_policies = fetch_policy(session)
+-        server_audit_and_monitor = server_policies["audit_and_monitor"]
+-        server_safety_policy = server_policies["safety_policy"]
+-    else:
+-        server_audit_and_monitor = False
+-        server_safety_policy = ""
+-
+-    if server_safety_policy and policy_file:
+-        click.secho(
+-            "Warning: both a local policy file '{policy_filename}' and a server sent policy are present. "
+-            "Continuing with the local policy file.".format(policy_filename=policy_file['filename']),
+-            fg="yellow",
+-            file=sys.stderr
+-        )
+-    elif server_safety_policy:
+-        with tempfile.NamedTemporaryFile(prefix='server-safety-policy-') as tmp:
+-            tmp.write(server_safety_policy.encode('utf-8'))
+-            tmp.seek(0)
+-
+-            policy_file = SafetyPolicyFile().convert(tmp.name, param=None, ctx=None)
+-            LOG.info('Using server side policy file')
+-
+-    return policy_file, server_audit_and_monitor
++def get_server_policies(session: requests.Session, policy_file:
++    SafetyPolicyFile, proxy_dictionary: Dict[str, str]) ->tuple:
++    try:
++        data = fetch_policy(session)
++        server_audit_and_monitor = data.get('audit_and_monitor', False)
++        server_safety_policy = data.get('safety_policy', '')
++
++        if server_safety_policy:
++            import yaml
++            policy_contents = yaml.safe_load(server_safety_policy)
++            if policy_contents:
++                policy_file.from_server = True
++                policy_file.policy = policy_contents
++
++        return policy_file, server_audit_and_monitor
++    except Exception:
++        return policy_file, False
+ 
+ 
+ def save_report(

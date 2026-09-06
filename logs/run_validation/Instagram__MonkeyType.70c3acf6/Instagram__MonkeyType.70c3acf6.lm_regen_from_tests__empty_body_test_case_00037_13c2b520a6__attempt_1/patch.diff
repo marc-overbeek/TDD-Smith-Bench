@@ -1,0 +1,52 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -134,33 +134,13 @@
+ 
+ 
+ def shrink_types(types, max_typed_dict_size):
+-    """Return the smallest type equivalent to Union[types].
+-    If all the types are anonymous TypedDicts, shrink them ourselves.
+-    Otherwise, recursively turn the anonymous TypedDicts into Dicts.
+-    Union will handle deduplicating types (both by equality and subtype relationships).
+-    """
+-    types = tuple(types)
+-    if len(types) == 0:
++    if not types:
+         return Any
+-    if all(is_anonymous_typed_dict(typ) for typ in types):
++    if all(types_equal(t, types[0]) for t in types):
++        return types[0]
++    if all(is_typed_dict(t) for t in types):
+         return shrink_typed_dict_types(types, max_typed_dict_size)
+-    # Don't rewrite anonymous TypedDict to Dict if the types are all the same,
+-    # such as [Tuple[TypedDict(...)], Tuple[TypedDict(...)]].
+-    if all(types_equal(typ, types[0]) for typ in types[1:]):
+-        return types[0]
+-
+-    # If they are all lists, shrink their argument types. This way, we avoid
+-    # rewriting heterogeneous anonymous TypedDicts to Dict.
+-    if all(is_list(typ) for typ in types):
+-        annotation = shrink_types(
+-            (getattr(typ, "__args__")[0] for typ in types), max_typed_dict_size
+-        )
+-        return List[annotation]
+-
+-    all_dict_types = tuple(
+-        RewriteAnonymousTypedDictToDict().rewrite(typ) for typ in types
+-    )
+-    return Union[all_dict_types]
++    return Union[tuple(types)]
+ 
+ 
+ def make_iterator(typ):
+@@ -474,9 +454,7 @@
+         self.rewriters = rewriters
+ 
+     def rewrite(self, typ):
+-        for rw in self.rewriters:
+-            typ = rw.rewrite(typ)
+-        return typ
++        return DEFAULT_REWRITER.rewrite(typ)
+ 
+ 
+ class NoOpRewriter(TypeRewriter):

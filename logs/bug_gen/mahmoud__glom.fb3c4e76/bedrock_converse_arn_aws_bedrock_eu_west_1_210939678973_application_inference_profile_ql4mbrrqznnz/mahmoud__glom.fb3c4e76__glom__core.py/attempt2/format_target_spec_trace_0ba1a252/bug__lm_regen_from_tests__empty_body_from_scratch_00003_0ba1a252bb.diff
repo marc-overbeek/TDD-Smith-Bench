@@ -1,0 +1,103 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -239,44 +239,65 @@
+     return s
+ 
+ 
+-def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0, prev_target=_MISSING, last_branch=True):
+-    """
+-    unpack a scope into a multi-line but short summary
+-    """
+-    segments = []
+-    indent = " " + "|" * depth
+-    tick = "| " if depth else "- "
+-    def mk_fmt(label, t=None):
+-        pre = indent + (t or tick) + label + ": "
+-        fmt_width = width - len(pre)
+-        return lambda v: pre + _format_trace_value(v, fmt_width)
+-    fmt_t = mk_fmt("Target")
+-    fmt_s = mk_fmt("Spec")
+-    fmt_b = mk_fmt("Spec", "+ ")
+-    recurse = lambda s, last=False: format_target_spec_trace(s, root_error, width, depth + 1, prev_target, last)
+-    tb_exc_line = lambda e: "".join(traceback.format_exception_only(type(e), e))[:-1]
+-    fmt_e = lambda e: indent + tick + tb_exc_line(e)
+-    for scope, spec, target, error, branches in _unpack_stack(scope):
++- Target: [None]
++ - Spec: Match(Switch(...))
++ + Spec: Switch(...)
++ |\\ Spec: 1
++ |X glom.matching.MatchError: [None] does not match 1
++ |\\ Spec: 'a'
++ |X glom.matching.MatchError: [None] does not match 'a'
++ |\\ Spec: T.a
++ |X glom.core.PathAccessError: could not access 'a'...
++
++|\\ Spec: [None]
++ || Spec: T.a
++
++def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0,
++    prev_target=_MISSING, last_branch=True):
++    stack = _unpack_stack(scope)
++    lines = []
++    indent = ' ' * depth
++    prev_target = _MISSING
++
++    def _fmt_branch(branch_scope, pfx):
++        b_lines = []
++        b_stack = _unpack_stack(branch_scope, only_errors=False)
++        if not b_stack:
++            return b_lines
++        first = True
++        for b_scope, b_spec, b_target, b_error, b_branches in b_stack:
++            b_spec_repr = _format_trace_value(b_spec, width - len(pfx) - 8)
++            if first:
++                b_lines.append(f' {pfx}\\ Spec: {b_spec_repr}')
++                first = False
++            elif b_branches:
++                b_lines.append(f' {pfx}+ Spec: {b_spec_repr}')
++                for sub_b in b_branches:
++                    b_lines.extend(_fmt_branch(sub_b, pfx + '|'))
++            else:
++                b_lines.append(f' {pfx}| Spec: {b_spec_repr}')
++            if b_error is not None and b_error is not root_error:
++                err_type = type(b_error)
++                err_module = err_type.__module__
++                err_name = err_type.__name__
++                err_msg = b_error.get_message() if hasattr(b_error, 'get_message') else str(b_error)
++                b_lines.append(f' {pfx}X {err_module}.{err_name}: {err_msg}')
++        return b_lines
++
++    for frame_scope, spec, target, error, branches in stack:
+         if target is not prev_target:
+-            segments.append(fmt_t(target))
+-        prev_target = target
++            target_repr = _format_trace_value(target, width - depth - len(' - Target: '))
++            lines.append(f'{indent} - Target: {target_repr}')
++            prev_target = target
++        spec_repr = _format_trace_value(spec, width - depth - len(' - Spec: '))
+         if branches:
+-            segments.append(fmt_b(spec))
+-            segments.extend([recurse(s) for s in branches[:-1]])
+-            segments.append(recurse(branches[-1], last_branch))
++            lines.append(f'{indent} + Spec: {spec_repr}')
++            for branch in branches:
++                lines.extend(_fmt_branch(branch, '|'))
+         else:
+-            segments.append(fmt_s(spec))
+-        if error is not None and error is not root_error:
+-            last_line_error = True
+-            segments.append(fmt_e(error))
+-        else:
+-            last_line_error = False
+-    if depth:  # \ on first line, X on last line
+-        remark = lambda s, m: s[:depth + 1] + m + s[depth + 2:]
+-        segments[0] = remark(segments[0], "\\")
+-        if not last_branch or last_line_error:
+-            segments[-1] = remark(segments[-1], "X")
+-    return "\n".join(segments)
++            lines.append(f'{indent} - Spec: {spec_repr}')
++
++    return '\n'.join(lines)
+ 
+ 
+ # TODO: not used (yet)

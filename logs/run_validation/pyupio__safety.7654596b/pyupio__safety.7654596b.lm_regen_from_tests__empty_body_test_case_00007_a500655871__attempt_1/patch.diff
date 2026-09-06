@@ -1,0 +1,146 @@
+--- a/safety/models.py
++++ b/safety/models.py
+@@ -53,16 +53,6 @@
+     A subclass of Requirement that includes additional attributes and methods for safety requirements.
+     """
+     def __init__(self, requirement: Union[str, Dependency], found: Optional[str] = None) -> None:
+-        """
+-        Initialize a SafetyRequirement.
+-
+-        Args:
+-            requirement (Union[str, Dependency]): The requirement as a string or Dependency object.
+-            found (Optional[str], optional): Where the requirement was found. Defaults to None.
+-
+-        Raises:
+-            InvalidRequirementError: If the requirement cannot be parsed.
+-        """
+         dep = requirement
+ 
+         if isinstance(requirement, str):
+@@ -74,7 +64,6 @@
+ 
+         raw_line = dep.line
+         to_parse = dep.line
+-        # Hash and comments are only a pip feature, so removing them.
+         if '#' in to_parse:
+             to_parse = dep.line.split('#')[0]
+ 
+@@ -84,7 +73,6 @@
+         to_parse = to_parse.replace('\\', '').rstrip()
+ 
+         try:
+-            # Try to build a PEP Requirement from the cleaned line
+             super(SafetyRequirement, self).__init__(to_parse)
+         except Exception:
+             raise InvalidRequirementError(line=requirement.line if isinstance(requirement, Dependency) else requirement)
+@@ -96,28 +84,19 @@
+         return str(self) == str(other)
+ 
+     def to_dict(self, **kwargs: Any) -> Dict:
+-        """
+-        Convert the requirement to a dictionary.
+-
+-        Args:
+-            **kwargs: Additional keyword arguments.
+-
+-        Returns:
+-            dict: The dictionary representation of the requirement.
+-        """
+         specifier_obj = self.specifier
+         if not "specifier_obj" in kwargs:
+             specifier_obj = str(self.specifier)
+ 
+-        return   {
+-                        'raw': self.raw,
+-                        'extras': list(self.extras),
+-                        'marker': str(self.marker) if self.marker else None,
+-                        'name': self.name,
+-                        'specifier': specifier_obj,
+-                        'url': self.url,
+-                        'found': self.found
+-                    }
++        return {
++            'raw': self.raw,
++            'extras': list(self.extras),
++            'marker': str(self.marker) if self.marker else None,
++            'name': self.name,
++            'specifier': specifier_obj,
++            'url': self.url,
++            'found': self.found
++        }
+ 
+ 
+ def is_pinned_requirement(spec: SpecifierSet) -> bool:
+@@ -231,15 +210,6 @@
+         self.update(kwargs)
+ 
+     def to_dict(self, **kwargs: Any) -> Dict:
+-        """
+-        Convert the package to a dictionary.
+-
+-        Args:
+-            **kwargs: Additional keyword arguments.
+-
+-        Returns:
+-            dict: The dictionary representation of the package.
+-        """
+         if kwargs.get('short_version', False):
+             return {
+                 'name': self.name,
+@@ -334,18 +304,11 @@
+     A class representing the severity of a vulnerability.
+     """
+     def to_dict(self) -> Dict:
+-        """
+-        Convert the severity to a dictionary.
+-
+-        Returns:
+-            Dict: The dictionary representation of the severity.
+-        """
+-        result = {'severity': {'source': self.source}}
+-
+-        result['severity']['cvssv2'] = self.cvssv2
+-        result['severity']['cvssv3'] = self.cvssv3
+-
+-        return result
++        return {'package': self.Package.name,
++                'closest_secure_version': self.closest_secure_version,
++                'secure_versions': self.secure_versions,
++                'latest_package_version': self.latest_package_version
++                }
+ 
+ 
+ class SafetyEncoder(json.JSONEncoder):
+@@ -353,15 +316,6 @@
+     A custom JSON encoder for Safety related objects.
+     """
+     def default(self, value: Any) -> Any:
+-        """
+-        Override the default method to handle custom objects.
+-
+-        Args:
+-            value (Any): The value to encode.
+-
+-        Returns:
+-            Any: The encoded value.
+-        """
+         if isinstance(value, SafetyRequirement):
+             return value.to_dict()
+         elif isinstance(value, Version) or (legacyType and isinstance(value, legacyType)):
+@@ -376,15 +330,8 @@
+     """
+ 
+     def to_dict(self) -> Dict:
+-        """
+-        Convert the vulnerability to a dictionary.
+-
+-        Returns:
+-            Dict: The dictionary representation of the vulnerability.
+-        """
+         empty_list_if_none = ['fixed_versions', 'closest_versions_without_known_vulnerabilities', 'resources']
+-        result = {
+-        }
++        result = {}
+ 
+         ignore = ['pkg']
+ 

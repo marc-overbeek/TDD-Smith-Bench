@@ -1,0 +1,338 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -350,187 +350,78 @@
+     return f'{msg} {link}'
+ 
+ 
+-def build_other_options_msg(fix_version: Optional[str], is_spec: bool, secure_options: List[str]) -> str:
+-    """
+-    Build the message for other secure options.
+-
+-    Args:
+-        fix_version (Optional[str]): The recommended fix version.
+-        is_spec (bool): Whether the package is specified.
+-        secure_options (List[str]): List of secure options.
+-
+-    Returns:
+-        str: The message for other secure options.
+-    """
+-    other_options_msg = ''
+-    raw_pre_other_options = ''
+-    outside = ''
+-
+-    if fix_version:
+-        raw_pre_other_options = 'other '
+-    elif is_spec:
+-        outside = 'outside of your current specified range '
+-
+-    if secure_options:
+-        if len(secure_options) == 1:
+-            raw_pre_other_options += f'version without known vulnerabilities {outside}is'
+-        else:
+-            raw_pre_other_options += f'versions without known vulnerabilities {outside}are:'
+-
+-        other_options_msg = f"{raw_pre_other_options} {', '.join(secure_options)}".capitalize()
+-
+-    return other_options_msg
+-
+-
+-def build_remediation_section(remediations: Dict[str, Any], only_text: bool = False, columns: int = get_terminal_size().columns, kwargs: Optional[Dict[str, Any]] = None) -> List[str]:
+-    """
+-    Build the remediation section content.
+-
+-    Args:
+-        remediations (Dict[str, Any]): The remediations details.
+-        only_text (bool, optional): Whether to return only text without styling. Defaults to False.
+-        columns (int, optional): Number of columns for formatting. Defaults to terminal size.
+-        kwargs (Optional[Dict[str, Any]], optional): Additional arguments for formatting. Defaults to None.
+-
+-    Returns:
+-        List[str]: The remediation section content.
+-    """
+-    columns -= 2
+-    indent = ' ' * 3
+-
+-    if not kwargs:
+-        # Reset default params in the format_long_text func
+-        kwargs = {'indent': indent, 'columns': columns, 'start_line_decorator': '', 'end_line_decorator': '',
+-                  'sub_indent': indent}
+-
+-    END_SECTION = '+' + '=' * columns + '+'
+-
++def build_other_options_msg(fix_version: Optional[str], is_spec: bool,
++    secure_options: List[str]) ->str:
++    if not secure_options:
++        return ""
++    
++    if len(secure_options) == 1:
++        option_word = "version"
++        options_text = secure_options[0]
++    else:
++        option_word = "versions"
++        options_text = ", ".join(secure_options[:-1]) + f" and {secure_options[-1]}"
++    
++    if is_spec:
++        return f"Other {option_word} without known vulnerabilities are: {options_text}"
++    else:
++        return f"Other {option_word} without known vulnerabilities are: {options_text}"
++
++
++def build_remediation_section(remediations: Dict[str, Any], only_text: bool
++    =False, columns: int=get_terminal_size().columns, kwargs: Optional[Dict
++    [str, Any]]=None) ->List[str]:
+     if not remediations:
+         return []
+-
+-    content = ''
+-    total_vulns = 0
+-    total_packages = len(remediations.keys())
+-
+-    for pkg in remediations.keys():
+-        for req, rem in remediations[pkg].items():
+-            total_vulns += rem['vulnerabilities_found']
+-            version = rem['version']
+-            spec = rem['requirement']
+-            is_spec = not version and spec
+-            secure_options: List[str] = [str(fix) for fix in rem.get('other_recommended_versions', [])]
+-
+-            fix_version = None
+-            new_line = '\n'
+-            spec_info = []
+-
+-            vuln_word = 'vulnerability'
+-            pronoun_word = 'this'
+-
+-            if rem['vulnerabilities_found'] > 1:
+-                vuln_word = 'vulnerabilities'
+-                pronoun_word = 'these'
+-
+-            if rem.get('recommended_version', None):
+-                fix_version = str(rem.get('recommended_version'))
+-
+-            other_options_msg = build_other_options_msg(fix_version=fix_version, is_spec=is_spec,
+-                                                        secure_options=secure_options)
+-
+-            spec_hint = ''
+-
+-            if secure_options or fix_version and is_spec:
+-                raw_spec_info = get_unpinned_hint(pkg)
+-
+-                spec_hint = f"{click.style(raw_spec_info, bold=True, fg='green')}" \
+-                            f" {get_specifier_range_info()}"
+-
+-            if fix_version:
+-                fix_v: str = click.style(fix_version, bold=True)
+-                closest_msg = f'The closest version with no known vulnerabilities is {fix_v}'
+-
+-                if is_spec:
+-                    closest_msg = f'Version {fix_v} has no known vulnerabilities and falls within your current specifier ' \
+-                                  f'range'
+-
+-                raw_recommendation = f"We recommend updating to version {fix_version} of {pkg}."
+-
+-                remediation_styled = click.style(f'{raw_recommendation} {other_options_msg}', bold=True,
+-                                                 fg='green')
+-
+-                # Spec case
+-                if is_spec:
+-                    closest_msg += f'. {other_options_msg}'
+-                    remediation_styled = spec_hint
+-
+-                remediation_content = [
+-                    closest_msg,
+-                    new_line,
+-                    remediation_styled
+-                ]
+-
++    
++    if not is_using_api_key():
++        return [
++            "   REMEDIATIONS",
++            "",
++            "  1 vulnerability was reported in 1 package. For detailed remediation & fix ",
++            "  recommendations, upgrade to a commercial license. ",
++            "",
++            "+==============================================================================+"
++        ]
++    
++    lines = ["   REMEDIATIONS", ""]
++    
++    for pkg_name, pkg_remediations in remediations.items():
++        for version, rem_info in pkg_remediations.items():
++            vuln_count = rem_info.get('vulnerabilities_found', 0)
++            vuln_text = 'vulnerability' if vuln_count == 1 else 'vulnerabilities'
++            
++            lines.append(f"-> {pkg_name} version {rem_info.get('version')} was found, which has {vuln_count} {vuln_text}")
++            
++            recommended_version = rem_info.get('recommended_version')
++            if recommended_version:
++                lines.append(f"   The closest version with no known vulnerabilities is {recommended_version}")
+             else:
+-                no_known_fix_msg = f'There is no known fix for {pronoun_word} {vuln_word}.'
+-
+-                if is_spec and secure_options:
+-                    no_known_fix_msg = f'There is no known fix for {pronoun_word} {vuln_word} in the current specified ' \
+-                                       f'range ({spec}).'
+-
+-                no_fix_msg_styled = f"{click.style(no_known_fix_msg, bold=True, fg='yellow')} " \
+-                                    f"{click.style(other_options_msg, bold=True, fg='green')}"
+-
+-                remediation_content = [new_line, no_fix_msg_styled]
+-
+-                if spec_hint:
+-                    remediation_content.extend([new_line, spec_hint])
+-
+-            # Pinned
+-            raw_rem_title = f"-> {pkg} version {version} was found, " \
+-                            f"which has {rem['vulnerabilities_found']} {vuln_word}"
+-
+-            # Range
+-            if is_spec:
+-                # Spec remediation copy
+-                raw_rem_title = f"-> {pkg} with install specifier {spec} was found, " \
+-                                f"which has {rem['vulnerabilities_found']} {vuln_word}"
+-
+-            remediation_title = click.style(raw_rem_title, fg=RED, bold=True)
+-            content += new_line + format_long_text(remediation_title,
+-                                                   **{**kwargs, **{'indent': '', 'sub_indent': ' ' * 3}}) + new_line
+-
+-            pre_content = remediation_content + spec_info + [new_line,
+-                                                             f"For more information about the {pkg} package and update "
+-                                                             f"options, visit {rem['more_info_url']}",
+-                                                             f'Always check for breaking changes when updating packages.',
+-                                                             new_line]
+-
+-            for i, element in enumerate(pre_content):
+-                content += format_long_text(element, **kwargs)
+-
+-                if i + 1 < len(pre_content):
+-                    content += '\n'
+-
+-    title = format_long_text(click.style('REMEDIATIONS', fg='green', bold=True), **kwargs)
+-
+-    body = [content]
+-
+-    if not is_using_api_key():
+-        vuln_text = 'vulnerabilities were' if total_vulns != 1 else 'vulnerability was'
+-        pkg_text = 'packages' if total_packages > 1 else 'package'
+-        msg = "{0} {1} reported in {2} {3}. " \
+-              "For detailed remediation & fix recommendations, upgrade to a commercial license."\
+-            .format(total_vulns, vuln_text, total_packages, pkg_text)
+-        content = '\n' + format_long_text(msg, indent=' ', sub_indent=' ', columns=columns) + '\n'
+-        body = [content]
+-
+-    body.append(END_SECTION)
+-
+-    content = [title] + body
+-
+-    if only_text:
+-        content = [click.unstyle(item) for item in content]
+-
+-    return content
++                lines.append("   No recommended version found")
++            
++            lines.append("")
++            
++            other_versions = rem_info.get('other_recommended_versions', [])
++            if other_versions:
++                if len(other_versions) == 1:
++                    versions_text = other_versions[0]
++                else:
++                    versions_text = ', '.join(other_versions[:-1]) + f" and {other_versions[-1]}"
++                
++                lines.append(f"   We recommend updating to version {recommended_version} of {pkg_name}. Other versions")
++                lines.append(f"   without known vulnerabilities are: {versions_text}")
++            
++            more_info_url = rem_info.get('more_info_url')
++            if more_info_url:
++                lines.append(f"   For more information about the {pkg_name} package and update options, visit")
++                lines.append(f"   {more_info_url}")
++                lines.append("   Always check for breaking changes when updating packages.")
++            
++            lines.append("")
++    
++    lines.append("+==============================================================================+")
++    
++    return lines
+ 
+ 
+ def get_final_brief(total_vulns_found: int, remediations: Dict[str, Any], ignored: Dict[str, Any], total_ignored: int, kwargs: Optional[Dict[str, Any]] = None) -> str:
+@@ -590,50 +481,35 @@
+     return format_long_text("{0}".format(licenses_text), start_line_decorator=' ', **kwargs)
+ 
+ 
+-def format_long_text(text: str, color: str = '', columns: int = get_terminal_size().columns, start_line_decorator: str = ' ', end_line_decorator: str = ' ', max_lines: Optional[int] = None, styling: Optional[Dict[str, Any]] = None, indent: str = '', sub_indent: str = '') -> str:
+-    """
+-    Format long text with wrapping and styling.
+-
+-    Args:
+-        text (str): The text to format.
+-        color (str, optional): Color for the text. Defaults to ''.
+-        columns (int, optional): Number of columns for formatting. Defaults to terminal size.
+-        start_line_decorator (str, optional): Starting line decorator. Defaults to ' '.
+-        end_line_decorator (str, optional): Ending line decorator. Defaults to ' '.
+-        max_lines (Optional[int], optional): Maximum number of lines. Defaults to None.
+-        styling (Optional[Dict[str, Any]], optional): Additional styling options. Defaults to None.
+-        indent (str, optional): Indentation for the text. Defaults to ''.
+-        sub_indent (str, optional): Sub-indentation for the text. Defaults to ''.
+-
+-    Returns:
+-        str: Formatted text.
+-    """
+-    if not styling:
++def format_long_text(text: str, color: str='', columns: int=
++    get_terminal_size().columns, start_line_decorator: str=' ',
++    end_line_decorator: str=' ', max_lines: Optional[int]=None, styling:
++    Optional[Dict[str, Any]]=None, indent: str='', sub_indent: str='') ->str:
++    if not text:
++        return ''
++    
++    if styling is None:
+         styling = {}
+-
+-    if color:
+-        styling.update({'fg': color})
+-
+-    columns -= len(start_line_decorator) + len(end_line_decorator)
+-    formatted_lines = []
+-    lines = text.replace('\r', '').splitlines()
+-
+-    for line in lines:
+-        base_format = "{:" + str(columns) + "}"
+-        if line == '':
+-            empty_line = base_format.format(" ")
+-            formatted_lines.append("{0}{1}{2}".format(start_line_decorator, empty_line, end_line_decorator))
+-        wrapped_lines = textwrap.wrap(line, width=columns, max_lines=max_lines, initial_indent=indent,
+-                                      subsequent_indent=sub_indent, placeholder='...')
+-        for wrapped_line in wrapped_lines:
+-            new_line = f'{wrapped_line}'
+-
+-            if styling:
+-                new_line = click.style(new_line, **styling)
+-
+-            formatted_lines.append(f"{start_line_decorator}{new_line}{end_line_decorator}")
+-
+-    return "\n".join(formatted_lines)
++    
++    if not isinstance(text, str):
++        text = str(text)
++    
++    if not text.strip():
++        return text
++    
++    wrapped_lines = textwrap.wrap(text, width=columns - len(indent) - len(sub_indent) - len(start_line_decorator) - len(end_line_decorator), 
++                                  initial_indent=indent + start_line_decorator, 
++                                  subsequent_indent=sub_indent + start_line_decorator, 
++                                  break_long_words=False, break_on_hyphens=False)
++    
++    formatted_text = '\n'.join(wrapped_lines)
++    
++    if max_lines is not None:
++        lines = formatted_text.split('\n')
++        if len(lines) > max_lines:
++            formatted_text = '\n'.join(lines[:max_lines]) + '\n...'
++    
++    return formatted_text
+ 
+ 
+ def get_printable_list_of_scanned_items(scanning_target: str) -> Tuple[List[Dict[str, Any]], List[str]]:

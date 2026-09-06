@@ -1,0 +1,73 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -425,38 +425,38 @@
+ 
+     def _prep_iterable(self, obj, parent, parents_ids=EMPTY_FROZENSET):
+ 
+-        counts = 1
+-        result = defaultdict(int)
+-
+-        for i, item in enumerate(obj):
+-            new_parent = "{}[{}]".format(parent, i)
+-            if self._skip_this(item, parent=new_parent):
+-                continue
+-
+-            item_id = get_id(item)
+-            if parents_ids and item_id in parents_ids:
+-                continue
+-
+-            parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+-            hashed, count = self._hash(item, parent=new_parent, parents_ids=parents_ids_added)
+-            # counting repetitions
+-            result[hashed] += 1
+-            counts += count
+-
+-        if self.ignore_repetition:
+-            result = list(result.keys())
+-        else:
+-            result = [
+-                '{}|{}'.format(i, v) for i, v in result.items()
+-            ]
+-
+-        result = map(str, result) # making sure the result items are string so join command works.
+-        if self.ignore_iterable_order:
+-            result = sorted(result)  
+-        result = ','.join(result)
+-        result = KEY_TO_VAL_STR.format(type(obj).__name__, result)
+-
+-        return result, counts
++            counts = 1
++            result = defaultdict(int)
++
++            for i, item in enumerate(obj):
++                new_parent = "{}[{}]".format(parent, i)
++                if self._skip_this(item, parent=new_parent):
++                    continue
++
++                item_id = get_id(item)
++                if parents_ids and item_id in parents_ids:
++                    continue
++
++                parents_ids_added = add_to_frozen_set(parents_ids, item_id)
++                hashed, count = self._hash(item, parent=new_parent, parents_ids=parents_ids_added)
++                # counting repetitions
++                result[hashed] += 1
++                counts += count
++
++            if self.ignore_repetition:
++                result = list(result.keys())
++            else:
++                result = [
++                    '{}|{}'.format(i, v) for i, v in result.items()
++                ]
++
++            result = map(str, result) # making sure the result items are string so join command works.
++            if self.ignore_iterable_order:
++                result = sorted(result)  
++            result = ','.join(result)
++            result = KEY_TO_VAL_STR.format(type(obj).__name__, result)
++
++            return result, counts
+ 
+     def _prep_bool(self, obj):
+         return BoolObj.TRUE if obj else BoolObj.FALSE

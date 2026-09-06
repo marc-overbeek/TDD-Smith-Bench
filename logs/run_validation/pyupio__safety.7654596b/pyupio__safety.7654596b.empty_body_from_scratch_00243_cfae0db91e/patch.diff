@@ -1,0 +1,44 @@
+--- a/safety/scan/render.py
++++ b/safety/scan/render.py
+@@ -271,38 +271,9 @@
+ 
+        
+ 
+-def print_wait_project_verification(console: Console, project_id: str, closure: Tuple[Any, Dict[str, Any]], on_error_delay: int = 1) -> Any:
+-    """
+-    Print a waiting message while verifying a project.
+-
+-    Args:
+-        console (Console): The console for output.
+-        project_id (str): The project ID.
+-        closure (Tuple[Any, Dict[str, Any]]): The function and its arguments to call.
+-        on_error_delay (int): Delay in seconds on error.
+-
+-    Returns:
+-        Any: The status of the project verification.
+-    """
+-    status = None
+-    wait_msg = f"Verifying project {project_id} with Safety Platform."
+-
+-    with console.status(wait_msg, spinner=DEFAULT_SPINNER):
+-        try:
+-            f, kwargs = closure
+-            status = f(**kwargs)
+-        except Exception as e:
+-            LOG.exception(f'Unable to verify the project, reason: {e}')
+-            reason = "We are currently unable to verify the project, " \
+-                "and it is necessary to link the scan to a specific " \
+-                    f"project. Reason: {e}"
+-            raise SafetyException(message=reason)
+-
+-        if not status:
+-            wait_msg = f'Unable to verify "{project_id}". Starting again...'
+-            time.sleep(on_error_delay)
+-
+-    return status
++def print_wait_project_verification(console: Console, project_id: str,
++    closure: Tuple[Any, Dict[str, Any]], on_error_delay: int=1) ->Any:
++    pass
+ 
+ def print_project_info(console: Console, project: ProjectModel):
+     """

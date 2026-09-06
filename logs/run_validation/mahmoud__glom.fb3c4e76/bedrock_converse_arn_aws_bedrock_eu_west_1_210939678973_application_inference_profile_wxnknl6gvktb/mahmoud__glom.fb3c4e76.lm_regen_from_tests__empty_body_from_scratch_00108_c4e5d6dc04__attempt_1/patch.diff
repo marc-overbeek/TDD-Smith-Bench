@@ -1,0 +1,36 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1786,6 +1786,33 @@
+     def glomit(self, target, scope):
+         return self.value
+ 
++    def test_val():
++        assert Literal is Val
++        expected = {'value': 'c', 'type': 'a.b'}
++        target = {'a': {'b': 'c'}}
++        val = glom(target, {'value': 'a.b', 'type': Val('a.b')})
++        assert val == expected
++        assert glom(None, Val('success')) == 'success'
++        assert repr(Val(3.14)) == 'Val(3.14)'
++        assert repr(Val(3.14)) == 'Val(3.14)'
++
++    class Val:
++        """Val objects are specs which evaluate to the wrapped *value*..."""
++        def __init__(self, value):
++            self.value = value
++
++        def glomit(self, target, scope):
++            return self.value
++
++        def __repr__(self):
++            pass
++
++    def __repr__(self):
++        cn = self.__class__.__name__
++        if self.scope:
++            return f'{cn}({bbrepr(self.spec)}, scope={self.scope!r})'
++        return f'{cn}({bbrepr(self.spec)})'
++
+     def __repr__(self):
+         cn = self.__class__.__name__
+         return f'{cn}({bbrepr(self.value)})'

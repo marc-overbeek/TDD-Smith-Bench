@@ -1,0 +1,25 @@
+--- a/safety/cli.py
++++ b/safety/cli.py
+@@ -450,18 +450,19 @@
+ 
+ def clean_license_command(f):
+     """
+-    Main entry point for validation.
++    Decorator for validation of license command parameters.
+     """
+     @wraps(f)
+     def inner(ctx, *args, **kwargs):
++        # This is handled in the custom subgroup Click class
+         # TODO: Remove this soon, for now it keeps a legacy behavior
+         kwargs.pop("key", None)
+         kwargs.pop('proxy_protocol', None)
+         kwargs.pop('proxy_host', None)
+         kwargs.pop('proxy_port', None)
+-
++        
+         return f(ctx, *args, **kwargs)
+-
++    
+     return inner
+ 
+ 

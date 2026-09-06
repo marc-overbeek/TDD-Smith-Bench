@@ -1,0 +1,43 @@
+--- a/src/mistune/plugins/footnotes.py
++++ b/src/mistune/plugins/footnotes.py
+@@ -26,25 +26,21 @@
+ INLINE_FOOTNOTE = r'\[\^(?P<footnote_key>' + LINK_LABEL + r')\]'
+ 
+ 
+-def parse_inline_footnote(
+-    inline: "InlineParser", m: Match[str], state: "InlineState"
+-) -> int:
+-    key = unikey(m.group("footnote_key"))
+-    ref = state.env.get("ref_footnotes")
+-    if ref and key in ref:
+-        notes = state.env.get('footnotes')
+-        if not notes:
+-            notes = []
+-        if key not in notes:
+-            notes.append(key)
+-            state.env['footnotes'] = notes
+-        state.append_token({
+-          'type': 'footnote_ref',
+-          'raw': key,
+-          'attrs': {'index': notes.index(key) + 1}
+-        })
+-    else:
+-        state.append_token({'type': 'text', 'raw': m.group(0)})
++def parse_inline_footnote(inline: 'InlineParser', m: Match[str], state: 'InlineState') -> int:
++    key = unikey(m.group('footnote_key'))
++    footnotes = state.env.get('footnotes')
++    if not footnotes:
++        footnotes = []
++        state.env['footnotes'] = footnotes
++    
++    if key not in footnotes:
++        footnotes.append(key)
++    
++    index = footnotes.index(key) + 1
++    state.append_token({
++        'type': 'footnote_ref',
++        'attrs': {'key': key, 'index': index}
++    })
+     return m.end()
+ 
+ 

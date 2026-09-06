@@ -1,0 +1,66 @@
+--- a/deepdiff/search.py
++++ b/deepdiff/search.py
+@@ -238,10 +238,10 @@
+                 parents_ids=parents_ids_added)
+ 
+     def __search_iterable(self,
+-                          obj,
+-                          item,
+-                          parent="root",
+-                          parents_ids=frozenset()):
++                              obj,
++                              item,
++                              parent="root",
++                              parents_ids=frozenset()):
+         """Search iterables except dictionaries, sets and strings."""
+         for i, thing in enumerate(obj):
+             new_parent = "{}[{}]".format(parent, i)
+@@ -253,16 +253,42 @@
+             else:
+                 thing_cased = thing.lower()
+ 
++            # Handle exact matches
+             if not self.use_regexp and thing_cased == item:
+                 self.__report(
+                     report_key='matched_values', key=new_parent, value=thing)
++            elif self.use_regexp:
++                # Handle regexp matching
++                if isinstance(item, RE_COMPILED_TYPE):
++                    if item.search(thing_cased):
++                        self.__report(
++                            report_key='matched_values', key=new_parent, value=thing)
++                else:
++                    try:
++                        compiled_item = re.compile(item)
++                        if compiled_item.search(thing_cased):
++                            self.__report(
++                                report_key='matched_values', key=new_parent, value=thing)
++                    except Exception:
++                        pass
+             else:
+-                item_id = id(thing)
+-                if parents_ids and item_id in parents_ids:
+-                    continue
+-                parents_ids_added = add_to_frozen_set(parents_ids, item_id)
+-                self.__search(thing, item, "%s[%s]" %
+-                              (parent, i), parents_ids_added)
++                # Handle substring matching when not using regexp
++                if not self.match_string and isinstance(thing, strings) and isinstance(item, strings):
++                    if thing_cased.find(item) != -1:
++                        self.__report(
++                            report_key='matched_values', key=new_parent, value=thing)
++                elif not self.match_string and not isinstance(thing, strings) and isinstance(item, strings):
++                    # When searching for a string in non-string objects, convert to string
++                    if str(thing).find(item) != -1:
++                        self.__report(
++                            report_key='matched_values', key=new_parent, value=thing)
++        
++            item_id = id(thing)
++            if parents_ids and item_id in parents_ids:
++                continue
++            parents_ids_added = add_to_frozen_set(parents_ids, item_id)
++            self.__search(thing, item, "%s[%s]" %
++                          (parent, i), parents_ids_added)
+ 
+     def __search_str(self, obj, item, parent):
+         """Compare strings"""

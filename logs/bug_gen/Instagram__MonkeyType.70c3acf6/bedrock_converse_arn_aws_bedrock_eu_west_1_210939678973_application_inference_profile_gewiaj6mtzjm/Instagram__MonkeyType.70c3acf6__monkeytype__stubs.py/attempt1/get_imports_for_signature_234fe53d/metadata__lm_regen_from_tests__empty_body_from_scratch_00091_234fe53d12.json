@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef get_imports_for_signature(sig: inspect.Signature) ->ImportMap:\n    imports = ImportMap()\n    for param in sig.parameters.values():\n        param_imports = get_imports_for_annotation(param.annotation)\n        imports.merge(param_imports)\n    if sig.return_annotation is not inspect.Signature.empty:\n        return_imports = get_imports_for_annotation(sig.return_annotation)\n        imports.merge(return_imports)\n    return imports\n```",
+  "rewrite": "def get_imports_for_signature(sig: inspect.Signature) ->ImportMap:\n    imports = ImportMap()\n    for param in sig.parameters.values():\n        param_imports = get_imports_for_annotation(param.annotation)\n        imports.merge(param_imports)\n    if sig.return_annotation is not inspect.Signature.empty:\n        return_imports = get_imports_for_annotation(sig.return_annotation)\n        imports.merge(return_imports)\n    return imports",
+  "strategy": "lm_regen_from_tests"
+}

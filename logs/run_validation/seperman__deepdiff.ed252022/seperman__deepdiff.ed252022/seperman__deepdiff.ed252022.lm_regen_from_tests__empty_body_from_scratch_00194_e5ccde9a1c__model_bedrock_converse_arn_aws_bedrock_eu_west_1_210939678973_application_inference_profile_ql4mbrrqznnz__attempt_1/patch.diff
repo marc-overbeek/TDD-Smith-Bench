@@ -1,0 +1,15 @@
+--- a/deepdiff/deephash.py
++++ b/deepdiff/deephash.py
+@@ -479,7 +479,11 @@
+         return KEY_TO_VAL_STR.format(type_, obj)
+ 
+     def _prep_date(self, obj):
+-        type_ = 'datetime'  # yes still datetime but it doesn't need normalization
++        type_ = obj.__class__.__name__
++        for type_group in self.ignore_type_in_groups:
++            if self.type_check_func(type(obj), type_group):
++                type_ = ','.join(map(lambda x: x.__name__, type_group))
++                break
+         return KEY_TO_VAL_STR.format(type_, obj)
+ 
+     def _prep_tuple(self, obj, parent, parents_ids):

@@ -1,0 +1,34 @@
+--- a/src/mistune/block_parser.py
++++ b/src/mistune/block_parser.py
+@@ -205,18 +205,26 @@
+             H1 title
+             ========
+         """
++        # Check if we have a previous paragraph to convert to heading
+         last_token = state.last_token()
+         if last_token and last_token['type'] == 'paragraph':
+             level = 1 if m.group('setext_1') == '=' else 2
++            # Convert the paragraph to a heading
+             last_token['type'] = 'heading'
+             last_token['style'] = 'setext'
+             last_token['attrs'] = {'level': level}
+             return m.end() + 1
+-
+-        sc = self.compile_sc(['thematic_break', 'list'])
+-        m2 = sc.match(state.src, state.cursor)
+-        if m2:
+-            return self.parse_method(m2, state)
++    
++        # If no paragraph exists, check if we should parse as a new paragraph
++        # First, try to append a paragraph
++        end_pos = state.append_paragraph()
++        if end_pos:
++            return end_pos
++    
++        # If we're at the beginning of a new paragraph, we might need to 
++        # handle this differently - let's check if we should parse as a new paragraph
++        # but since we already tried that, we'll just return None to let the parser
++        # handle it appropriately
+         return None
+ 
+     def parse_ref_link(self, m: Match[str], state: BlockState) -> Optional[int]:

@@ -1,0 +1,39 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -2431,7 +2431,7 @@
+ 
+         return MinimumMaximum(min(elevations), max(elevations))
+ 
+-    def get_points_data(self, distance_2d: bool=False) -> List[PointData]:
++    def get_points_data(self, distance_2d: bool=False) ->List[PointData]:
+         """
+         Returns a list of tuples containing the actual point, its distance from the start,
+         track_no, segment_no, and segment_point_no
+@@ -2459,7 +2459,8 @@
+ 
+         return points
+ 
+-    def get_nearest_locations(self, location: mod_geo.Location, threshold_distance: float=0.01) -> List[NearestLocationData]:
++    def get_nearest_locations(self, location: mod_geo.Location,
++        threshold_distance: float=0.01) ->List[NearestLocationData]:
+         """
+         Returns a list of locations of elements like
+         consisting of points where the location may be on the track
+@@ -2499,7 +2500,7 @@
+                     segment_no_candidate = segment_no
+                     point_no_candidate = point_no
+             else:
+-                if distance_from_start_candidate is not None and point and track_no_candidate is not None and segment_no_candidate is not None and point_no_candidate is not None:
++                if distance_from_start_candidate is not None and track_no_candidate is not None and segment_no_candidate is not None and point_no_candidate is not None:
+                     result.append(NearestLocationData(point, track_no_candidate, segment_no_candidate, point_no_candidate))
+                 min_distance_candidate = None
+                 distance_from_start_candidate = None
+@@ -2507,7 +2508,7 @@
+                 segment_no_candidate = None
+                 point_no_candidate = None
+ 
+-        if distance_from_start_candidate is not None and point and track_no_candidate is not None and segment_no_candidate is not None and point_no_candidate is not None:
++        if distance_from_start_candidate is not None and track_no_candidate is not None and segment_no_candidate is not None and point_no_candidate is not None:
+             result.append(NearestLocationData(point, track_no_candidate, segment_no_candidate, point_no_candidate))
+ 
+         return result

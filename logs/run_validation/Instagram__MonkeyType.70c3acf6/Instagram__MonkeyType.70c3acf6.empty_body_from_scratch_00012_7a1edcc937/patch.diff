@@ -1,0 +1,29 @@
+--- a/demo/inbox.py
++++ b/demo/inbox.py
+@@ -144,25 +144,7 @@
+         return sorted(items, key=attrgetter("published"), reverse=True)
+ 
+     def summarize(self):
+-        counter = Counter(e.type for e in self.events)
+-        clauses: List[str] = []
+-        likes = counter[EventType.LIKED]
+-        if likes:
+-            clauses.append(f"{likes} new like{self._pluralize(likes)}")
+-        follows = counter[EventType.FOLLOWED]
+-        if follows:
+-            clauses.append(f"{follows} new follower{self._pluralize(follows)}")
+-        comments = counter[EventType.COMMENTED]
+-        if comments:
+-            clauses.append(f"{comments} new comment{self._pluralize(comments)}")
+-        if not clauses:
+-            combined = "no new activity"
+-        elif len(clauses) == 1:
+-            combined = clauses[0]
+-        else:
+-            initial = ", ".join(clauses[:-1])
+-            combined = f"{initial} and {clauses[-1]}"
+-        return f"You have {combined}."
++        pass
+ 
+     def _pluralize(self, count):
+         return "" if count == 1 else "s"

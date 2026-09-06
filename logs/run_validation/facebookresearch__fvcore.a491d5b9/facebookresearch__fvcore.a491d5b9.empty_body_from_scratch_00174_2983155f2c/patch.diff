@@ -1,0 +1,32 @@
+--- a/fvcore/nn/squeeze_excitation.py
++++ b/fvcore/nn/squeeze_excitation.py
+@@ -94,27 +94,8 @@
+ 
+     block: nn.Module
+ 
+-    def __init__(
+-        self,
+-        num_channels: int,
+-        is_3d: bool = False,
+-    ) -> None:
+-        """
+-        Args:
+-            num_channels (int): Number of input channels.
+-            is_3d (bool): Whether we're operating on 3d data.
+-        """
+-        super().__init__()
+-
+-        if is_3d:
+-            conv = nn.Conv3d(num_channels, 1, kernel_size=1, bias=True)
+-        else:
+-            conv = nn.Conv2d(num_channels, 1, kernel_size=1, bias=True)
+-
+-        self.block = nn.Sequential(
+-            conv,
+-            nn.Sigmoid(),
+-        )
++    def __init__(self, num_channels: int, is_3d: bool=False) ->None:
++        pass
+ 
+     def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
+         """

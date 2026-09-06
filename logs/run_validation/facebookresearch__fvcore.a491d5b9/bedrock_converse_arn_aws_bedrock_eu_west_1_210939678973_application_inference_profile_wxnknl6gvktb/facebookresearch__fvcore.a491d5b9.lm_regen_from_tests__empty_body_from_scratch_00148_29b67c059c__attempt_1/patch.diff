@@ -1,0 +1,24 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -448,6 +448,13 @@
+         """
+         Sets how to determine the ancestor modules of an operator. Must be one of
+         "owner" or "caller".
++        ...
++        """
++
++    def ancestor_mode(self: T, mode: str) -> T:
++        """
++        Sets how to determine the ancestor modules of an operator. Must be one of
++        "owner" or "caller".
+ 
+         * "caller": an operator belongs to all modules that is currently executing
+           `forward()` at the time the operator is called.
+@@ -463,6 +470,7 @@
+         if mode not in ["owner", "caller"]:
+             raise ValueError(f"Unrecognized ancestor mode: {mode}")
+         self._ancestor_mode = mode
++        self._stats = None
+         return self
+ 
+     def unsupported_ops_warnings(self: T, enabled: bool) -> T:

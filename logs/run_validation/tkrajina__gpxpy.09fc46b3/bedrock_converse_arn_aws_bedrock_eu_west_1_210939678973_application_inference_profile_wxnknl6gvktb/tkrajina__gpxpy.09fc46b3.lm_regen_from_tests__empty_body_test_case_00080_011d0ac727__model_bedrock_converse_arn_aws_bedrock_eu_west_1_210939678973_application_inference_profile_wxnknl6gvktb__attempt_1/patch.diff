@@ -1,0 +1,96 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -824,15 +824,7 @@
+             return 0
+         return len(self.points)
+ 
+-    def split(self, point_no: int) -> Tuple["GPXTrackSegment", "GPXTrackSegment"]:
+-        """
+-        Splits the segment into two parts.
+-
+-        Parameters
+-        ----------
+-        point_no : integer
+-            The index of the track point in the segment to split
+-        """
++    def split(self, point_no: int) ->Tuple['GPXTrackSegment', 'GPXTrackSegment']:
+         part_1 = self.points[:point_no + 1]
+         part_2 = self.points[point_no + 1:]
+         return GPXTrackSegment(part_1), GPXTrackSegment(part_2)
+@@ -1610,61 +1602,35 @@
+                 length += d
+         return length
+ 
+-    def split(self, track_segment_no: int, track_point_no: int) -> None:
+-        """
+-        Splits one of the segments in the track in two parts. If one of the
+-        split segments is empty it will not be added in the result. The
+-        segments will be split in place.
+-
+-        Parameters
+-        ----------
+-        track_segment_no : integer
+-            The index of the segment to split
+-        track_point_no : integer
+-            The index of the track point in the segment to split
+-        """
++    def split(self, track_segment_no: int, track_point_no: int) ->None:
+         new_segments = []
+         for i in range(len(self.segments)):
+             segment = self.segments[i]
+             if i == track_segment_no:
+                 segment_1, segment_2 = segment.split(track_point_no)
+-                if segment_1:
++                if segment_1.get_points_no() > 0:
+                     new_segments.append(segment_1)
+-                if segment_2:
++                if segment_2.get_points_no() > 0:
+                     new_segments.append(segment_2)
+             else:
+                 new_segments.append(segment)
+         self.segments = new_segments
+ 
+-    def join(self, track_segment_no: int, track_segment_no_2: Optional[int]=None) -> None:
+-        """
+-        Joins two segments of this track. The segments will be split in place.
+-
+-        Parameters
+-        ----------
+-        track_segment_no : integer
+-            The index of the first segment to join
+-        track_segment_no_2 : integer
+-            The index of second segment to join. If track_segment_no_2 is not
+-            provided,the join will be with the next segment after
+-            track_segment_no.
+-        """
++    def join(self, track_segment_no: int, track_segment_no_2: Optional[int]=None) ->None:
+         if not track_segment_no_2:
+             track_segment_no_2 = track_segment_no + 1
+-
++    
+         if track_segment_no_2 >= len(self.segments):
+             return
+-
++    
+         new_segments = []
+         for i in range(len(self.segments)):
+             segment = self.segments[i]
+             if i == track_segment_no:
+                 second_segment = self.segments[track_segment_no_2]
+                 segment.join(second_segment)
+-
+                 new_segments.append(segment)
+             elif i == track_segment_no_2:
+-                # Nothing, it is already joined
+                 pass
+             else:
+                 new_segments.append(segment)
+@@ -1904,7 +1870,7 @@
+                    ,key=lambda x: x.location.distance_2d(location) if x is not None else mod_math.inf
+                    ,default=None)
+         
+-    def clone(self) -> "GPXTrack":
++    def clone(self) ->'GPXTrack':
+         return mod_copy.deepcopy(self)
+ 
+ 

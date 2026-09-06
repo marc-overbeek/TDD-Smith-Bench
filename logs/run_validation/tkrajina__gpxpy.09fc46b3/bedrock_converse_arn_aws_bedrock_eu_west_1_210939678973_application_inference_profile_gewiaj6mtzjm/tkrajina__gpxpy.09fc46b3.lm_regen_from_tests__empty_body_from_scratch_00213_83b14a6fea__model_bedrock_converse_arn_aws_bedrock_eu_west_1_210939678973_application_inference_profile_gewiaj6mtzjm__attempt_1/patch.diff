@@ -1,0 +1,75 @@
+--- a/gpxpy/gpxxml.py
++++ b/gpxpy/gpxxml.py
+@@ -20,44 +20,34 @@
+         yield dom.toxml()
+         gpx_node.removeChild(gpx_track_node)
+ 
+-def join_gpxs(xmls: Iterable[AnyStr]) -> str:
+-    """
+-    Join GPX files without parsing them with gpxpy.
+-    """
+-    result = None
+-
+-    wpt_elements = []
+-    rte_elements = []
+-    trk_elements = []
+-
+-    for xml in xmls:
+-        dom = mod_minidom.parseString(xml)
+-        if not result:
+-            result = dom
+-
+-        gpx_node = _find_gpx_node(dom)
+-        if gpx_node:
+-            for child_node in gpx_node.childNodes:
+-                if child_node.nodeName == 'wpt':
+-                    wpt_elements.append(child_node)
+-                    gpx_node.removeChild(child_node)
+-                elif child_node.nodeName == 'rte':
+-                    rte_elements.append(child_node)
+-                    gpx_node.removeChild(child_node)
+-                elif child_node.nodeName == 'trk':
+-                    trk_elements.append(child_node)
+-                    gpx_node.removeChild(child_node)
+-
+-    gpx_node = _find_gpx_node(result)
+-    if gpx_node:
+-        for wpt_element in wpt_elements:
+-            gpx_node.appendChild(wpt_element)
+-        for rte_element in rte_elements:
+-            gpx_node.appendChild(rte_element)
+-        for trk_element in trk_elements:
+-            gpx_node.appendChild(trk_element)
+-
+-    return result.toxml() # type: ignore
++def join_gpxs(xmls: Iterable[AnyStr]) ->str:
++    if not xmls:
++        return ''
++    
++    # Parse the first XML to get the base structure
++    dom = mod_minidom.parseString(list(xmls)[0])
++    gpx_node = _find_gpx_node(dom)
++    
++    # For each subsequent XML, parse and merge its content
++    for xml_str in list(xmls)[1:]:
++        if not xml_str.strip():
++            continue
++        try:
++            other_dom = mod_minidom.parseString(xml_str)
++            other_gpx_node = _find_gpx_node(other_dom)
++            
++            if other_gpx_node:
++                # Move all children from other GPX node to main GPX node
++                for child_node in other_gpx_node.childNodes[:]:  # Use slice to avoid modification during iteration
++                    if child_node.nodeType == mod_minidom.Node.ELEMENT_NODE:
++                        # Clone the node to avoid moving from original DOM
++                        cloned_node = child_node.cloneNode(True)
++                        gpx_node.appendChild(cloned_node)
++        except Exception:
++            # If parsing fails, skip this XML
++            continue
++    
++    return dom.toxml()
+ 
+ def _find_gpx_node(dom: Any) -> Any:
+     for gpx_candidate_node in dom.childNodes:

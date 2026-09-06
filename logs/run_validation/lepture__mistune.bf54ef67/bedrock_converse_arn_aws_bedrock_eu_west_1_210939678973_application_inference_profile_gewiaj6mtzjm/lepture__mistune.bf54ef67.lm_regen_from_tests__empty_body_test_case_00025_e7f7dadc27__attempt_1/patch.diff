@@ -1,0 +1,23 @@
+--- a/src/mistune/directives/include.py
++++ b/src/mistune/directives/include.py
+@@ -9,9 +9,8 @@
+     from ..markdown import Markdown
+ 
+ class Include(DirectivePlugin):
+-    def parse(
+-        self, block: "BlockParser", m: Match[str], state: "BlockState"
+-    ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
++    def parse(self, block: 'BlockParser', m: Match[str], state: 'BlockState'
++        ) ->Union[Dict[str, Any], List[Dict[str, Any]]]:
+         source_file = state.env.get("__file__")
+         if not source_file:
+             return {'type': 'block_error', 'raw': 'Missing source file'}
+@@ -62,7 +61,7 @@
+             'attrs': attrs,
+         }
+ 
+-    def __call__(self, directive: BaseDirective, md: "Markdown") -> None:
++    def __call__(self, directive: BaseDirective, md: 'Markdown') ->None:
+         directive.register("include", self.parse)
+         if md.renderer and md.renderer.NAME == "html":
+             md.renderer.register("include", render_html_include)

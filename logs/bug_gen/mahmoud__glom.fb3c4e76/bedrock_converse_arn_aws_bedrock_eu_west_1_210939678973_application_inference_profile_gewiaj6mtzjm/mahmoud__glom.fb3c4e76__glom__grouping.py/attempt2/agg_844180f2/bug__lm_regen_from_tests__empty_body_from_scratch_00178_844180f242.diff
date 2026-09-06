@@ -1,0 +1,50 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -166,9 +166,45 @@
+ 
+     def agg(self, target, tree):
+         if self not in tree:
+-            tree[self] = STOP
++            tree[self] = target
+             return target
+-        return STOP
++        return tree[self]
++
++    def agg(self, target, tree):
++        try:
++            avg_acc = tree[self]
++        except KeyError:
++            # format is [sum, count]
++            avg_acc = tree[self] = [0.0, 0]
++        avg_acc[0] += target
++        avg_acc[1] += 1
++        return avg_acc[0] / avg_acc[1]
++
++    def agg(self, target, tree):
++        if self not in tree or target > tree[self]:
++            tree[self] = target
++        return tree[self]
++
++    def agg(self, target, tree):
++        if self not in tree or target < tree[self]:
++            tree[self] = target
++        return tree[self]
++
++    def agg(self, target, tree):
++        try:
++            sum_acc = tree[self]
++        except KeyError:
++            sum_acc = tree[self] = 0
++        sum_acc += target
++        return sum_acc
++
++    def agg(self, target, tree):
++        try:
++            count_acc = tree[self]
++        except KeyError:
++            count_acc = tree[self] = 0
++        count_acc += 1
++        return count_acc
+ 
+     def __repr__(self):
+         return '%s()' % self.__class__.__name__

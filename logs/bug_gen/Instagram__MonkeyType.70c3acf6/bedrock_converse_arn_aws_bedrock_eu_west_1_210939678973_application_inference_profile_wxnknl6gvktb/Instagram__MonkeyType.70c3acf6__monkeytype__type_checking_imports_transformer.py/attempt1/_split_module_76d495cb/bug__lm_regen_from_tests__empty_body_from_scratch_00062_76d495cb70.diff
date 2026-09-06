@@ -1,0 +1,54 @@
+--- a/monkeytype/type_checking_imports_transformer.py
++++ b/monkeytype/type_checking_imports_transformer.py
+@@ -81,18 +81,41 @@
+         List[Union[SimpleStatementLine, BaseCompoundStatement]],
+     ]:
+         type_checking_block_add_location = 0
+-        gatherer = GatherImportsVisitor(self.context)
+-        module.visit(gatherer)
+-        all_imports = gatherer.all_imports
+-
++    
+         for i, statement in enumerate(module.body):
++            # Skip __future__ imports
+             if isinstance(statement, SimpleStatementLine):
+-                for possible_import in statement.body:
+-                    for last_import in all_imports:
+-                        if possible_import is last_import:
+-                            type_checking_block_add_location = i + 1
+-                            break
+-
++                has_future_import = False
++                for item in statement.body:
++                    if isinstance(item, ImportFrom) and item.module and item.module.value == "__future__":
++                        has_future_import = True
++                        break
++                if has_future_import:
++                    type_checking_block_add_location = i + 1
++                    continue
++        
++            # Stop at if TYPE_CHECKING blocks
++            if isinstance(statement, libcst.If):
++                test = statement.test
++                if isinstance(test, libcst.Name) and test.value == "TYPE_CHECKING":
++                    break
++        
++            # Track position after imports
++            if isinstance(statement, SimpleStatementLine):
++                has_import = False
++                for item in statement.body:
++                    if isinstance(item, (Import, ImportFrom)):
++                        has_import = True
++                        break
++                if has_import:
++                    type_checking_block_add_location = i + 1
++                elif type_checking_block_add_location > 0:
++                    # We've passed imports and hit non-import statement
++                    break
++            elif type_checking_block_add_location > 0:
++                # We've passed imports and hit non-import statement
++                break
++    
+         return (
+             list(module.body[:type_checking_block_add_location]),
+             list(module.body[type_checking_block_add_location:]),

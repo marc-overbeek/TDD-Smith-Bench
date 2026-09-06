@@ -1,0 +1,782 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -167,116 +167,73 @@
+         self._scope = scope
+ 
+     def __str__(self):
+-        if getattr(self, '_finalized_str', None):
+-            return self._finalized_str
+-        elif getattr(self, '_scope', None) is not None:
+-            self._target_spec_trace = format_target_spec_trace(self._scope, self.__wrapped)
+-            parts = ["error raised while processing, details below.",
+-                     " Target-spec trace (most recent last):",
+-                     self._target_spec_trace]
+-            parts.extend(self._tb_lines)
+-            self._finalized_str = "\n".join(parts)
+-            return self._finalized_str
+-
+-        # else, not finalized
+-        try:
+-            exc_get_message = self.get_message
+-        except AttributeError:
+-            exc_get_message = super().__str__
+-        return exc_get_message()
++        return self.get_message()
+ 
+ 
+ def _unpack_stack(scope, only_errors=True):
+-    """
+-    convert scope to [[scope, spec, target, error, [children]]]
+-
+-    this is a convenience method for printing stacks
+-
+-    only_errors=True means ignore branches which may still be hanging around
+-    which were not involved in the stack trace of the error
+-
+-    only_errors=False could be useful for debugger / introspection (similar
+-    to traceback.print_stack())
+-    """
+-    stack = []
+-    scope = scope.maps[0]
+-    while LAST_CHILD_SCOPE in scope:
+-        child = scope[LAST_CHILD_SCOPE]
+-        branches = scope[CHILD_ERRORS]
+-        if branches == [child]:
+-            branches = []  # if there's only one branch, count it as linear
+-        stack.append([scope, scope[Spec], scope[T], scope.get(CUR_ERROR), branches])
+-
+-        # NB: this id() business is necessary to avoid a
+-        # nondeterministic bug in abc's __eq__ see #189 for details
+-        if id(child) in [id(b) for b in branches]:
+-            break  # if child already covered by branches, stop the linear descent
+-
+-        scope = child.maps[0]
+-    else:  # if break executed above, cur scope was already added
+-        stack.append([scope, scope[Spec], scope[T], scope.get(CUR_ERROR), []])
+-    # push errors "down" to where they were first raised / first observed
+-    for i in range(len(stack) - 1):
+-        cur, nxt = stack[i], stack[i + 1]
+-        if cur[3] == nxt[3]:
+-            cur[3] = None
+-    if only_errors:  # trim the stack to the last error
+-        # leave at least 1 to not break formatting func below
+-        # TODO: make format_target_spec_trace() tolerate an "empty" stack cleanly
+-        while len(stack) > 1 and stack[-1][3] is None:
+-            stack.pop()
+-    return stack
++    ret = []
++    cur_scope = scope
++    while cur_scope is not None:
++        spec = cur_scope.get(Spec, _MISSING)
++        target = cur_scope.get(T, _MISSING)
++        error = cur_scope.get(CUR_ERROR, _MISSING)
++        child_errors = cur_scope.get(CHILD_ERRORS, [])
++        
++        if not only_errors or error is not _MISSING or child_errors:
++            ret.append((cur_scope, spec, target, error, child_errors))
++        
++        cur_scope = cur_scope.get(UP)
++    
++    return list(reversed(ret))
+ 
+ 
+ def _format_trace_value(value, maxlen):
+-    s = bbrepr(value).replace("\\'", "'")
+-    if len(s) > maxlen:
+-        try:
+-            suffix = '... (len=%s)' % len(value)
+-        except Exception:
+-            suffix = '...'
+-        s = s[:maxlen - len(suffix)] + suffix
+-    return s
+-
+-
+-def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0, prev_target=_MISSING, last_branch=True):
+-    """
+-    unpack a scope into a multi-line but short summary
+-    """
+-    segments = []
+-    indent = " " + "|" * depth
+-    tick = "| " if depth else "- "
+-    def mk_fmt(label, t=None):
+-        pre = indent + (t or tick) + label + ": "
+-        fmt_width = width - len(pre)
+-        return lambda v: pre + _format_trace_value(v, fmt_width)
+-    fmt_t = mk_fmt("Target")
+-    fmt_s = mk_fmt("Spec")
+-    fmt_b = mk_fmt("Spec", "+ ")
+-    recurse = lambda s, last=False: format_target_spec_trace(s, root_error, width, depth + 1, prev_target, last)
+-    tb_exc_line = lambda e: "".join(traceback.format_exception_only(type(e), e))[:-1]
+-    fmt_e = lambda e: indent + tick + tb_exc_line(e)
+-    for scope, spec, target, error, branches in _unpack_stack(scope):
+-        if target is not prev_target:
+-            segments.append(fmt_t(target))
+-        prev_target = target
+-        if branches:
+-            segments.append(fmt_b(spec))
+-            segments.extend([recurse(s) for s in branches[:-1]])
+-            segments.append(recurse(branches[-1], last_branch))
+-        else:
+-            segments.append(fmt_s(spec))
+-        if error is not None and error is not root_error:
+-            last_line_error = True
+-            segments.append(fmt_e(error))
+-        else:
+-            last_line_error = False
+-    if depth:  # \ on first line, X on last line
+-        remark = lambda s, m: s[:depth + 1] + m + s[depth + 2:]
+-        segments[0] = remark(segments[0], "\\")
+-        if not last_branch or last_line_error:
+-            segments[-1] = remark(segments[-1], "X")
+-    return "\n".join(segments)
++    if value is _MISSING:
++        return ''
++    
++    val_repr = bbrepr(value)
++    if len(val_repr) > maxlen:
++        val_repr = val_repr[:maxlen - 3] + '...'
++    
++    return val_repr
++
++
++def format_target_spec_trace(scope, root_error, width=TRACE_WIDTH, depth=0,
++    prev_target=_MISSING, last_branch=True):
++    lines = []
++    stack = _unpack_stack(scope, only_errors=True)
++    
++    for i, (cur_scope, spec, target, error, child_errors) in enumerate(stack):
++        is_last = (i == len(stack) - 1)
++        
++        if target is not _MISSING and target != prev_target:
++            target_repr = _format_trace_value(target, width - 20)
++            lines.append(' - Target: ' + target_repr)
++            prev_target = target
++        
++        if spec is not _MISSING:
++            spec_repr = _format_trace_value(spec, width - 20)
++            if child_errors and not is_last:
++                lines.append(' + Spec: ' + spec_repr)
++                for j, child_scope in enumerate(child_errors):
++                    is_last_child = (j == len(child_errors) - 1)
++                    child_error = child_scope.get(CUR_ERROR, _MISSING)
++                    child_spec = child_scope.get(Spec, _MISSING)
++                    
++                    lines.append(' |\\ Spec: ' + _format_trace_value(child_spec, width - 20))
++                    if child_error is not _MISSING:
++                        error_msg = str(child_error).split('\n')[0][:width - 20]
++                        lines.append(' |X ' + child_error.__class__.__name__ + ': ' + error_msg)
++            else:
++                lines.append(' - Spec: ' + spec_repr)
++        
++        if error is not _MISSING and is_last:
++            error_repr = error.__class__.__name__ + ': ' + str(error).split('\n')[0]
++            if len(error_repr) > width - 20:
++                error_repr = error_repr[:width - 20] + '...'
++            lines.append(error_repr)
++    
++    return '\n'.join(lines)
+ 
+ 
+ # TODO: not used (yet)
+@@ -478,22 +435,12 @@
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__
+-        # <type %r> is because Python 3 inexplicably changed the type
+-        # repr from <type *> to <class *>
+-        return ('%s(%r, <type %r>, %r, %r)'
+-                % (cn, self.op, self.target_type.__name__, self.type_map, self.path))
++        return f'{cn}({self.exc!r}, {self.path!r}, {self.part_idx!r})'
+ 
+     def get_message(self):
+-        if not self.type_map:
+-            return ("glom() called without registering any types for operation '%s'. see"
+-                    " glom.register() or Glommer's constructor for details." % (self.op,))
+-        reg_types = sorted([t.__name__ for t, h in self.type_map.items() if h])
+-        reg_types_str = '()' if not reg_types else ('(%s)' % ', '.join(reg_types))
+-        msg = ("target type %r not registered for '%s', expected one of"
+-               " registered types: %s" % (self.target_type.__name__, self.op, reg_types_str))
+-        if self.path:
+-            msg += f' (at {self.path!r})'
+-        return msg
++        path_part = Path(self.path).values()[self.part_idx]
++        return ('could not access %r, part %r of %r, got error: %r'
++                % (path_part, self.part_idx, self.path, self.exc))
+ 
+ 
+ if getattr(__builtins__, '__dict__', None) is not None:
+@@ -639,13 +586,6 @@
+ 
+     @classmethod
+     def from_text(cls, text):
+-        """Make a Path from .-delimited text:
+-
+-        >>> Path.from_text('a.b.c')
+-        Path('a', 'b', 'c')
+-
+-        This is the default behavior when :func:`~glom.glom` gets a string spec.
+-        """
+         def create():
+             segs = text.split('.')
+             if PATH_STAR:
+@@ -661,7 +601,7 @@
+                     cls._STAR_WARNED = True
+             return cls(*segs)
+ 
+-        cache = cls._CACHE[PATH_STAR]  # remove this when PATH_STAR is default
++        cache = cls._CACHE[PATH_STAR]
+         if text not in cache:
+             if len(cache) > cls._MAX_CACHE:
+                 return create()
+@@ -1536,87 +1476,106 @@
+ 
+ 
+ def _t_eval(target, _t, scope):
+-    t_path = _t.__ops__
++    t_ops = _t.__ops__
++    
++    if t_ops[0] is S:
++        if len(t_ops) == 1:
++            return scope
++        
++        cur = scope
++        i = 1
++        while i < len(t_ops):
++            op, arg = t_ops[i], t_ops[i + 1]
++            
++            if op == '.':
++                if i == 1:
++                    cur = _s_first_magic(scope, arg, _t)
++                else:
++                    cur = getattr(cur, arg)
++            elif op == '[':
++                cur = cur[arg]
++            elif op == '(':
++                args, kwargs = arg
++                cur = cur(*args, **kwargs)
++            elif op == 'P':
++                cur = cur[arg]
++            else:
++                raise ValueError(f'unsupported S operation: {op}')
++            
++            i += 2
++        
++        return cur
++    
++    if t_ops[0] is A:
++        if len(t_ops) == 1:
++            return target
++        
++        path_parts = []
++        i = 1
++        while i < len(t_ops):
++            op, arg = t_ops[i], t_ops[i + 1]
++            if op in ('.', '[', 'P'):
++                path_parts.append((op, arg))
++            else:
++                raise BadSpec(f'operation {op} not allowed on A assignment path')
++            i += 2
++        
++        cur = target
++        for op, arg in path_parts[:-1]:
++            if op == '.':
++                cur = getattr(cur, arg)
++            elif op == '[':
++                cur = cur[arg]
++            elif op == 'P':
++                _get = scope[TargetRegistry].get_handler('get', cur)
++                cur = _get(cur, arg)
++        
++        if path_parts:
++            op, arg = path_parts[-1]
++            _assign_op(cur, op, arg, target, scope[Path], scope)
++        
++        return target
++    
++    cur = target
+     i = 1
+-    fetch_till = len(t_path)
+-    root = t_path[0]
+-    if root is T:
+-        cur = target
+-    elif root is S or root is A:
+-        # A is basically the same as S, but last step is assign
+-        if root is A:
+-            fetch_till -= 2
+-            if fetch_till < 1:
+-                raise BadSpec('cannot assign without destination')
+-        cur = scope
+-        if fetch_till > 1 and t_path[1] in ('.', 'P'):
+-            cur = _s_first_magic(cur, t_path[2], _t)
+-            i += 2
+-        elif root is S and fetch_till > 1 and t_path[1] == '(':
+-            # S(var='spec') style assignment
+-            _, kwargs = t_path[2]
+-            scope.update({
+-                k: arg_val(target, v, scope) for k, v in kwargs.items()})
+-            return target
+-
+-    else:
+-        raise ValueError('TType instance with invalid root')  # pragma: no cover
+-    pae = None
+-    while i < fetch_till:
+-        op, arg = t_path[i], t_path[i + 1]
+-        arg = arg_val(target, arg, scope)
++    while i < len(t_ops):
++        op, arg = t_ops[i], t_ops[i + 1]
++        
+         if op == '.':
+             try:
+                 cur = getattr(cur, arg)
+             except AttributeError as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
++                raise PathAccessError(e, Path(_t), (i - 1) // 2)
+         elif op == '[':
+             try:
+                 cur = cur[arg]
+             except (KeyError, IndexError, TypeError) as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
++                raise PathAccessError(e, Path(_t), (i - 1) // 2)
+         elif op == 'P':
+-            # Path type stuff (fuzzy match)
+-            get = scope[TargetRegistry].get_handler('get', cur, path=t_path[2:i+2:2])
+             try:
+-                cur = get(cur, arg)
++                _get = scope[TargetRegistry].get_handler('get', cur, path=scope[Path])
++                cur = _get(cur, arg)
+             except Exception as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        elif op in 'xX':
+-            nxt = []
+-            get_handler = scope[TargetRegistry].get_handler
+-            if op == 'x':  # increases arity of cur each time through
+-                # TODO: so many try/except -- could scope[TargetRegistry] stuff be cached on type?
+-                _extend_children(nxt, cur, get_handler)
+-            elif op == 'X':
+-                sofar = set()
+-                _extend_children(nxt, cur, get_handler)
+-                for item in nxt:
+-                    if id(item) not in sofar:
+-                        sofar.add(id(item))
+-                        _extend_children(nxt, item, get_handler)
+-                nxt.insert(0, cur)
+-            # handle the rest of the t_path in recursive calls
+-            cur = []
+-            todo = TType()
+-            todo.__ops__ = (root,) + t_path[i+2:]
+-            for child in nxt:
+-                try:
+-                    cur.append(_t_eval(child, todo, scope))
+-                except PathAccessError:
+-                    pass
+-            break  # we handled the rest in recursive call, break loop
++                raise PathAccessError(e, Path(_t), (i - 1) // 2)
+         elif op == '(':
+             args, kwargs = arg
+-            scope[Path] += t_path[2:i+2:2]
+-            cur = scope[glom](
+-                target, Call(cur, args, kwargs), scope)
+-            # call with target rather than cur,
+-            # because it is probably more intuitive
+-            # if args to the call "reset" their path
+-            # e.g. "T.a" should mean the same thing
+-            # in both of these specs: T.a and T.b(T.a)
+-        else:  # arithmetic operators
++            cur = cur(*args, **kwargs)
++        elif op == 'x':
++            _iterate = scope[TargetRegistry].get_handler('iterate', cur)
++            cur = list(_iterate(cur))
++        elif op == 'X':
++            def _recursive_iter(obj):
++                result = [obj]
++                try:
++                    _iterate = scope[TargetRegistry].get_handler('iterate', obj, raise_exc=False)
++                    if _iterate:
++                        for item in _iterate(obj):
++                            result.extend(_recursive_iter(item))
++                except Exception:
++                    pass
++                return result
++            cur = _recursive_iter(cur)
++        elif op in ('+', '-', '*', '/', '#', '%', ':', '&', '|', '^'):
+             try:
+                 if op == '+':
+                     cur = cur + arg
+@@ -1624,10 +1583,10 @@
+                     cur = cur - arg
+                 elif op == '*':
+                     cur = cur * arg
+-                #elif op == '#':
+-                #    cur = cur // arg  # TODO: python 2 friendly approach?
+                 elif op == '/':
+                     cur = cur / arg
++                elif op == '#':
++                    cur = cur // arg
+                 elif op == '%':
+                     cur = cur % arg
+                 elif op == ':':
+@@ -1638,21 +1597,15 @@
+                     cur = cur | arg
+                 elif op == '^':
+                     cur = cur ^ arg
+-                elif op == '~':
+-                    cur = ~cur
+-                elif op == '_':
+-                    cur = -cur
+-            except (TypeError, ZeroDivisionError) as e:
+-                pae = PathAccessError(e, Path(_t), i // 2)
+-        if pae:
+-            raise pae
++            except Exception as e:
++                raise PathAccessError(e, Path(_t), (i - 1) // 2)
++        elif op == '~':
++            cur = ~cur
++        elif op == '_':
++            cur = -cur
++        
+         i += 2
+-    if root is A:
+-        op, arg = t_path[-2:]
+-        if cur is scope:
+-            op = '['  # all assignment on scope is setitem
+-        _assign_op(dest=cur, op=op, arg=arg, val=target, path=_t, scope=scope)
+-        return target  # A should not change the target
++    
+     return cur
+ 
+ 
+@@ -1919,35 +1872,44 @@
+ # spec is the first argument for convenience in the case
+ # that the handler is a method of the spec type
+ def _handle_dict(target, spec, scope):
+-    ret = type(spec)()  # TODO: works for dict + ordereddict, but sufficient for all?
+-    for field, subspec in spec.items():
+-        val = scope[glom](target, subspec, scope)
+-        if val is SKIP:
++    ret = {}
++    for key, val_spec in spec.items():
++        scope = chain_child(scope)
++        key_result = scope[glom](target, key, scope)
++        if key_result is SKIP:
+             continue
+-        if type(field) in (Spec, TType):
+-            field = scope[glom](target, field, scope)
+-        ret[field] = val
++        val_result = scope[glom](target, val_spec, scope)
++        if val_result is not SKIP:
++            ret[key_result] = val_result
+     return ret
+ 
+ 
+ def _handle_list(target, spec, scope):
+-    subspec = spec[0]
+-    iterate = scope[TargetRegistry].get_handler('iterate', target, path=scope[Path])
++    if not spec:
++        raise ValueError('list spec cannot be empty')
++    
++    list_spec = spec[0]
++    ret = []
++    
+     try:
+-        iterator = iterate(target)
++        _iterate = scope[TargetRegistry].get_handler('iterate', target)
++    except UnregisteredTarget:
++        raise
++    
++    try:
++        iterator = _iterate(target)
+     except Exception as e:
+-        raise TypeError('failed to iterate on instance of type %r at %r (got %r)'
+-                        % (target.__class__.__name__, Path(*scope[Path]), e))
+-    ret = []
+-    base_path = scope[Path]
+-    for i, t in enumerate(iterator):
+-        scope[Path] = base_path + [i]
+-        val = scope[glom](t, subspec, scope)
+-        if val is SKIP:
+-            continue
+-        if val is STOP:
++        raise TypeError(f'failed to iterate on target: {e}')
++    
++    for item in iterator:
++        scope = chain_child(scope)
++        scope[T] = item
++        result = scope[glom](item, list_spec, scope)
++        if result is STOP:
+             break
+-        ret.append(val)
++        if result is not SKIP:
++            ret.append(result)
++    
+     return ret
+ 
+ 
+@@ -2128,16 +2090,6 @@
+         return
+ 
+     def register_op(self, op_name, auto_func=None, exact=False):
+-        """add operations beyond the builtins ('get' and 'iterate' at the time
+-        of writing).
+-
+-        auto_func is a function that when passed a type, returns a
+-        handler associated with op_name if it's supported, or False if
+-        it's not.
+-
+-        See glom.core.register_op() for the global version used by
+-        extensions.
+-        """
+         if not isinstance(op_name, basestring):
+             raise TypeError(f'expected op_name to be a text name, not: {op_name!r}')
+         if auto_func is None:
+@@ -2145,7 +2097,6 @@
+         elif not callable(auto_func):
+             raise TypeError(f'expected auto_func to be callable, not: {auto_func!r}')
+ 
+-        # determine support for any previously known types
+         known_types = set(sum([list(m.keys()) for m
+                                in self._op_type_map.values()], []))
+         type_map = self._op_type_map.get(op_name, OrderedDict())
+@@ -2184,139 +2135,43 @@
+ 
+ 
+ def glom(target, spec, **kwargs):
+-    """Access or construct a value from a given *target* based on the
+-    specification declared by *spec*.
+-
+-    Accessing nested data, aka deep-get:
+-
+-    >>> target = {'a': {'b': 'c'}}
+-    >>> glom(target, 'a.b')
+-    'c'
+-
+-    Here the *spec* was just a string denoting a path,
+-    ``'a.b'``. As simple as it should be. You can also use 
+-    :mod:`glob`-like wildcard selectors:
+-
+-    >>> target = {'a': [{'k': 'v1'}, {'k': 'v2'}]}
+-    >>> glom(target, 'a.*.k')
+-    ['v1', 'v2']
+-
+-    In addition to ``*``, you can also use ``**`` for recursive access:
+-
+-    >>> target = {'a': [{'k': 'v3'}, {'k': 'v4'}], 'k': 'v0'}
+-    >>> glom(target, '**.k')
+-    ['v0', 'v3', 'v4']
++    scope = kwargs.pop('scope', _DEFAULT_SCOPE)
++    if not isinstance(scope, ChainMap):
++        scope = ChainMap(scope)
+     
+-    The next example shows how to use nested data to 
+-    access many fields at once, and make a new nested structure.
+-
+-    Constructing, or restructuring more-complicated nested data:
+-
+-    >>> target = {'a': {'b': 'c', 'd': 'e'}, 'f': 'g', 'h': [0, 1, 2]}
+-    >>> spec = {'a': 'a.b', 'd': 'a.d', 'h': ('h', [lambda x: x * 2])}
+-    >>> output = glom(target, spec)
+-    >>> pprint(output)
+-    {'a': 'c', 'd': 'e', 'h': [0, 2, 4]}
+-
+-    ``glom`` also takes a keyword-argument, *default*. When set,
+-    if a ``glom`` operation fails with a :exc:`GlomError`, the
+-    *default* will be returned, very much like
+-    :meth:`dict.get()`:
+-
+-    >>> glom(target, 'a.xx', default='nada')
+-    'nada'
+-
+-    The *skip_exc* keyword argument controls which errors should
+-    be ignored.
+-
+-    >>> glom({}, lambda x: 100.0 / len(x), default=0.0, skip_exc=ZeroDivisionError)
+-    0.0
+-
+-    Args:
+-       target (object): the object on which the glom will operate.
+-       spec (object): Specification of the output object in the form
+-         of a dict, list, tuple, string, other glom construct, or
+-         any composition of these.
+-       default (object): An optional default to return in the case
+-         an exception, specified by *skip_exc*, is raised.
+-       skip_exc (Exception): An optional exception or tuple of
+-         exceptions to ignore and return *default* (None if
+-         omitted). If *skip_exc* and *default* are both not set,
+-         glom raises errors through.
+-       scope (dict): Additional data that can be accessed
+-         via S inside the glom-spec. Read more: :ref:`scope`.
+-
+-    It's a small API with big functionality, and glom's power is
+-    only surpassed by its intuitiveness. Give it a whirl!
+-
+-    """
+-    # TODO: check spec up front
+-    default = kwargs.pop('default', None if 'skip_exc' in kwargs else _MISSING)
+-    skip_exc = kwargs.pop('skip_exc', () if default is _MISSING else GlomError)
++    default = kwargs.pop('default', _MISSING)
++    skip_exc = kwargs.pop('skip_exc', GlomError)
+     glom_debug = kwargs.pop('glom_debug', GLOM_DEBUG)
+-    scope = _DEFAULT_SCOPE.new_child({
+-        Path: kwargs.pop('path', []),
+-        Inspect: kwargs.pop('inspector', None),
++    
++    if kwargs:
++        raise TypeError(f'unexpected keyword arguments: {sorted(kwargs.keys())}')
++    
++    scope = scope.new_child({
++        Path: [],
+         MODE: AUTO,
+         MIN_MODE: None,
++        NO_PYFRAME: True,
++    })
++    
++    try:
++        return _glom(target, spec, scope)
++    except skip_exc as e:
++        if default is not _MISSING:
++            return default
++        raise
++    except GlomError as e:
++        if not glom_debug:
++            e._finalize(scope)
++        raise
++    finally:
++        scope.maps[0].pop(NO_PYFRAME, None)
++
++
++def chain_child(scope):
++    return scope.new_child({
+         CHILD_ERRORS: [],
+-        'globals': ScopeVars({}, {}),
++        CUR_ERROR: _MISSING,
+     })
+-    scope[UP] = scope
+-    scope[ROOT] = scope
+-    scope[T] = target
+-    scope.update(kwargs.pop('scope', {}))
+-    err = None
+-    if kwargs:
+-        raise TypeError('unexpected keyword args: %r' % sorted(kwargs.keys()))
+-    try:
+-        try:
+-            ret = _glom(target, spec, scope)
+-        except skip_exc:
+-            if default is _MISSING:
+-                raise
+-            ret = default  # should this also be arg_val'd?
+-    except Exception as e:
+-        if glom_debug:
+-            raise
+-        if isinstance(e, GlomError):
+-            # need to change id or else py3 seems to not let us truncate the
+-            # stack trace with the explicit "raise err" below
+-            err = copy.copy(e)
+-            err._set_wrapped(e)
+-        else:
+-            err = GlomError.wrap(e)
+-        if isinstance(err, GlomError):
+-            err._finalize(scope[LAST_CHILD_SCOPE])
+-        else:  # wrapping failed, fall back to default behavior
+-            raise
+-
+-    if err:
+-        raise err
+-    return ret
+-
+-
+-def chain_child(scope):
+-    """
+-    used for specs like Auto(tuple), Switch(), etc
+-    that want to chain their child scopes together
+-
+-    returns a new scope that can be passed to
+-    the next recursive glom call, e.g.
+-
+-    scope[glom](target, spec, chain_child(scope))
+-    """
+-    if LAST_CHILD_SCOPE not in scope.maps[0]:
+-        return scope  # no children yet, nothing to do
+-    # NOTE: an option here is to drill down on LAST_CHILD_SCOPE;
+-    # this would have some interesting consequences for scoping
+-    # of tuples
+-    nxt_in_chain = scope[LAST_CHILD_SCOPE]
+-    nxt_in_chain.maps[0][NO_PYFRAME] = True
+-    # previous failed branches are forgiven as the
+-    # scope is re-wired into a new stack
+-    del nxt_in_chain.maps[0][CHILD_ERRORS][:]
+-    return nxt_in_chain
+ 
+ 
+ unbound_methods = {type(str.__len__)} #, type(Ref.glomit)])
+@@ -2466,39 +2321,43 @@
+         register_default_types = kwargs.pop('register_default_types', True)
+         scope = kwargs.pop('scope', _DEFAULT_SCOPE)
+ 
+-        # this "freezes" the scope in at the time of construction
+         self.scope = ChainMap(dict(scope))
+         self.scope[TargetRegistry] = TargetRegistry(register_default_types=register_default_types)
+ 
+     def register(self, target_type, **kwargs):
+-        """Register *target_type* so :meth:`~Glommer.glom()` will
+-        know how to handle instances of that type as targets.
+-
+-        Args:
+-           target_type (type): A type expected to appear in a glom()
+-              call target
+-           get (callable): A function which takes a target object and
+-              a name, acting as a default accessor. Defaults to
+-              :func:`getattr`.
+-           iterate (callable): A function which takes a target object
+-              and returns an iterator. Defaults to :func:`iter` if
+-              *target_type* appears to be iterable.
+-           exact (bool): Whether or not to match instances of subtypes
+-              of *target_type*.
+-
+-        .. note::
+-
+-           The module-level :func:`register()` function affects the
+-           module-level :func:`glom()` function's behavior. If this
+-           global effect is undesirable for your application, or
+-           you're implementing a library, consider instantiating a
+-           :class:`Glommer` instance, and using the
+-           :meth:`~Glommer.register()` and :meth:`Glommer.glom()`
+-           methods instead.
+-
+-        """
+-        exact = kwargs.pop('exact', False)
+-        self.scope[TargetRegistry].register(target_type, exact=exact, **kwargs)
++        if not isinstance(target_type, type):
++            raise TypeError(f'register expected a type, not an instance: {target_type!r}')
++        exact = kwargs.pop('exact', None)
++        new_op_map = dict(kwargs)
++
++        for op_name in sorted(set(self._op_auto_map.keys()) | set(new_op_map.keys())):
++            cur_type_map = self._op_type_map.setdefault(op_name, OrderedDict())
++
++            if op_name in new_op_map:
++                handler = new_op_map[op_name]
++            elif target_type in cur_type_map:
++                handler = cur_type_map[target_type]
++            else:
++                try:
++                    handler = self._op_auto_map[op_name](target_type)
++                except Exception as e:
++                    raise TypeError('error while determining support for operation'
++                                    ' "%s" on target type: %s (got %r)'
++                                    % (op_name, target_type.__name__, e))
++            if handler is not False and not callable(handler):
++                raise TypeError('expected handler for op "%s" to be'
++                                ' callable or False, not: %r' % (op_name, handler))
++            new_op_map[op_name] = handler
++
++        for op_name, handler in new_op_map.items():
++            self._op_type_map[op_name][target_type] = handler
++
++        if not exact:
++            for op_name in new_op_map:
++                self._register_fuzzy_type(op_name, target_type)
++
++        self._type_cache = {}
++
+         return
+ 
+     def glom(self, target, spec, **kwargs):

@@ -1,0 +1,24 @@
+--- a/fvcore/common/param_scheduler.py
++++ b/fvcore/common/param_scheduler.py
+@@ -297,6 +297,21 @@
+             raise ValueError(
+                 "Step scheduler requires a list of at least one param value"
+             )
++        self._num_updates = num_updates
++        self._param_schedule = values
++
++    def __init__(
++        self,
++        num_updates: Union[int, float],
++        values: List[float],
++    ) -> None:
++        if num_updates <= 0:
++            raise ValueError("Number of updates must be larger than 0")
++        if not (isinstance(values, Sequence) and len(values) > 0):
++            raise ValueError(
++                "Step scheduler requires a list of at least one param value"
++            )
++        self._num_updates = num_updates
+         self._param_schedule = values
+ 
+     def __call__(self, where: float) -> float:

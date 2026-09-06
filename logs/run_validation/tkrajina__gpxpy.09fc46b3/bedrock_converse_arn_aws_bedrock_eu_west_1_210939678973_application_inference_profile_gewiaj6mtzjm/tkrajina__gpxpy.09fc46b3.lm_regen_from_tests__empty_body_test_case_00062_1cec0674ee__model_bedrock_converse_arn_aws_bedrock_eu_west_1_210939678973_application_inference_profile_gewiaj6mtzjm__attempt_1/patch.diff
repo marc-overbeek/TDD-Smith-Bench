@@ -1,0 +1,38 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -551,14 +551,8 @@
+         self.dgps_id: Optional[int] = None
+         self.extensions: List[Any] = []
+ 
+-    def __repr__(self) -> str:
+-        parts = [f'{self.latitude}, {self.longitude}']
+-        for attribute in 'elevation', 'time', 'symbol', 'comment', 'horizontal_dilution', \
+-                'vertical_dilution', 'position_dilution', 'speed', 'name':
+-            value = getattr(self, attribute)
+-            if value is not None:
+-                parts.append(f'{attribute}={value!r}')
+-        return f'GPXTrackPoint({", ".join(parts)})'
++    def __repr__(self) ->str:
++        return f'GPX({self.tracks!r})'
+ 
+     def adjust_time(self, delta: mod_datetime.timedelta) -> None:
+         """
+@@ -2431,7 +2425,7 @@
+ 
+         return MinimumMaximum(min(elevations), max(elevations))
+ 
+-    def get_points_data(self, distance_2d: bool=False) -> List[PointData]:
++    def get_points_data(self, distance_2d: bool=False) ->List[PointData]:
+         """
+         Returns a list of tuples containing the actual point, its distance from the start,
+         track_no, segment_no, and segment_point_no
+@@ -2459,7 +2453,8 @@
+ 
+         return points
+ 
+-    def get_nearest_locations(self, location: mod_geo.Location, threshold_distance: float=0.01) -> List[NearestLocationData]:
++    def get_nearest_locations(self, location: mod_geo.Location,
++        threshold_distance: float=0.01) ->List[NearestLocationData]:
+         """
+         Returns a list of locations of elements like
+         consisting of points where the location may be on the track

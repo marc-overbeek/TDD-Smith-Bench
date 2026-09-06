@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, I need to implement the `_parse_html_to_end` function that parses HTML until it finds a specific end marker.\n\nBased on the context and the test failures, this function should:\n1. Search for the `end_marker` in the state's source text starting from `start_pos`\n2. If found, return the position after the end marker\n3. If not found, return the maximum cursor position\n4. Extract the content between the start position and the end marker",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "Looking at the failing tests, I need to implement the `_parse_html_to_end` function that parses HTML until it finds a specific end marker.\n\nBased on the context and the test failures, this function should:\n1. Search for the `end_marker` in the state's source text starting from `start_pos`\n2. If found, return the position after the end marker\n3. If not found, return the maximum cursor position\n4. Extract the content between the start position and the end marker\n\n```\ndef _parse_html_to_end(state: BlockState, end_marker: str, start_pos: int\n    ) ->int:\n    end_pos = state.src.find(end_marker, start_pos)\n    if end_pos != -1:\n        return end_pos + len(end_marker)\n    return state.cursor_max\n```",
+  "rewrite": "def _parse_html_to_end(state: BlockState, end_marker: str, start_pos: int\n    ) ->int:\n    end_pos = state.src.find(end_marker, start_pos)\n    if end_pos != -1:\n        return end_pos + len(end_marker)\n    return state.cursor_max",
+  "strategy": "lm_regen_from_tests"
+}

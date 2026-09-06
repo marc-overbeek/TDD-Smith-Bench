@@ -1,0 +1,39 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1175,35 +1175,7 @@
+         return cls(Spec(spec))
+ 
+     def constants(self, *a, **kw):
+-        """Returns a new :class:`Invoke` spec, with the provided positional
+-        and keyword argument values stored for passing to the
+-        underlying function.
+-
+-        >>> spec = Invoke(T).constants(5)
+-        >>> glom(range, (spec, list))
+-        [0, 1, 2, 3, 4]
+-
+-        Subsequent positional arguments are appended:
+-
+-        >>> spec = Invoke(T).constants(2).constants(10, 2)
+-        >>> glom(range, (spec, list))
+-        [2, 4, 6, 8]
+-
+-        Keyword arguments also work as one might expect:
+-
+-        >>> round_2 = Invoke(round).constants(ndigits=2).specs(T)
+-        >>> glom(3.14159, round_2)
+-        3.14
+-
+-        :meth:`~Invoke.constants()` and other :class:`Invoke`
+-        methods may be called multiple times, just remember that every
+-        call returns a new spec.
+-        """
+-        ret = self.__class__(self.func)
+-        ret._args = self._args + ('C', a, kw)
+-        ret._cur_kwargs = dict(self._cur_kwargs)
+-        ret._cur_kwargs.update({k: kw for k, _ in kw.items()})
+-        return ret
++        pass
+ 
+     def specs(self, *a, **kw):
+         """Returns a new :class:`Invoke` spec, with the provided positional

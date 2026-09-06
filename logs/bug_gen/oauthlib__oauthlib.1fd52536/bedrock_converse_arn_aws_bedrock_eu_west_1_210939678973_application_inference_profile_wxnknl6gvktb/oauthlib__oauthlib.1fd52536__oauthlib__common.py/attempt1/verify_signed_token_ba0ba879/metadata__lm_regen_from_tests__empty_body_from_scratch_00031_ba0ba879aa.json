@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing test, I need to understand what `verify_signed_token` should do:\n\n1. The test calls `verify_signed_token(self.public_pem, access_token)` where `access_token` is a JWT token\n2. It expects the function to return a dictionary (claims) with keys like `'scope'` and `'user_id'`\n3. The token was created using `generate_signed_token` which uses `jwt.encode` with RS256 algorithm\n\nSo `verify_signed_token` needs to:\n1. Decode the JWT token using the public PEM key\n2. Verify the signature using RS256\n3. Return the decoded claims\n\nHere's the implementation:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "Looking at the failing test, I need to understand what `verify_signed_token` should do:\n\n1. The test calls `verify_signed_token(self.public_pem, access_token)` where `access_token` is a JWT token\n2. It expects the function to return a dictionary (claims) with keys like `'scope'` and `'user_id'`\n3. The token was created using `generate_signed_token` which uses `jwt.encode` with RS256 algorithm\n\nSo `verify_signed_token` needs to:\n1. Decode the JWT token using the public PEM key\n2. Verify the signature using RS256\n3. Return the decoded claims\n\nHere's the implementation:\n\n```python\ndef verify_signed_token(public_pem, token):\n    import jwt\n    \n    claims = jwt.decode(token, public_pem, algorithms=['RS256'])\n    return claims\n```",
+  "rewrite": "def verify_signed_token(public_pem, token):\n    import jwt\n    \n    claims = jwt.decode(token, public_pem, algorithms=['RS256'])\n    return claims",
+  "strategy": "lm_regen_from_tests"
+}

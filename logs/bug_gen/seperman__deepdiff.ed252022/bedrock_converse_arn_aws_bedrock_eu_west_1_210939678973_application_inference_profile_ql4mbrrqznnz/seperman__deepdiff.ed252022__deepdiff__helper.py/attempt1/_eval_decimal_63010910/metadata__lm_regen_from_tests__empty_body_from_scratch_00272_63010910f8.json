@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, I need to implement `_eval_decimal` to convert a string parameter into a `Decimal` object.\n\nThe test `test_literal_eval_extended[Decimal('10.1')-expected1]` suggests that `literal_eval_extended(\"Decimal('10.1')\")` should return `Decimal('10.1')`.\n\nLooking at how `literal_eval_extended` calls the function:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing tests, I need to implement `_eval_decimal` to convert a string parameter into a `Decimal` object.\n\nThe test `test_literal_eval_extended[Decimal('10.1')-expected1]` suggests that `literal_eval_extended(\"Decimal('10.1')\")` should return `Decimal('10.1')`.\n\nLooking at how `literal_eval_extended` calls the function:\n```python\nparams = item[len(begin): -len(end)].strip('\\'\\\"')\nreturn func(params)\n```\n\nSo for `\"Decimal('10.1')\"`, `params` would be `'10.1'` (after stripping quotes). The function needs to return `Decimal('10.1')`.\n\n```python\ndef _eval_decimal(params):\n    return Decimal(params)\n```",
+  "rewrite": "params = item[len(begin): -len(end)].strip('\\'\\\"')\nreturn func(params)\n\ndef _eval_decimal(params):\n    return Decimal(params)",
+  "strategy": "lm_regen_from_tests"
+}

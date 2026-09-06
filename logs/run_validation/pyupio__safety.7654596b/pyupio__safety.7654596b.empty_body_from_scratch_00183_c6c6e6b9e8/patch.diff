@@ -1,0 +1,48 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -230,42 +230,9 @@
+         return {"safety_policy": "", "audit_and_monitor": False}
+ 
+ 
+-def post_results(session: requests.Session, safety_json: str, policy_file: str) -> Dict[str, Any]:
+-    """
+-    Posts the scan results to the server.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        safety_json (str): The scan results in JSON format.
+-        policy_file (str): The policy file.
+-
+-    Returns:
+-        Dict[str, Any]: The server response.
+-    """
+-    url = f"{DATA_API_BASE_URL}result/"
+-
+-    # safety_json is in text form already. policy_file is a text YAML
+-    audit_report = {
+-        "safety_json": json.loads(safety_json),
+-        "policy_file": policy_file
+-    }
+-
+-    try:
+-        LOG.debug(f'Posting results to: {url}')
+-        LOG.debug(f'Posting results: {audit_report}')
+-        r = session.post(url=url, timeout=REQUEST_TIMEOUT, json=audit_report)
+-        LOG.debug(r.text)
+-
+-        return r.json()
+-    except:
+-        LOG.exception("Error posting results")
+-        click.secho(
+-            "Warning: couldn't upload results to safetycli.com.",
+-            fg="yellow",
+-            file=sys.stderr
+-        )
+-
+-        return {}
++def post_results(session: requests.Session, safety_json: str, policy_file: str
++    ) ->Dict[str, Any]:
++    pass
+ 
+ 
+ def fetch_database_file(path: str, db_name: str, cached: int = 0, ecosystem: Optional[Ecosystem] = None) -> Dict[str, Any]:

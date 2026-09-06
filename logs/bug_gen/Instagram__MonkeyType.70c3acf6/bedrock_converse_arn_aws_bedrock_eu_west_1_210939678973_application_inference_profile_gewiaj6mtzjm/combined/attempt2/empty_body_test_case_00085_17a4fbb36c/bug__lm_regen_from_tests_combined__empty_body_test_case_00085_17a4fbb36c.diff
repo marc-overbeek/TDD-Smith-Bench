@@ -1,0 +1,132 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -134,33 +134,36 @@
+ 
+ 
+ def shrink_types(types, max_typed_dict_size):
+-    """Return the smallest type equivalent to Union[types].
+-    If all the types are anonymous TypedDicts, shrink them ourselves.
+-    Otherwise, recursively turn the anonymous TypedDicts into Dicts.
+-    Union will handle deduplicating types (both by equality and subtype relationships).
+-    """
+-    types = tuple(types)
+-    if len(types) == 0:
++    if not types:
+         return Any
+-    if all(is_anonymous_typed_dict(typ) for typ in types):
+-        return shrink_typed_dict_types(types, max_typed_dict_size)
+-    # Don't rewrite anonymous TypedDict to Dict if the types are all the same,
+-    # such as [Tuple[TypedDict(...)], Tuple[TypedDict(...)]].
+-    if all(types_equal(typ, types[0]) for typ in types[1:]):
++    
++    # Handle the case where all types are the same
++    if len(set(types)) == 1:
+         return types[0]
+-
+-    # If they are all lists, shrink their argument types. This way, we avoid
+-    # rewriting heterogeneous anonymous TypedDicts to Dict.
+-    if all(is_list(typ) for typ in types):
+-        annotation = shrink_types(
+-            (getattr(typ, "__args__")[0] for typ in types), max_typed_dict_size
+-        )
+-        return List[annotation]
+-
+-    all_dict_types = tuple(
+-        RewriteAnonymousTypedDictToDict().rewrite(typ) for typ in types
+-    )
+-    return Union[all_dict_types]
++    
++    # Group types by their categories
++    typed_dicts = [t for t in types if is_anonymous_typed_dict(t)]
++    non_typed_dict_types = [t for t in types if not is_anonymous_typed_dict(t)]
++    
++    if typed_dicts:
++        # If we have typed dicts, try to shrink them
++        if len(typed_dicts) == len(types):
++            # All types are typed dicts, shrink them together
++            return shrink_typed_dict_types(typed_dicts, max_typed_dict_size)
++        else:
++            # Mix of typed dicts and other types, convert typed dicts to dict
++            dict_type = shrink_typed_dict_types(typed_dicts, max_typed_dict_size)
++            if non_typed_dict_types:
++                # Combine with other types using Union
++                return Union[tuple([dict_type] + non_typed_dict_types)]
++            return dict_type
++    
++    # Handle regular types
++    if len(non_typed_dict_types) == 1:
++        return non_typed_dict_types[0]
++    
++    # For multiple types, create a Union
++    return Union[tuple(non_typed_dict_types)]
+ 
+ 
+ def make_iterator(typ):
+@@ -208,38 +211,36 @@
+ 
+ 
+ def get_type(obj, max_typed_dict_size):
+-    """Return the static type that would be used in a type hint"""
+-    if isinstance(obj, type):
+-        return Type[obj]
+-    elif isinstance(obj, _BUILTIN_CALLABLE_TYPES):
+-        return Callable
+-    elif isinstance(obj, types.GeneratorType):
+-        return Iterator[Any]
+-    typ = type(obj)
+-    if typ is list:
+-        elem_type = shrink_types(
+-            (get_type(e, max_typed_dict_size) for e in obj), max_typed_dict_size
+-        )
+-        return List[elem_type]
+-    elif typ is set:
+-        elem_type = shrink_types(
+-            (get_type(e, max_typed_dict_size) for e in obj), max_typed_dict_size
+-        )
+-        return Set[elem_type]
+-    elif typ is dict:
++    # Handle built-in types
++    if obj is None:
++        return NoneType
++    if obj is NotImplemented:
++        return NotImplementedType
++    
++    obj_type = type(obj)
++    
++    # Handle built-in callable types
++    if isinstance(obj, _BUILTIN_CALLABLE_TYPES):
++        return obj_type
++    
++    # Handle dict types
++    if isinstance(obj, dict):
+         return get_dict_type(obj, max_typed_dict_size)
+-    elif typ is defaultdict:
+-        key_type = shrink_types(
+-            (get_type(k, max_typed_dict_size) for k in obj.keys()), max_typed_dict_size
+-        )
+-        val_type = shrink_types(
+-            (get_type(v, max_typed_dict_size) for v in obj.values()),
+-            max_typed_dict_size,
+-        )
+-        return DefaultDict[key_type, val_type]
+-    elif typ is tuple:
+-        return Tuple[tuple(get_type(e, max_typed_dict_size) for e in obj)]
+-    return typ
++    
++    # Handle other container types
++    if isinstance(obj, (list, tuple, set, frozenset)):
++        if not obj:
++            return obj_type[Any]
++        element_types = [get_type(item, max_typed_dict_size) for item in obj]
++        element_type = shrink_types(element_types, max_typed_dict_size)
++        return obj_type[element_type]
++    
++    # Handle instances of user-defined classes
++    if not isinstance(obj, type):
++        return obj_type
++    
++    # Handle class types
++    return obj
+ 
+ 
+ NoneType = type(None)

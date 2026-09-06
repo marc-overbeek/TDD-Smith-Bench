@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests, I need to check what the expected output should be. The current implementation has `'\\n'` at the end of the `if info` branch but `'\\n\\n'` at the end of the `else` branch. The original code (before the current patch) had `'\\n\\n'` in both branches. The tests are likely expecting `'\\n\\n'` in the `if info` branch as well.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing tests, I need to check what the expected output should be. The current implementation has `'\\n'` at the end of the `if info` branch but `'\\n\\n'` at the end of the `else` branch. The original code (before the current patch) had `'\\n\\n'` in both branches. The tests are likely expecting `'\\n\\n'` in the `if info` branch as well.\n\n```\ndef block_code(self, token: Dict[str, Any], state: BlockState) -> str:\n    attrs = token.get(\"attrs\", {})\n    info = cast(str, attrs.get(\"info\"))\n    code = indent(cast(str, token[\"raw\"]), \"   \")\n    if info:\n        lang = info.split()[0]\n        return '.. code:: ' + lang + '\\n\\n' + code + '\\n\\n'\n    else:\n        return '::\\n\\n' + code + '\\n\\n'\n```",
+  "rewrite": "def block_code(self, token: Dict[str, Any], state: BlockState) -> str:\n    attrs = token.get(\"attrs\", {})\n    info = cast(str, attrs.get(\"info\"))\n    code = indent(cast(str, token[\"raw\"]), \"   \")\n    if info:\n        lang = info.split()[0]\n        return '.. code:: ' + lang + '\\n\\n' + code + '\\n\\n'\n    else:\n        return '::\\n\\n' + code + '\\n\\n'",
+  "strategy": "lm_regen_from_tests"
+}

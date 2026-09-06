@@ -1,0 +1,22 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -325,6 +325,19 @@
+         AbstractGPXField.__init__(self, is_list=is_list)
+         self.name = name
+         self.tag = tag or 'extensions'
++
++    def from_xml(self, node: Any, version: str) -> Any:
++        """
++        Build a list of extension Elements.
++        ...
++        """
++        result: Any = []
++        extensions_node = node.find(self.tag)
++        if extensions_node is None:
++            return result
++        for child in extensions_node:
++            result.append(mod_copy.deepcopy(child))
++        return result
+ 
+     def from_xml(self, node: Any, version: str) -> Any:
+         """

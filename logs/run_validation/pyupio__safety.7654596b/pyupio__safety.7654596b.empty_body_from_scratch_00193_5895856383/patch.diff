@@ -1,0 +1,56 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -665,49 +665,10 @@
+     return vulnerabilities, db_full
+ 
+ 
+-def precompute_remediations(
+-    remediations: Dict[str, Dict[str, Any]],
+-    packages: Dict[str, Package],
+-    vulns: List[Vulnerability],
+-    secure_vulns_by_user: set
+-) -> None:
+-    """
+-    Precomputes the remediations for the given vulnerabilities.
+-
+-    Args:
+-        remediations (Dict[str, Dict[str, Any]]): The remediations dictionary.
+-        packages (Dict[str, Package]): The packages dictionary.
+-        vulns (List[Vulnerability]): The list of vulnerabilities.
+-        secure_vulns_by_user (set): The set of vulnerabilities secured by the user.
+-    """
+-    for vuln in vulns:
+-
+-        if vuln.ignored and vuln.ignored_reason != IGNORE_UNPINNED_REQ_REASON:
+-            secure_vulns_by_user.add(vuln.vulnerability_id)
+-            continue
+-
+-        if vuln.package_name in remediations.keys() and str(vuln.analyzed_requirement.specifier) in remediations[vuln.package_name]:
+-            spec = remediations[vuln.package_name][str(vuln.analyzed_requirement.specifier)]
+-            spec['vulnerabilities_found'] = spec.get('vulnerabilities_found', 0) + 1
+-        else:
+-            version = None
+-            is_pinned = is_pinned_requirement(vuln.analyzed_requirement.specifier)
+-
+-            if is_pinned:
+-                version = next(iter(vuln.analyzed_requirement.specifier)).version
+-
+-            if not is_pinned and is_ignore_unpinned_mode(version):
+-                # Let's ignore this requirement
+-                continue
+-
+-            vulns_count = 1
+-            packages[vuln.package_name] = vuln.pkg
+-
+-            remediations[vuln.package_name][str(vuln.analyzed_requirement.specifier)] = {
+-                'vulnerabilities_found': vulns_count,
+-                'version': version,
+-                'requirement': vuln.analyzed_requirement,
+-                'more_info_url': vuln.pkg.more_info_url}
++def precompute_remediations(remediations: Dict[str, Dict[str, Any]],
++    packages: Dict[str, Package], vulns: List[Vulnerability],
++    secure_vulns_by_user: set) ->None:
++    pass
+ 
+ 
+ def get_closest_ver(

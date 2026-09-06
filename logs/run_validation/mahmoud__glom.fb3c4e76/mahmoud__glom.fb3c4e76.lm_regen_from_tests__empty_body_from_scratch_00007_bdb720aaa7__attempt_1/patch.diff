@@ -1,0 +1,20 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1100,13 +1100,11 @@
+ 
+ 
+ def _is_spec(obj, strict=False):
+-    # a little util for codifying the spec type checking in glom
+-    if isinstance(obj, TType):
++    if isinstance(obj, (Spec, TType)):
+         return True
+-    if strict:
+-        return type(obj) is Spec
+-
+-    return _has_callable_glomit(obj)  # pragma: no cover
++    if not strict and _has_callable_glomit(obj):
++        return True
++    return False
+ 
+ 
+ class Invoke:

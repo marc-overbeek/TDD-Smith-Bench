@@ -1,0 +1,70 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -181,33 +181,40 @@
+     return out_stats
+ 
+ 
+-def _fill_missing_statistics(
+-    model: nn.Module, statistics: Dict[str, Dict[str, int]]
+-) -> Dict[str, Dict[str, int]]:
+-    """
+-    If, for a given submodule name in the model, a statistic is missing
+-    from statistics, fills it in with zero. This visually uniformizes
+-    the reporting of statistics.
+-
+-    Args:
+-        model (nn.Module) : the model whose submodule names will be
+-            used to fill statistics
+-        statistics (dict(str, dict(str, int))) : the statistics to
+-            fill in missing values for. Organized as a dictionary
+-            over statistics, which are each a dictionary over submodules'
+-            names. The statistics are assumed to be formatted already
+-            to the desired string format for printing.
+-
+-    Returns:
+-        dict(str, dict(str, int)) : the input statistics with missing
+-            values filled with zero.
+-    """
+-    out_stats = {name: stat.copy() for name, stat in statistics.items()}
+-    for mod_name, _ in model.named_modules():
+-        for stat in out_stats.values():
+-            if mod_name not in stat:
+-                stat[mod_name] = 0
+-    return out_stats
++def _fill_missing_statistics(model: nn.Module, statistics: Dict[str, Dict[
++    str, int]]) ->Dict[str, Dict[str, int]]:
++    # Get all module names from the model
++    model_modules = set()
++    
++    def get_module_names(module, prefix=""):
++        for name, child in module.named_modules():
++            if name:  # Skip the root module
++                full_name = prefix + ("." if prefix else "") + name
++                model_modules.add(full_name)
++                get_module_names(child, full_name)
++    
++    get_module_names(model)
++    
++    # Find all statistic types across all existing statistics
++    stat_types = set()
++    for stat_dict in statistics.values():
++        stat_types.update(stat_dict.keys())
++    
++    # Create result with all model modules
++    result = {}
++    for module_name in model_modules:
++        if module_name in statistics:
++            result[module_name] = statistics[module_name].copy()
++        else:
++            # Create entry with zero values for all statistic types
++            result[module_name] = {stat_type: 0 for stat_type in stat_types}
++    
++    # Copy any existing statistics that might be for the root or other modules
++    for module_name, stat_dict in statistics.items():
++        if module_name in model_modules or module_name == "":
++            result[module_name] = stat_dict.copy()
++    
++    return result
+ 
+ 
+ ### Model String Printing ###

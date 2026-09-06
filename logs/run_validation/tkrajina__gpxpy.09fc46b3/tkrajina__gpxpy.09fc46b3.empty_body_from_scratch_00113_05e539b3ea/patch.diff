@@ -1,0 +1,32 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -707,27 +707,8 @@
+         """
+         self.points = mod_geo.simplify_polyline(self.points, max_distance) # type: ignore
+ 
+-    def reduce_points(self, min_distance: float) -> None:
+-        """
+-        Reduces the number of points in the track segment. Segment points will
+-        be updated in place.
+-
+-        Parameters
+-        ----------
+-        min_distance : float
+-            The minimum separation in meters between points
+-        """
+-        reduced_points: List[GPXTrackPoint] = []
+-        for point in self.points:
+-            if reduced_points:
+-                distance = reduced_points[-1].distance_3d(point)
+-                if min_distance is not None and distance is not None and distance >= min_distance:
+-                    reduced_points.append(point)
+-            else:
+-                # Leave first point:
+-                reduced_points.append(point)
+-
+-        self.points = reduced_points
++    def reduce_points(self, min_distance: float) ->None:
++        pass
+ 
+     def adjust_time(self, delta: mod_datetime.timedelta) -> None:
+         """

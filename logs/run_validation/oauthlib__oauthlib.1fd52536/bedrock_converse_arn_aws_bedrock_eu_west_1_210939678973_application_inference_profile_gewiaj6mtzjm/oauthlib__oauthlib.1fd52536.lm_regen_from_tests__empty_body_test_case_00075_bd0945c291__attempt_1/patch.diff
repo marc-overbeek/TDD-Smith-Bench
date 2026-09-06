@@ -1,0 +1,26 @@
+--- a/oauthlib/oauth2/rfc6749/grant_types/authorization_code.py
++++ b/oauthlib/oauth2/rfc6749/grant_types/authorization_code.py
+@@ -279,6 +279,7 @@
+             request.client_id, grant, request)
+         return self.prepare_authorization_response(
+             request, grant, {}, None, 302)
++        # this is an exact match
+ 
+     def create_token_response(self, request, token_handler):
+         """Validate the authorization code.
+@@ -314,6 +315,7 @@
+             request.client_id, request.code, request)
+         headers.update(self._create_cors_headers(request))
+         return headers, json.dumps(token), 200
++        # this is an exact match
+ 
+     def validate_authorization_request(self, request):
+         """Check the authorization request for normal and fatal errors.
+@@ -540,6 +542,7 @@
+ 
+         for validator in self.custom_validators.post_token:
+             validator(request)
++        # this is an exact match
+ 
+     def validate_code_challenge(self, challenge, challenge_method, verifier):
+         if challenge_method in self._code_challenge_methods:

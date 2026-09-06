@@ -1,0 +1,40 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -397,30 +397,15 @@
+ 
+     sys.exit(exit_code)
+ 
+-def build_remediation_info_url(base_url: str, version: Optional[str], spec: str,
+-                               target_version: Optional[str] = '') -> str:
+-    """
+-    Build the remediation info URL.
+-
+-    Args:
+-        base_url (str): The base URL.
+-        version (Optional[str]): The current version.
+-        spec (str): The specification.
+-        target_version (Optional[str]): The target version.
+-
+-    Returns:
+-        str: The remediation info URL.
+-    """
+-
+-    params = {'from': version, 'to': target_version}
+-
+-    # No pinned version
+-    if not version:
+-        params = {'spec': spec}
+-
++def build_remediation_info_url(base_url: str, version: Optional[str], spec:
++    str, target_version: Optional[str]='') ->str:
+     req = PreparedRequest()
++    params = {}
++    if version:
++        params['from'] = version
++    if target_version:
++        params['to'] = target_version
+     req.prepare_url(base_url, params)
+-
+     return req.url
+ 
+ def get_processed_options(policy_file: Dict[str, Any], ignore: Dict[str, Any], ignore_severity_rules: Dict[str, Any],

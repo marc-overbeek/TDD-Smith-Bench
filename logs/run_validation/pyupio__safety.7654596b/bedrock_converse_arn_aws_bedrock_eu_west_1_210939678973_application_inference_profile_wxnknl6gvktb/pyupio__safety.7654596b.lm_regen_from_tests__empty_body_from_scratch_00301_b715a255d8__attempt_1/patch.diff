@@ -1,0 +1,81 @@
+--- a/safety/scan/ecosystems/python/main.py
++++ b/safety/scan/ecosystems/python/main.py
+@@ -95,55 +95,31 @@
+             specifications=specifications)
+ 
+ 
+-def should_fail(config: ConfigModel, vulnerability: Vulnerability) -> bool:
+-    """
+-    Determines if a vulnerability should cause a failure based on the configuration.
+-
+-    Args:
+-        config (ConfigModel): The configuration model.
+-        vulnerability (Vulnerability): The vulnerability.
+-
+-    Returns:
+-        bool: True if the vulnerability should cause a failure, False otherwise.
+-    """
+-
++def should_fail(config: ConfigModel, vulnerability: Vulnerability) ->bool:
+     if not config.depedendency_vulnerability.fail_on.enabled:
+         return False
+-
+-    # If Severity is None type, it will be considered as UNKNOWN and NONE
+-    # They are not the same, but we are handling like the same when a
+-    # vulnerability does not have a severity value.
+-    severities = [VulnerabilitySeverityLabels.NONE,
+-                  VulnerabilitySeverityLabels.UNKNOWN]
+-
+-    if vulnerability.severity and vulnerability.severity.cvssv3:
+-        base_severity = vulnerability.severity.cvssv3.get(
+-            "base_severity")
+-
+-        if base_severity:
+-            base_severity = base_severity.lower()
+-
+-        # A vulnerability only has a single severity value, this is just
+-        # to handle cases where the severity value is not in the expected
+-        # format and fallback to the default severity values [None, unknown].
+-        matched_severities = [
+-            label
+-            for label in VulnerabilitySeverityLabels
+-            if label.value == base_severity
+-        ]
+-
+-        if matched_severities:
+-            severities = matched_severities
+-        else:
+-            LOG.warning(
+-                f"Unexpected base severity value {base_severity} for "
+-                f"{vulnerability.vulnerability_id}"
+-            )
+-
+-    return any(
+-        severity in config.depedendency_vulnerability.fail_on.cvss_severity
+-        for severity in severities
+-    )
++    
++    fail_on_severities = config.depedendency_vulnerability.fail_on.cvss_severity
++    if not fail_on_severities:
++        return False
++    
++    # Determine the vulnerability severity
++    severity_label = None
++    
++    if vulnerability.severity is None:
++        # When severity is None, treat as UNKNOWN or NONE
++        severity_label = VulnerabilitySeverityLabels.UNKNOWN
++    elif vulnerability.severity.cvssv3 and vulnerability.severity.cvssv3.get("base_severity"):
++        base_severity = vulnerability.severity.cvssv3["base_severity"].upper()
++        try:
++            severity_label = VulnerabilitySeverityLabels(base_severity.lower())
++        except ValueError:
++            LOG.warning(f"Unexpected base severity value: {base_severity}")
++            return False
++    else:
++        severity_label = VulnerabilitySeverityLabels.UNKNOWN
++    
++    return severity_label in fail_on_severities
+ 
+ 
+ def get_vulnerability(

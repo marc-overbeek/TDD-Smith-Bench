@@ -1,0 +1,26 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -481,7 +481,22 @@
+ 
+ class NoOpRewriter(TypeRewriter):
+     def rewrite(self, typ):
+-        return typ
++        if is_any(typ):
++            typname = "Any"
++        elif is_union(typ):
++            typname = "Union"
++        elif is_typed_dict(typ):
++            typname = "TypedDict"
++        elif is_generic(typ):
++            typname = name_of_generic(typ)
++        else:
++            typname = getattr(typ, "__name__", None)
++        rewriter = getattr(self, "rewrite_" + typname, None) if typname else None
++        if rewriter:
++            return rewriter(typ)
++        if isinstance(typ, TypeVar):
++            return self.rewrite_type_variable(typ)
++        return self.generic_rewrite(typ)
+ 
+ 
+ class RewriteGenerator(TypeRewriter):

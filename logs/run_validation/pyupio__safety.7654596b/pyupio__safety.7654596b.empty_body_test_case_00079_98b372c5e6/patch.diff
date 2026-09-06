@@ -1,0 +1,63 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -230,15 +230,8 @@
+     return used_options
+ 
+ 
+-def get_safety_version() -> str:
+-    """
+-    Get the version of Safety.
+-
+-    Returns:
+-        str: The Safety version.
+-    """
+-    from safety import VERSION
+-    return VERSION
++def get_safety_version() ->str:
++    pass
+ 
+ 
+ def get_primary_announcement(announcements: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+@@ -1067,41 +1060,7 @@
+ 
+ 
+ def sync_safety_context(f):
+-    """
+-    Decorator to sync the Safety context with the function arguments.
+-    """
+-    def new_func(*args, **kwargs):
+-        ctx = SafetyContext()
+-
+-        legacy_key_added = False
+-        if "session" in kwargs:
+-            legacy_key_added = True
+-            kwargs["key"] = kwargs.get("session").api_key
+-
+-        for attr in dir(ctx):
+-            if attr in kwargs:
+-                setattr(ctx, attr, kwargs.get(attr))
+-
+-        if legacy_key_added:
+-            kwargs.pop("key")
+-
+-        return f(*args, **kwargs)
+-
+-    return new_func
+-
+-
+-@sync_safety_context
+-def get_packages_licenses(*, packages: Optional[List[Package]] = None, licenses_db: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+-    """
+-    Get the licenses for the specified packages based on their version.
+-
+-    Args:
+-        packages (Optional[List[Package]]): The list of packages.
+-        licenses_db (Optional[Dict[str, Any]]): The licenses database.
+-
+-    Returns:
+-        List[Dict[str, Any]]: The list of packages and their licenses.
+-    """
++    pass
+     SafetyContext().command = 'license'
+ 
+     if not packages:

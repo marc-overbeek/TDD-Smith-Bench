@@ -1,0 +1,104 @@
+--- a/safety/models.py
++++ b/safety/models.py
+@@ -52,48 +52,12 @@
+     """
+     A subclass of Requirement that includes additional attributes and methods for safety requirements.
+     """
+-    def __init__(self, requirement: Union[str, Dependency], found: Optional[str] = None) -> None:
+-        """
+-        Initialize a SafetyRequirement.
+-
+-        Args:
+-            requirement (Union[str, Dependency]): The requirement as a string or Dependency object.
+-            found (Optional[str], optional): Where the requirement was found. Defaults to None.
+-
+-        Raises:
+-            InvalidRequirementError: If the requirement cannot be parsed.
+-        """
+-        dep = requirement
+-
+-        if isinstance(requirement, str):
+-            deps = parse(requirement, file_type=filetypes.requirements_txt).dependencies
+-            dep = deps[0] if deps else None
+-
+-        if not dep:
+-            raise InvalidRequirementError(line=str(requirement))
+-
+-        raw_line = dep.line
+-        to_parse = dep.line
+-        # Hash and comments are only a pip feature, so removing them.
+-        if '#' in to_parse:
+-            to_parse = dep.line.split('#')[0]
+-
+-        for req_hash in dep.hashes:
+-            to_parse = to_parse.replace(req_hash, '')
+-
+-        to_parse = to_parse.replace('\\', '').rstrip()
+-
+-        try:
+-            # Try to build a PEP Requirement from the cleaned line
+-            super(SafetyRequirement, self).__init__(to_parse)
+-        except Exception:
+-            raise InvalidRequirementError(line=requirement.line if isinstance(requirement, Dependency) else requirement)
+-
+-        self.raw = raw_line
+-        self.found = found
+-
+-    def __eq__(self, other: Any) -> bool:
+-        return str(self) == str(other)
++    def __init__(self, requirement: Union[str, Dependency], found: Optional[str
++        ]=None) ->None:
++        pass
++
++    def __eq__(self, other: Any) ->bool:
++        pass
+ 
+     def to_dict(self, **kwargs: Any) -> Dict:
+         """
+@@ -175,41 +139,11 @@
+         """
+         return filter(lambda r: not is_pinned_requirement(r.specifier), self.requirements)
+ 
+-    def filter_by_supported_versions(self, versions: List[str]) -> List[str]:
+-        """
+-        Filter the versions by supported versions.
+-
+-        Args:
+-            versions (List[str]): The list of versions.
+-
+-        Returns:
+-            List[str]: The list of supported versions.
+-        """
+-        allowed = []
+-
+-        for version in versions:
+-            try:
+-                parse_version(version)
+-                allowed.append(version)
+-            except Exception:
+-                pass
+-
+-        return allowed
+-
+-    def get_versions(self, db_full: Dict) -> Set[str]:
+-        """
+-        Get the versions from the database.
+-
+-        Args:
+-            db_full (Dict): The full database.
+-
+-        Returns:
+-            Set[str]: The set of versions.
+-        """
+-        pkg_meta = db_full.get('meta', {}).get('packages', {}).get(self.name, {})
+-        versions = self.filter_by_supported_versions(
+-            pkg_meta.get("insecure_versions", []) + pkg_meta.get("secure_versions", []))
+-        return set(versions)
++    def filter_by_supported_versions(self, versions: List[str]) ->List[str]:
++        pass
++
++    def get_versions(self, db_full: Dict) ->Set[str]:
++        pass
+ 
+     def refresh_from(self, db_full: Dict) -> None:
+         """

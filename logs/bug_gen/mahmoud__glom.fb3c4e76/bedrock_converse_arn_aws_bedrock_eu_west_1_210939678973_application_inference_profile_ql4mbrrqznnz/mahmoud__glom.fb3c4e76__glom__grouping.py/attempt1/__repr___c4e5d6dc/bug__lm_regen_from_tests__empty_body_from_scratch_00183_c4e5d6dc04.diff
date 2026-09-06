@@ -1,0 +1,14 @@
+--- a/glom/grouping.py
++++ b/glom/grouping.py
+@@ -213,6 +213,11 @@
+             tree[self] = target
+         return tree[self]
+ 
++    assert repr(Count()) == 'Count()'
++
++    assert glom(range(10), Group({(lambda t: t % 2): Count()})) == {(0): 5, (1): 5}
++    assert repr(Count()) == 'Count()'
++
+     def __repr__(self):
+         return '%s()' % self.__class__.__name__
+ 

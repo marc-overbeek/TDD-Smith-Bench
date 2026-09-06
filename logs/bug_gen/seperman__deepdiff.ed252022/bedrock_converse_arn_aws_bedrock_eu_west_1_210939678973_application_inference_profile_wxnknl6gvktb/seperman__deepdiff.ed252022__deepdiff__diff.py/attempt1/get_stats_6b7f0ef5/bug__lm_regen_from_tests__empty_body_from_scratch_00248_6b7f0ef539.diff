@@ -1,0 +1,24 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -1796,6 +1796,21 @@
+         logger.error(msg)
+         raise ValueError(msg)
+ 
++    self._stats = {
++        PASSES_COUNT: 0,
++        DIFF_COUNT: 0,
++        DISTANCE_CACHE_HIT_COUNT: 0,
++        PREVIOUS_DIFF_COUNT: 0,
++        PREVIOUS_DISTANCE_CACHE_HIT_COUNT: 0,
++        MAX_PASS_LIMIT_REACHED: False,
++        MAX_DIFF_LIMIT_REACHED: False,
++        DISTANCE_CACHE_ENABLED: bool(cache_size),
++    }
++
++    for key in (PREVIOUS_DIFF_COUNT, PREVIOUS_DISTANCE_CACHE_HIT_COUNT,
++                DISTANCE_CACHE_ENABLED):
++        del self._stats[key]
++
+     def get_stats(self):
+         """
+         Get some stats on internals of the DeepDiff run.

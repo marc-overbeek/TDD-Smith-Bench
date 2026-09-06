@@ -1,0 +1,70 @@
+--- a/monkeytype/tracing.py
++++ b/monkeytype/tracing.py
+@@ -24,26 +24,12 @@
+ class CallTrace:
+     """CallTrace contains the types observed during a single invocation of a function"""
+ 
+-    def __init__(
+-        self,
+-        func: Callable[..., Any],
+-        arg_types: Dict[str, type],
+-        return_type: Optional[type] = None,
+-        yield_type: Optional[type] = None,
+-    ) -> None:
+-        """
+-        Args:
+-            func: The function where the trace occurred
+-            arg_types: The collected argument types
+-            return_type: The collected return type. This will be None if the called function returns
+-                due to an unhandled exception. It will be NoneType if the function returns the value None.
+-            yield_type: The collected yield type. This will be None if the called function never
+-                yields. It will be NoneType if the function yields the value None.
+-        """
+-        self.func = func
+-        self.arg_types = arg_types
+-        self.return_type = return_type
+-        self.yield_type = yield_type
++    def __init__(self, func: Callable[..., Any], arg_types: Dict[str, type],
++        return_type: Optional[type]=None, yield_type: Optional[type]=None) ->None:
++            self.func = func
++            self.arg_types = arg_types
++            self.return_type = return_type
++            self.yield_type = yield_type
+ 
+     def __eq__(self, other: object) -> bool:
+         if isinstance(other, self.__class__):
+@@ -58,15 +44,15 @@
+             self.yield_type,
+         )
+ 
+-    def __hash__(self) -> int:
+-        return hash(
+-            (
+-                self.func,
+-                frozenset(self.arg_types.items()),
+-                self.return_type,
+-                self.yield_type,
++    def __hash__(self) ->int:
++            return hash(
++                (
++                    self.func,
++                    frozenset(self.arg_types.items()),
++                    self.return_type,
++                    self.yield_type,
++                )
+             )
+-        )
+ 
+     def add_yield_type(self, typ: type) -> None:
+         if self.yield_type is None:
+@@ -75,8 +61,8 @@
+             self.yield_type = cast(type, Union[self.yield_type, typ])
+ 
+     @property
+-    def funcname(self) -> str:
+-        return get_func_fqname(self.func)
++    def funcname(self) ->str:
++            return get_func_fqname(self.func)
+ 
+ 
+ class CallTraceLogger(metaclass=ABCMeta):

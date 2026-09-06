@@ -1,0 +1,18 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1377,6 +1377,15 @@
+ 
+         return len(self.points) > 2 and found / len(self.points) > .75
+ 
++
++    def test_nearest_part(gpx_part: Union[mod_gpx.GPX, mod_gpx.
++        GPXTrack, mod_gpx.GPXTrackSegment], loc: mod_geo.Location
++        ) ->mod_gpx.NearestLocationData:
++        nearest_loc_info = gpx_part.get_nearest_location(loc)
++        print(gpx_part, nearest_loc_info)  # <-- This calls __repr__
++
++    def __repr__(self) ->str:
++        pass
+ 
+     def __repr__(self) -> str:
+         return f'GPXTrackSegment(points=[{"..." if self.points else ""}])'

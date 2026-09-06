@@ -1,0 +1,114 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -52,21 +52,17 @@
+     return is_generic(typ) and name_of_generic(typ) == "List"
+ 
+ 
+-def make_typed_dict(*, required_fields=None, optional_fields=None) -> type:
+-    required_fields = required_fields or {}
+-    optional_fields = optional_fields or {}
+-    assert required_fields.keys().isdisjoint(optional_fields.keys())
+-    return TypedDict(
+-        DUMMY_TYPED_DICT_NAME,
+-        {
+-            "required_fields": TypedDict(
+-                DUMMY_REQUIRED_TYPED_DICT_NAME, required_fields
+-            ),
+-            "optional_fields": TypedDict(
+-                DUMMY_OPTIONAL_TYPED_DICT_NAME, optional_fields
+-            ),
+-        },
+-    )
++def make_typed_dict(*, required_fields=None, optional_fields=None) ->type:
++    if required_fields is None:
++        required_fields = {}
++    if optional_fields is None:
++        optional_fields = {}
++    required_td = TypedDict(DUMMY_REQUIRED_TYPED_DICT_NAME, required_fields)
++    optional_td = TypedDict(DUMMY_OPTIONAL_TYPED_DICT_NAME, optional_fields, total=False)
++    return TypedDict(DUMMY_TYPED_DICT_NAME, {
++        'required_fields': required_td,
++        'optional_fields': optional_td,
++    })
+ 
+ 
+ def field_annotations(typed_dict) -> Tuple[Dict[str, type], Dict[str, type]]:
+@@ -134,33 +130,23 @@
+ 
+ 
+ def shrink_types(types, max_typed_dict_size):
+-    """Return the smallest type equivalent to Union[types].
+-    If all the types are anonymous TypedDicts, shrink them ourselves.
+-    Otherwise, recursively turn the anonymous TypedDicts into Dicts.
+-    Union will handle deduplicating types (both by equality and subtype relationships).
+-    """
+-    types = tuple(types)
+-    if len(types) == 0:
++    types = list(types)
++    if not types:
+         return Any
+-    if all(is_anonymous_typed_dict(typ) for typ in types):
+-        return shrink_typed_dict_types(types, max_typed_dict_size)
+-    # Don't rewrite anonymous TypedDict to Dict if the types are all the same,
+-    # such as [Tuple[TypedDict(...)], Tuple[TypedDict(...)]].
+-    if all(types_equal(typ, types[0]) for typ in types[1:]):
+-        return types[0]
+-
+-    # If they are all lists, shrink their argument types. This way, we avoid
+-    # rewriting heterogeneous anonymous TypedDicts to Dict.
+-    if all(is_list(typ) for typ in types):
+-        annotation = shrink_types(
+-            (getattr(typ, "__args__")[0] for typ in types), max_typed_dict_size
+-        )
+-        return List[annotation]
+-
+-    all_dict_types = tuple(
+-        RewriteAnonymousTypedDictToDict().rewrite(typ) for typ in types
+-    )
+-    return Union[all_dict_types]
++    typed_dicts = [t for t in types if is_anonymous_typed_dict(t)]
++    non_typed_dicts = [t for t in types if not is_anonymous_typed_dict(t)]
++    if typed_dicts and not non_typed_dicts:
++        return shrink_typed_dict_types(typed_dicts, max_typed_dict_size)
++    if typed_dicts and non_typed_dicts:
++        shrunk_typed_dict = shrink_typed_dict_types(typed_dicts, max_typed_dict_size)
++        non_typed_dicts.append(shrunk_typed_dict)
++        types = non_typed_dicts
++    else:
++        types = non_typed_dicts
++    unique = list(dict.fromkeys(types))
++    if len(unique) == 1:
++        return unique[0]
++    return Union[tuple(unique)]
+ 
+ 
+ def make_iterator(typ):
+@@ -281,7 +267,7 @@
+         args = getattr(container, "__args__", None)
+         if args is None:
+             return self.rewrite_malformed_container(container)
+-        elif args == ((),):  # special case of empty tuple `Tuple[()]`
++        elif args == ((),):
+             elems = self.make_builtin_tuple(())
+         else:
+             elems = self.make_builtin_tuple(
+@@ -462,11 +448,14 @@
+     def rewrite_anonymous_TypedDict(self, typed_dict):
+         assert is_anonymous_typed_dict(typed_dict)
+         required_fields, optional_fields = field_annotations(typed_dict)
+-        all_value_types = [*required_fields.values(), *optional_fields.values()]
+-        if not all_value_types:
+-            # Special-case this because we can't justify any type.
+-            return Dict[Any, Any]
+-        return Dict[str, Union[tuple(self.rewrite(typ) for typ in all_value_types)]]
++        return self.make_anonymous_typed_dict(
++            required_fields={
++                name: self.rewrite(typ) for name, typ in required_fields.items()
++            },
++            optional_fields={
++                name: self.rewrite(typ) for name, typ in optional_fields.items()
++            },
++        )
+ 
+ 
+ class ChainedRewriter(TypeRewriter):

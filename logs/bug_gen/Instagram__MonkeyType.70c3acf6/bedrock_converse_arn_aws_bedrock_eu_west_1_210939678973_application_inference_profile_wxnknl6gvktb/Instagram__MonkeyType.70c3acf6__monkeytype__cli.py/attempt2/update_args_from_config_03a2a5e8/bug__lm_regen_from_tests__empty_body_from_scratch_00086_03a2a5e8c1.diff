@@ -1,0 +1,25 @@
+--- a/monkeytype/cli.py
++++ b/monkeytype/cli.py
+@@ -288,9 +288,20 @@
+ 
+ 
+ def update_args_from_config(args: argparse.Namespace) -> None:
+-    """Pull values from config for unspecified arguments."""
+     if args.limit is None:
+-        args.limit = args.config.query_limit()
++        args.limit = args.config.default_limit()
++    
++    # Set defaults for attributes that may not exist depending on subcommand
++    if not hasattr(args, 'existing_annotation_strategy'):
++        args.existing_annotation_strategy = ExistingAnnotationStrategy.REPLICATE
++    if not hasattr(args, 'disable_type_rewriting'):
++        args.disable_type_rewriting = False
++    if not hasattr(args, 'verbose'):
++        args.verbose = False
++    if not hasattr(args, 'sample_count'):
++        args.sample_count = False
++    if not hasattr(args, 'pep_563'):
++        args.pep_563 = False
+ 
+ 
+ def main(argv: List[str], stdout: IO[str], stderr: IO[str]) -> int:

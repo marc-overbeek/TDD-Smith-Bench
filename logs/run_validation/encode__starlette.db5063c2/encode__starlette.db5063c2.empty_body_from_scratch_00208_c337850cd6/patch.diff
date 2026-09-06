@@ -1,0 +1,28 @@
+--- a/starlette/applications.py
++++ b/starlette/applications.py
+@@ -227,23 +227,5 @@
+ 
+         return decorator
+ 
+-    def middleware(self, middleware_type: str) -> typing.Callable:  # type: ignore[type-arg]
+-        """
+-        We no longer document this decorator style API, and its usage is discouraged.
+-        Instead you should use the following approach:
+-
+-        >>> middleware = [Middleware(...), ...]
+-        >>> app = Starlette(middleware=middleware)
+-        """
+-        warnings.warn(
+-            "The `middleware` decorator is deprecated, and will be removed in version 1.0.0. "
+-            "Refer to https://www.starlette.io/middleware/#using-middleware for recommended approach.",
+-            DeprecationWarning,
+-        )
+-        assert middleware_type == "http", 'Currently only middleware("http") is supported.'
+-
+-        def decorator(func: typing.Callable) -> typing.Callable:  # type: ignore[type-arg]
+-            self.add_middleware(BaseHTTPMiddleware, dispatch=func)
+-            return func
+-
+-        return decorator
++    def middleware(self, middleware_type: str) ->typing.Callable:
++        pass

@@ -1,0 +1,47 @@
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -101,18 +101,32 @@
+     return getattr(endpoint, "__name__", endpoint.__class__.__name__)
+ 
+ 
+-def replace_params(
+-    path: str,
+-    param_convertors: dict[str, Convertor[typing.Any]],
+-    path_params: dict[str, str],
+-) -> tuple[str, dict[str, str]]:
+-    for key, value in list(path_params.items()):
+-        if "{" + key + "}" in path:
+-            convertor = param_convertors[key]
+-            value = convertor.to_string(value)
+-            path = path.replace("{" + key + "}", value)
+-            path_params.pop(key)
+-    return path, path_params
++def replace_params(path: str, param_convertors: dict[str, Convertor[typing.
++    Any]], path_params: dict[str, str]) ->tuple[str, dict[str, str]]:
++    result = path
++    remaining_params = path_params.copy()
++    
++    # Find all parameter placeholders in the path
++    for match in PARAM_REGEX.finditer(path):
++        param_name, convertor_type = match.groups("str")
++        convertor_type = convertor_type.lstrip(":") if convertor_type else "str"
++        
++        if param_name in remaining_params:
++            value = remaining_params[param_name]
++            # Validate and convert the parameter value
++            convertor = param_convertors.get(param_name) or CONVERTOR_TYPES[convertor_type]
++            try:
++                converted_value = convertor.convert(value)
++            except Exception:
++                # If conversion fails, keep original value
++                converted_value = value
++            
++            # Replace the parameter placeholder with the converted value
++            escaped_param = re.escape("{" + param_name + (":" + convertor_type if convertor_type != "str" else ""))
++            result = re.sub(escaped_param, converted_value, result, count=1)
++            del remaining_params[param_name]
++    
++    return result, remaining_params
+ 
+ 
+ # Match parameters in URL paths, eg. '{param}', and '{param:int}'

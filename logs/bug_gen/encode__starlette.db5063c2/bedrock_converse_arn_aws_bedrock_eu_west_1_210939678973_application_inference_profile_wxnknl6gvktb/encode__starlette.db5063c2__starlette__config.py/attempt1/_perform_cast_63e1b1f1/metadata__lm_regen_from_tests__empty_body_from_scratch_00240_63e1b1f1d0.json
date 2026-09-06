@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef _perform_cast(\n    self,\n    key: str,\n    value: typing.Any,\n    cast: typing.Callable[[typing.Any], typing.Any] | None = None,\n) -> typing.Any:\n    if cast is None or value is None:\n        return value\n    elif cast is bool and isinstance(value, str):\n        mapping = {\"true\": True, \"1\": True, \"false\": False, \"0\": False}\n        value = value.lower()\n        if value not in mapping:\n            raise ValueError(f\"Config '{key}' has value '{value}'. Not a valid bool.\")\n        return mapping[value]\n    try:\n        return cast(value)\n    except (TypeError, ValueError):\n        raise ValueError(f\"Config '{key}' has value '{value}'. Not a valid {cast.__name__}.\")\n```",
+  "rewrite": "def _perform_cast(\n    self,\n    key: str,\n    value: typing.Any,\n    cast: typing.Callable[[typing.Any], typing.Any] | None = None,\n) -> typing.Any:\n    if cast is None or value is None:\n        return value\n    elif cast is bool and isinstance(value, str):\n        mapping = {\"true\": True, \"1\": True, \"false\": False, \"0\": False}\n        value = value.lower()\n        if value not in mapping:\n            raise ValueError(f\"Config '{key}' has value '{value}'. Not a valid bool.\")\n        return mapping[value]\n    try:\n        return cast(value)\n    except (TypeError, ValueError):\n        raise ValueError(f\"Config '{key}' has value '{value}'. Not a valid {cast.__name__}.\")\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

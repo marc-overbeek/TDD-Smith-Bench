@@ -1,0 +1,91 @@
+--- a/oauthlib/oauth1/rfc5849/signature.py
++++ b/oauthlib/oauth1/rfc5849/signature.py
+@@ -595,66 +595,30 @@
+     return alg.prepare_key(keystr)
+ 
+ 
+-def _sign_rsa(hash_algorithm_name: str,
+-              sig_base_str: str,
+-              rsa_private_key: str):
+-    """
+-    Calculate the signature for an RSA-based signature method.
+-
+-    The ``alg`` is used to calculate the digest over the signature base string.
+-    For the "RSA_SHA1" signature method, the alg must be SHA-1. While OAuth 1.0a
+-    only defines the RSA-SHA1 signature method, this function can be used for
+-    other non-standard signature methods that only differ from RSA-SHA1 by the
+-    digest algorithm.
+-
+-    Signing for the RSA-SHA1 signature method is defined in
+-    `section 3.4.3`_ of RFC 5849.
+-
+-    The RSASSA-PKCS1-v1_5 signature algorithm used defined by
+-    `RFC3447, Section 8.2`_ (also known as PKCS#1), with the `alg` as the
+-    hash function for EMSA-PKCS1-v1_5.  To
+-    use this method, the client MUST have established client credentials
+-    with the server that included its RSA public key (in a manner that is
+-    beyond the scope of this specification).
+-
+-    .. _`section 3.4.3`: https://tools.ietf.org/html/rfc5849#section-3.4.3
+-    .. _`RFC3447, Section 8.2`: https://tools.ietf.org/html/rfc3447#section-8.2
+-    """
+-
+-    # Get the implementation of RSA-hash
+-
++def _sign_rsa(hash_algorithm_name: str, sig_base_str: str, rsa_private_key: str
++    ):
++    # Validate input
++    if not rsa_private_key:
++        raise ValueError("RSA private key cannot be empty")
++    
++    # Get the implementation of RSA-with-hash algorithm to use
+     alg = _get_jwt_rsa_algorithm(hash_algorithm_name)
+ 
+-    # Check private key
+-
+-    if not rsa_private_key:
+-        raise ValueError('rsa_private_key required for RSA with ' +
+-                         alg.hash_alg.name + ' signature method')
+-
+-    # Convert the "signature base string" into a sequence of bytes (M)
+-    #
+-    # The signature base string, by definition, only contain printable US-ASCII
+-    # characters. So encoding it as 'ascii' will always work. It will raise a
+-    # ``UnicodeError`` if it can't encode the value, which will never happen
+-    # if the signature base string was created correctly. Therefore, using
+-    # 'ascii' encoding provides an extra level of error checking.
+-
+-    m = sig_base_str.encode('ascii')
+-
+-    # Perform signing: S = RSASSA-PKCS1-V1_5-SIGN (K, M)
+-
+-    key = _prepare_key_plus(alg, rsa_private_key)
+-    s = alg.sign(m, key)
+-
+-    # base64-encoded per RFC2045 section 6.8.
+-    #
+-    # 1. While b2a_base64 implements base64 defined by RFC 3548. As used here,
+-    #    it is the same as base64 defined by RFC 2045.
+-    # 2. b2a_base64 includes a "\n" at the end of its result ([:-1] removes it)
+-    # 3. b2a_base64 produces a binary string. Use decode to produce a str.
+-    #    It should only contain only printable US-ASCII characters.
+-
+-    return binascii.b2a_base64(s)[:-1].decode('ascii')
++    # Prepare the private key
++    try:
++        key = _prepare_key_plus(alg, rsa_private_key)
++    except Exception:
++        raise ValueError("Invalid RSA private key")
++
++    # Sign the signature base string
++    # The signature base string only contains printable US-ASCII characters
++    try:
++        sig = alg.sign(sig_base_str.encode('ascii'), key)
++    except Exception:
++        raise ValueError("Failed to sign with RSA private key")
++
++    # Return base64-encoded signature without trailing newline
++    return binascii.b2a_base64(sig)[:-1].decode('utf-8')
+ 
+ 
+ def _verify_rsa(hash_algorithm_name: str,

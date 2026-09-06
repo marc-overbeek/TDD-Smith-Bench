@@ -1,0 +1,113 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -37,22 +37,47 @@
+ class SimpleTZ(mod_datetime.tzinfo):
+     __slots__ = ('offset',)
+ 
+-    def __init__(self, s: str="") -> None:
++    def __init__(self, s: str="") ->None:
+         self.offset = 0
+-        if s and len(s) >= 2:
++        if s:
++            # Handle different timezone formats
+             if s[0] in ('−', '-'):
+                 mult = -1
+                 s = s[1:]
++            elif s[0] == '+':
++                mult = 1
++                s = s[1:]
+             else:
+-                if s[0] == '+':
+-                    s = s[1:]
+                 mult = 1
+-            hour = int(s[:2]) if s[:2].isdigit() else 0
+-            if len(s) >= 4:
+-                minute = int(s[-2:]) if s[-2:].isdigit() else 0
++            
++            # Parse hours and minutes
++            if len(s) >= 2:
++                try:
++                    hour = int(s[:2])
++                    if len(s) >= 4 and s[2] == ':':
++                        minute = int(s[3:5]) if len(s) >= 5 else 0
++                    elif len(s) >= 4:
++                        minute = int(s[2:4]) if len(s) >= 4 else 0
++                    else:
++                        minute = 0
++                    self.offset = mult * (hour * 60 + minute)
++                except ValueError:
++                    # If parsing fails, keep offset as 0
++                    pass
+             else:
+-                minute = 0
+-            self.offset = mult * (hour * 60 + minute)
++                # Handle cases like 'Z' or empty string
++                if s == 'Z':
++                    self.offset = 0
++                elif s == '+0000' or s == '-0000':
++                    self.offset = 0
++                elif len(s) == 4 and s.isdigit():
++                    # Handle 4-digit format like '0100'
++                    try:
++                        hour = int(s[:2])
++                        minute = int(s[2:])
++                        self.offset = mult * (hour * 60 + minute)
++                    except ValueError:
++                        pass
+ 
+     def utcoffset(self, dt: Optional[mod_datetime.datetime]) -> mod_datetime.timedelta:
+         return mod_datetime.timedelta(minutes=self.offset)
+@@ -556,38 +581,23 @@
+     return ''.join(body)
+ 
+ 
+-def gpx_fields_from_xml(class_or_instance: Any, node: str, version: str) -> Any:
+-    if mod_inspect.isclass(class_or_instance):
+-        result = class_or_instance()
++def gpx_fields_from_xml(class_or_instance: Any, node: str, version: str) ->Any:
++    # Check if class_or_instance is actually a class or an instance
++    if not isinstance(class_or_instance, type):
++        instance = class_or_instance
+     else:
+-        result = class_or_instance
+-
+-    fields = result.gpx_10_fields
++        instance = class_or_instance()
++    
++    fields = instance.gpx_10_fields
+     if version == '1.1':
+-        fields = result.gpx_11_fields
+-
+-    node_path: List[Union[str, int]] = [node]
+-
+-    for gpx_field in fields:
+-        current_node = node_path[-1]
+-        if isinstance(gpx_field, str):
+-            gpx_field = gpx_field.partition(':')[0]
+-            if gpx_field.startswith('/'):
+-                node_path.pop()
+-            else:
+-                if current_node is None:
+-                    node_path.append(None)
+-                else:
+-                    node_path.append(cast(str, current_node).find(gpx_field))
+-        else:
+-            if current_node is not None:
+-                value = gpx_field.from_xml(current_node, version)
+-                setattr(result, gpx_field.name, value)
+-            elif gpx_field.attribute:
+-                value = gpx_field.from_xml(node, version)
+-                setattr(result, gpx_field.name, value)
+-
+-    return result
++        fields = instance.gpx_11_fields
++
++    for field in fields:
++        if not isinstance(field, str):
++            value = field.from_xml(node, version)
++            setattr(instance, field.name, value)
++
++    return instance
+ 
+ def gpx_check_slots_and_default_values(classs: Callable[[], Any]) -> None:
+     """

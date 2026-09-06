@@ -1,0 +1,29 @@
+--- a/starlette/schemas.py
++++ b/starlette/schemas.py
+@@ -116,7 +116,25 @@
+             # a simple string here, which wouldn't follow the schema.
+             return {}
+ 
+-        return parsed
++        result = {}
++    
++        # Handle description
++        if "description" in parsed:
++            result["responses"] = {
++                200: {
++                    "description": parsed["description"]
++                }
++            }
++        
++            # Handle examples if present
++            if "examples" in parsed:
++                examples = parsed["examples"]
++                if isinstance(examples, list):
++                    result["responses"][200]["examples"] = examples
++                else:
++                    result["responses"][200]["examples"] = examples
++    
++        return result
+ 
+     def OpenAPIResponse(self, request: Request) -> Response:
+         routes = request.app.routes

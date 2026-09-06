@@ -1,0 +1,57 @@
+--- a/safety/scan/ecosystems/python/dependencies.py
++++ b/safety/scan/ecosystems/python/dependencies.py
+@@ -141,51 +141,9 @@
+     return req
+ 
+ 
+-def read_requirements(fh, resolve: bool = True) -> Generator[PythonDependency, None, None]:
+-    """
+-    Reads requirements from a file-like object and (optionally) from referenced files.
+-
+-    Args:
+-        fh: The file-like object to read from.
+-        resolve (bool): Whether to resolve referenced files.
+-
+-    Returns:
+-        Generator[PythonDependency, None, None]: A generator of PythonDependency objects.
+-    """
+-    is_temp_file = not hasattr(fh, 'name')
+-    path = None
+-    found = Path('temp_file')
+-    file_type = filetypes.requirements_txt
+-    absolute_path: Optional[Path] = None
+-
+-    if not is_temp_file and is_supported_by_parser(fh.name):
+-        path = fh.name
+-        absolute_path = Path(path).resolve()
+-        found = absolute_path
+-        file_type = None
+-
+-    content = fh.read()
+-    dependency_file = parse(content, path=path, resolve=resolve,
+-                            file_type=file_type)
+-
+-    reqs_pkg = defaultdict(list)
+-
+-    for req in dependency_file.resolved_dependencies:
+-        reqs_pkg[canonicalize_name(req.name)].append(req)
+-
+-    for pkg, reqs in reqs_pkg.items():
+-        specifications = list(
+-            map(lambda req: parse_requirement(req, str(absolute_path)), reqs))
+-        version = find_version(specifications)
+-
+-        yield PythonDependency(name=pkg, version=version,
+-                      specifications=specifications,
+-                      found=found,
+-                      absolute_path=absolute_path,
+-                      insecure_versions=[],
+-                      secure_versions=[], latest_version=None,
+-                      latest_version_without_known_vulnerabilities=None,
+-                      more_info_url=None)
++def read_requirements(fh, resolve: bool=True) ->Generator[PythonDependency,
++    None, None]:
++    pass
+ 
+ 
+ def read_dependencies(fh, resolve: bool = True) -> Generator[PythonDependency, None, None]:

@@ -1,0 +1,60 @@
+--- a/glom/mutation.py
++++ b/glom/mutation.py
+@@ -48,14 +48,50 @@
+ 
+ 
+ def _apply_for_each(func, path, val):
+-    layers = path.path_t.__stars__()
+-    if layers:
+-        for i in range(layers - 1):
+-            val = sum(val, [])  # flatten out the extra layers
+-        for inner in val:
+-            func(inner)
++    """Apply a function to each destination in a path that may contain wildcards.
++    
++    Args:
++        func: Function to apply to each destination
++        path: A Path object that may contain wildcard operators
++        val: The current value/destination to start from
++    """
++    path_items = path.items()
++    
++    # Check if path contains any wildcard operators
++    has_wildcard = any(op == '*' for op, _ in path_items)
++    
++    if not has_wildcard:
++        # No wildcards, just apply the function once
++        func(val)
+     else:
+-        func(val)
++        # Has wildcards, need to apply to each matching element
++        def _apply_recursive(current_val, item_idx):
++            if item_idx >= len(path_items):
++                # We've traversed the entire path, apply the function
++                func(current_val)
++                return
++            
++            op, arg = path_items[item_idx]
++            
++            if op == '*':
++                # Iterate through current_val
++                if hasattr(current_val, '__iter__') and not isinstance(current_val, (str, bytes)):
++                    for item in current_val:
++                        _apply_recursive(item, item_idx + 1)
++            else:
++                # Navigate to the next level
++                if op == '[':
++                    next_val = current_val[arg]
++                elif op == '.':
++                    next_val = getattr(current_val, arg)
++                elif op == 'P':
++                    # Path operation, just navigate
++                    next_val = current_val[arg]
++                else:
++                    next_val = current_val
++                _apply_recursive(next_val, item_idx + 1)
++        
++        _apply_recursive(val, 0)
+ 
+ 
+ class Assign:

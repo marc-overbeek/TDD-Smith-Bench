@@ -1,0 +1,34 @@
+--- a/monkeytype/type_checking_imports_transformer.py
++++ b/monkeytype/type_checking_imports_transformer.py
+@@ -76,27 +76,10 @@
+             body=import_module.body,
+         )
+ 
+-    def _split_module(self, module: Module) -> Tuple[
+-        List[Union[SimpleStatementLine, BaseCompoundStatement]],
+-        List[Union[SimpleStatementLine, BaseCompoundStatement]],
+-    ]:
+-        type_checking_block_add_location = 0
+-        gatherer = GatherImportsVisitor(self.context)
+-        module.visit(gatherer)
+-        all_imports = gatherer.all_imports
+-
+-        for i, statement in enumerate(module.body):
+-            if isinstance(statement, SimpleStatementLine):
+-                for possible_import in statement.body:
+-                    for last_import in all_imports:
+-                        if possible_import is last_import:
+-                            type_checking_block_add_location = i + 1
+-                            break
+-
+-        return (
+-            list(module.body[:type_checking_block_add_location]),
+-            list(module.body[type_checking_block_add_location:]),
+-        )
++    def _split_module(self, module: Module) ->Tuple[List[Union[
++        SimpleStatementLine, BaseCompoundStatement]], List[Union[
++        SimpleStatementLine, BaseCompoundStatement]]]:
++        pass
+ 
+     def _add_if_type_checking_block(self, module: Module) -> Module:
+         if not self.import_items_to_be_moved:

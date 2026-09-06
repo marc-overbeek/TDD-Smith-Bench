@@ -1,0 +1,37 @@
+--- a/safety/formatter.py
++++ b/safety/formatter.py
+@@ -71,13 +71,6 @@
+     Formatter class that implements the FormatterAPI to render reports in various formats.
+     """
+     def __init__(self, output: str, **kwargs: Any) -> None:
+-        """
+-        Initialize the SafetyFormatter with the specified output format.
+-
+-        Args:
+-            output (str): The output format (e.g., 'json', 'html', 'bare', 'text').
+-            **kwargs: Additional keyword arguments.
+-        """
+         from safety.formatters.screen import ScreenReport
+         from safety.formatters.text import TextReport
+         from safety.formatters.json import JsonReport
+@@ -96,20 +89,6 @@
+             self.format = TextReport(**kwargs)
+ 
+     def render_vulnerabilities(self, announcements: List[Dict[str, Any]], vulnerabilities: List[Dict[str, Any]], remediations: Dict[str, Any], full: bool, packages: List[Dict[str, Any]], fixes: Tuple = ()) -> Optional[str]:
+-        """
+-        Render the vulnerabilities report.
+-
+-        Args:
+-            announcements (List[Dict[str, Any]]): List of announcements.
+-            vulnerabilities (List[Dict[str, Any]]): List of vulnerabilities.
+-            remediations (Dict[str, Any]): Dictionary of remediations.
+-            full (bool): Whether to render a full report.
+-            packages (List[Dict[str, Any]]): List of packages.
+-            fixes (Tuple, optional): Tuple of fixes. Defaults to ().
+-
+-        Returns:
+-            Optional[str]: Rendered vulnerabilities report.
+-        """
+         LOG.info('Safety is going to render_vulnerabilities with format: %s', self.format)
+         return self.format.render_vulnerabilities(announcements, vulnerabilities, remediations, full, packages, fixes)
+ 

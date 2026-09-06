@@ -1,0 +1,504 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -138,73 +138,27 @@
+             LOG.debug('Safety updated the cache file for %s database.', db_name)
+ 
+ 
+-def fetch_database_url(
+-    session: requests.Session,
+-    mirror: str,
+-    db_name: str,
+-    cached: int,
+-    telemetry: bool = True,
+-    ecosystem: Ecosystem = Ecosystem.PYTHON,
+-    from_cache: bool = True
+-) -> Dict[str, Any]:
+-    """
+-    Fetches the database from a URL.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        mirror (str): The URL of the mirror.
+-        db_name (str): The name of the database.
+-        cached (int): The cache validity in seconds.
+-        telemetry (bool): Whether to include telemetry data.
+-        ecosystem (Ecosystem): The ecosystem.
+-        from_cache (bool): Whether to fetch from cache.
+-
+-    Returns:
+-        Dict[str, Any]: The fetched database.
+-    """
+-    headers = {'schema-version': JSON_SCHEMA_VERSION, 'ecosystem': ecosystem.value}
+-
+-    if cached and from_cache:
+-        cached_data = get_from_cache(db_name=db_name, cache_valid_seconds=cached)
+-        if cached_data:
+-            LOG.info('Database %s returned from cache.', db_name)
+-            return cached_data
+-    url = mirror + db_name
+-
+-
+-    telemetry_data = {
+-        'telemetry': json.dumps(build_telemetry_data(telemetry=telemetry),
+-                                default=pydantic_encoder)}
++def fetch_database_url(session: requests.Session, mirror: str, db_name: str,
++    cached: int, telemetry: bool=True, ecosystem: Ecosystem=Ecosystem.
++    PYTHON, from_cache: bool=True) ->Dict[str, Any]:
++    url = f"{mirror}/{ecosystem.value}/{db_name}" if ecosystem else f"{mirror}/{db_name}"
++    cached_data = get_from_cache(db_name, cached) if from_cache else None
++    if cached_data:
++        return cached_data
+ 
+     try:
+-        r = session.get(url=url, timeout=REQUEST_TIMEOUT,
+-                        headers=headers, params=telemetry_data)
+-    except requests.exceptions.ConnectionError:
+-        raise NetworkConnectionError()
+-    except requests.exceptions.Timeout:
+-        raise RequestTimeoutError()
+-    except requests.exceptions.RequestException:
+-        raise DatabaseFetchError()
+-
+-    if r.status_code == 403:
+-        raise InvalidCredentialError(credential=session.get_credential(), reason=r.text)
+-
+-    if r.status_code == 429:
+-        raise TooManyRequestsError(reason=r.text)
+-
+-    if r.status_code != 200:
+-        raise ServerError(reason=r.reason)
+-
+-    try:
+-        data = r.json()
++        response = session.get(url=url, timeout=REQUEST_TIMEOUT)
++        response.raise_for_status()
++        data = response.json()
++        if cached:
++            write_to_cache(db_name, data)
++        return data
++    except requests.exceptions.RequestException as e:
++        LOG.debug(f"Error fetching database from URL: {e}")
++        return {}
+     except json.JSONDecodeError as e:
+-        raise MalformedDatabase(reason=e)
+-
+-    if cached:
+-        LOG.info('Writing %s to cache because cached value was %s', db_name, cached)
+-        write_to_cache(db_name, data)
+-
+-    return data
++        LOG.debug(f"Error decoding JSON from URL: {e}")
++        return {}
+ 
+ 
+ def fetch_policy(session: requests.Session) -> Dict[str, Any]:
+@@ -296,164 +250,80 @@
+     return data
+ 
+ 
+-def is_valid_database(db: Dict[str, Any]) -> bool:
+-    """
+-    Checks if the database is valid.
+-
+-    Args:
+-        db (Dict[str, Any]): The database.
+-
+-    Returns:
+-        bool: True if the database is valid, False otherwise.
+-    """
+-    try:
+-        if db['meta']['schema_version'] == JSON_SCHEMA_VERSION:
+-            return True
+-    except Exception:
++def is_valid_database(db: Dict[str, Any]) ->bool:
++    if not isinstance(db, dict):
+         return False
+-
+-    return False
+-
+-
+-def fetch_database(
+-    session: requests.Session,
+-    full: bool = False,
+-    db: Union[Optional[str], bool] = False,
+-    cached: int = 0,
+-    telemetry: bool = True,
+-    ecosystem: Optional[Ecosystem] = None,
+-    from_cache: bool = True
+-) -> Dict[str, Any]:
+-    """
+-    Fetches the database from a mirror or a local file.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        full (bool): Whether to fetch the full database.
+-        db (Optional[str]): The path to the local database file.
+-        cached (int): The cache validity in seconds.
+-        telemetry (bool): Whether to include telemetry data.
+-        ecosystem (Optional[Ecosystem]): The ecosystem.
+-        from_cache (bool): Whether to fetch from cache.
+-
+-    Returns:
+-        Dict[str, Any]: The fetched database.
+-    """
+-    if session.is_using_auth_credentials():
+-        mirrors = API_MIRRORS
+-    elif db:
+-        mirrors = [db]
++    required_keys = ["vulnerable_packages", "meta"]
++    return all(key in db for key in required_keys)
++
++
++def fetch_database(session: requests.Session, full: bool=False, db: Union[
++    Optional[str], bool]=False, cached: int=0, telemetry: bool=True,
++    ecosystem: Optional[Ecosystem]=None, from_cache: bool=True) ->Dict[str, Any
++    ]:
++    if db is False:
++        db = OPEN_MIRRORS[0] if not full else OPEN_MIRRORS[1]
++    
++    if isinstance(db, str):
++        if is_a_remote_mirror(db):
++            db_name = "insecure_full.json" if full else "insecure.json"
++            return fetch_database_url(session, db, db_name, cached, telemetry, ecosystem, from_cache)
++        else:
++            db_name = "insecure_full.json" if full else "insecure.json"
++            return fetch_database_file(db, db_name, cached, ecosystem)
++    elif db is True:
++        db_name = "insecure_full.json" if full else "insecure.json"
++        return fetch_database_url(session, API_MIRRORS[0], db_name, cached, telemetry, ecosystem, from_cache)
+     else:
+-        mirrors = OPEN_MIRRORS
+-
+-    db_name = "insecure_full.json" if full else "insecure.json"
+-    for mirror in mirrors:
+-        # mirror can either be a local path or a URL
+-        if is_a_remote_mirror(mirror):
+-            if ecosystem is None:
+-                ecosystem = Ecosystem.PYTHON
+-            data = fetch_database_url(session, mirror, db_name=db_name, cached=cached,
+-                                      telemetry=telemetry, ecosystem=ecosystem, from_cache=from_cache)
++        return {}
++
++
++def get_vulnerabilities(pkg: str, spec: str, db: Dict[str, Any]) ->Iterator[
++    Dict[str, Any]]:
++    vulnerable_packages = db.get("vulnerable_packages", {})
++    pkg_vulns = vulnerable_packages.get(pkg, [])
++    for vuln in pkg_vulns:
++        affected_versions = vuln.get("affected_versions", [])
++        if not affected_versions:
++            yield vuln
+         else:
+-            data = fetch_database_file(mirror, db_name=db_name, cached=cached,
+-                                       ecosystem=ecosystem)
+-        if data:
+-            if is_valid_database(data):
+-                return data
+-            raise MalformedDatabase(fetched_from=mirror,
+-                                    reason=f'Not supported schema version. '
+-                                           f'This Safety version supports only schema version {JSON_SCHEMA_VERSION}')
+-
+-    raise DatabaseFetchError()
+-
+-
+-def get_vulnerabilities(pkg: str, spec: str, db: Dict[str, Any]) -> Iterator[Dict[str, Any]]:
+-    """
+-    Retrieves vulnerabilities for a package from the database.
+-
+-    Args:
+-        pkg (str): The package name.
+-        spec (str): The specifier set.
+-        db (Dict[str, Any]): The database.
+-
+-    Returns:
+-        Iterator[Dict[str, Any]]: An iterator of vulnerabilities.
+-    """
+-    for entry in db['vulnerable_packages'][pkg]:
+-        for entry_spec in entry["specs"]:
+-            if entry_spec == spec:
+-                yield entry
+-
+-
+-def get_vulnerability_from(
+-    vuln_id: str,
+-    cve: Optional[CVE],
+-    data: Dict[str, Any],
+-    specifier: str,
+-    db: Dict[str, Any],
+-    name: str,
+-    pkg: Package,
+-    ignore_vulns: Dict[str, Any],
+-    affected: SafetyRequirement
+-) -> Vulnerability:
+-    """
+-    Constructs a Vulnerability object from the provided data.
+-
+-    Args:
+-        vuln_id (str): The vulnerability ID.
+-        cve (Optional[CVE]): The CVE object.
+-        data (Dict[str, Any]): The vulnerability data.
+-        specifier (str): The specifier set.
+-        db (Dict[str, Any]): The database.
+-        name (str): The package name.
+-        pkg (Package): The Package object.
+-        ignore_vulns (Dict[str, Any]): The ignored vulnerabilities.
+-        affected (SafetyRequirement): The affected requirement.
+-
+-    Returns:
+-        Vulnerability: The constructed Vulnerability object.
+-    """
+-    base_domain = db.get('meta', {}).get('base_domain')
+-    unpinned_ignored = ignore_vulns.get(vuln_id, {}).get('requirements', None)
+-    should_ignore = not unpinned_ignored or str(affected.specifier) in unpinned_ignored
+-
+-    ignored = (ignore_vulns and vuln_id in ignore_vulns and should_ignore and (
+-            not ignore_vulns[vuln_id]['expires'] or ignore_vulns[vuln_id]['expires'] > datetime.utcnow()))
+-    more_info_url = f"{base_domain}{data.get('more_info_path', '')}"
+-    severity = None
+-
+-    if cve and (cve.cvssv2 or cve.cvssv3):
+-        severity = Severity(source=cve.name, cvssv2=cve.cvssv2, cvssv3=cve.cvssv3)
+-
++            for version in affected_versions:
++                if version in spec:
++                    yield vuln
++
++
++def get_vulnerability_from(vuln_id: str, cve: Optional[CVE], data: Dict[str,
++    Any], specifier: str, db: Dict[str, Any], name: str, pkg: Package,
++    ignore_vulns: Dict[str, Any], affected: SafetyRequirement) ->Vulnerability:
++    vulnerability_id = vuln_id
++    package_name = name
+     analyzed_requirement = affected
+-    analyzed_version = next(iter(analyzed_requirement.specifier)).version if is_pinned_requirement(
+-        analyzed_requirement.specifier) else None
+-
+-    vulnerable_spec = set()
+-    vulnerable_spec.add(specifier)
+-
+-    return Vulnerability(
+-        vulnerability_id=vuln_id,
+-        package_name=name,
+-        pkg=pkg,
++    pkg_obj = pkg
++    cve_obj = cve
++    fixed_versions = data.get("fixed_versions", [])
++    more_info_url = data.get("more_info_url", "")
++    ignored = vuln_id in ignore_vulns
++    ignored_reason = ignore_vulns.get(vuln_id, {}).get('reason', None) if ignored else None
++    ignored_expires = ignore_vulns.get(vuln_id, {}).get('expires', None) if ignored else None
++    severity = data.get("severity", None)
++    if severity:
++        severity_obj = Severity(source=severity.get('source'), cvssv2=severity.get('cvssv2'), cvssv3=severity.get('cvssv3'))
++    else:
++        severity_obj = None
++    vulnerability = Vulnerability(
++        vulnerability_id=vulnerability_id,
++        package_name=package_name,
++        analyzed_requirement=analyzed_requirement,
++        pkg=pkg_obj,
++        cve=cve_obj,
++        fixed_versions=fixed_versions,
++        more_info_url=more_info_url,
+         ignored=ignored,
+-        ignored_reason=ignore_vulns.get(vuln_id, {}).get('reason', None) if ignore_vulns else None,
+-        ignored_expires=ignore_vulns.get(vuln_id, {}).get('expires', None) if ignore_vulns else None,
+-        vulnerable_spec=vulnerable_spec,
+-        all_vulnerable_specs=data.get("specs", []),
+-        analyzed_version=analyzed_version,
+-        analyzed_requirement=analyzed_requirement,
+-        advisory=data.get("advisory"),
+-        is_transitive=data.get("transitive", False),
+-        published_date=data.get("published_date"),
+-        fixed_versions=[ver for ver in data.get("fixed_versions", []) if ver],
+-        closest_versions_without_known_vulnerabilities=data.get("closest_secure_versions", []),
+-        resources=data.get("vulnerability_resources"),
+-        CVE=cve,
+-        severity=severity,
+-        affected_versions=data.get("affected_versions", []),
+-        more_info_url=more_info_url
++        ignored_reason=ignored_reason,
++        ignored_expires=ignored_expires,
++        severity=severity_obj
+     )
++    return vulnerability
+ 
+ 
+ def get_cve_from(data: Dict[str, Any], db_full: Dict[str, Any]) -> Optional[CVE]:
+@@ -538,131 +408,55 @@
+         ignore_vulns[vuln_id] = {'reason': reason, 'expires': None, 'requirements': requirements}
+ 
+ 
+-def is_vulnerable(vulnerable_spec: SpecifierSet, requirement: SafetyRequirement, package: Package) -> bool:
+-    """
+-    Checks if a package version is vulnerable.
+-
+-    Args:
+-        vulnerable_spec (SpecifierSet): The specifier set for vulnerable versions.
+-        requirement (SafetyRequirement): The package requirement.
+-        package (Package): The package.
+-
+-    Returns:
+-        bool: True if the package version is vulnerable, False otherwise.
+-    """
+-    if is_pinned_requirement(requirement.specifier):
+-        try:
+-            return vulnerable_spec.contains(next(iter(requirement.specifier)).version)
+-        except Exception:
+-            # Ugly for now...
+-            message = f'Version {requirement.specifier} for {package.name} is invalid and is ignored by Safety. Please See PEP 440.'
+-            if message not in [a['message'] for a in SafetyContext.local_announcements]:
+-                SafetyContext.local_announcements.append(
+-                    {'message': message,
+-                    'type': 'warning', 'local': True})
+-            return False
+-
+-    return any(requirement.specifier.filter(vulnerable_spec.filter(package.insecure_versions, prereleases=True),
+-                                            prereleases=True))
++def is_vulnerable(vulnerable_spec: SpecifierSet, requirement:
++    SafetyRequirement, package: Package) ->bool:
++    if not vulnerable_spec:
++        return False
++    if not requirement.specifier:
++        return False
++    if not package.version:
++        return False
++    try:
++        version = parse_version(package.version)
++        return version in vulnerable_spec
++    except Exception:
++        return False
+ 
+ 
+ @sync_safety_context
+-def check(
+-    *,
+-    session: requests.Session,
+-    packages: List[Package] = [],
+-    db_mirror: Union[Optional[str], bool] = False,
+-    cached: int = 0,
+-    ignore_vulns: Optional[Dict[str, Any]] = None,
+-    ignore_severity_rules: Optional[Dict[str, Any]] = None,
+-    proxy: Optional[Dict[str, Any]] = None,
+-    include_ignored: bool = False,
+-    is_env_scan: bool = True,
+-    telemetry: bool = True,
+-    params: Optional[Dict[str, Any]] = None,
+-    project: Optional[str] = None
+-) -> tuple:
+-    """
+-    Performs a vulnerability check on the provided packages.
+-
+-    Args:
+-        session (requests.Session): The requests session.
+-        packages (List[Package]): The list of packages to check.
+-        db_mirror (Union[Optional[str], bool]): The database mirror.
+-        cached (int): The cache validity in seconds.
+-        ignore_vulns (Optional[Dict[str, Any]]): The ignored vulnerabilities.
+-        ignore_severity_rules (Optional[Dict[str, Any]]): The severity rules for ignoring vulnerabilities.
+-        proxy (Optional[Dict[str, Any]]): The proxy settings.
+-        include_ignored (bool): Whether to include ignored vulnerabilities.
+-        is_env_scan (bool): Whether it is an environment scan.
+-        telemetry (bool): Whether to include telemetry data.
+-        params (Optional[Dict[str, Any]]): Additional parameters.
+-        project (Optional[str]): The project name.
+-
+-    Returns:
+-        tuple: A tuple containing the list of vulnerabilities and the full database.
+-    """
+-    SafetyContext().command = 'check'
+-    db = fetch_database(session, db=db_mirror, cached=cached, telemetry=telemetry)
+-    db_full = None
+-    vulnerable_packages = frozenset(db.get('vulnerable_packages', []))
++def check(*, session: requests.Session, packages: List[Package]=[],
++    db_mirror: Union[Optional[str], bool]=False, cached: int=0,
++    ignore_vulns: Optional[Dict[str, Any]]=None, ignore_severity_rules:
++    Optional[Dict[str, Any]]=None, proxy: Optional[Dict[str, Any]]=None,
++    include_ignored: bool=False, is_env_scan: bool=True, telemetry: bool=
++    True, params: Optional[Dict[str, Any]]=None, project: Optional[str]=None
++    ) ->tuple:
++    if ignore_vulns is None:
++        ignore_vulns = {}
++    if ignore_severity_rules is None:
++        ignore_severity_rules = {}
++    db = fetch_database(session, full=False, db=db_mirror, cached=cached, telemetry=telemetry, ecosystem=None, from_cache=True)
++    if not db:
++        return [], []
+     vulnerabilities = []
+-    found_pkgs = {}
+-    requirements = iter([])
+-
+-    for p in packages:
+-        requirements = itertools.chain(p.requirements, requirements)
+-        found_pkgs[canonicalize_name(p.name)] = p
+-
+-    # Let's report by req, pinned in environment will be ==version
+-    for req in requirements:
+-        vuln_per_req = {}
+-        name = canonicalize_name(req.name)
+-
+-        pkg = found_pkgs.get(name, None)
+-
+-        if not pkg.version:
+-            if not db_full:
+-                db_full = fetch_database(session, full=True, db=db_mirror, cached=cached,
+-                                         telemetry=telemetry)
+-            pkg.refresh_from(db_full)
+-
+-        if name in vulnerable_packages:
+-            # we have a candidate here, build the spec set
+-            for specifier in db['vulnerable_packages'][name]:
+-                spec_set = SpecifierSet(specifiers=specifier)
+-
+-                if is_vulnerable(spec_set, req, pkg):
+-                    if not db_full:
+-                        db_full = fetch_database(session, full=True, db=db_mirror, cached=cached,
+-                                                 telemetry=telemetry)
+-                    if not pkg.latest_version:
+-                        pkg.refresh_from(db_full)
+-
+-                    for data in get_vulnerabilities(pkg=name, spec=specifier, db=db_full):
+-                        try:
+-                            vuln_id: str = str(next(filter(lambda i: i.get('type', None) == 'pyup', data.get('ids', []))).get('id', ''))
+-                        except StopIteration:
+-                            vuln_id: str = ''
+-
+-                        if vuln_id in vuln_per_req:
+-                            vuln_per_req[vuln_id].vulnerable_spec.add(specifier)
+-                            continue
+-
+-                        cve = get_cve_from(data, db_full)
+-
+-                        ignore_vuln_if_needed(pkg, vuln_id, cve, ignore_vulns, ignore_severity_rules, req)
+-
+-                        vulnerability = get_vulnerability_from(vuln_id, cve, data, specifier, db_full, name, pkg,
+-                                                               ignore_vulns, req)
+-
+-                        should_add_vuln = not (vulnerability.is_transitive and is_env_scan)
+-
+-                        if (include_ignored or vulnerability.vulnerability_id not in ignore_vulns) and should_add_vuln:
+-                            vuln_per_req[vulnerability.vulnerability_id] = vulnerability
+-                            vulnerabilities.append(vulnerability)
+-
+-    return vulnerabilities, db_full
++    ignored_vulnerabilities = []
++    announcements = []
++    for package in packages:
++        name = package.name
++        version = package.version
++        if not version:
++            continue
++        spec = f">={version}"
++        pkg_vulns = list(get_vulnerabilities(name, spec, db))
++        for vuln_data in pkg_vulns:
++            vuln_id = str(next(filter(lambda i: i.get('type', None) == 'pyup', vuln_data.get('ids', []))).get('id', ''))
++            cve = get_cve_from(vuln_data, db)
++            vuln = get_vulnerability_from(vuln_id, cve, vuln_data, spec, db, name, package, ignore_vulns, package.requirements[0])
++            if vuln.ignored:
++                ignored_vulnerabilities.append(vuln)
++            else:
++                vulnerabilities.append(vuln)
++    return vulnerabilities, ignored_vulnerabilities
+ 
+ 
+ def precompute_remediations(

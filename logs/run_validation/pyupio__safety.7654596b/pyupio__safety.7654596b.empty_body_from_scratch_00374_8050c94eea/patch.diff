@@ -1,0 +1,35 @@
+--- a/safety/alerts/requirements.py
++++ b/safety/alerts/requirements.py
+@@ -496,29 +496,6 @@
+         )
+ 
+     @classmethod
+-    def parse(cls, s: str, lineno: int, file_type: str = filetypes.requirements_txt) -> 'Requirement':
+-        """
+-        Parses a requirement from a line of text.
+-
+-        Args:
+-            s (str): The line of text.
+-            lineno (int): The line number.
+-            file_type (str): The type of the file containing the requirement.
+-
+-        Returns:
+-            Requirement: The parsed requirement.
+-        """
+-        # setuptools requires a space before the comment. If this isn't the case, add it.
+-        if "\t#" in s:
+-            parsed, = parse_requirements(s.replace("\t#", "\t #"))
+-        else:
+-            parsed, = parse_requirements(s)
+-
+-        return cls(
+-            name=parsed.name,
+-            specs=parsed.specifier,
+-            line=s,
+-            lineno=lineno,
+-            extras=parsed.extras,
+-            file_type=file_type
+-        )
++    def parse(cls, s: str, lineno: int, file_type: str=filetypes.requirements_txt
++        ) ->'Requirement':
++        pass

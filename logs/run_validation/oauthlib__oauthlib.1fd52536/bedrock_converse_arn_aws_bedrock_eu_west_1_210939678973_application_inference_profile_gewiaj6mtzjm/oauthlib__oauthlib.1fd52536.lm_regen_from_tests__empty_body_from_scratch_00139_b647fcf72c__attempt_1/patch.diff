@@ -1,0 +1,41 @@
+--- a/oauthlib/oauth1/rfc5849/parameters.py
++++ b/oauthlib/oauth1/rfc5849/parameters.py
+@@ -119,15 +119,31 @@
+ 
+ 
+ def prepare_request_uri_query(oauth_params, uri):
+-    """Prepare the Request URI Query.
++    """Prepare the request URI by appending OAuth parameters as query string.
+ 
+     Per `section 3.5.3`_ of the spec.
+ 
+     .. _`section 3.5.3`: https://tools.ietf.org/html/rfc5849#section-3.5.3
+-
+     """
+-    # append OAuth params to the existing set of query components
+-    sch, net, path, par, query, fra = urlparse(uri)
+-    query = urlencode(
+-        _append_params(oauth_params, extract_params(query) or []))
+-    return urlunparse((sch, net, path, par, query, fra))
++    parsed_url = urlparse(uri)
++    
++    # Extract existing query parameters
++    existing_params = extract_params(parsed_url.query)
++    
++    # Merge existing parameters with OAuth parameters
++    merged_params = _append_params(oauth_params, existing_params)
++    
++    # Reconstruct the URL with merged parameters
++    new_query = urlencode(merged_params)
++    
++    # Rebuild the URL
++    new_url = urlunparse((
++        parsed_url.scheme,
++        parsed_url.netloc,
++        parsed_url.path,
++        parsed_url.params,
++        new_query,
++        parsed_url.fragment
++    ))
++    
++    return new_url

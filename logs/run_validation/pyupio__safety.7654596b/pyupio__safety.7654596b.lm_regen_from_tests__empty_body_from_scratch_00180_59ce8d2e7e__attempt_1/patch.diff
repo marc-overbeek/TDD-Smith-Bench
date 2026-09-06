@@ -1,0 +1,74 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -85,57 +85,26 @@
+     return None
+ 
+ 
+-def write_to_cache(db_name: str, data: Dict[str, Any]) -> None:
+-    """
+-    Writes the database to the cache.
+-
+-    Args:
+-        db_name (str): The name of the database.
+-        data (Dict[str, Any]): The database data to be cached.
+-    """
+-    # cache is in: ~/safety/cache.json
+-    # and has the following form:
+-    # {
+-    #   "insecure.json": {
+-    #       "cached_at": 12345678
+-    #       "db": {}
+-    #   },
+-    #   "insecure_full.json": {
+-    #       "cached_at": 12345678
+-    #       "db": {}
+-    #   },
+-    # }
+-    if not os.path.exists(os.path.dirname(DB_CACHE_FILE)):
+-        try:
+-            os.makedirs(os.path.dirname(DB_CACHE_FILE))
+-            with open(DB_CACHE_FILE, "w") as _:
+-                _.write(json.dumps({}))
+-                LOG.debug('Cache file created')
+-        except OSError as exc:  # Guard against race condition
+-            LOG.debug('Unable to create the cache file because: %s', exc.errno)
+-            if exc.errno != errno.EEXIST:
+-                raise
+-
++def write_to_cache(db_name: str, data: Dict[str, Any]) ->None:
+     cache_file_lock = f"{DB_CACHE_FILE}.lock"
++    os.makedirs(os.path.dirname(cache_file_lock), exist_ok=True)
+     lock = FileLock(cache_file_lock, timeout=10)
+     with lock:
++        cache_data = {}
+         if os.path.exists(DB_CACHE_FILE):
+-            with open(DB_CACHE_FILE, "r") as f:
++            with open(DB_CACHE_FILE) as f:
+                 try:
+-                    cache = json.loads(f.read())
++                    cache_data = json.loads(f.read())
+                 except json.JSONDecodeError:
+-                    LOG.debug('JSONDecodeError in the local cache, dumping the full cache file.')
+-                    cache = {}
+-        else:
+-            cache = {}
+-
+-        with open(DB_CACHE_FILE, "w") as f:
+-            cache[db_name] = {
+-                "cached_at": time.time(),
+-                "db": data
+-            }
+-            f.write(json.dumps(cache))
+-            LOG.debug('Safety updated the cache file for %s database.', db_name)
++                    cache_data = {}
++        
++        cache_data[db_name] = {
++            "cached_at": time.time(),
++            "db": data
++        }
++        
++        with open(DB_CACHE_FILE, 'w') as f:
++            f.write(json.dumps(cache_data))
+ 
+ 
+ def fetch_database_url(

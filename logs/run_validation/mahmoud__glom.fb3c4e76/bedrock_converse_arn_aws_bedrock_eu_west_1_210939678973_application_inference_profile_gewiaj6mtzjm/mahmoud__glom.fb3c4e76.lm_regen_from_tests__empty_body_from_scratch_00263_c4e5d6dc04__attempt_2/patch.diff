@@ -1,0 +1,14 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -1051,4 +1051,10 @@
+ 
+     def __repr__(self):
+         cn = self.__class__.__name__
+-        return f'{cn}({self.msgs!r}, {self.check_obj!r}, {self.path!r})'
++        posargs = (self.spec,) if self.spec is not T else ()
++        return format_invocation(cn, posargs, self._orig_kwargs, repr=bbrepr)
++
++    def __repr__(self):
++        cn = self.__class__.__name__
++        posargs = () if self.spec is T else (self.spec,)
++        return format_invocation(cn, posargs, self._orig_kwargs, repr=bbrepr)

@@ -1,0 +1,33 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -295,20 +295,16 @@
+     return None
+ 
+ 
+-def get_line_equation_coefficients(location1: "Location", location2: "Location") -> Iterable[float]:
+-    """
+-    Get line equation coefficients for:
+-        latitude * a + longitude * b + c = 0
+-
+-    This is a normal cartesian line (not spherical!)
+-    """
+-    if location1.longitude == location2.longitude:
+-        # Vertical line:
+-        return 0, 1, -location1.longitude
+-    else:
+-        a = (location1.latitude - location2.latitude) / (location1.longitude - location2.longitude)
+-        b = location1.latitude - location1.longitude * a
+-        return 1, -a, -b
++a, b, c = get_line_equation_coefficients(begin, end)
++# ...
++d = abs(a * point.latitude + b * point.longitude + c)
++
++def get_line_equation_coefficients(location1: 'Location', location2: 'Location'
++    ) ->Iterable[float]:
++    a = location2.longitude - location1.longitude
++    b = location1.latitude - location2.latitude
++    c = location2.latitude * location1.longitude - location1.latitude * location2.longitude
++    return a, b, c
+ 
+ 
+ def simplify_polyline(points: List["Location"], max_distance: Optional[float]) -> List["Location"]:

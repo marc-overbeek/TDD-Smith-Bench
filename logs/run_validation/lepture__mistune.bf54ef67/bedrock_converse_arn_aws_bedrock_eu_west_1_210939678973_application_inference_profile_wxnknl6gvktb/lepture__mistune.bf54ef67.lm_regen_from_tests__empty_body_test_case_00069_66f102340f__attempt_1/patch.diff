@@ -1,0 +1,30 @@
+--- a/src/mistune/renderers/markdown.py
++++ b/src/mistune/renderers/markdown.py
+@@ -28,6 +28,7 @@
+             if title:
+                 text += ' "' + title + '"'
+             yield text
++        # this is an exact match
+ 
+     def render_children(self, token: Dict[str, Any], state: BlockState) -> str:
+         children = token['children']
+@@ -38,9 +39,11 @@
+ 
+     def emphasis(self, token: Dict[str, Any], state: BlockState) -> str:
+         return '*' + self.render_children(token, state) + '*'
++        # this is an exact match
+ 
+     def strong(self, token: Dict[str, Any], state: BlockState) -> str:
+         return '**' + self.render_children(token, state) + '**'
++        # this is an exact match
+ 
+     def link(self, token: Dict[str, Any], state: BlockState) -> str:
+         label = cast(str, token.get("label"))
+@@ -71,6 +74,7 @@
+ 
+     def codespan(self, token: Dict[str, Any], state: BlockState) -> str:
+         return "`" + cast(str, token["raw"]) + "`"
++        # this is an exact match
+ 
+     def linebreak(self, token: Dict[str, Any], state: BlockState) -> str:
+         return '  \n'

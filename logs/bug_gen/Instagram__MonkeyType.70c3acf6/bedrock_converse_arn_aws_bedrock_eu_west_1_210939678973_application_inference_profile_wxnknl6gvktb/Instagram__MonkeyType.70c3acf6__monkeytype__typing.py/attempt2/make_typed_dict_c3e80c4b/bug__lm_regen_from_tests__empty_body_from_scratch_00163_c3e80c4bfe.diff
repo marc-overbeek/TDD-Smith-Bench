@@ -1,0 +1,65 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -52,21 +52,50 @@
+     return is_generic(typ) and name_of_generic(typ) == "List"
+ 
+ 
++typed_dict.__annotations__["required_fields"].__annotations__
++typed_dict.__annotations__["optional_fields"].__annotations__
++
+ def make_typed_dict(*, required_fields=None, optional_fields=None) -> type:
+-    required_fields = required_fields or {}
+-    optional_fields = optional_fields or {}
+-    assert required_fields.keys().isdisjoint(optional_fields.keys())
+-    return TypedDict(
++    if required_fields is None:
++        required_fields = {}
++    if optional_fields is None:
++        optional_fields = {}
++    
++    # Create TypedDict for required fields
++    required_td = TypedDict("RequiredFields", required_fields, total=True)
++    
++    # Create TypedDict for optional fields  
++    optional_td = TypedDict("OptionalFields", optional_fields, total=False)
++    
++    # Create the main TypedDict with required_fields and optional_fields as annotations
++    main_td = TypedDict(
+         DUMMY_TYPED_DICT_NAME,
+-        {
+-            "required_fields": TypedDict(
+-                DUMMY_REQUIRED_TYPED_DICT_NAME, required_fields
+-            ),
+-            "optional_fields": TypedDict(
+-                DUMMY_OPTIONAL_TYPED_DICT_NAME, optional_fields
+-            ),
+-        },
++        {"required_fields": required_td, "optional_fields": optional_td},
++        total=True
+     )
++    
++    return main_td
++
++def make_typed_dict(*, required_fields=None, optional_fields=None) -> type:
++    if required_fields is None:
++        required_fields = {}
++    if optional_fields is None:
++        optional_fields = {}
++    
++    # Create TypedDict for required fields
++    required_td = TypedDict("_RequiredFields", required_fields, total=True)
++    
++    # Create TypedDict for optional fields  
++    optional_td = TypedDict("_OptionalFields", optional_fields, total=False)
++    
++    # Create the main TypedDict with required_fields and optional_fields as annotations
++    main_td = TypedDict(
++        DUMMY_TYPED_DICT_NAME,
++        {"required_fields": required_td, "optional_fields": optional_td},
++        total=True
++    )
++    
++    return main_td
+ 
+ 
+ def field_annotations(typed_dict) -> Tuple[Dict[str, type], Dict[str, type]]:

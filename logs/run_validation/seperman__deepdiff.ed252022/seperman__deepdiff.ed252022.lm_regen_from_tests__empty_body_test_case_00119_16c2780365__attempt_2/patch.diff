@@ -1,0 +1,68 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -697,7 +697,7 @@
+ 
+         for item in items_added:
+             if self._count_diff() is StopIteration:
+-                return  # pragma: no cover. This is already covered for addition.
++                return
+ 
+             change_level = level.branch_deeper(
+                 notpresent, item, child_relationship_class=SetRelationship)
+@@ -705,7 +705,7 @@
+ 
+         for item in items_removed:
+             if self._count_diff() is StopIteration:
+-                return  # pragma: no cover. This is already covered for addition.
++                return
+ 
+             change_level = level.branch_deeper(
+                 item, notpresent, child_relationship_class=SetRelationship)
+@@ -748,11 +748,8 @@
+                 zip_longest(
+                     t1_chunk, t2_chunk, fillvalue=ListItemRemovedOrAdded))]
+ 
+-    def _get_matching_pairs(
+-        self, level,
+-        t1_from_index=None, t1_to_index=None,
+-        t2_from_index=None, t2_to_index=None
+-    ):
++    def _get_matching_pairs(self, level, t1_from_index=None, t1_to_index=None,
++        t2_from_index=None, t2_to_index=None):
+         """
+         Given a level get matching pairs. This returns list of two tuples in the form:
+         [
+@@ -815,7 +812,8 @@
+                 t2_from_index=t2_from_index, t2_to_index=t2_to_index
+             )
+ 
+-    def _diff_iterable_in_order(self, level, parents_ids=frozenset(), _original_type=None, local_tree=None):
++    def _diff_iterable_in_order(self, level, parents_ids=frozenset(),
++        _original_type=None, local_tree=None):
+         # We're handling both subscriptable and non-subscriptable iterables. Which one is it?
+         subscriptable = self._iterables_subscriptable(level.t1, level.t2)
+         if subscriptable:
+@@ -879,19 +877,16 @@
+                 return False
+         return True
+ 
+-    def _diff_by_forming_pairs_and_comparing_one_by_one(
+-        self, level, local_tree, parents_ids=frozenset(),
+-        _original_type=None, child_relationship_class=None,
+-        t1_from_index=None, t1_to_index=None,
+-        t2_from_index=None, t2_to_index=None,
+-    ):
++    def _diff_by_forming_pairs_and_comparing_one_by_one(self, level, local_tree,
++        parents_ids=frozenset(), _original_type=None, child_relationship_class=None,
++        t1_from_index=None, t1_to_index=None, t2_from_index=None, t2_to_index=None):
+         for (i, j), (x, y) in self._get_matching_pairs(
+             level, 
+             t1_from_index=t1_from_index, t1_to_index=t1_to_index,
+             t2_from_index=t2_from_index, t2_to_index=t2_to_index
+         ):
+             if self._count_diff() is StopIteration:
+-                return  # pragma: no cover. This is already covered for addition.
++                return
+ 
+             reference_param1 = i
+             reference_param2 = j

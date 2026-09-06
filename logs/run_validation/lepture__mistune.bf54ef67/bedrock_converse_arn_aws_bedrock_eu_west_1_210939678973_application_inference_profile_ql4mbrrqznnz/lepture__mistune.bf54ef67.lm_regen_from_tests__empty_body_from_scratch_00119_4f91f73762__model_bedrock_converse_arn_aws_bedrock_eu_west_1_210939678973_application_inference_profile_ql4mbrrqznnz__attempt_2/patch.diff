@@ -1,0 +1,43 @@
+--- a/src/mistune/plugins/formatting.py
++++ b/src/mistune/plugins/formatting.py
+@@ -66,24 +66,27 @@
+     return "<sub>" + text + "</sub>"
+ 
+ 
+-def _parse_to_end(
+-    inline: "InlineParser",
+-    m: Match[str],
+-    state: "InlineState",
+-    tok_type: str,
+-    end_pattern: Pattern[str],
+-) -> Optional[int]:
++def _parse_to_end(inline: 'InlineParser', m: Match[str], state:
++    'InlineState', tok_type: str, end_pattern: Pattern[str]) ->Optional[int]:
+     pos = m.end()
+-    m1 = end_pattern.search(state.src, pos)
+-    if not m1:
++    src = state.src[pos:]
++    end_m = end_pattern.search(src)
++    if not end_m:
+         return None
+-    end_pos = m1.end()
+-    text = state.src[pos:end_pos-2]
++    # The end pattern matches (last_content_char)(closing_delimiter)
++    # We want text to include up to and including the last content char
++    # but not the closing delimiter (e.g., ~~, ==, ^^)
++    # The closing delimiter is 2 chars long
++    end_pos = end_m.end()
++    text = src[:end_pos - 2]  # exclude the closing delimiter (2 chars)
+     new_state = state.copy()
+     new_state.src = text
+     children = inline.render(new_state)
+-    state.append_token({'type': tok_type, 'children': children})
+-    return end_pos
++    state.append_token({
++        'type': tok_type,
++        'children': children
++    })
++    return pos + end_pos
+ 
+ 
+ def _parse_script(

@@ -1,0 +1,77 @@
+--- a/deepdiff/lfucache.py
++++ b/deepdiff/lfucache.py
+@@ -12,15 +12,7 @@
+ 
+ class CacheNode:
+     def __init__(self, key, report_type, value, freq_node, pre, nxt):
+-        self.key = key
+-        if report_type:
+-            self.content = defaultdict(SetOrdered)
+-            self.content[report_type].add(value)
+-        else:
+-            self.content = value
+-        self.freq_node = freq_node
+-        self.pre = pre  # previous CacheNode
+-        self.nxt = nxt  # next CacheNode
++        pass
+ 
+     def free_myself(self):
+         if self.freq_node.cache_head == self.freq_node.cache_tail:
+@@ -42,11 +34,7 @@
+ 
+ class FreqNode:
+     def __init__(self, freq, pre, nxt):
+-        self.freq = freq
+-        self.pre = pre  # previous FreqNode
+-        self.nxt = nxt  # next FreqNode
+-        self.cache_head = None  # CacheNode head under this FreqNode
+-        self.cache_tail = None  # CacheNode tail under this FreqNode
++        pass
+ 
+     def count_caches(self):
+         if self.cache_head is None and self.cache_tail is None:
+@@ -82,15 +70,7 @@
+             return cache_head
+ 
+     def append_cache_to_tail(self, cache_node):
+-        cache_node.freq_node = self
+-
+-        if self.cache_head is None and self.cache_tail is None:
+-            self.cache_head = self.cache_tail = cache_node
+-        else:
+-            cache_node.pre = self.cache_tail
+-            cache_node.nxt = None
+-            self.cache_tail.nxt = cache_node
+-            self.cache_tail = cache_node
++        pass
+ 
+     def insert_after_me(self, freq_node):
+         freq_node.pre = self
+@@ -113,25 +93,10 @@
+ class LFUCache:
+ 
+     def __init__(self, capacity):
+-        self.cache = dict_()  # {key: cache_node}
+-        if capacity <= 0:
+-            raise ValueError('Capacity of LFUCache needs to be positive.')  # pragma: no cover.
+-        self.capacity = capacity
+-        self.freq_link_head = None
+-        self.lock = Lock()
++        pass
+ 
+     def get(self, key):
+-        with self.lock:
+-            if key in self.cache:
+-                cache_node = self.cache[key]
+-                freq_node = cache_node.freq_node
+-                content = cache_node.content
+-
+-                self.move_forward(cache_node, freq_node)
+-
+-                return content
+-            else:
+-                return not_found
++        pass
+ 
+     def set(self, key, report_type=None, value=None):
+         with self.lock:

@@ -1,0 +1,49 @@
+--- a/src/mistune/list_parser.py
++++ b/src/mistune/list_parser.py
+@@ -254,12 +254,39 @@
+ 
+ 
+ def _is_loose_list(tokens: Iterable[Dict[str, Any]]) -> bool:
+-    paragraph_count = 0
+-    for tok in tokens:
+-        if tok['type'] == 'blank_line':
+-            return True
+-        if tok['type'] == 'paragraph':
+-            paragraph_count += 1
+-            if paragraph_count > 1:
++    for token in tokens:
++        if token['type'] == 'list_item':
++            # A list item with more than one child means it's loose
++            if len(token['children']) > 1:
++                return True
++            # A list item with a single child that is a list also makes it loose
++            if token['children'] and token['children'][0]['type'] == 'list':
++                return True
++        elif token['type'] == 'list':
++            # Nested lists make the parent loose
++            if _is_loose_list(token['children']):
+                 return True
+     return False
++
++def _is_loose_list(tokens: Iterable[Dict[str, Any]]) -> bool:
++    # Convert to list to allow multiple iterations if needed
++    token_list = list(tokens)
++    # If there are multiple block-level elements, it's loose
++    if len(token_list) > 1:
++        return True
++    # If there's a nested list, the parent is loose
++    for token in token_list:
++        if token['type'] == 'list':
++            return True
++    return False
++
++def _is_loose_list(tokens: Iterable[Dict[str, Any]]) -> bool:
++    token_list = list(tokens)
++    # A list is loose if it has multiple block-level elements
++    if len(token_list) > 1:
++        return True
++    # A list is loose if it contains a nested list
++    for token in token_list:
++        if token['type'] == 'list':
++            return True
++    return False

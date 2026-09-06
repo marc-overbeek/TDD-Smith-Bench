@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/gewiaj6mtzjm",
+  "output": "```\ndef parse_block_math(block: 'BlockParser', m: Match[str], state: 'BlockState'\n    ) ->int:\n    text = m.group(\"math_text\")\n    state.append_token({\"type\": \"block_math\", \"raw\": text})\n    return m.end()\n\n\ndef math(md: 'Markdown') ->None:\n    md.block_rules.append('block_math')\n    md.inline_rules.append('inline_math')\n    md.renderer.register_rule('block_math', render_block_math)\n    md.renderer.register_rule('inline_math', render_inline_math)\n    md.block.parse = md.block.parse.__wrapped__\n    md.inline.parse = md.inline.parse.__wrapped__\n\n\ndef math_in_quote(md: 'Markdown') ->None:\n    \"\"\"Enable block math plugin in quote.\"\"\"\n    md.block.insert_rule(md.block.quote_rules, 'block_math', before='quote')\n```",
+  "rewrite": "def parse_block_math(block: 'BlockParser', m: Match[str], state: 'BlockState'\n    ) ->int:\n    text = m.group(\"math_text\")\n    state.append_token({\"type\": \"block_math\", \"raw\": text})\n    return m.end()\n\n\ndef math(md: 'Markdown') ->None:\n    md.block_rules.append('block_math')\n    md.inline_rules.append('inline_math')\n    md.renderer.register_rule('block_math', render_block_math)\n    md.renderer.register_rule('inline_math', render_inline_math)\n    md.block.parse = md.block.parse.__wrapped__\n    md.inline.parse = md.inline.parse.__wrapped__\n\n\ndef math_in_quote(md: 'Markdown') ->None:\n    \"\"\"Enable block math plugin in quote.\"\"\"\n    md.block.insert_rule(md.block.quote_rules, 'block_math', before='quote')",
+  "strategy": "lm_regen_from_tests_combined"
+}

@@ -1,0 +1,139 @@
+--- a/glom/reduction.py
++++ b/glom/reduction.py
+@@ -187,80 +187,67 @@
+ 
+ 
+ def flatten(target, **kwargs):
+-    """At its most basic, ``flatten()`` turns an iterable of iterables
+-    into a single list. But it has a few arguments which give it more
+-    power:
+-
+-    Args:
+-
+-       init (callable): A function or type which gives the initial
+-          value of the return. The value must support addition. Common
+-          values might be :class:`list` (the default), :class:`tuple`,
+-          or even :class:`int`. You can also pass ``init="lazy"`` to
+-          get a generator.
+-       levels (int): A positive integer representing the number of
+-          nested levels to flatten. Defaults to 1.
+-       spec: The glomspec to fetch before flattening. This defaults to the
+-          the root level of the object.
+-
+-    Usage is straightforward.
+-
+-      >>> target = [[1, 2], [3], [4]]
+-      >>> flatten(target)
+-      [1, 2, 3, 4]
+-
+-    Because integers themselves support addition, we actually have two
+-    levels of flattening possible, to get back a single integer sum:
+-
+-      >>> flatten(target, init=int, levels=2)
+-      10
+-
+-    However, flattening a non-iterable like an integer will raise an
+-    exception:
+-
+-      >>> target = 10
+-      >>> flatten(target)
+-      Traceback (most recent call last):
+-      ...
+-      FoldError: can only Flatten on iterable targets, not int type (...)
+-
+-    By default, ``flatten()`` will add a mix of iterables together,
+-    making it a more-robust alternative to the built-in
+-    ``sum(list_of_lists, list())`` trick most experienced Python
+-    programmers are familiar with using:
+-
+-      >>> list_of_iterables = [range(2), [2, 3], (4, 5)]
+-      >>> sum(list_of_iterables, [])
+-      Traceback (most recent call last):
+-      ...
+-      TypeError: can only concatenate list (not "tuple") to list
+-
+-    Whereas flatten() handles this just fine:
+-
+-      >>> flatten(list_of_iterables)
+-      [0, 1, 2, 3, 4, 5]
+-
+-    The ``flatten()`` function is a convenient wrapper around the
+-    :class:`Flatten` specifier type. For embedding in larger specs,
+-    and more involved flattening, see :class:`Flatten` and its base,
+-    :class:`Fold`.
+-
+-    """
+-    subspec = kwargs.pop('spec', T)
++    levels = kwargs.pop('levels', 1)
+     init = kwargs.pop('init', list)
+-    levels = kwargs.pop('levels', 1)
++    spec = kwargs.pop('spec', T)
++    
+     if kwargs:
+         raise TypeError('unexpected keyword args: %r' % sorted(kwargs.keys()))
+-
++    
++    if levels < 0:
++        raise ValueError('levels must be >= 0')
++    
+     if levels == 0:
+         return target
+-    if levels < 0:
+-        raise ValueError('expected levels >= 0, not %r' % levels)
+-    spec = (subspec,)
+-    spec += (Flatten(init="lazy"),) * (levels - 1)
+-    spec += (Flatten(init=init),)
+-
+-    return glom(target, spec)
++    
++    try:
++        # Check if target is iterable
++        iter(target)
++    except TypeError:
++        raise FoldError('can only flatten iterable targets, not %s type' %
++                        type(target).__name__)
++    
++    # Apply spec if provided
++    if spec is not T:
++        target = glom(target, spec)
++    
++    # Base case: levels == 1
++    if levels == 1:
++        if init == str:
++            # Special handling for string concatenation
++            result = ''
++            for item in target:
++                if hasattr(item, '__iter__') and not isinstance(item, (str, bytes)):
++                    # If item is iterable but not a string, flatten it recursively
++                    result += ''.join(str(x) for x in flatten(item, levels=1, init=str))
++                else:
++                    result += str(item)
++            return result
++        else:
++            # Regular list-like flattening
++            result = init()
++            for item in target:
++                try:
++                    iter(item)
++                    # If item is iterable, extend with flattened version
++                    if hasattr(item, '__iter__') and not isinstance(item, (str, bytes)):
++                        result.extend(flatten(item, levels=1, init=init))
++                    else:
++                        result.append(item)
++                except TypeError:
++                    # Not iterable, just append
++                    result.append(item)
++            return result
++    else:
++        # Recursive case for levels > 1
++        flattened = []
++        for item in target:
++            try:
++                iter(item)
++                flattened.extend(flatten(item, levels=levels-1, init=init))
++            except TypeError:
++                flattened.append(item)
++        return init(flattened) if init != list else flattened
+ 
+ 
+ class Merge(Fold):

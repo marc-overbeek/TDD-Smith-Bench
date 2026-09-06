@@ -1,0 +1,31 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1976,6 +1976,28 @@
+     Same behavior as ``Auto(tuple(steps))``, but useful for explicit
+     usage in other modes.
+     """
++    class Pipe:
++        """Evaluate specs one after the other, passing the result of
++        the previous evaluation in as the target of the next spec:
++        ...
++        """
++        def __init__(self, *steps):
++            self.steps = steps
++
++        def glomit(self, target, scope):
++            return _handle_tuple(target, self.steps, scope)
++
++        def __repr__(self):
++            return self.__class__.__name__ + bbrepr(self.steps)
++
++    def test_pipe():
++        assert glom(1, Pipe('__class__', '__name__', str.upper)) == 'INT'
++        assert repr(Pipe(1, Pipe([2], dict))) == 'Pipe(1, Pipe([2], dict))'
++
++    def test_all():
++        ...
++        assert repr(Iter().all()) == 'Pipe(Iter(), list)'
++
+     def __init__(self, *steps):
+         self.steps = steps
+ 

@@ -1,0 +1,15 @@
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -334,6 +334,12 @@
+     def poplist(self, key: typing.Any) -> list[typing.Any]:
+         values = [v for k, v in self._list if k == key]
+         self.pop(key)
++        return values
++
++    def poplist(self, key: typing.Any) -> list[typing.Any]:
++        values = [v for k, v in self._list if k == key]
++        self._list = [(k, v) for k, v in self._list if k != key]
++        self._dict.pop(key, None)
+         return values
+ 
+     def clear(self) -> None:

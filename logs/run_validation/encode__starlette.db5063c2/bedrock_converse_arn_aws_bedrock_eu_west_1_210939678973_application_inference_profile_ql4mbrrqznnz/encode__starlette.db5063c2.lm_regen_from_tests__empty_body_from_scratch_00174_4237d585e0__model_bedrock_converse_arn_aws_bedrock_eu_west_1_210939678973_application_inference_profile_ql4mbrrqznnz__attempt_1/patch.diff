@@ -1,0 +1,21 @@
+--- a/starlette/templating.py
++++ b/starlette/templating.py
+@@ -26,15 +26,9 @@
+ 
+ 
+ class _TemplateResponse(HTMLResponse):
+-    def __init__(
+-        self,
+-        template: typing.Any,
+-        context: dict[str, typing.Any],
+-        status_code: int = 200,
+-        headers: typing.Mapping[str, str] | None = None,
+-        media_type: str | None = None,
+-        background: BackgroundTask | None = None,
+-    ):
++    def __init__(self, template: typing.Any, context: dict[str, typing.Any],
++        status_code: int=200, headers: (typing.Mapping[str, str] | None)=None,
++        media_type: (str | None)=None, background: (BackgroundTask | None)=None):
+         self.template = template
+         self.context = context
+         content = template.render(context)

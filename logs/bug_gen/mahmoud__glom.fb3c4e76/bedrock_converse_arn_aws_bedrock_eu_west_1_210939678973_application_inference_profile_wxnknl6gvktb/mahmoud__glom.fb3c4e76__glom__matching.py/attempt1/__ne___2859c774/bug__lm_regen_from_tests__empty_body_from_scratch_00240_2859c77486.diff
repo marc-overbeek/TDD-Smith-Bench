@@ -1,0 +1,27 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -528,6 +528,24 @@
+ 
+     def __eq__(self, other):
+         return _MExpr(self, '=', other)
++
++    def test_match_expressions():
++        assert glom(1, M == M) == 1
++        assert glom(1, M == 1) == 1
++        assert glom(1, M >= 1) == 1
++        assert glom(1, M <= 1) == 1
++        with pytest.raises(MatchError):
++            glom(1, M > 1)
++        with pytest.raises(MatchError):
++            glom(1, M < 1)
++        with pytest.raises(MatchError):
++            glom(1, M != 1)  # This should raise MatchError
++
++    def __eq__(self, other):
++        return _MExpr(self, '=', other)
++
++    def __gt__(self, other):
++        return _MExpr(self, '>', other)
+ 
+     def __ne__(self, other):
+         return _MExpr(self, '!', other)

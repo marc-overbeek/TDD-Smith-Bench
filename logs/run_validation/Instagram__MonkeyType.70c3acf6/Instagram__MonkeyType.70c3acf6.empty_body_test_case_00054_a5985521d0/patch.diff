@@ -1,0 +1,63 @@
+--- a/monkeytype/stubs.py
++++ b/monkeytype/stubs.py
+@@ -59,21 +59,8 @@
+     DJANGO_CACHED_PROPERTY = 5
+ 
+     @classmethod
+-    def from_callable(cls, func: Callable[..., Any]) -> "FunctionKind":
+-        if "." not in func.__qualname__:
+-            return FunctionKind.MODULE
+-        func_or_desc = get_name_in_module(
+-            func.__module__, func.__qualname__, inspect.getattr_static
+-        )
+-        if isinstance(func_or_desc, classmethod):
+-            return FunctionKind.CLASS
+-        elif isinstance(func_or_desc, staticmethod):
+-            return FunctionKind.STATIC
+-        elif isinstance(func_or_desc, property):
+-            return FunctionKind.PROPERTY
+-        elif cached_property and isinstance(func_or_desc, cached_property):
+-            return FunctionKind.DJANGO_CACHED_PROPERTY
+-        return FunctionKind.INSTANCE
++    def from_callable(cls, func: Callable[..., Any]) ->'FunctionKind':
++        pass
+ 
+ 
+ class ExistingAnnotationStrategy(enum.Enum):
+@@ -717,21 +704,10 @@
+         FunctionKind.DJANGO_CACHED_PROPERTY,
+     }
+ 
+-    def __init__(
+-        self,
+-        module: str,
+-        qualname: str,
+-        kind: FunctionKind,
+-        sig: inspect.Signature,
+-        is_async: bool = False,
+-        typed_dict_class_stubs: Optional[Iterable[ClassStub]] = None,
+-    ) -> None:
+-        self.module = module
+-        self.qualname = qualname
+-        self.kind = kind
+-        self.signature = sig
+-        self.is_async = is_async
+-        self.typed_dict_class_stubs = typed_dict_class_stubs or []
++    def __init__(self, module: str, qualname: str, kind: FunctionKind, sig:
++        inspect.Signature, is_async: bool=False, typed_dict_class_stubs:
++        Optional[Iterable[ClassStub]]=None) ->None:
++        pass
+ 
+     @classmethod
+     def from_callable(
+@@ -796,8 +772,8 @@
+         )
+ 
+     @property
+-    def has_self(self) -> bool:
+-        return self.kind in self._KIND_WITH_SELF
++    def has_self(self) ->bool:
++        pass
+ 
+     def __eq__(self, other: Any) -> bool:
+         if isinstance(other, self.__class__):

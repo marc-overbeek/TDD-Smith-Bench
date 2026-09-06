@@ -1,0 +1,23 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -334,7 +334,19 @@
+         self._simple_set_elem_value(obj=obj, path_for_err_reporting=path, elem=elem,
+                                     value=new_value, action=action)
+ 
+-    def _simple_delete_elem(self, obj, path_for_err_reporting, elem=None, action=None):
++    def test_simple_delete_elem(self):
++        delta = Delta({}, raise_errors=True)
++        with pytest.raises(DeltaError) as excinfo:
++            delta._simple_delete_elem(obj=None, elem=None, action='burnt oil',
++                path_for_err_reporting=None)
++        assert INVALID_ACTION_WHEN_CALLING_SIMPLE_DELETE_ELEM.format('burnt oil'
++            ) == str(excinfo.value)
++        with pytest.raises(DeltaError) as excinfo:
++            delta._simple_delete_elem(obj={}, elem=1, action=GET,
++                path_for_err_reporting='mypath')
++        assert 'Failed to set mypath due to 1' == str(excinfo.value)
++
++    def _simple_delete_elem(self, obj, path_for_err_reporting, elem, action):
+         """
+         Delete the element directly on an object
+         """

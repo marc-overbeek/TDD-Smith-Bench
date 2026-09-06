@@ -1,0 +1,28 @@
+--- a/src/mistune/block_parser.py
++++ b/src/mistune/block_parser.py
+@@ -468,19 +468,12 @@
+             state.cursor = state.cursor_max
+ 
+ 
+-def _parse_html_to_end(state: BlockState, end_marker: str, start_pos: int) -> int:
+-    marker_pos = state.src.find(end_marker, start_pos)
+-    if marker_pos == -1:
+-        text = state.src[state.cursor:]
+-        end_pos = state.cursor_max
+-    else:
+-        text = state.get_text(marker_pos)
+-        state.cursor = marker_pos
+-        end_pos = state.find_line_end()
+-        text += state.get_text(end_pos)
+-
+-    state.append_token({'type': 'block_html', 'raw': text})
+-    return end_pos
++def _parse_html_to_end(state: BlockState, end_marker: str, start_pos: int
++    ) ->int:
++    end_pos = state.src.find(end_marker, start_pos)
++    if end_pos != -1:
++        return end_pos + len(end_marker)
++    return state.cursor_max
+ 
+ 
+ def _parse_html_to_newline(state: BlockState, newline: Pattern[str]) -> int:

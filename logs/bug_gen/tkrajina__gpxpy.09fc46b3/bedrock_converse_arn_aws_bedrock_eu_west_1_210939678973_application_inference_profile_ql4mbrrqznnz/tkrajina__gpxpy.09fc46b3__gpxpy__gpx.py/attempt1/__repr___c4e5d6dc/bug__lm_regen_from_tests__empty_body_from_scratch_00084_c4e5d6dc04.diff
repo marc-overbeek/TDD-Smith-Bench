@@ -1,0 +1,17 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -238,13 +238,7 @@
+         return f'[wpt{{{self.name}}}:{self.latitude},{self.longitude}@{self.elevation}]'
+ 
+     def __repr__(self) -> str:
+-        parts = [f'{self.latitude}, {self.longitude}']
+-        for attribute in 'elevation', 'time', 'name', 'description', 'symbol', 'type', 'comment', \
+-                'horizontal_dilution', 'vertical_dilution', 'position_dilution':
+-            value = getattr(self, attribute)
+-            if value is not None:
+-                parts.append(f'{attribute}={value!r}')
+-        return f'GPXWaypoint({", ".join(parts)})'
++        return f'GPXTrackSegment(points=[{"..." if self.points else ""}])'
+ 
+     def adjust_time(self, delta: mod_datetime.timedelta) -> None:
+         """

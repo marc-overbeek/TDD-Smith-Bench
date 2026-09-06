@@ -1,0 +1,67 @@
+--- a/gpxpy/gpxfield.py
++++ b/gpxpy/gpxfield.py
+@@ -37,25 +37,12 @@
+ class SimpleTZ(mod_datetime.tzinfo):
+     __slots__ = ('offset',)
+ 
+-    def __init__(self, s: str="") -> None:
+-        self.offset = 0
+-        if s and len(s) >= 2:
+-            if s[0] in ('−', '-'):
+-                mult = -1
+-                s = s[1:]
+-            else:
+-                if s[0] == '+':
+-                    s = s[1:]
+-                mult = 1
+-            hour = int(s[:2]) if s[:2].isdigit() else 0
+-            if len(s) >= 4:
+-                minute = int(s[-2:]) if s[-2:].isdigit() else 0
+-            else:
+-                minute = 0
+-            self.offset = mult * (hour * 60 + minute)
+-
+-    def utcoffset(self, dt: Optional[mod_datetime.datetime]) -> mod_datetime.timedelta:
+-        return mod_datetime.timedelta(minutes=self.offset)
++    def __init__(self, s: str='') ->None:
++        pass
++
++    def utcoffset(self, dt: Optional[mod_datetime.datetime]
++        ) ->mod_datetime.timedelta:
++        pass
+ 
+     def dst(self, dt: Optional[mod_datetime.datetime]) -> mod_datetime.timedelta:
+         return mod_datetime.timedelta(0)
+@@ -78,26 +65,12 @@
+         return self.offset == other.offset # type: ignore
+ 
+ 
+-def parse_time(string: str) -> Optional[mod_datetime.datetime]:
+-    from . import gpx as mod_gpx
+-    if not string:
+-        return None
+-    m = RE_TIMESTAMP.match(string)
+-    if m:
+-        dt = [int(m.group(i)) for i in range(1, 7)]
+-        if m.group(7):
+-            f = m.group(7)[1:7]
+-            dt.append(int(f + "0" * (6 - len(f))))
+-        else:
+-            dt.append(0)
+-        if m.group(8):
+-            dt.append(SimpleTZ(m.group(8))) # type: ignore
+-        return mod_datetime.datetime(*dt) # type: ignore
+-    raise mod_gpx.GPXException(f'Invalid time: {string}')
+-
+-
+-def format_time(time: mod_datetime.datetime) -> str:
+-    return time.isoformat().replace('+00:00', 'Z')
++def parse_time(string: str) ->Optional[mod_datetime.datetime]:
++    pass
++
++
++def format_time(time: mod_datetime.datetime) ->str:
++    pass
+ 
+ 
+ 

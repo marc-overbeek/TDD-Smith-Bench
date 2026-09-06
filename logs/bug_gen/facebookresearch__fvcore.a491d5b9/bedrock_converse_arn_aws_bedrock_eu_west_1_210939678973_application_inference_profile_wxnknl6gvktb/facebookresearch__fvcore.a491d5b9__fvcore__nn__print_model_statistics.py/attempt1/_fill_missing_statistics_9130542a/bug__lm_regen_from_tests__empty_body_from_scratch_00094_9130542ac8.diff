@@ -1,0 +1,70 @@
+--- a/fvcore/nn/print_model_statistics.py
++++ b/fvcore/nn/print_model_statistics.py
+@@ -181,33 +181,40 @@
+     return out_stats
+ 
+ 
+-def _fill_missing_statistics(
+-    model: nn.Module, statistics: Dict[str, Dict[str, int]]
+-) -> Dict[str, Dict[str, int]]:
+-    """
+-    If, for a given submodule name in the model, a statistic is missing
+-    from statistics, fills it in with zero. This visually uniformizes
+-    the reporting of statistics.
+-
+-    Args:
+-        model (nn.Module) : the model whose submodule names will be
+-            used to fill statistics
+-        statistics (dict(str, dict(str, int))) : the statistics to
+-            fill in missing values for. Organized as a dictionary
+-            over statistics, which are each a dictionary over submodules'
+-            names. The statistics are assumed to be formatted already
+-            to the desired string format for printing.
+-
+-    Returns:
+-        dict(str, dict(str, int)) : the input statistics with missing
+-            values filled with zero.
+-    """
+-    out_stats = {name: stat.copy() for name, stat in statistics.items()}
+-    for mod_name, _ in model.named_modules():
+-        for stat in out_stats.values():
+-            if mod_name not in stat:
+-                stat[mod_name] = 0
+-    return out_stats
++def _fill_missing_statistics(model: nn.Module, statistics: Dict[str, Dict[
++    str, int]]) ->Dict[str, Dict[str, int]]:
++    """
++    Fills in missing statistics for modules that are not present in the
++    statistics dictionary. Any module that appears in the model but not in
++    a particular statistic will be assigned a value of 0 for that statistic.
++    
++    Args:
++        model (nn.Module): the model to extract module names from
++        statistics (dict(str, dict(str, int))): statistics organized by
++            statistic type, then by module name
++    
++    Returns:
++        dict(str, dict(str, int)): the input statistics with missing
++            modules filled in with 0 values
++    """
++    # Get all module names from the model
++    all_module_names = set()
++    all_module_names.add("")  # Add root module
++    for name, _ in model.named_modules():
++        if name:  # Skip empty string as we already added it
++            all_module_names.add(name)
++    
++    # Fill in missing statistics
++    filled_stats = {}
++    for stat_name, stat_dict in statistics.items():
++        filled_stats[stat_name] = {}
++        for module_name in all_module_names:
++            if module_name in stat_dict:
++                filled_stats[stat_name][module_name] = stat_dict[module_name]
++            else:
++                filled_stats[stat_name][module_name] = 0
++    
++    return filled_stats
+ 
+ 
+ ### Model String Printing ###

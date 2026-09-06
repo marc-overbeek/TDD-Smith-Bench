@@ -1,0 +1,97 @@
+--- a/safety/output_utils.py
++++ b/safety/output_utils.py
+@@ -288,26 +288,21 @@
+     return click.unstyle(content) if only_text else content
+ 
+ 
+-def get_fix_hint_for_unpinned(remediation: Dict[str, Any]) -> str:
+-    """
+-    Get the fix hint for unpinned dependencies.
+-
+-    Args:
+-        remediation (Dict[str, Any]): The remediation details.
+-
+-    Returns:
+-        str: The fix hint.
+-    """
+-    secure_options: List[str] = [str(fix) for fix in remediation.get('other_recommended_versions', [])]
+-    fixes_hint = f'Version {remediation.get("recommended_version")} has no known vulnerabilities and falls' \
+-                 f' within your current specifier range.'
+-
+-    if len(secure_options) > 0:
+-        other_options_msg = build_other_options_msg(fix_version=remediation.get("recommended_version"), is_spec=True,
+-                                                    secure_options=secure_options)
+-        fixes_hint += f' {other_options_msg}'
+-
+-    return fixes_hint
++def get_fix_hint_for_unpinned(remediation: Dict[str, Any]) ->str:
++    fix_version = remediation.get('recommended_version')
++    spec = remediation.get('requirement')
++    secure_options = remediation.get('other_recommended_versions', [])
++    
++    if not fix_version:
++        return ""
++    
++    base_msg = f"Version {fix_version} has no known vulnerabilities and falls within your current specifier range."
++    
++    if not secure_options:
++        return base_msg
++    
++    options_msg = build_other_options_msg(fix_version, True, secure_options)
++    return f"{base_msg} {options_msg.lstrip()}"
+ 
+ 
+ def get_unpinned_hint(pkg: str) -> str:
+@@ -350,36 +345,22 @@
+     return f'{msg} {link}'
+ 
+ 
+-def build_other_options_msg(fix_version: Optional[str], is_spec: bool, secure_options: List[str]) -> str:
+-    """
+-    Build the message for other secure options.
+-
+-    Args:
+-        fix_version (Optional[str]): The recommended fix version.
+-        is_spec (bool): Whether the package is specified.
+-        secure_options (List[str]): List of secure options.
+-
+-    Returns:
+-        str: The message for other secure options.
+-    """
+-    other_options_msg = ''
+-    raw_pre_other_options = ''
+-    outside = ''
+-
+-    if fix_version:
+-        raw_pre_other_options = 'other '
+-    elif is_spec:
+-        outside = 'outside of your current specified range '
+-
+-    if secure_options:
+-        if len(secure_options) == 1:
+-            raw_pre_other_options += f'version without known vulnerabilities {outside}is'
+-        else:
+-            raw_pre_other_options += f'versions without known vulnerabilities {outside}are:'
+-
+-        other_options_msg = f"{raw_pre_other_options} {', '.join(secure_options)}".capitalize()
+-
+-    return other_options_msg
++def build_other_options_msg(fix_version: Optional[str], is_spec: bool,
++    secure_options: List[str]) ->str:
++    if not secure_options:
++        return ""
++    
++    if len(secure_options) == 1:
++        option_word = "Other version"
++    else:
++        option_word = "Other versions"
++    
++    options_str = ", ".join(secure_options)
++    
++    if is_spec:
++        return f"{option_word} without known vulnerabilities is {options_str}"
++    else:
++        return f"{option_word} without known vulnerabilities are: {options_str}"
+ 
+ 
+ def build_remediation_section(remediations: Dict[str, Any], only_text: bool = False, columns: int = get_terminal_size().columns, kwargs: Optional[Dict[str, Any]] = None) -> List[str]:

@@ -1,0 +1,42 @@
+--- a/fvcore/nn/jit_analysis.py
++++ b/fvcore/nn/jit_analysis.py
+@@ -398,24 +398,21 @@
+                 "the descendants of the analyzed model."
+             )
+ 
+-    def copy(
+-        self,
+-        new_model: Optional[nn.Module] = None,
+-        new_inputs: Union[None, Tensor, Tuple[Tensor, ...]] = None,
+-    ) -> "JitModelAnalysis":
+-        """
+-        Returns a copy of the :class:`JitModelAnalysis` object, keeping all
+-        settings, but on a new model or new inputs.
+-
+-        Args:
+-            new_model (nn.Module or None) : a new model for the new
+-                JitModelAnalysis. If None, uses the original model.
+-            new_inputs (typing.Tuple[object, ...] or None) : new inputs
+-                for the new JitModelAnalysis. If None, uses the original
+-                inputs.
+-        Returns:
+-            JitModelAnalysis : the new model analysis object
+-        """
++    def copy(self, new_model: Optional[nn.Module]=None, new_inputs: Union[None,
++        Tensor, Tuple[Tensor, ...]]=None) ->'JitModelAnalysis':
++        """
++            Returns a copy of the :class:`JitModelAnalysis` object, keeping all
++            settings, but on a new model or new inputs.
++
++            Args:
++                new_model (nn.Module or None) : a new model for the new
++                    JitModelAnalysis. If None, uses the original model.
++                new_inputs (typing.Tuple[object, ...] or None) : new inputs
++                    for the new JitModelAnalysis. If None, uses the original
++                    inputs.
++            Returns:
++                JitModelAnalysis : the new model analysis object
++            """
+         model = self._model if new_model is None else new_model
+         inputs = self._inputs if new_inputs is None else new_inputs
+         return (

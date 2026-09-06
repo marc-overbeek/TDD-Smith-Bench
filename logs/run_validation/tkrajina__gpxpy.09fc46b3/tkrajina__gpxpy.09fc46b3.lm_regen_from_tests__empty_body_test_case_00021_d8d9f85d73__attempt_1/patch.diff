@@ -1,0 +1,37 @@
+--- a/gpxpy/geo.py
++++ b/gpxpy/geo.py
+@@ -440,7 +440,7 @@
+         """
+         self.latitude, self.longitude = location_delta.move(self)
+ 
+-    def __add__(self, location_delta: "LocationDelta") -> "Location":
++    def __add__(self, location_delta: 'LocationDelta') -> 'Location':
+         latitude, longitude = location_delta.move(self)
+         return Location(latitude, longitude)
+ 
+@@ -466,15 +466,6 @@
+ 
+     def __init__(self, distance: Optional[float]=None, angle: Optional[float]=None,
+                  latitude_diff: Optional[float]=None,longitude_diff: Optional[float]=None) -> None:
+-        """
+-        Version 1:
+-            Distance (in meters).
+-            angle_from_north *clockwise*.
+-            ...must be given
+-        Version 2:
+-            latitude_diff and longitude_diff
+-            ...must be given
+-        """
+         if (distance is not None) and (angle is not None):
+             if (latitude_diff is not None) or (longitude_diff is not None):
+                 raise Exception('No lat/lon diff if using distance and angle!')
+@@ -489,9 +480,6 @@
+             self.move_function = self.move_by_lat_lon_diff
+ 
+     def move(self, location: Location) -> Tuple[float, float]:
+-        """
+-        Move location by this LocationDelta.
+-        """
+         return self.move_function(location)
+ 
+     def move_by_angle_and_distance(self, location: Location) -> Tuple[float, float]:

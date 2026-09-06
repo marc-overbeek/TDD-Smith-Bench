@@ -1,0 +1,20 @@
+--- a/gpxpy/gpx.py
++++ b/gpxpy/gpx.py
+@@ -1875,6 +1875,17 @@
+         """ See: GPXTrackSegment.smooth() """
+         for track_segment in self.segments:
+             track_segment.smooth(vertical, horizontal, remove_extremes)
++
++    def has_times(self) -> bool:
++        """ See GPXTrackSegment.has_times() """
++        if not self.segments:
++            return False
++
++        for track_segment in self.segments:
++            if track_segment.has_times():
++                return True
++
++        return False
+ 
+     def has_times(self) -> bool:
+         """ See GPXTrackSegment.has_times() """

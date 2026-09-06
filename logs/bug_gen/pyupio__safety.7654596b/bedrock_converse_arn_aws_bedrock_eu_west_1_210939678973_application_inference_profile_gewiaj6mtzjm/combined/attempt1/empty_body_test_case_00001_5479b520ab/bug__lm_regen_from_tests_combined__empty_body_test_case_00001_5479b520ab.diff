@@ -1,0 +1,35 @@
+--- a/safety/models.py
++++ b/safety/models.py
+@@ -333,18 +333,20 @@
+     """
+     A class representing the severity of a vulnerability.
+     """
+-    def to_dict(self) -> Dict:
+-        """
+-        Convert the severity to a dictionary.
+-
+-        Returns:
+-            Dict: The dictionary representation of the severity.
+-        """
+-        result = {'severity': {'source': self.source}}
+-
+-        result['severity']['cvssv2'] = self.cvssv2
+-        result['severity']['cvssv3'] = self.cvssv3
+-
++    def to_dict(self, **kwargs: Any) -> Dict:
++        """
++        Convert the object to a dictionary.
++
++        Args:
++            **kwargs: Additional keyword arguments.
++
++        Returns:
++            dict: The dictionary representation of the object.
++        """
++        result = {}
++        for key, value in self.__dict__.items():
++            if not key.startswith('_'):
++                result[key] = value
+         return result
+ 
+ 

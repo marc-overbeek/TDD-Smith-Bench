@@ -1,0 +1,33 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1099,14 +1099,24 @@
+         return f'{cn}({bbrepr(self.func)}, args={self.args!r}, kwargs={self.kwargs!r})'
+ 
+ 
++if not callable(func) and not _is_spec(func, strict=True):
++    raise TypeError(...)
++
++func = recurse(self.func) if _is_spec(self.func, strict=True) else self.func
++
+ def _is_spec(obj, strict=False):
+-    # a little util for codifying the spec type checking in glom
+-    if isinstance(obj, TType):
++    if isinstance(obj, Spec):
+         return True
+-    if strict:
+-        return type(obj) is Spec
+-
+-    return _has_callable_glomit(obj)  # pragma: no cover
++    if not strict and isinstance(obj, TType):
++        return True
++    return False
++
++def _is_spec(obj, strict=False):
++    if isinstance(obj, Spec):
++        return True
++    if not strict and isinstance(obj, TType):
++        return True
++    return False
+ 
+ 
+ class Invoke:

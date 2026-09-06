@@ -1,0 +1,31 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -276,18 +276,7 @@
+     def rewrite_type_variable(self, type_variable): ...
+ 
+     def _rewrite_container(self, cls, container):
+-        if container.__module__ != "typing":
+-            return self.rewrite_malformed_container(container)
+-        args = getattr(container, "__args__", None)
+-        if args is None:
+-            return self.rewrite_malformed_container(container)
+-        elif args == ((),):  # special case of empty tuple `Tuple[()]`
+-            elems = self.make_builtin_tuple(())
+-        else:
+-            elems = self.make_builtin_tuple(
+-                self.rewrite(elem) for elem in container.__args__
+-            )
+-        return self.make_container_type(self.rewrite_container_type(cls), elems)
++        pass
+ 
+     def rewrite_Dict(self, dct):
+         return self._rewrite_container(Dict, dct)
+@@ -368,7 +357,7 @@
+         return container_type
+ 
+     def rewrite_malformed_container(self, container):
+-        return container
++        pass
+ 
+     def rewrite_type_variable(self, type_variable):
+         return type_variable

@@ -1,0 +1,49 @@
+--- a/glom/matching.py
++++ b/glom/matching.py
+@@ -280,12 +280,14 @@
+         return Not(self)
+ 
+     def glomit(self, target, scope):
++        scope[MODE] = _glom_match
+         try:
+-            return self._glomit(target, scope)
++            ret = scope[glom](target, self.spec, scope)
+         except GlomError:
+-            if self.default is not _MISSING:
+-                return arg_val(target, self.default, scope)
+-            raise
++            if self.default is _MISSING:
++                raise
++            ret = arg_val(target, self.default, scope)
++        return ret
+ 
+     def _m_repr(self):
+         """should this Or() repr as M |?"""
+@@ -655,23 +657,10 @@
+ 
+ 
+ def _precedence(match):
+-    """
+-    in a dict spec, target-keys may match many
+-    spec-keys (e.g. 1 will match int, M > 0, and 1);
+-    therefore we need a precedence for which order to try
+-    keys in; higher = later
+-    """
+-    if type(match) in (Required, Optional):
+-        match = match.key
+-    if type(match) in (tuple, frozenset):
+-        if not match:
+-            return 0
+-        return max([_precedence(item) for item in match])
+-    if isinstance(match, type):
+-        return 2
+-    if hasattr(match, "glomit"):
+-        return 1
+-    return 0  # == match
++    # == match
++    if type(match) is not Optional and type(match) is not Required and match is not M:
++        return 0
++    return 1
+ 
+ 
+ def _handle_dict(target, spec, scope):

@@ -1,0 +1,96 @@
+--- a/safety/util.py
++++ b/safety/util.py
+@@ -98,58 +98,41 @@
+     return ver
+ 
+ 
+-def read_requirements(fh: Any, resolve: bool = True) -> Generator[Package, None, None]:
+-    """
+-    Reads requirements from a file-like object and (optionally) from referenced files.
+-
+-    Args:
+-        fh (Any): The file-like object to read from.
+-        resolve (bool): Resolves referenced files.
+-
+-    Returns:
+-        Generator: Yields Package objects.
+-    """
+-    is_temp_file = not hasattr(fh, 'name')
+-    path = None
+-    found = 'temp_file'
+-    file_type = filetypes.requirements_txt
+-    absolute_path: Optional[str] = None
+-
+-    if not is_temp_file and is_supported_by_parser(fh.name):
+-        LOG.debug('not temp and a compatible file')
+-        path = fh.name
+-        absolute_path = os.path.abspath(path)
+-        SafetyContext().scanned_full_path.append(absolute_path)
+-        found = path
+-        file_type = None
+-
+-    LOG.debug(f'Path: {path}')
+-    LOG.debug(f'File Type: {file_type}')
+-    LOG.debug('Trying to parse file using dparse...')
+-    content = fh.read()
+-    LOG.debug(f'Content: {content}')
+-    dependency_file = parse(content, path=path, resolve=resolve,
+-                            file_type=file_type)
+-    LOG.debug(f'Dependency file: {dependency_file.serialize()}')
+-    LOG.debug(f'Parsed, dependencies: {[dep.serialize() for dep in dependency_file.resolved_dependencies]}')
+-
+-    reqs_pkg = defaultdict(list)
+-
+-    for req in dependency_file.resolved_dependencies:
+-        reqs_pkg[canonicalize_name(req.name)].append(req)
+-
+-    for pkg, reqs in reqs_pkg.items():
+-        requirements = list(map(lambda req: parse_requirement(req, absolute_path), reqs))
+-        version = find_version(requirements)
+-
+-        yield Package(name=pkg, version=version,
+-                      requirements=requirements,
+-                      found=found,
+-                      absolute_path=absolute_path,
+-                      insecure_versions=[],
+-                      secure_versions=[], latest_version=None,
+-                      latest_version_without_known_vulnerabilities=None,
+-                      more_info_url=None)
++def read_requirements(fh: Any, resolve: bool=True) ->Generator[Package,
++    None, None]:
++    try:
++        parsed = parse(fh, filetypes.requirements_txt)
++    except Exception:
++        # If parsing fails, try to parse line by line
++        for line in fh:
++            line = line.strip()
++            if line and not line.startswith('#'):
++                try:
++                    req = SafetyRequirement(line)
++                    if req.name:
++                        yield Package(name=req.name, version=req.version, requirements=[req])
++                except Exception:
++                    continue
++        return
++    
++    for dep in parsed.dependencies:
++        if dep.is_vcs:
++            # Skip VCS dependencies for now
++            continue
++            
++        if dep.is_recursive:
++            if resolve:
++                # For recursive dependencies, we need to resolve them
++                for req in dep.requirements:
++                    if req.name:
++                        yield Package(name=req.name, version=req.version, requirements=[req])
++            else:
++                # For non-resolved recursive deps, skip them
++                continue
++        else:
++            # Regular dependency
++            if dep.name:
++                yield Package(name=dep.name, version=dep.version, requirements=[dep])
+ 
+ 
+ def get_proxy_dict(proxy_protocol: str, proxy_host: str, proxy_port: int) -> Optional[Dict[str, str]]:

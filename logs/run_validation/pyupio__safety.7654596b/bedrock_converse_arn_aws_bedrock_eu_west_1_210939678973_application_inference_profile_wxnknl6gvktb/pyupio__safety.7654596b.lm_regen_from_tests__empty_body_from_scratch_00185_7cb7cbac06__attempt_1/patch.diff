@@ -1,0 +1,46 @@
+--- a/safety/safety.py
++++ b/safety/safety.py
+@@ -296,23 +296,30 @@
+     return data
+ 
+ 
+-def is_valid_database(db: Dict[str, Any]) -> bool:
+-    """
+-    Checks if the database is valid.
+-
+-    Args:
+-        db (Dict[str, Any]): The database.
+-
++{
++    "meta": {
++        "schema_version": "..."
++    },
++    "vulnerable_packages": {...}
++}
++
++def is_valid_database(db: Dict[str, Any]) ->bool:
++    """
++    Validates if the database has the correct schema version.
++    
++    Args:
++        db (Dict[str, Any]): The database to validate.
++    
+     Returns:
+         bool: True if the database is valid, False otherwise.
+     """
+-    try:
+-        if db['meta']['schema_version'] == JSON_SCHEMA_VERSION:
+-            return True
+-    except Exception:
++    if not db:
+         return False
+-
+-    return False
++    
++    meta = db.get('meta', {})
++    schema_version = meta.get('schema_version', None)
++    
++    return schema_version == JSON_SCHEMA_VERSION
+ 
+ 
+ def fetch_database(

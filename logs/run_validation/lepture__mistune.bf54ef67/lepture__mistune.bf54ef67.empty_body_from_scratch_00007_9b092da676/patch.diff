@@ -1,0 +1,25 @@
+--- a/src/mistune/markdown.py
++++ b/src/mistune/markdown.py
+@@ -56,19 +56,9 @@
+             return self.renderer(data, state)
+         return list(data)
+ 
+-    def _iter_render(
+-        self, tokens: Iterable[Dict[str, Any]], state: BlockState
+-    ) -> Iterable[Dict[str, Any]]:
+-        for tok in tokens:
+-            if 'children' in tok:
+-                children = self._iter_render(tok['children'], state)
+-                tok['children'] = list(children)
+-            elif 'text' in tok:
+-                text = tok.pop('text')
+-                # process inline text
+-                # avoid striping emsp or other unicode spaces
+-                tok['children'] = self.inline(text.strip(' \r\n\t\f'), state.env)
+-            yield tok
++    def _iter_render(self, tokens: Iterable[Dict[str, Any]], state: BlockState
++        ) ->Iterable[Dict[str, Any]]:
++        pass
+ 
+     def parse(
+         self, s: str, state: Optional[BlockState] = None

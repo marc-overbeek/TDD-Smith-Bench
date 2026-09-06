@@ -1,0 +1,38 @@
+--- a/oauthlib/oauth2/rfc6749/endpoints/authorization.py
++++ b/oauthlib/oauth2/rfc6749/endpoints/authorization.py
+@@ -84,31 +84,10 @@
+ 
+     @catch_errors_and_unavailability
+     def create_authorization_response(self, uri, http_method='GET', body=None,
+-                                      headers=None, scopes=None, credentials=None):
+-        """Extract response_type and route to the designated handler."""
+-        request = Request(
+-            uri, http_method=http_method, body=body, headers=headers)
+-        request.scopes = scopes
+-        # TODO: decide whether this should be a required argument
+-        request.user = None     # TODO: explain this in docs
+-        for k, v in (credentials or {}).items():
+-            setattr(request, k, v)
+-        response_type_handler = self.response_types.get(
+-            request.response_type, self.default_response_type_handler)
+-        log.debug('Dispatching response_type %s request to %r.',
+-                  request.response_type, response_type_handler)
+-        return response_type_handler.create_authorization_response(
+-            request, self.default_token_type)
++        headers=None, scopes=None, credentials=None):
++        pass
+ 
+     @catch_errors_and_unavailability
+     def validate_authorization_request(self, uri, http_method='GET', body=None,
+-                                       headers=None):
+-        """Extract response_type and route to the designated handler."""
+-        request = Request(
+-            uri, http_method=http_method, body=body, headers=headers)
+-
+-        request.scopes = utils.scope_to_list(request.scope)
+-
+-        response_type_handler = self.response_types.get(
+-            request.response_type, self.default_response_type_handler)
+-        return response_type_handler.validate_authorization_request(request)
++        headers=None):
++        pass

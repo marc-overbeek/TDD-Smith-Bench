@@ -1,0 +1,179 @@
+--- a/src/mistune/list_parser.py
++++ b/src/mistune/list_parser.py
+@@ -85,108 +85,75 @@
+                     _transform_tight_list(tok)
+ 
+ 
+-def _parse_list_item(
+-    block: "BlockParser",
+-    bullet: str,
+-    groups: Tuple[str, str, str],
+-    token: Dict[str, Any],
+-    state: "BlockState",
+-    rules: List[str],
+-) -> Optional[Tuple[str, str, str]]:
+-    spaces, marker, text = groups
+-
+-    leading_width = len(spaces) + len(marker)
+-    text, continue_width = _compile_continue_width(text, leading_width)
+-    item_pattern = _compile_list_item_pattern(bullet, leading_width)
+-    pairs = [
+-        ('thematic_break', block.specification['thematic_break']),
+-        ('fenced_code', block.specification['fenced_code']),
+-        ('atx_heading', block.specification['atx_heading']),
+-        ('block_quote', block.specification['block_quote']),
+-        ('block_html', block.specification['block_html']),
+-        ('list', block.specification['list']),
+-    ]
+-    if leading_width < 3:
+-        _repl_w = str(leading_width)
+-        pairs = [(n, p.replace('3', _repl_w, 1)) for n, p in pairs]
+-
+-    pairs.insert(1, ('list_item', item_pattern))
+-    regex = '|'.join(r'(?P<%s>(?<=\n)%s)' % pair for pair in pairs)
+-    sc = re.compile(regex, re.M)
+-
+-    src = ''
+-    next_group = None
+-    prev_blank_line = False
+-    pos = state.cursor
+-
+-    continue_space = ' ' * continue_width
+-    while pos < state.cursor_max:
+-        pos = state.find_line_end()
+-        line = state.get_text(pos)
+-        if block.BLANK_LINE.match(line):
+-            src += '\n'
+-            prev_blank_line = True
+-            state.cursor = pos
+-            continue
+-
+-        line = expand_leading_tab(line)
+-        if line.startswith(continue_space):
+-            if prev_blank_line and not text and not src.strip():
+-                # Example 280
+-                # A list item can begin with at most one blank line
+-                break
+-
+-            src += line
+-            prev_blank_line = False
+-            state.cursor = pos
+-            continue
+-
+-        m = sc.match(state.src, state.cursor)
+-        if m:
+-            tok_type = m.lastgroup
+-            if tok_type == 'list_item':
+-                if prev_blank_line:
+-                    token['tight'] = False
+-                next_group = (
+-                    m.group('listitem_1'),
+-                    m.group('listitem_2'),
+-                    m.group('listitem_3')
+-                )
+-                state.cursor = m.end() + 1
+-                break
+-
+-            if tok_type == 'list':
+-                break
+-
+-            tok_index = len(state.tokens)
+-            end_pos = block.parse_method(m, state)
+-            if end_pos:
+-                token['_tok_index'] = tok_index
+-                token['_end_pos'] = end_pos
+-                break
+-
+-        if prev_blank_line and not line.startswith(continue_space):
+-            # not a continue line, and previous line is blank
+-            break
+-
+-        src += line
+-        state.cursor = pos
+-
+-    text += _clean_list_item_text(src, continue_width)
+-    child = state.child_state(strip_end(text))
+-
+-    block.parse(child, rules)
+-
+-    if token['tight'] and _is_loose_list(child.tokens):
+-        token['tight'] = False
+-
+-    token['children'].append({
++def _parse_list_item(block: 'BlockParser', bullet: str, groups: Tuple[str,
++    str, str], token: Dict[str, Any], state: 'BlockState', rules: List[str]
++    ) ->Optional[Tuple[str, str, str]]:
++    listitem_1, listitem_2, listitem_3 = groups
++    leading_width = len(listitem_1)
++    pattern = _compile_list_item_pattern(bullet, leading_width)
++    listitem_3 = listitem_3.lstrip()
++    
++    # Check if there's a following list item
++    m = re.match(pattern, listitem_3, re.M)
++    if m:
++        # If the first line is a list item, we need to parse it recursively
++        # but first we need to add the current item to the token
++        text, continue_width = _compile_continue_width(listitem_3, leading_width)
++        text = _clean_list_item_text(text, continue_width)
++        if text:
++            state.append_text(text)
++        
++        # Now parse the recursive list item
++        return m.groups()
++    
++    # If no more list items, process the current one
++    text, continue_width = _compile_continue_width(listitem_3, leading_width)
++    text = _clean_list_item_text(text, continue_width)
++    
++    # Parse the content of the list item
++    if text:
++        # If there's content, parse it with the given rules
++        list_state = state.copy()
++        list_state.set_text(text)
++        list_state.parse_text(rules)
++        children = list_state.tokens
++    else:
++        # If no content, create an empty paragraph
++        children = [{'type': 'paragraph', 'children': []}]
++    
++    # Create the list item token
++    list_item = {
+         'type': 'list_item',
+-        'children': child.tokens,
+-    })
+-    if next_group:
+-        return next_group
+-
++        'children': children,
++        'tight': True
++    }
++    
++    # Handle tight/loose list logic
++    if len(token['children']) > 0:
++        prev_item = token['children'][-1]
++        if not prev_item.get('tight', True):
++            token['tight'] = False
++            list_item['tight'] = False
++        elif not token.get('tight', True):
++            list_item['tight'] = False
++    
++    token['children'].append(list_item)
++    
++    # Find next list item or end of list
++    next_pos = state.cursor + len(listitem_1) + len(listitem_2) + len(listitem_3)
++    if next_pos < len(state.src):
++        # Look for next list item
++        rest = state.src[next_pos:]
++        m2 = re.match(LIST_PATTERN, rest, re.M)
++        if m2:
++            # Found another list item, continue parsing
++            return m2.groups()
++        else:
++            # No more list items, we're done
++            return None
++    else:
++        return None
++    
+     return None
+ 
+ 

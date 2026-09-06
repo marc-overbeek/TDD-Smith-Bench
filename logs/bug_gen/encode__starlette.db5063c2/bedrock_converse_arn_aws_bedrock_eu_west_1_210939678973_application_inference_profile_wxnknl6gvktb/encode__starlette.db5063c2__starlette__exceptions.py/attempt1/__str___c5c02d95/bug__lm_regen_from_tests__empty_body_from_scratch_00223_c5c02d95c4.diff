@@ -1,0 +1,17 @@
+--- a/starlette/exceptions.py
++++ b/starlette/exceptions.py
+@@ -33,6 +33,14 @@
+         self.code = code
+         self.reason = reason or ""
+ 
++    def test_websocket_str() ->None:
++        assert str(WebSocketException(1008)) == '1008: '
++        assert str(WebSocketException(1008, 'Policy Violation')
++            ) == '1008: Policy Violation'
++
++    def __str__(self) -> str:
++        return f"{self.code}: {self.reason}"
++
+     def __str__(self) -> str:
+         return f"{self.code}: {self.reason}"
+ 

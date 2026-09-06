@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the failing tests and the existing `RewriteGenerator` class, I need to implement `rewrite_Generator` to return an `Iterator` when the send_type and return_type are both `NoneType`, otherwise return the original type.\n\nThe current implementation in the `RewriteGenerator` class already has the correct logic, but the target function has an empty body. Looking at the class structure, the `rewrite_Generator` method in `RewriteGenerator` class is the one that needs to be fixed:",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the failing tests and the existing `RewriteGenerator` class, I need to implement `rewrite_Generator` to return an `Iterator` when the send_type and return_type are both `NoneType`, otherwise return the original type.\n\nThe current implementation in the `RewriteGenerator` class already has the correct logic, but the target function has an empty body. Looking at the class structure, the `rewrite_Generator` method in `RewriteGenerator` class is the one that needs to be fixed:\n\n```\ndef rewrite_Generator(self, typ):\n    args = typ.__args__\n    if args[1] is NoneType and args[2] is NoneType:\n        return Iterator[args[0]]\n    return typ\n```",
+  "rewrite": "def rewrite_Generator(self, typ):\n    args = typ.__args__\n    if args[1] is NoneType and args[2] is NoneType:\n        return Iterator[args[0]]\n    return typ\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

@@ -1,0 +1,36 @@
+--- a/glom/streaming.py
++++ b/glom/streaming.py
+@@ -75,7 +75,6 @@
+             fb = FunctionBuilder.from_func(meth)
+             fb.args = fb.args[1:]  # drop self
+             arg_names = fb.get_arg_names()
+-            # TODO: something fancier with defaults:
+             kwargs = []
+             if len(args) > 1 and arg_names:
+                 args, kwargs = (), zip(arg_names, args)
+@@ -105,9 +104,6 @@
+             if yld is SKIP:
+                 continue
+             elif yld is self.sentinel or yld is STOP:
+-                # NB: sentinel defaults to STOP so I was torn whether
+-                # to also check for STOP, and landed on the side of
+-                # never letting STOP through.
+                 return
+             yield yld
+         return
+@@ -243,15 +239,6 @@
+             lambda it, scope: chain.from_iterable(it))
+ 
+     def unique(self, key=T):
+-        """Return a new :class:`Iter()` spec which lazily filters out duplicate
+-        values, i.e., only the first appearance of a value in a stream will
+-        be yielded.
+-
+-        >>> target = list('gloMolIcious')
+-        >>> out = list(glom(target, Iter().unique(T.lower())))
+-        >>> print(''.join(out))
+-        gloMIcus
+-        """
+         return self._add_op(
+             'unique',
+             (key,),

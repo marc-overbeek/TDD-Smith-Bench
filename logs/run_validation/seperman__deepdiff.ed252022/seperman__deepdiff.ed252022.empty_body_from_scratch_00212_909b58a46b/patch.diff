@@ -1,0 +1,49 @@
+--- a/deepdiff/diff.py
++++ b/deepdiff/diff.py
+@@ -478,45 +478,7 @@
+         )
+ 
+     def _skip_this(self, level):
+-        """
+-        Check whether this comparison should be skipped because one of the objects to compare meets exclusion criteria.
+-        :rtype: bool
+-        """
+-        level_path = level.path()
+-        skip = False
+-        if self.exclude_paths and level_path in self.exclude_paths:
+-            skip = True
+-        if self.include_paths and level_path != 'root':
+-            if level_path not in self.include_paths:
+-                skip = True
+-                for prefix in self.include_paths:
+-                    if prefix in level_path or level_path in prefix:
+-                        skip = False
+-                        break
+-        elif self.exclude_regex_paths and any(
+-                [exclude_regex_path.search(level_path) for exclude_regex_path in self.exclude_regex_paths]):
+-            skip = True
+-        elif self.exclude_types_tuple and \
+-                (isinstance(level.t1, self.exclude_types_tuple) or isinstance(level.t2, self.exclude_types_tuple)):
+-            skip = True
+-        elif self.exclude_obj_callback and \
+-                (self.exclude_obj_callback(level.t1, level_path) or self.exclude_obj_callback(level.t2, level_path)):
+-            skip = True
+-        elif self.exclude_obj_callback_strict and \
+-                (self.exclude_obj_callback_strict(level.t1, level_path) and
+-                 self.exclude_obj_callback_strict(level.t2, level_path)):
+-            skip = True
+-        elif self.include_obj_callback and level_path != 'root':
+-            skip = True
+-            if (self.include_obj_callback(level.t1, level_path) or self.include_obj_callback(level.t2, level_path)):
+-                skip = False
+-        elif self.include_obj_callback_strict and level_path != 'root':
+-            skip = True
+-            if (self.include_obj_callback_strict(level.t1, level_path) and
+-                    self.include_obj_callback_strict(level.t2, level_path)):
+-                skip = False
+-
+-        return skip
++        pass
+ 
+     def _skip_this_key(self, level, key):
+         # if include_paths is not set, than treet every path as included

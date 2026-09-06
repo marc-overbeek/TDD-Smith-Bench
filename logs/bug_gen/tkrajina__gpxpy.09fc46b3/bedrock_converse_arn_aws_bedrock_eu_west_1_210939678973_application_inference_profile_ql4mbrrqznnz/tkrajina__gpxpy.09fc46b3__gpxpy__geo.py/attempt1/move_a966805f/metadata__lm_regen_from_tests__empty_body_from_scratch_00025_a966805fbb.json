@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "Looking at the code, I can see that `Location.move()` calls `location_delta.move(self)` which returns a tuple of `(latitude, longitude)`, and then assigns those values to `self.latitude` and `self.longitude`.\n\nThe target function is `LocationDelta.move(self, location: Location)` which currently just has `pass`. It should call `self.move_function(location)` and return the result.",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/ql4mbrrqznnz",
+  "output": "Looking at the code, I can see that `Location.move()` calls `location_delta.move(self)` which returns a tuple of `(latitude, longitude)`, and then assigns those values to `self.latitude` and `self.longitude`.\n\nThe target function is `LocationDelta.move(self, location: Location)` which currently just has `pass`. It should call `self.move_function(location)` and return the result.\n\n```\ndef move(self, location: Location) -> Tuple[float, float]:\n    \"\"\"\n    Move location by this LocationDelta.\n    \"\"\"\n    return self.move_function(location)\n```",
+  "rewrite": "def move(self, location: Location) -> Tuple[float, float]:\n    \"\"\"\n    Move location by this LocationDelta.\n    \"\"\"\n    return self.move_function(location)\n    # this is an exact match",
+  "strategy": "lm_regen_from_tests"
+}

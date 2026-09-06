@@ -1,0 +1,20 @@
+--- a/src/mistune/inline_parser.py
++++ b/src/mistune/inline_parser.py
+@@ -324,15 +324,8 @@
+         state.append_token({'type': 'softbreak'})
+         return m.end()
+ 
+-    def parse_inline_html(self, m: Match[str], state: InlineState) -> int:
+-        end_pos = m.end()
+-        html = m.group(0)
+-        state.append_token({'type': 'inline_html', 'raw': html})
+-        if html.startswith(('<a ', '<a>', '<A ', '<A>')):
+-            state.in_link = True
+-        elif html.startswith(('</a ', '</a>', '</A ', '</A>')):
+-            state.in_link = False
+-        return end_pos
++    def parse_inline_html(self, m: Match[str], state: InlineState) ->int:
++        pass
+ 
+     def process_text(self, text: str, state: InlineState) -> None:
+         state.append_token({'type': 'text', 'raw': text})

@@ -1,0 +1,59 @@
+--- a/oauthlib/oauth2/rfc6749/clients/base.py
++++ b/oauthlib/oauth2/rfc6749/clients/base.py
+@@ -256,27 +256,38 @@
+             scope=scope, state=self.state, **kwargs)
+         return auth_url, FORM_ENC_HEADERS, ''
+ 
++    def test_prepare_token_request(self):
++        redirect_url = 'https://example.com/callback/'
++        scopes = 'read'
++        token_url = 'https://example.com/token/'
++        state = 'fake_state'
++        client = Client(self.client_id, scope=scopes, state=state)
++        self.assertRaises(InsecureTransportError, client.prepare_token_request,
++            'http://example.com/token/')
++        self.assertRaises(NotImplementedError, client.prepare_token_request,
++            token_url)
++
+     def prepare_token_request(self, token_url, authorization_response=None,
+-                              redirect_url=None, state=None, body='', **kwargs):
++        redirect_url=None, state=None, body='', **kwargs):
+         """Prepare a token creation request.
+ 
+-        Note that these requests usually require client authentication, either
+-        by including client_id or a set of provider specific authentication
+-        credentials.
+-
+-        :param token_url: Provider token creation endpoint URL.
+-        :param authorization_response: The full redirection URL string, i.e.
+-            the location to which the user was redirected after successful
+-            authorization. Used to mine credentials needed to obtain a token
+-            in this step, such as authorization code.
+-        :param redirect_url: The redirect_url supplied with the authorization
+-            request (if there was one).
+-        :param state:
+-        :param body: Existing request body (URL encoded string) to embed parameters
+-                     into. This may contain extra parameters. Default ''.
+-        :param kwargs: Additional parameters to included in the request.
+-        :returns: The prepared request tuple with (url, headers, body).
+-        """
++            Note that these requests usually require client authentication, either
++            by including client_id or a set of provider specific authentication
++            credentials.
++
++            :param token_url: Provider token creation endpoint URL.
++            :param authorization_response: The full redirection URL string, i.e.
++                the location to which the user was redirected after successful
++                authorization. Used to mine credentials needed to obtain a token
++                in this step, such as authorization code.
++            :param redirect_url: The redirect_url supplied with the authorization
++                request (if there was one).
++            :param state:
++            :param body: Existing request body (URL encoded string) to embed parameters
++                         into. This may contain extra parameters. Default ''.
++            :param kwargs: Additional parameters to included in the request.
++            :returns: The prepared request tuple with (url, headers, body).
++            """
+         if not is_secure_transport(token_url):
+             raise InsecureTransportError()
+ 

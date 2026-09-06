@@ -1,0 +1,21 @@
+--- a/monkeytype/typing.py
++++ b/monkeytype/typing.py
+@@ -402,6 +402,18 @@
+             return Union[elems]
+         return union
+ 
++    def rewrite_Union(self, union):
++        return self._rewrite_container(Union, union)
++
++    def rewrite_Union(self, union):
++        elems = tuple(self.rewrite(e) for e in union.__args__ if not self._is_empty(e))
++        if len(elems) == 0:
++            return union
++        elif len(elems) == 1:
++            return elems[0]
++        else:
++            return Union[elems]
++
+ 
+ class RewriteConfigDict(TypeRewriter):
+     """Union[Dict[K, V1], ..., Dict[K, VN]] -> Dict[K, Union[V1, ..., VN]]"""

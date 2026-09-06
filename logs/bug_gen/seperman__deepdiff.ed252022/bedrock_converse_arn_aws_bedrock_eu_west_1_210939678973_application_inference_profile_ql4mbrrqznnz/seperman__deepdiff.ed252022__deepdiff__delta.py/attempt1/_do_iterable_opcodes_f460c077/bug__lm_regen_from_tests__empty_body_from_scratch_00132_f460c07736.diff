@@ -1,0 +1,27 @@
+--- a/deepdiff/delta.py
++++ b/deepdiff/delta.py
+@@ -618,7 +618,6 @@
+         if _iterable_opcodes:
+             for path, opcodes in _iterable_opcodes.items():
+                 transformed = []
+-                # elements = _path_to_elements(path)
+                 elem_and_details = self._get_elements_and_details(path)
+                 if elem_and_details:
+                     elements, parent, parent_to_obj_elem, parent_to_obj_action, obj, elem, action = elem_and_details
+@@ -629,7 +628,6 @@
+                         parent_to_obj_action = GETATTR
+                 else:
+                     continue  # pragma: no cover. Due to cPython peephole optimizer, this line doesn't get covered. https://github.com/nedbat/coveragepy/issues/198
+-                # import pytest; pytest.set_trace()
+                 obj = self.get_nested_obj(obj=self, elements=elements)
+                 is_obj_tuple = isinstance(obj, tuple)
+                 for opcode in opcodes:    
+@@ -646,7 +644,7 @@
+                         # Items are the same in both lists, so we add them to the result
+                         transformed.extend(obj[opcode.t1_from_index:opcode.t1_to_index])
+                 if is_obj_tuple:
+-                    obj = tuple(obj)
++                    obj = tuple(transformed)
+                     # Making sure that the object is re-instated inside the parent especially if it was immutable
+                     # and we had to turn it into a mutable one. In such cases the object has a new id.
+                     self._simple_set_elem_value(obj=parent, path_for_err_reporting=path, elem=parent_to_obj_elem,

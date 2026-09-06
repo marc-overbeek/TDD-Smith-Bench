@@ -1,0 +1,45 @@
+--- a/glom/core.py
++++ b/glom/core.py
+@@ -1672,27 +1672,25 @@
+         raise ValueError('unsupported T operation for assignment')
+ 
+ 
++elif op in 'xX':
++    nxt = []
++    get_handler = scope[TargetRegistry].get_handler
++    if op == 'x':  # increases arity of cur each time through
++        _extend_children(nxt, cur, get_handler)
++
+ def _extend_children(children, item, get_handler):
+-    try:  # dict or obj-like
+-        keys = get_handler('keys', item)
+-        get = get_handler('get', item)
+-    except UnregisteredTarget:
++    iterate = get_handler('iterate', item, raise_exc=False)
++    if iterate:
+         try:
+-            iterate = get_handler('iterate', item)
+-        except UnregisteredTarget:
++            children.extend(iterate(item))
++        except Exception:
+             pass
+-        else:
+-            try:  # list-like
+-                children.extend(iterate(item))
+-            except Exception:
+-                pass
+-    else:
++
++def _extend_children(children, item, get_handler):
++    iterate = get_handler('iterate', item, raise_exc=False)
++    if iterate:
+         try:
+-            for key in keys(item):
+-                try:
+-                    children.append(get(item, key))
+-                except Exception:
+-                    pass
++            children.extend(iterate(item))
+         except Exception:
+             pass
+ 

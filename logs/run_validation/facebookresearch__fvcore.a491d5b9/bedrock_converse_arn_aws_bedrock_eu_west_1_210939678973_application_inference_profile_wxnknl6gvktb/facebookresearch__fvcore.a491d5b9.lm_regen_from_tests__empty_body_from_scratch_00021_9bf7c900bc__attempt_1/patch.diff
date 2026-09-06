@@ -1,0 +1,25 @@
+--- a/fvcore/common/checkpoint.py
++++ b/fvcore/common/checkpoint.py
+@@ -85,6 +85,22 @@
+         # A user may want to use a different project-specific PathManager
+         self.path_manager: PathManager = PathManager()
+         self.path_manager.register_handler(HTTPURLHandler())
++
++    self.checkpointables: Dict[str, Any] = {}
++    for k, v in checkpointables.items():
++        self.add_checkpointable(k, v)
++
++    for key, obj in self.checkpointables.items():
++        data[key] = obj.state_dict()
++
++    def add_checkpointable(self, key: str, checkpointable: Any) -> None:
++        if key in self.checkpointables:
++            raise KeyError(f"Key {key} already used in the Checkpointer")
++        if not hasattr(checkpointable, "state_dict"):
++            raise TypeError(
++                "add_checkpointable needs an object with 'state_dict()' method."
++            )
++        self.checkpointables[key] = checkpointable
+ 
+     def add_checkpointable(self, key: str, checkpointable: Any) -> None:
+         """

@@ -1,0 +1,80 @@
+--- a/src/mistune/directives/toc.py
++++ b/src/mistune/directives/toc.py
+@@ -32,9 +32,8 @@
+     def generate_heading_id(self, token: Dict[str, Any], index: int) -> str:
+         return 'toc_' + str(index + 1)
+ 
+-    def parse(
+-        self, block: "BlockParser", m: Match[str], state: "BlockState"
+-    ) -> Dict[str, Any]:
++    def parse(self, block: 'BlockParser', m: Match[str], state: 'BlockState'
++        ) ->Dict[str, Any]:
+         title = self.parse_title(m)
+         options = self.parse_options(m)
+         if options:
+@@ -60,7 +59,7 @@
+         }
+         return {'type': 'toc', 'text': title or '', 'attrs': attrs}
+ 
+-    def toc_hook(self, md: "Markdown", state: "BlockState") -> None:
++    def toc_hook(self, md: 'Markdown', state: 'BlockState') ->None:
+         sections = []
+         headings = []
+ 
+@@ -72,7 +71,6 @@
+ 
+         if sections:
+             toc_items = []
+-            # adding ID for each heading
+             for i, tok in enumerate(headings):
+                 tok['attrs']['id'] = self.generate_heading_id(tok, i)
+                 toc_items.append(normalize_toc_item(md, tok))
+@@ -91,25 +89,31 @@
+             md.renderer.register('toc', render_html_toc)
+ 
+ 
+-def render_html_toc(
+-    renderer: "BaseRenderer", title: str, collapse: bool = False, **attrs: Any
+-) -> str:
+-    if not title:
+-        title = 'Table of Contents'
+-    content = render_toc_ul(attrs['toc'])
+-
+-    html = '<details class="toc"'
+-    if not collapse:
+-        html += ' open'
+-    html += '>\n<summary>' + title + '</summary>\n'
+-    return html + content + '</details>\n'
++def render_html_toc(renderer: 'BaseRenderer', title: str, collapse: bool=
++    False, **attrs: Any) ->str:
++    toc = attrs.get('toc', [])
++    if not toc:
++        return ''
++    ul = render_toc_ul(toc)
++    if collapse:
++        if title:
++            return '<details open><summary>' + title + '</summary>' + ul + '</details>\n'
++        return '<details open>' + ul + '</details>\n'
++    if title:
++        return '<div class="toc"><p>' + title + '</p>' + ul + '</div>\n'
++    return '<div class="toc">' + ul + '</div>\n'
+ 
+ 
+-def _normalize_level(options: Dict[str, Any], name: str, default: Any) -> Any:
+-    level = options.get(name)
+-    if not level:
++def _normalize_level(options: Dict[str, Any], name: str, default: Any) ->Any:
++    if name not in options:
++        return default
++    value = options[name]
++    if value is None:
+         return default
+     try:
+-        return int(level)
++        level = int(value)
+     except (ValueError, TypeError):
+-        raise ValueError(f'"{name}" option MUST be integer')
++        raise ValueError(f'"{name}" option MUST be an integer')
++    if level < 1 or level > 6:
++        raise ValueError(f'"{name}" option MUST be between 1 and 6')
++    return level

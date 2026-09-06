@@ -1,0 +1,8 @@
+{
+  "cost": 0.0,
+  "explanation": "",
+  "model": "bedrock/converse/arn:aws:bedrock:eu-west-1:210939678973:application-inference-profile/wxnknl6gvktb",
+  "output": "```python\ndef json_dumps(item, default_mapping=None, force_use_builtin_json: bool=\n    False, **kwargs):\n    if orjson is None or force_use_builtin_json:\n        return json.dumps(\n            item,\n            default=json_convertor_default(default_mapping),\n            **kwargs,\n        )\n    else:\n        # orjson doesn't support all the same parameters as json.dumps\n        if kwargs:\n            raise TypeError('orjson does not accept the sort_keys parameter.' if 'sort_keys' in kwargs else f'orjson does not accept these parameters: {\", \".join(kwargs.keys())}')\n        return orjson.dumps(\n            item,\n            default=json_convertor_default(default_mapping),\n        ).decode('utf-8')\n```",
+  "rewrite": "def json_dumps(item, default_mapping=None, force_use_builtin_json: bool=\n    False, **kwargs):\n    if orjson is None or force_use_builtin_json:\n        return json.dumps(\n            item,\n            default=json_convertor_default(default_mapping),\n            **kwargs,\n        )\n    else:\n        # orjson doesn't support all the same parameters as json.dumps\n        if kwargs:\n            raise TypeError('orjson does not accept the sort_keys parameter.' if 'sort_keys' in kwargs else f'orjson does not accept these parameters: {\", \".join(kwargs.keys())}')\n        return orjson.dumps(\n            item,\n            default=json_convertor_default(default_mapping),\n        ).decode('utf-8')",
+  "strategy": "lm_regen_from_tests"
+}
